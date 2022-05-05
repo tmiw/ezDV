@@ -4,7 +4,7 @@ Comment,Designator,Footprint,LCSC
 "0.1uF","C6,C7,C10,C11,C12","Capacitor_SMD:C_0402_1005Metric","C1525"
 "47uF","C8,C9","Capacitor_SMD:C_0603_1608Metric","C140782"
 "PTT_LED","D1","Diode_SMD:D_0603_1608Metric","C2286"
-"SYNC_LED","D2","Diode_SMD:D_0603_1608Metric","C916073"
+"SYNC_LED","D2","Diode_SMD:D_0603_1608Metric","C165982"
 "OVL_LED","D3","Diode_SMD:D_0603_1608Metric","C2286"
 "NET_LED","D4","Diode_SMD:D_0603_1608Metric","C193191"
 "Radio_Jack","J1","Connector_Audio:Jack_3.5mm_PJ320D_Horizontal","C95562"

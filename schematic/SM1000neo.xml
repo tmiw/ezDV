@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <export version="D">
   <design>
-    <source>/Users/mooneer/devel/SM1000neo/SM1000neo.sch</source>
-    <date>Wednesday, May 04, 2022 at 09:44:46 AM</date>
+    <source>/Users/mooneer/devel/SM1000neo/schematic/SM1000neo.sch</source>
+    <date>Wednesday, May 04, 2022 at 06:34:04 PM</date>
     <tool>Eeschema (5.1.7-0-10_14)</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -493,9 +493,9 @@
     <comp ref="D2">
       <value>SYNC_LED</value>
       <footprint>Diode_SMD:D_0603_1608Metric</footprint>
-      <datasheet>https://datasheet.lcsc.com/lcsc/2011131906_TUOZHAN-TZ-P2-0602GTS1-1-1T_C916073.pdf</datasheet>
+      <datasheet>https://datasheet.lcsc.com/lcsc/1811131221_BrtLed-Bright-LED-Elec-BL-HGE36G-AV-TRB_C165982.pdf</datasheet>
       <fields>
-        <field name="LCSC">C916073</field>
+        <field name="LCSC">C165982</field>
       </fields>
       <libsource lib="Device" part="LED" description="Light emitting diode"/>
       <sheetpath names="/ExternalConnections/" tstamps="/6284CF3A/"/>
@@ -810,7 +810,7 @@
       <uri>/Library/Application Support/kicad/library/Switch.lib</uri>
     </library>
     <library logical="TLV320AIC3254IRHBR">
-      <uri>/Users/mooneer/devel/SM1000neo/parts/TLV320AIC3254IRHBR.lib</uri>
+      <uri>/Users/mooneer/devel/SM1000neo/schematic/parts/TLV320AIC3254IRHBR.lib</uri>
     </library>
   </libraries>
   <nets>
