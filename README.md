@@ -9,7 +9,14 @@ a development board centered around the following components:
 
 ## Building and installing the firmware
 
-TBD
+Plug your nanoESP32-S3 into your computer's USB port, then run the following:
+
+```
+. /path/to/esp-idf/export.py
+cd firmware
+idf.py build
+idf.py -p /dev/ttyxxx0 flash monitor
+```
 
 ## License
 
