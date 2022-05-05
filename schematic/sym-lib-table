@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name TLV320AIC3254IRHBR)(type Legacy)(uri ${KIPRJMOD}/parts/TLV320AIC3254IRHBR.lib)(options "")(descr ""))
+)
