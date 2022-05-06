@@ -17,3 +17,24 @@ namespace sm1000neo
         Application::init();
     }
 }
+
+extern "C"
+{
+    
+#ifdef ESP_PLATFORM
+void app_main()
+{
+    sm1000neo::App app{};
+    app.start();
+}
+#else
+int main(int /*argc*/, char** /*argv*/)
+{
+    smooth::core::SystemStatistics::instance().dump();
+    sm1000neo::App app{};
+    app.start();
+    return 0;
+}
+#endif
+
+}
