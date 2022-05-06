@@ -15,6 +15,8 @@ namespace sm1000neo
     void App::init()
     {
         Application::init();
+        
+        ptt.start();
     }
 }
 

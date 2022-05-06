@@ -2,6 +2,7 @@
 #define SM1000_APP_H
 
 #include "smooth/core/Application.h"
+#include "radio/ptt/GpioPTT.h"
 
 namespace sm1000neo
 {
@@ -11,6 +12,9 @@ namespace sm1000neo
         App();
         
         void init() override;
+        
+    private:
+        radio::ptt::GpioPTT ptt;
     };
 }
 

@@ -1,6 +1,8 @@
 set(SOURCES 
     "radio/ptt/GenericPTT.cpp"
     "radio/ptt/GenericPTT.h"
+    "radio/ptt/GpioPTT.cpp"
+    "radio/ptt/GpioPTT.h"
     "Application.cpp")
 
 if(${ESP_PLATFORM})
