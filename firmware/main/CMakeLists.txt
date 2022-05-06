@@ -1,4 +1,7 @@
-set(SOURCES "Application.cpp")
+set(SOURCES 
+    "radio/ptt/GenericPTT.cpp"
+    "radio/ptt/GenericPTT.h"
+    "Application.cpp")
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}
