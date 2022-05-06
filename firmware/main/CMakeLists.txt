@@ -1,5 +1,13 @@
-idf_component_register(SRCS "sm1000neo.c"
-                    INCLUDE_DIRS ".")
+set(SOURCES "Application.cpp")
+
+if(${ESP_PLATFORM})
+    idf_component_register(SRCS ${SOURCES}
+                            INCLUDE_DIRS
+                                ${CMAKE_CURRENT_LIST_DIR}
+                                $ENV{IDF_PATH}/components
+                            REQUIRES
+                                smooth_component)
+endif()
 
 # Compiles and links Codec2 into the application.
 # ==================================================================
@@ -44,5 +52,11 @@ set(CMAKE_REQUIRED_FLAGS "")
 set(LPCNET OFF CACHE BOOL "")
 add_subdirectory(${codec2_SOURCE_DIR} ${codec2_BINARY_DIR} EXCLUDE_FROM_ALL)
 
-target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
-
+if(${ESP_PLATFORM})
+    target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
+else()
+    project(sm1000neo.elf)
+    add_executable(sm1000neo ${SOURCES})
+    target_link_libraries(sm1000neo smooth pthread codec2)
+    target_include_directories(sm1000neo PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+endif()

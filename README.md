@@ -13,6 +13,7 @@ Plug your nanoESP32-S3 into your computer's USB port, then run the following:
 
 ```
 . /path/to/esp-idf/export.sh
+git submodule update --init --checkout --recursive
 cd firmware
 idf.py build
 idf.py -p /dev/ttyxxx0 flash monitor

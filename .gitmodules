@@ -1,0 +1,3 @@
+[submodule "firmware/externals/smooth"]
+	path = firmware/externals/smooth
+	url = https://github.com/tmiw/Smooth.git
