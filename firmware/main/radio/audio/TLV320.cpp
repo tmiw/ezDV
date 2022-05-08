@@ -43,6 +43,23 @@ namespace sm1000neo::radio::audio
         
         // Enable audio
         tlv320EnableAudio_();
+        
+        // Set up I2S read timer and start it.
+        readTimer_ = smooth::core::timer::Timer::create(
+            0, timerExpiredQueue_, true,
+            std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS));
+        readTimer_->start();
+    }
+    
+    void TLV320::event(const smooth::core::timer::TimerExpiredEvent& event)
+    {
+        short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
+        memset(tempData, 0, sizeof(tempData));
+        
+        size_t bytesRead = 0;
+        ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS)));
+        
+        // TBD -- send data to Codec2 task.
     }
     
     void TLV320::initializeI2S_()
