@@ -1,4 +1,6 @@
 set(SOURCES 
+    "radio/audio/TLV320.cpp"
+    "radio/audio/TLV320.h"
     "radio/ptt/GenericPTT.cpp"
     "radio/ptt/GenericPTT.h"
     "radio/ptt/GpioPTT.cpp"
