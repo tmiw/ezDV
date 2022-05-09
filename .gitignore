@@ -1,3 +1,4 @@
 .DS_Store
 schematic/*-bak
 firmware/build
+firmware/sdkconfig.old

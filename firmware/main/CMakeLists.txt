@@ -4,10 +4,8 @@ set(SOURCES
     "audio/TLV320.h"
     "codec/FreeDVTask.cpp"
     "codec/FreeDVTask.h"
-    "radio/ptt/GenericPTT.cpp"
-    "radio/ptt/GenericPTT.h"
-    "radio/ptt/GpioPTT.cpp"
-    "radio/ptt/GpioPTT.h"
+    "ui/UserInterfaceTask.cpp"
+    "ui/UserInterfaceTask.h"
     "util/NamedQueue.cpp"
     "util/NamedQueue.h")
 

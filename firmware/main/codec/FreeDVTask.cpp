@@ -55,9 +55,30 @@ namespace sm1000neo::codec
         }
     }
     
+    void FreeDVTask::event(const sm1000neo::codec::FreeDVChangeModeMessage& event)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Mode changing to %d", event.newMode);
+        
+        freedv_close(dv_);
+        dv_ = freedv_open(event.newMode);
+        assert(dv_ != nullptr);
+        
+        resetFifos_();
+    }
+    
+    void FreeDVTask::event(const sm1000neo::codec::FreeDVChangePTTMessage& event)
+    {
+        if (event.pttEnabled != isTransmitting_)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "PTT changing to %d", event.pttEnabled);
+            
+            isTransmitting_ = event.pttEnabled;
+            resetFifos_();
+        }
+    }
+    
     void FreeDVTask::init()
     {
-        // TBD: mode change
         dv_ = freedv_open(FREEDV_MODE_700D);
         assert(dv_ != nullptr);
         
@@ -65,5 +86,24 @@ namespace sm1000neo::codec
             2, timerExpiredQueue_, true,
             std::chrono::milliseconds(20));
         codecTimer_->start();
+    }
+    
+    void FreeDVTask::resetFifos_()
+    {
+        if (inputFifo_ != nullptr)
+        {
+            codec2_fifo_destroy(inputFifo_);
+        }
+        
+        if (outputFifo_ != nullptr)
+        {
+            codec2_fifo_destroy(outputFifo_);
+        }
+        
+        inputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(inputFifo_ != nullptr);
+        
+        outputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(outputFifo_ != nullptr);
     }
 }

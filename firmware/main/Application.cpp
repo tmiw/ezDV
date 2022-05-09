@@ -17,9 +17,9 @@ namespace sm1000neo
     {
         Application::init();
         
-        ptt.start();
         soundCodec.start();
         freedvTask.start();
+        uiTask.start();
     }
 }
 
