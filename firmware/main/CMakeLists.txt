@@ -1,11 +1,15 @@
 set(SOURCES 
-    "radio/audio/TLV320.cpp"
-    "radio/audio/TLV320.h"
+    "Application.cpp"
+    "audio/TLV320.cpp"
+    "audio/TLV320.h"
+    "codec/FreeDVTask.cpp"
+    "codec/FreeDVTask.h"
     "radio/ptt/GenericPTT.cpp"
     "radio/ptt/GenericPTT.h"
     "radio/ptt/GpioPTT.cpp"
     "radio/ptt/GpioPTT.h"
-    "Application.cpp")
+    "util/NamedQueue.cpp"
+    "util/NamedQueue.h")
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}

@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "smooth/core/task_priorities.h"
+#include "smooth/core/SystemStatistics.h"
 
 using namespace smooth;
 using namespace smooth::core;
@@ -17,6 +18,8 @@ namespace sm1000neo
         Application::init();
         
         ptt.start();
+        soundCodec.start();
+        freedvTask.start();
     }
 }
 

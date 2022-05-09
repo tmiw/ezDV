@@ -1,5 +1,4 @@
 #include "TLV320.h"
-
 #include "driver/gpio.h"
 
 // TLV320 MCLK frequency
@@ -23,10 +22,15 @@
 #define TLV320_SDA_GPIO GPIO_NUM_47
 #define TLV320_SCK_FREQ_HZ (100000)
 
-namespace sm1000neo::radio::audio
+#define CURRENT_LOG_TAG ("TLV320")
+
+using namespace sm1000neo::util;
+
+namespace sm1000neo::audio
 {
     void TLV320::init()
     {
+#if 0
         // Initialize I2S first so MCLK is available to the TLV320.
         initializeI2S_();
         initializeI2C_();
@@ -43,28 +47,71 @@ namespace sm1000neo::radio::audio
         
         // Enable audio
         tlv320EnableAudio_();
+#endif
         
         // Set up I2S read timer and start it.
-        readTimer_ = smooth::core::timer::Timer::create(
-            0, timerExpiredQueue_, true,
+        ESP_LOGI(CURRENT_LOG_TAG, "Starting I2S timer");
+        readWriteTimer_ = smooth::core::timer::Timer::create(
+            1, timerExpiredQueue_, true,
             std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS));
-        readTimer_->start();
+        readWriteTimer_->start();
     }
     
     void TLV320::event(const smooth::core::timer::TimerExpiredEvent& event)
-    {
+    {    
         short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
         memset(tempData, 0, sizeof(tempData));
         
-        size_t bytesRead = 0;
-        ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS)));
+        // Perform read from I2S. 
+        size_t bytesRead = sizeof(tempData); //0;
+        //ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
         
-        // TBD -- send data to Codec2 task.
+        // Send to Codec2
+        AudioDataMessage leftChannelMessage;
+        AudioDataMessage rightChannelMessage;
+        for (auto index = 0; index < bytesRead / sizeof(short); index++)
+        {
+            leftChannelMessage.audioData[index] = tempData[2*index];
+            rightChannelMessage.audioData[index] = tempData[2*index + 1];
+        }
+        leftChannelMessage.channel = AudioDataMessage::LEFT_CHANNEL;
+        rightChannelMessage.channel = AudioDataMessage::RIGHT_CHANNEL;
+        NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, leftChannelMessage);
+        NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, rightChannelMessage);
+        
+        // If we have available data in the FIFOs, send it out.
+        short tempDataLeft[I2S_NUM_SAMPLES_PER_INTERVAL];
+        short tempDataRight[I2S_NUM_SAMPLES_PER_INTERVAL];
+        memset(tempDataLeft, 0, sizeof(tempDataLeft));
+        memset(tempDataRight, 0, sizeof(tempDataRight));
+        
+        if (codec2_fifo_used(leftChannelOutFifo_) >= I2S_NUM_SAMPLES_PER_INTERVAL || 
+            codec2_fifo_used(rightChannelOutFifo_) >= I2S_NUM_SAMPLES_PER_INTERVAL)
+        {
+            codec2_fifo_read(leftChannelOutFifo_, tempDataLeft, I2S_NUM_SAMPLES_PER_INTERVAL);
+            codec2_fifo_read(rightChannelOutFifo_, tempDataRight, I2S_NUM_SAMPLES_PER_INTERVAL);
+            
+            for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
+            {
+                tempData[2*index] = tempDataLeft[index];
+                tempData[2*index + 1] = tempDataRight[index];
+            }
+            
+            size_t bytesWritten = 0;
+            //ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
+        }
+    }
+    
+    void TLV320::event(const AudioDataMessage& event)
+    {
+        // Add to the respective FIFO for now. The timer event will trigger write to I2S.
+        auto fifo = event.channel == AudioDataMessage::LEFT_CHANNEL ? leftChannelOutFifo_ : rightChannelOutFifo_;
+        codec2_fifo_write(fifo, const_cast<short*>(event.audioData), NUM_SAMPLES_PER_AUDIO_MESSAGE);
     }
     
     void TLV320::initializeI2S_()
     {
-        i2s_config_t tlv320_i2s_config;
+        /*i2s_config_t tlv320_i2s_config;
         tlv320_i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX);
         tlv320_i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
         tlv320_i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
@@ -88,7 +135,7 @@ namespace sm1000neo::radio::audio
         pin_config.mck_io_num = TLV320_MCLK_GPIO;
         
         ESP_ERROR_CHECK(i2s_driver_install(I2S_NUM_0, &tlv320_i2s_config, 0, NULL));
-        ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));
+        ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));*/
     }
     
     void TLV320::initializeI2C_()
@@ -107,7 +154,7 @@ namespace sm1000neo::radio::audio
     void TLV320::initializeResetGPIO_()
     {
         gpio_intr_disable(TLV320_RESET_GPIO);
-        gpio_set_direction(TLV320_RESET_GPIO, GPIO_MODE_OUTPUT);
+        //gpio_set_direction(TLV320_RESET_GPIO, GPIO_MODE_OUTPUT);
         gpio_set_pull_mode(TLV320_RESET_GPIO, GPIO_FLOATING);
         gpio_set_level(TLV320_RESET_GPIO, 1); // active low
     }

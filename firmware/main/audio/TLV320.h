@@ -1,33 +1,47 @@
 #ifndef RADIO__AUDIO__TLV320_H
 #define RADIO__AUDIO__TLV320_H
 
-#include "driver/i2s.h"
+//#include "driver/i2s.h"
 #include "smooth/core/Task.h"
 #include "smooth/core/io/i2c/Master.h"
 #include "smooth/core/io/i2c/I2CMasterDevice.h"
 #include "smooth/core/util/FixedBuffer.h"
 #include "smooth/core/timer/Timer.h"
+#include "util/NamedQueue.h"
+#include "Messaging.h"
+
+#include "codec2_fifo.h"
 
 // Driver for the TLV320 audio codec chip from Texas Instruments.
 
-#define I2S_TIMER_INTERVAL_MS (5)
-#define I2S_NUM_SAMPLES_PER_INTERVAL (40) /* 8000 * 0.005 */
+#define I2S_TIMER_INTERVAL_MS (10)
+#define I2S_NUM_SAMPLES_PER_INTERVAL NUM_SAMPLES_PER_AUDIO_MESSAGE
 
-namespace sm1000neo::radio::audio
+namespace sm1000neo::audio
 {
     class TLV320 : 
         public smooth::core::Task,
-        public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>
+        public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>,
+        public smooth::core::ipc::IEventListener<AudioDataMessage>
     {
     public:
         TLV320()
             : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(1))
             , timerExpiredQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(5, *this, *this))
+            , audioDataInputQueue_(smooth::core::ipc::TaskEventQueue<AudioDataMessage>::create(25, *this, *this))
         {
-            // empty
+            // Create output FIFOs so we can recombine both channels into one I2S stream.
+            leftChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
+            assert(leftChannelOutFifo_ != nullptr);
+            rightChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
+            assert(rightChannelOutFifo_ != nullptr);
+            
+            // Register input channel for use by other tasks.
+            sm1000neo::util::NamedQueue::Add(AUDIO_OUT_PIPE_NAME, audioDataInputQueue_);
         }
         
         void event(const smooth::core::timer::TimerExpiredEvent& event) override;
+        void event(const AudioDataMessage& event) override;
         
     protected:
         virtual void init();
@@ -87,8 +101,12 @@ namespace sm1000neo::radio::audio
         std::unique_ptr<smooth::core::io::i2c::Master> tlvMaster_;
         std::unique_ptr<I2CDevice> tlvDevice_;
         
-        smooth::core::timer::TimerOwner readTimer_;
-        std::weak_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
+        smooth::core::timer::TimerOwner readWriteTimer_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<AudioDataMessage>> audioDataInputQueue_;
+        
+        struct FIFO* leftChannelOutFifo_;
+        struct FIFO* rightChannelOutFifo_;
         
         void initializeI2S_();
         void initializeI2C_();
