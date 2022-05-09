@@ -26,12 +26,8 @@ void GenericPTT::queuePTT(bool pttState)
 {
     // Pushes request onto the queue. The PTT task will be notified
     // once this finishes to actually enable/disable PTT.
-    auto q = queue_.lock();
-    if (q)
-    {
-        PTTRequest req(pttState);
-        q->push(req);
-    }
+    PTTRequest req(pttState);
+    queue_->push(req);
 }
 
 }

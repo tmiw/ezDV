@@ -1,7 +1,7 @@
 #ifndef RADIO__AUDIO__TLV320_H
 #define RADIO__AUDIO__TLV320_H
 
-//#include "driver/i2s.h"
+#include "driver/i2s.h"
 #include "smooth/core/Task.h"
 #include "smooth/core/io/i2c/Master.h"
 #include "smooth/core/io/i2c/I2CMasterDevice.h"
@@ -54,12 +54,12 @@ namespace sm1000neo::audio
                 : smooth::core::io::i2c::I2CMasterDevice(port, address, guard)
                 , i2cAddress_(address)
             {
-                setPage_(0);
+                //setPage_(0);
             }
             
             void setConfigurationOption(uint8_t page, uint8_t reg, uint8_t val)
             {
-                if (page != currentPage_)
+                /*if (page != currentPage_)
                 {
                     setPage_(page);
                 }
@@ -68,12 +68,12 @@ namespace sm1000neo::audio
                     reg,
                     val
                 };
-                write(i2cAddress_, data);
+                write(i2cAddress_, data);*/
             }
             
             uint8_t getConfigurationOption(uint8_t page, uint8_t reg)
             {
-                if (page != currentPage_)
+                /*if (page != currentPage_)
                 {
                     setPage_(page);
                 }
@@ -81,7 +81,8 @@ namespace sm1000neo::audio
                 smooth::core::util::FixedBuffer<uint8_t, 1> result;
                 assert(read(i2cAddress_, reg, result));
                 
-                return result[0];
+                return result[0];*/
+                return 0;
             }
         private:
             uint8_t i2cAddress_;

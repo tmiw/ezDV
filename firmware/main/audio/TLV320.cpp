@@ -1,9 +1,6 @@
 #include "TLV320.h"
 #include "driver/gpio.h"
 
-// TLV320 MCLK frequency
-#define I2S_CLOCK_RATE_HZ (40548000)
-
 // TLV320 I2C address
 #define TLV320_I2C_ADDRESS (0b0011000)
 
@@ -30,7 +27,6 @@ namespace sm1000neo::audio
 {
     void TLV320::init()
     {
-#if 0
         // Initialize I2S first so MCLK is available to the TLV320.
         initializeI2S_();
         initializeI2C_();
@@ -47,7 +43,6 @@ namespace sm1000neo::audio
         
         // Enable audio
         tlv320EnableAudio_();
-#endif
         
         // Set up I2S read timer and start it.
         ESP_LOGI(CURRENT_LOG_TAG, "Starting I2S timer");
@@ -64,7 +59,7 @@ namespace sm1000neo::audio
         
         // Perform read from I2S. 
         size_t bytesRead = sizeof(tempData); //0;
-        //ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
+        ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
         
         // Send to Codec2
         AudioDataMessage leftChannelMessage;
@@ -98,7 +93,7 @@ namespace sm1000neo::audio
             }
             
             size_t bytesWritten = 0;
-            //ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
+            ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
         }
     }
     
@@ -111,15 +106,15 @@ namespace sm1000neo::audio
     
     void TLV320::initializeI2S_()
     {
-        /*i2s_config_t tlv320_i2s_config;
+        i2s_config_t tlv320_i2s_config;
         tlv320_i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX);
         tlv320_i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
         tlv320_i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
         tlv320_i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
         tlv320_i2s_config.dma_buf_count = 4;
         tlv320_i2s_config.dma_buf_len = 8;
-        tlv320_i2s_config.use_apll = true;
-        tlv320_i2s_config.fixed_mclk = I2S_CLOCK_RATE_HZ;
+        tlv320_i2s_config.use_apll = false;
+        tlv320_i2s_config.mclk_multiple = I2S_MCLK_MULTIPLE_256;
         
         // Request 8K sample rate @ 16 bits to reduce the amount of work we need
         // to do internally to up/downconvert.
@@ -135,7 +130,7 @@ namespace sm1000neo::audio
         pin_config.mck_io_num = TLV320_MCLK_GPIO;
         
         ESP_ERROR_CHECK(i2s_driver_install(I2S_NUM_0, &tlv320_i2s_config, 0, NULL));
-        ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));*/
+        ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));
     }
     
     void TLV320::initializeI2C_()
@@ -154,7 +149,7 @@ namespace sm1000neo::audio
     void TLV320::initializeResetGPIO_()
     {
         gpio_intr_disable(TLV320_RESET_GPIO);
-        //gpio_set_direction(TLV320_RESET_GPIO, GPIO_MODE_OUTPUT);
+        gpio_set_direction(TLV320_RESET_GPIO, GPIO_MODE_OUTPUT);
         gpio_set_pull_mode(TLV320_RESET_GPIO, GPIO_FLOATING);
         gpio_set_level(TLV320_RESET_GPIO, 1); // active low
     }
@@ -193,22 +188,42 @@ namespace sm1000neo::audio
         // DAC Processing Block = PRB_P1
         // MADC = 2
         // MDAC = 2
-        // ADC_CLK = MADC * ADC_MOD_CLK = 2 * 6.758 MHz = 13.516 MHz
-        // DAC_CLK = MDAC * DAC_MOD_CLK = 2 * 6.758 MHz = 13.516 MHz
+        // ADC_CLK = MADC * ADC_MOD_CLK = 2 * 1.024 MHz = 2.048 MHz
+        // DAC_CLK = MDAC * DAC_MOD_CLK = 2 * 1.024 MHz = 2.048 MHz
         // (MADC * AOSR) / 32 = 256 / 32 = 8 >= RC(R1) = 6
         // (MDAC * DOSR) / 32 = 256 / 32 = 8 >= RC(P1) = 8
         // ADC_CLK <= 55.296 MHz
         // DAC_CLK <= 55.296 MHz
         
-        // NADC = 3
-        // NDAC = 3
-        // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 40.548 MHz
-        // CODEC_CLKIN <= 50 MHz
-        // CODEC_CLKIN from MCLK
+        // NADC = 40
+        // NDAC = 40
+        // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 81.92 MHz
+        // CODEC_CLKIN <= 137MHz
+        // CODEC_CLKIN from PLL_CLK
         
-        // Set NADC and NDAC to 3 and power them up (Page 0, registers 11 and 18)
-        tlvDevice_->setConfigurationOption(0, 11, (1 << 7) | 3);
-        tlvDevice_->setConfigurationOption(0, 18, (1 << 7) | 3);
+        // MCLK is 2.048MHz (8000 * 256)
+        // PLL_CLK = MCLK * R * J.D/P
+        // 81.92 MHz = 2.048 * 1 * 40.0000 / 1
+        // P = 1, R = 1, J = 40, D = 0 
+        
+        // Set CODEC_CLKIN to PLL and use MCLK for PLL
+        // (Page 0, register 4)
+        tlvDevice_->setConfigurationOption(0, 4, (0 << 2) | 0b11);
+        
+        // Set PLL P = 1, R = 1, J = 40, D = 0, power up PLL
+        // (Page 0, registers 5-8)
+        tlvDevice_->setConfigurationOption(0, 6, 40); // J
+        tlvDevice_->setConfigurationOption(0, 7, 0); // D[MSB]
+        tlvDevice_->setConfigurationOption(0, 8, 0); // D[LSB]
+        tlvDevice_->setConfigurationOption(0, 5, (1 << 7) | (0b001 << 4) | (0b001)); // P, R, power up
+        
+        // Wait 10ms for PLL to become available
+        // (Section 2.7.1, "TLV320AIC3254 Application Reference Guide")
+        vTaskDelay(pdMS_TO_TICKS(10));
+        
+        // Set NADC and NDAC to 40 and power them up (Page 0, registers 11 and 18)
+        tlvDevice_->setConfigurationOption(0, 11, (1 << 7) | 40);
+        tlvDevice_->setConfigurationOption(0, 18, (1 << 7) | 40);
         
         // Set MADC and MDAC to 2 and power them up (Page 0, registers 12 and 19)
         tlvDevice_->setConfigurationOption(0, 12, (1 << 7) | 2);
@@ -227,9 +242,6 @@ namespace sm1000neo::audio
         // Set ADC_PRB and DAC_PRB to P1 and R1 (Page 0, registers 60-61).
         tlvDevice_->setConfigurationOption(0, 60, 1);
         tlvDevice_->setConfigurationOption(0, 61, 1);
-        
-        // Set CODEC_CLKIN to MCLK (Page 0, register 4).
-        tlvDevice_->setConfigurationOption(0, 4, 0);
     }
     
     void TLV320::tlv320ConfigurePowerAndRouting_()
@@ -294,11 +306,12 @@ namespace sm1000neo::audio
         // Wait until gain fully applied
         // (Page 1, register 63)
         uint8_t gainRegVal = 0;
+        int count = 0;
         do
         {
             vTaskDelay(pdMS_TO_TICKS(1));
             gainRegVal = tlvDevice_->getConfigurationOption(1, 63);
-        } while ((gainRegVal & (11 << 6)) != 0);
+        } while ((count++ < 50) && (gainRegVal & (11 << 6)) != 0);
     }
     
     void TLV320::tlv320EnableAudio_()

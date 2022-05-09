@@ -35,7 +35,7 @@ namespace sm1000neo::radio::ptt
         virtual void setPTT_(bool pttState) = 0;
         
     private:
-        std::weak_ptr<PTTQueue> queue_;
+        std::shared_ptr<PTTQueue> queue_;
     };
 
 }
