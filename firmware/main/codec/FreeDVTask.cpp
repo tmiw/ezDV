@@ -1,11 +1,14 @@
 #include "FreeDVTask.h"
+#include "../ui/Messaging.h"
 
 #define CURRENT_LOG_TAG "FreeDVTask"
 
 namespace sm1000neo::codec   
 {
     void FreeDVTask::event(const smooth::core::timer::TimerExpiredEvent& event)
-    {        
+    {
+        bool syncLed = false;
+        
         if (isTransmitting_)
         {
             int numSpeechSamples = freedv_get_n_speech_samples(dv_);
@@ -29,10 +32,23 @@ namespace sm1000neo::codec
             {
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
                 codec2_fifo_write(outputFifo_, outputBuf, nout);
-                nin = freedv_nin(dv_);
+                nin = freedv_nin(dv_);               
             }
+            
+            syncLed = freedv_get_sync(dv_) > 0;
         }
         
+        // Send UI message to update sync LED if changed
+        if (syncLed != sync_)
+        {
+            sync_ = syncLed;
+            
+            sm1000neo::ui::UserInterfaceControlMessage uiMessage;
+            uiMessage.action = sm1000neo::ui::UserInterfaceControlMessage::UPDATE_SYNC;
+            uiMessage.value = syncLed;
+            sm1000neo::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
+        }
+                
         sm1000neo::audio::AudioDataMessage result;
         result.channel = isTransmitting_ ? RADIO_CHANNEL : USER_CHANNEL;
         while(codec2_fifo_read(outputFifo_, result.audioData, NUM_SAMPLES_PER_AUDIO_MESSAGE) == 0)

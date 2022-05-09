@@ -27,6 +27,7 @@ namespace sm1000neo::codec
             , inputFifo_(nullptr)
             , outputFifo_(nullptr)
             , dv_(nullptr)
+            , sync_(false)
             , timerExpiredQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(5, *this, *this))
             , audioDataInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::audio::AudioDataMessage>::create(25, *this, *this))
             , changeModeInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangeModeMessage>::create(2, *this, *this))
@@ -53,6 +54,7 @@ namespace sm1000neo::codec
         struct FIFO* inputFifo_;
         struct FIFO* outputFifo_;
         struct freedv* dv_;
+        bool sync_;
         
         smooth::core::timer::TimerOwner codecTimer_;
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;

@@ -1,6 +1,8 @@
 #include "UserInterfaceTask.h"
 #include "../codec/Messaging.h"
 
+#define CURRENT_LOG_TAG "UserInterfaceTask"
+
 namespace sm1000neo::ui
 {
     
@@ -8,6 +10,7 @@ namespace sm1000neo::ui
     {
         if (event.action == UserInterfaceControlMessage::UPDATE_SYNC)
         {
+            ESP_LOGI(CURRENT_LOG_TAG, "Sync is now %d", event.value);
             syncLed_.set(event.value);
         }
         // others TBD
@@ -20,6 +23,7 @@ namespace sm1000neo::ui
         switch(event.get_io())
         {
             case GPIO_PTT_BUTTON:
+                ESP_LOGI(CURRENT_LOG_TAG, "User PTT button is %d", state);
                 pttLed_.set(state);
                 pttNPN_.set(state);
                 
