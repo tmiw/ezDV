@@ -4,6 +4,7 @@ set(SOURCES
     "audio/TLV320.h"
     "codec/FreeDVTask.cpp"
     "codec/FreeDVTask.h"
+    "radio/icom/PacketTypes.cpp"
     "ui/UserInterfaceTask.cpp"
     "ui/UserInterfaceTask.h"
     "util/NamedQueue.cpp"

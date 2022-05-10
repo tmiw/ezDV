@@ -22,4 +22,4 @@ idf.py -p /dev/ttyxxx0 flash monitor
 ## License
 
 This project is subject to the terms of the [TAPR Open Hardware License v1.0](https://tapr.org/the-tapr-open-hardware-license/) (schematics, 
-other hardware documentation) and TBD (firmware).
+other hardware documentation) and [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) (firmware).

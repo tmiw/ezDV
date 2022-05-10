@@ -58,7 +58,7 @@ namespace sm1000neo::audio
         memset(tempData, 0, sizeof(tempData));
         
         // Perform read from I2S. 
-        size_t bytesRead = sizeof(tempData); //0;
+        size_t bytesRead = sizeof(tempData);
         ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, pdMS_TO_TICKS(I2S_TIMER_INTERVAL_MS/2)));
         
         // Send to Codec2
