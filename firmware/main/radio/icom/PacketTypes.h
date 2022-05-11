@@ -22,7 +22,7 @@ namespace sm1000neo::radio::icom
     #define TOKEN_RENEWAL 60000
     #define PING_PERIOD 500
     #define IDLE_PERIOD 100
-    #define AREYOUTHERE_PERIOD 500
+    #define AREYOUTHERE_PERIOD 100
     #define WATCHDOG_PERIOD 500             
     #define RETRANSMIT_PERIOD 100           // How often to attempt retransmit
     #define LOCK_PERIOD 10                  // How long to try to lock mutex (ms)
@@ -480,6 +480,18 @@ namespace sm1000neo::radio::icom
         static IcomPacket CreateLoginPacket(uint16_t authSeq, uint32_t ourId, uint32_t theirId, std::string username, std::string password, std::string computerName);
         static IcomPacket CreateTokenAckPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
         static IcomPacket CreatePingPacket(uint16_t pingSeq, uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreatePingAckPacket(uint16_t theirPingSeq, uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreateIdlePacket(uint16_t ourSeq, uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t> packetIdsToRetransmit);
+        static IcomPacket CreateTokenRenewPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreateTokenRemovePacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreateDisconnectPacket(uint32_t ourId, uint32_t theirId);
+        
+        // Used in Are You Here state for checking for I Am Here response
+        bool isIAmHere(uint32_t& theirId);
+        
+        // Used in Are You Ready state for checking I Am Ready response
+        bool isIAmReady();
         
     private:
         char* rawPacket_;
@@ -492,6 +504,8 @@ namespace sm1000neo::radio::icom
         : public smooth::core::network::IPacketAssembly<IcomProtocol, IcomPacket>
     {
     public:
+        using packet_type = IcomPacket;
+        
         IcomProtocol();
         virtual ~IcomProtocol() = default;
         

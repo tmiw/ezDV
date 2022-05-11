@@ -3,6 +3,7 @@
 #include <cstring>
 #include <random>
 #include "PacketTypes.h"
+#include "esp_log.h"
 
 namespace sm1000neo::radio::icom
 {
@@ -92,19 +93,23 @@ namespace sm1000neo::radio::icom
     
     int IcomProtocol::get_wanted_amount(IcomPacket& packet)
     {
-        if (*(uint32_t*)packet.rawPacket_ == 0)
+        int result = 0;
+        if (amountRead_ > 0)
         {
-            // Should return MAX_PACKET_SIZE if we haven't read anything yet.
-            return packet.size_;
+            result = 0;
+        }
+        else
+        {
+            result = packet.size_;
         }
         
-        // Otherwise, as UDP returns discrete datagrams, we shouldn't need to
-        // read any more for this packet.
-        return 0;
+        ESP_LOGI("IcomProtocol", "Wanted %d bytes from the socket", result);
+        return result;
     }
     
     void IcomProtocol::data_received(IcomPacket& packet, int length)
     {
+        ESP_LOGI("IcomProtocol", "Received %d bytes", length);
         amountRead_ += length;
         
         // To reduce the amount of RAM we're using, we create
@@ -125,7 +130,7 @@ namespace sm1000neo::radio::icom
     bool IcomProtocol::is_complete(IcomPacket& packet) const
     {
         // We're complete if we've read anything at all.
-        return !(*(uint32_t*)packet.rawPacket_ == 0);
+        return amountRead_ > 0;
     }
     
     bool IcomProtocol::is_error()
@@ -203,7 +208,7 @@ namespace sm1000neo::radio::icom
     {
         IcomPacket result(sizeof(token_packet));
         auto packet = result.getTypedPacket<token_packet>();
-        packet->len = sizeof(login_packet);
+        packet->len = sizeof(token_packet);
         
         packet->sentid = ourId;
         packet->rcvdid = theirId;
@@ -223,13 +228,149 @@ namespace sm1000neo::radio::icom
         
         IcomPacket result(sizeof(ping_packet));
         auto packet = result.getTypedPacket<ping_packet>();
-        packet->len = sizeof(control_packet);
+        packet->len = sizeof(ping_packet);
         packet->type = packetType;
         packet->seq = pingSeq;
         packet->sentid = ourId;
         packet->rcvdid = theirId;
         packet->time = time(NULL); // wfview used milliseconds since start of day, not sure that matters
         return result;
+    }
+    
+    IcomPacket IcomPacket::CreatePingAckPacket(uint16_t theirPingSeq, uint32_t ourId, uint32_t theirId)
+    {
+        constexpr uint16_t packetType = 0x07;
+        
+        IcomPacket result(sizeof(ping_packet));
+        auto packet = result.getTypedPacket<ping_packet>();
+        packet->len = sizeof(ping_packet);
+        packet->type = packetType;
+        packet->seq = theirPingSeq;
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        packet->time = time(NULL); // wfview used milliseconds since start of day, not sure that matters
+        packet->reply = 0x1;
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateIdlePacket(uint16_t ourSeq, uint32_t ourId, uint32_t theirId)
+    {
+        constexpr uint16_t packetType = 0x00;
+        
+        IcomPacket result(sizeof(control_packet));
+        auto packet = result.getTypedPacket<control_packet>();
+        packet->len = sizeof(control_packet);
+        packet->type = packetType;
+        packet->seq = ourSeq;
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t> packetIdsToRetransmit)
+    {
+        constexpr uint16_t packetType = 0x01;
+        
+        size_t numBytesAtEnd = sizeof(uint16_t) * (packetIdsToRetransmit.size() - 1);
+        IcomPacket result(sizeof(control_packet) + numBytesAtEnd);
+        auto packet = result.getTypedPacket<control_packet>();
+        packet->len = sizeof(control_packet) + numBytesAtEnd;
+        packet->type = packetType;
+        packet->seq = 0; // no sequence number for retransmit packets by default
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        
+        // If only one packet to resend, we can use the sequence number field to store the ID.
+        if (packetIdsToRetransmit.size() == 1)
+        {
+            packet->seq = ToBigEndian(packetIdsToRetransmit[0]);
+        }
+        else
+        {
+            uint16_t* pos = (uint16_t*)((uint8_t*)result.get_data() + sizeof(control_packet));
+            for (auto& id : packetIdsToRetransmit)
+            {
+                *pos++ = ToBigEndian(id);
+            }
+        }
+        
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateTokenRenewPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId)
+    {
+        IcomPacket result(sizeof(token_packet));
+        auto packet = result.getTypedPacket<token_packet>();
+        packet->len = sizeof(token_packet);
+        
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        packet->payloadsize = ToBigEndian((uint16_t)(sizeof(token_packet) - 0x10));
+        packet->requesttype = 0x05;
+        packet->requestreply = 0x01;
+        packet->innerseq = ToBigEndian(authSeq);
+        packet->tokrequest = tokenRequest;
+        packet->token = token;
+
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateTokenRemovePacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId)
+    {
+        IcomPacket result(sizeof(token_packet));
+        auto packet = result.getTypedPacket<token_packet>();
+        packet->len = sizeof(token_packet);
+        
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        packet->payloadsize = ToBigEndian((uint16_t)(sizeof(token_packet) - 0x10));
+        packet->requesttype = 0x01;
+        packet->requestreply = 0x01;
+        packet->innerseq = ToBigEndian(authSeq);
+        packet->tokrequest = tokenRequest;
+        packet->token = token;
+
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateDisconnectPacket(uint32_t ourId, uint32_t theirId)
+    {
+        constexpr uint16_t packetType = 0x05;
+        
+        IcomPacket result(sizeof(control_packet));
+        auto packet = result.getTypedPacket<control_packet>();
+        packet->len = sizeof(control_packet);
+        packet->type = packetType;
+        packet->seq = 0; // always the first packet, so no need for a sequence number
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        
+        return result;
+    }
+    
+    bool IcomPacket::isIAmHere(uint32_t& theirId)
+    {
+        if (size_ == CONTROL_SIZE)
+        {
+            auto typedPacket = getTypedPacket<control_packet>();
+            theirId = typedPacket->rcvdid;
+            
+            return typedPacket->type == 0x04;
+        }
+        
+        return false;
+    }
+    
+    bool IcomPacket::isIAmReady()
+    {
+        if (size_ == CONTROL_SIZE)
+        {
+            auto typedPacket = getTypedPacket<control_packet>();            
+            return typedPacket->type == 0x06;
+        }
+        
+        return false;
     }
     
     void IcomPacket::EncodePassword_(std::string str, char* output)

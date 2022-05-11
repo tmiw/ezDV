@@ -4,6 +4,7 @@
 #include "smooth/core/Application.h"
 #include "audio/TLV320.h"
 #include "codec/FreeDVTask.h"
+#include "radio/icom/IcomRadioTask.h"
 #include "ui/UserInterfaceTask.h"
 
 namespace sm1000neo
@@ -19,6 +20,7 @@ namespace sm1000neo
         audio::TLV320 soundCodec;
         codec::FreeDVTask freedvTask;
         ui::UserInterfaceTask uiTask;
+        radio::icom::IcomRadioTask radioTask;
     };
 }
 
