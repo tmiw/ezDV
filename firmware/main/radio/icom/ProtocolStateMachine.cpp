@@ -10,13 +10,10 @@ namespace sm1000neo::radio::icom
         , theirIdentifier_(0)
         , pingSequenceNumber_(0)
         , authSequenceNumber_(0)
-        , sendSequenceNumber_(0)
+        , sendSequenceNumber_(1) // Start sequence at 1.
+        , localIp_(0)
     {
-        // Generate random four byte identifier. This is sent in every packet.
-        std::random_device r;
-        std::default_random_engine generator(r());
-        std::uniform_int_distribution<uint32_t> uniform_dist(0, UINT32_MAX);
-        ourIdentifier_ = uniform_dist(generator);
+        // empty
     }
     
     ProtocolStateMachine::StateMachineType ProtocolStateMachine::getStateMachineType() const
@@ -60,13 +57,35 @@ namespace sm1000neo::radio::icom
     void ProtocolStateMachine::sendLoginPacket()
     {
         auto packet = IcomPacket::CreateLoginPacket(authSequenceNumber_++, ourIdentifier_, theirIdentifier_, username_, password_, "sm1000neo");
+        auto typedPacket = packet.getConstTypedPacket<login_packet>();
+        
+        setOurTokenRequest(typedPacket->tokrequest);
+        sendTracked(packet);
+    }
+    
+    void ProtocolStateMachine::sendTokenAckPacket(uint32_t theirToken)
+    {
+        theirToken_ = theirToken;
+        
+        auto packet = IcomPacket::CreateTokenAckPacket(authSequenceNumber_++, ourTokenRequest_, theirToken, ourIdentifier_, theirIdentifier_);
+        sendTracked(packet);
+    }
+    
+    void ProtocolStateMachine::sendTokenRenewPacket()
+    {
+        auto packet = IcomPacket::CreateTokenRenewPacket(authSequenceNumber_++, ourTokenRequest_, theirToken_, ourIdentifier_, theirIdentifier_);
         sendTracked(packet);
     }
     
     void ProtocolStateMachine::sendTracked(IcomPacket& packet)
     {
-        auto typedPacket = packet.getTypedPacket<control_packet>();
-        typedPacket->seq = ToBigEndian(sendSequenceNumber_++);
+        uint8_t* rawPacket = const_cast<uint8_t*>(packet.get_data());
+        
+        // We need to manually force the sequence number into the packet because
+        // simply treating it like a control_packet doesn't work.
+        rawPacket[6] = sendSequenceNumber_ & 0xFF;
+        rawPacket[7] = (sendSequenceNumber_ >> 8) & 0xFF;
+        sendSequenceNumber_++;
         
         sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), packet);
         socket_->send(packet);
@@ -86,7 +105,14 @@ namespace sm1000neo::radio::icom
                                                                                    *this,
                                                                                    std::make_unique<IcomProtocol>());
                                                                                    
-        socket_ = UdpSocket<IcomProtocol, IcomPacket>::create(buffer_);
+        // Generate our identifier by concatenating the last two octets of our IP
+        // with the port we're using to connect. We bind to this port in UdpSocket prior to connection.
+        ourIdentifier_ = 
+            (((localIp_ >> 8) & 0xFF) << 24) | 
+            ((localIp_ & 0xFF) << 16) |
+            (controlPort & 0xFFFF);
+        
+        socket_ = UdpSocket<IcomProtocol, IcomPacket>::create(buffer_, std::chrono::milliseconds(0), std::chrono::milliseconds(0));
         socket_->start(address_);
     }
     
@@ -99,8 +125,13 @@ namespace sm1000neo::radio::icom
     { 
         if (event.is_connected())
         {
-            set_state(new (this) AreYouThereState(*this));
+            set_state(new AreYouThereState(*this));
         }
+    }
+    
+    void ProtocolStateMachine::event(const smooth::core::network::event::TransmitBufferEmptyEvent& event)
+    {
+        get_state()->event(event);
     }
     
     // 1. Control: Send Are You There message.
@@ -111,13 +142,16 @@ namespace sm1000neo::radio::icom
         // Send packet.
         auto packet = IcomPacket::CreateAreYouTherePacket(sm_.getOurIdentifier(), sm_.getTheirIdentifier());
         sm_.sendUntracked(packet);
-        
+    }
+    
+    void AreYouThereState::event(const smooth::core::network::event::TransmitBufferEmptyEvent& event)
+    {
         // Start timer to trigger resend if we don't get any response from the radio.
         areYouThereTimerExpiredQueue_ =
             smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(1, sm_.getTask(), *this);
         areYouThereRetransmitTimer_ = 
             smooth::core::timer::Timer::create(
-                    1, areYouThereTimerExpiredQueue_, true,
+                    1, areYouThereTimerExpiredQueue_, false,
                     std::chrono::milliseconds(AREYOUTHERE_PERIOD));
         areYouThereRetransmitTimer_->start();
     }
@@ -129,7 +163,7 @@ namespace sm1000neo::radio::icom
         auto packet = IcomPacket::CreateAreYouTherePacket(sm_.getOurIdentifier(), sm_.getTheirIdentifier());
         sm_.sendUntracked(packet);
     }
-    
+        
     void AreYouThereState::packetReceived(IcomPacket& packet)
     {
         uint32_t theirId = 0;
@@ -157,10 +191,13 @@ namespace sm1000neo::radio::icom
     void AreYouReadyState::enter_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
+        
+        auto packet = IcomPacket::CreateAreYouReadyPacket(sm_.getOurIdentifier(), sm_.getTheirIdentifier());
+        sm_.sendUntracked(packet);
     }
         
     void AreYouReadyState::packetReceived(IcomPacket& packet)
-    {
+    {    
         if (packet.isIAmReady())
         {
             ESP_LOGI(sm_.get_name().c_str(), "Received I Am Ready");
@@ -178,15 +215,118 @@ namespace sm1000neo::radio::icom
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
         sm_.sendLoginPacket();
+        
+        // Start ping and idle timers at this point. Idle will be stopped/started
+        // whenever we send something.
+        timerExpiredQueue_ =
+            smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(5, sm_.getTask(), *this);
+        pingTimer_ = 
+            smooth::core::timer::Timer::create(
+                    1, timerExpiredQueue_, true,
+                    std::chrono::milliseconds(PING_PERIOD));
+        idleTimer_ = 
+            smooth::core::timer::Timer::create(
+                    2, timerExpiredQueue_, true,
+                    std::chrono::milliseconds(IDLE_PERIOD));
+        tokenRenewTimer_ = 
+            smooth::core::timer::Timer::create(
+                    3, timerExpiredQueue_, true,
+                    std::chrono::milliseconds(TOKEN_RENEWAL));
+                    
+        pingTimer_->start();
+        idleTimer_->start();
     }
         
     void LoginState::packetReceived(IcomPacket& packet)
     {
-       
+        std::string connType;
+        bool isPasswordIncorrect;
+        uint16_t tokenRequest;
+        uint32_t radioToken;
+        uint16_t ourTokenReq = sm_.getOurTokenRequest();
+        uint16_t pingSequence;
+        bool packetSent;
+        
+        if (packet.isLoginResponse(connType, isPasswordIncorrect, tokenRequest, radioToken))
+        {
+            ESP_LOGI(sm_.get_name().c_str(), "Connection type: %s", connType.c_str());
+            ESP_LOGI(sm_.get_name().c_str(), "Password incorrect: %d", isPasswordIncorrect);
+            ESP_LOGI(sm_.get_name().c_str(), "Token req: %x, our token req: %x, radio token: %x", tokenRequest, ourTokenReq, radioToken);
+            
+            if (!isPasswordIncorrect && tokenRequest == ourTokenReq)
+            {
+                ESP_LOGI(sm_.get_name().c_str(), "Login successful, acknowledging token");
+                sm_.sendTokenAckPacket(radioToken);
+                packetSent = true;
+                
+                // Begin renewing token every 60 seconds.
+                tokenRenewTimer_->start();
+            }
+            else
+            {
+                ESP_LOGE(sm_.get_name().c_str(), "Password incorrect!");
+            }
+        }
+        else if (packet.isPingRequest(pingSequence))
+        {
+            // Respond to ping requests
+            ESP_LOGI(sm_.get_name().c_str(), "Got ping, seq %d", pingSequence);
+            auto packet = IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier());
+            sm_.sendUntracked(packet);
+            packetSent = true;
+        }
+        else if (packet.isPingResponse(pingSequence))
+        {
+            // Got ping response, increment to next ping sequence number.
+            ESP_LOGI(sm_.get_name().c_str(), "Got ping ack, seq %d", pingSequence);
+            sm_.incrementPingSequence(pingSequence);
+        }
+        
+        if (packetSent)
+        {
+            // Recycle idle timer as we sent something non-idle.
+            idleTimer_->stop();
+            idleTimer_->start();
+        }
+    }
+    
+    void LoginState::event(const smooth::core::timer::TimerExpiredEvent& event)
+    {
+        switch (event.get_id())
+        {
+            case 1:
+            {
+                // Ping timer fired. Send ping request.
+                ESP_LOGI(sm_.get_name().c_str(), "Send ping, seq %d", sm_.getCurrentPingSequence());
+                auto packet = IcomPacket::CreatePingPacket(sm_.getCurrentPingSequence(), sm_.getOurIdentifier(), sm_.getTheirIdentifier());
+                sm_.sendUntracked(packet);
+                idleTimer_->stop();
+                idleTimer_->start();
+                break;
+            }
+            case 2:
+            {
+                // Idle timer fired. Send control packet with seq = 0
+                auto packet = IcomPacket::CreateIdlePacket(0, sm_.getOurIdentifier(), sm_.getTheirIdentifier());
+                sm_.sendUntracked(packet);
+                break;
+            }
+            case 3:
+            {
+                // Token renewal time
+                ESP_LOGI(sm_.get_name().c_str(), "Renewing token");
+                sm_.sendTokenRenewPacket();
+                break;
+            }
+        }
     }
     
     void LoginState::leave_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Leaving state");
+        
+        idleTimer_->stop();
+        pingTimer_->stop();
+        tokenRenewTimer_->stop();
     }
 }

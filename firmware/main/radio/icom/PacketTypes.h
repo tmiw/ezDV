@@ -22,7 +22,7 @@ namespace sm1000neo::radio::icom
     #define TOKEN_RENEWAL 60000
     #define PING_PERIOD 500
     #define IDLE_PERIOD 100
-    #define AREYOUTHERE_PERIOD 100
+    #define AREYOUTHERE_PERIOD 500
     #define WATCHDOG_PERIOD 500             
     #define RETRANSMIT_PERIOD 100           // How often to attempt retransmit
     #define LOCK_PERIOD 10                  // How long to try to lock mutex (ms)
@@ -54,40 +54,24 @@ namespace sm1000neo::radio::icom
 
     inline uint16_t ToBigEndian(uint16_t val)
     {
-        uint16_t ret = 0;
-        uint8_t* valPtr = (uint8_t*)&val;
-        uint8_t* retPtr = (uint8_t*)&ret;
-        
-        retPtr[0] = valPtr[3];
-        retPtr[1] = valPtr[2];
-        retPtr[2] = valPtr[1];
-        retPtr[3] = valPtr[0];
-        
-        return ret;
+        return (val << 8) | (val >> 8);
     }
     
     inline uint16_t ToLittleEndian(uint16_t val)
     {
-        // ESP32 is little endian, pass through.
-        return val;
+        return (val << 8) | (val >> 8);
     }
     
     inline uint32_t ToBigEndian(uint32_t val)
     {
-        uint32_t ret = 0;
-        uint8_t* valPtr = (uint8_t*)&val;
-        uint8_t* retPtr = (uint8_t*)&ret;
-        
-        retPtr[0] = valPtr[3];
-        retPtr[1] = valPtr[0];
-        
-        return ret;
+        val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF); 
+        return (val << 16) | (val >> 16);
     }
     
     inline uint32_t ToLittleEndian(uint32_t val)
     {
-        // ESP32 is little endian, pass through.
-        return val;
+        val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF); 
+        return (val << 16) | (val >> 16);
     }
     
     // 0x10 length control packet (connect/disconnect/idle.)
@@ -472,6 +456,9 @@ namespace sm1000neo::radio::icom
         template<typename ActualPacketType>
         ActualPacketType* getTypedPacket();
         
+        template<typename ActualPacketType>
+        const ActualPacketType* getConstTypedPacket();
+        
         IcomPacket& operator=(const IcomPacket& packet);
         IcomPacket& operator=(IcomPacket&& packet);
         
@@ -492,6 +479,13 @@ namespace sm1000neo::radio::icom
         
         // Used in Are You Ready state for checking I Am Ready response
         bool isIAmReady();
+        
+        // Used in Login state to get login response
+        bool isLoginResponse(std::string& connectionType, bool& isInvalidPassword, uint16_t& tokenRequest, uint32_t& radioToken);
+        
+        // Used in Login state to check for ping requests and responses
+        bool isPingRequest(uint16_t& pingSequence);
+        bool isPingResponse(uint16_t& pingSequence);
         
     private:
         char* rawPacket_;
@@ -525,6 +519,12 @@ namespace sm1000neo::radio::icom
     ActualPacketType* IcomPacket::getTypedPacket()
     {
         return (ActualPacketType*)rawPacket_;
+    }
+    
+    template<typename ActualPacketType>
+    const ActualPacketType* IcomPacket::getConstTypedPacket()
+    {
+        return (const ActualPacketType*)rawPacket_;
     }
 }
 

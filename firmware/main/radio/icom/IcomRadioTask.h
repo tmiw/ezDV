@@ -19,6 +19,11 @@ namespace sm1000neo::radio::icom
         
         virtual ~IcomRadioTask() = default;
         
+        void setLocalIp(uint32_t ip)
+        {
+            controlChannelSM_.setLocalIp(ip);
+        }
+        
     protected:
         virtual void init();
         

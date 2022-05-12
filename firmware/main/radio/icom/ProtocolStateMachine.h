@@ -36,7 +36,15 @@ namespace sm1000neo::radio::icom
         
         virtual void packetReceived(IcomPacket& packet) { }
         
-        virtual void event(const smooth::core::network::event::DataAvailableEvent<IcomProtocol>& event) { }
+        virtual void event(const smooth::core::network::event::DataAvailableEvent<IcomProtocol>& event) 
+        { 
+            IcomPacket packet;
+            if (event.get(packet))
+            {
+                packetReceived(packet);
+            }
+        }
+        virtual void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) { }
         
     protected:
         ProtocolStateMachine& sm_;
@@ -67,7 +75,7 @@ namespace sm1000neo::radio::icom
         
         void event(const smooth::core::network::event::DataAvailableEvent<IcomProtocol>& event) override;
         
-        void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) override { }
+        void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) override;
         void event(const smooth::core::network::event::ConnectionStatusEvent& event) override;
         
         smooth::core::Task& getTask() { return task_; }        
@@ -75,11 +83,30 @@ namespace sm1000neo::radio::icom
         uint32_t getTheirIdentifier() const { return theirIdentifier_; }
         void setTheirIdentifier(uint32_t id) { theirIdentifier_ = id; }
         
+        void setOurTokenRequest(uint16_t token) { ourTokenRequest_ = token; }
+        uint16_t getOurTokenRequest() const { return ourTokenRequest_; }
+        
         void sendUntracked(IcomPacket& packet);
         void sendPing();
         void sendLoginPacket();
+        void sendTokenAckPacket(uint32_t theirToken);
+        void sendTokenRenewPacket();
         void sendTracked(IcomPacket& packet);
         
+        void setLocalIp(uint32_t ip)
+        {
+            localIp_ = ip;
+        }
+        
+        void incrementPingSequence(uint16_t pingSeq)
+        {
+            pingSequenceNumber_ = pingSeq + 1;
+        }
+        
+        uint16_t getCurrentPingSequence() const 
+        {
+            return pingSequenceNumber_;
+        }
     private:
         StateMachineType smType_;
         smooth::core::Task& task_;
@@ -96,6 +123,10 @@ namespace sm1000neo::radio::icom
         
         std::string username_;
         std::string password_;
+        uint32_t localIp_;
+        
+        uint32_t ourTokenRequest_;
+        uint32_t theirToken_;
     };
     
     class AreYouThereState 
@@ -119,8 +150,9 @@ namespace sm1000neo::radio::icom
             virtual void enter_state() override;
             virtual void leave_state() override;
             
-            void event(const smooth::core::timer::TimerExpiredEvent& event) override;
+            virtual void event(const smooth::core::timer::TimerExpiredEvent& event) override;
             virtual void packetReceived(IcomPacket& packet) override;
+            virtual void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) override;
             
         private:
             smooth::core::timer::TimerOwner areYouThereRetransmitTimer_;
@@ -152,6 +184,7 @@ namespace sm1000neo::radio::icom
     
     class LoginState 
         : public BaseState
+        , public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>
     {
         public:
             explicit LoginState(ProtocolStateMachine& fsm)
@@ -171,6 +204,14 @@ namespace sm1000neo::radio::icom
             virtual void leave_state() override;
             
             virtual void packetReceived(IcomPacket& packet) override;
+            
+            virtual void event(const smooth::core::timer::TimerExpiredEvent& event) override;
+            
+        private:
+            smooth::core::timer::TimerOwner pingTimer_;
+            smooth::core::timer::TimerOwner idleTimer_;
+            smooth::core::timer::TimerOwner tokenRenewTimer_;
+            std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
     };
 }
 

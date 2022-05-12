@@ -28,6 +28,7 @@ namespace sm1000neo
         wifi.connect_to_ap();
         
         vTaskDelay(pdMS_TO_TICKS(10000));
+        radioTask.setLocalIp(wifi.get_local_ip());
         radioTask.start();
     }
 }

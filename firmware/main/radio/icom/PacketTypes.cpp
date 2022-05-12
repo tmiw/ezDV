@@ -53,6 +53,7 @@ namespace sm1000neo::radio::icom
     
     int IcomPacket::get_send_length()
     {
+        //ESP_LOGI("IcomPacket", "Sending packet of size %d", size_);
         return size_;
     }
     
@@ -93,23 +94,15 @@ namespace sm1000neo::radio::icom
     
     int IcomProtocol::get_wanted_amount(IcomPacket& packet)
     {
-        int result = 0;
-        if (amountRead_ > 0)
-        {
-            result = 0;
-        }
-        else
-        {
-            result = packet.size_;
-        }
+        int result = MAX_PACKET_SIZE;
         
-        ESP_LOGI("IcomProtocol", "Wanted %d bytes from the socket", result);
+        //ESP_LOGI("IcomProtocol", "Wanted %d bytes from the socket", result);
         return result;
     }
     
     void IcomProtocol::data_received(IcomPacket& packet, int length)
     {
-        ESP_LOGI("IcomProtocol", "Received %d bytes", length);
+        //ESP_LOGI("IcomProtocol", "Received %d bytes", length);
         amountRead_ += length;
         
         // To reduce the amount of RAM we're using, we create
@@ -130,7 +123,7 @@ namespace sm1000neo::radio::icom
     bool IcomProtocol::is_complete(IcomPacket& packet) const
     {
         // We're complete if we've read anything at all.
-        return amountRead_ > 0;
+        return true;
     }
     
     bool IcomProtocol::is_error()
@@ -150,6 +143,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateAreYouTherePacket(uint32_t ourId, uint32_t theirId)
     {
+        static_assert(CONTROL_SIZE == sizeof(control_packet));
         constexpr uint16_t packetType = 0x03;
         
         IcomPacket result(sizeof(control_packet));
@@ -164,7 +158,8 @@ namespace sm1000neo::radio::icom
     }
     
     IcomPacket IcomPacket::CreateAreYouReadyPacket(uint32_t ourId, uint32_t theirId)
-    {
+    {    
+        static_assert(CONTROL_SIZE == sizeof(control_packet));
         constexpr uint16_t packetType = 0x06;
         
         IcomPacket result(sizeof(control_packet));
@@ -180,6 +175,8 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateLoginPacket(uint16_t authSeq, uint32_t ourId, uint32_t theirId, std::string username, std::string password, std::string computerName)
     {
+        static_assert(LOGIN_SIZE == sizeof(login_packet));
+        
         // Generate random token
         std::random_device r;
         std::default_random_engine generator(r());
@@ -191,7 +188,12 @@ namespace sm1000neo::radio::icom
         packet->len = sizeof(login_packet);
         packet->sentid = ourId;
         packet->rcvdid = theirId;
-        packet->payloadsize = ToBigEndian((uint16_t)(sizeof(login_packet) - 0x10)); // ?? why subtract 16?
+        
+        // Payload size needs to be manually forced to be correctly sent. ESP issue??
+        uint16_t tmp = ToBigEndian((uint16_t)(sizeof(login_packet) - 0x10)); // ?? why subtract 16?
+        ((uint8_t*)packet)[0x12] = *((uint8_t*)&tmp);
+        ((uint8_t*)packet)[0x13] = *((uint8_t*)&tmp + 1);
+
         packet->requesttype = 0x00;
         packet->requestreply = 0x01;
         packet->innerseq = ToBigEndian(authSeq);
@@ -206,6 +208,8 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateTokenAckPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(TOKEN_SIZE == sizeof(token_packet));
+        
         IcomPacket result(sizeof(token_packet));
         auto packet = result.getTypedPacket<token_packet>();
         packet->len = sizeof(token_packet);
@@ -224,6 +228,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreatePingPacket(uint16_t pingSeq, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(PING_SIZE == sizeof(ping_packet));
         constexpr uint16_t packetType = 0x07;
         
         IcomPacket result(sizeof(ping_packet));
@@ -239,6 +244,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreatePingAckPacket(uint16_t theirPingSeq, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(PING_SIZE == sizeof(ping_packet));
         constexpr uint16_t packetType = 0x07;
         
         IcomPacket result(sizeof(ping_packet));
@@ -255,6 +261,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateIdlePacket(uint16_t ourSeq, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(CONTROL_SIZE == sizeof(control_packet));
         constexpr uint16_t packetType = 0x00;
         
         IcomPacket result(sizeof(control_packet));
@@ -270,6 +277,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t> packetIdsToRetransmit)
     {
+        static_assert(CONTROL_SIZE == sizeof(control_packet));
         constexpr uint16_t packetType = 0x01;
         
         size_t numBytesAtEnd = sizeof(uint16_t) * (packetIdsToRetransmit.size() - 1);
@@ -300,6 +308,8 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateTokenRenewPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(TOKEN_SIZE == sizeof(token_packet));
+        
         IcomPacket result(sizeof(token_packet));
         auto packet = result.getTypedPacket<token_packet>();
         packet->len = sizeof(token_packet);
@@ -318,6 +328,8 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateTokenRemovePacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId)
     {
+        static_assert(TOKEN_SIZE == sizeof(token_packet));
+        
         IcomPacket result(sizeof(token_packet));
         auto packet = result.getTypedPacket<token_packet>();
         packet->len = sizeof(token_packet);
@@ -336,6 +348,7 @@ namespace sm1000neo::radio::icom
     
     IcomPacket IcomPacket::CreateDisconnectPacket(uint32_t ourId, uint32_t theirId)
     {
+        static_assert(CONTROL_SIZE == sizeof(control_packet));
         constexpr uint16_t packetType = 0x05;
         
         IcomPacket result(sizeof(control_packet));
@@ -354,7 +367,7 @@ namespace sm1000neo::radio::icom
         if (size_ == CONTROL_SIZE)
         {
             auto typedPacket = getTypedPacket<control_packet>();
-            theirId = typedPacket->rcvdid;
+            theirId = typedPacket->sentid;
             
             return typedPacket->type == 0x04;
         }
@@ -371,6 +384,56 @@ namespace sm1000neo::radio::icom
         }
         
         return false;
+    }
+    
+    bool IcomPacket::isLoginResponse(std::string& connectionType, bool& isInvalidPassword, uint16_t& tokenReq, uint32_t& radioToken)
+    {
+        bool ret = false;
+        
+        if (size_ == LOGIN_RESPONSE_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<login_response_packet>();
+            if (typedPacket->type != 0x01) // XXX -- what does 0x01 mean? from wfview source code
+            {
+                connectionType = typedPacket->connection;
+                isInvalidPassword = typedPacket->error == 0xfeffffff;
+                
+                tokenReq = typedPacket->tokrequest;
+                radioToken = typedPacket->token;
+                
+                ret = true;
+            }
+        }
+        
+        return ret;
+    }
+    
+    bool IcomPacket::isPingRequest(uint16_t& pingSequence)
+    {
+        bool ret = false;
+        
+        if (size_ == PING_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<ping_packet>();
+            ret = typedPacket->reply == 0;
+            pingSequence = typedPacket->seq;
+        }
+        
+        return ret;
+    }
+    
+    bool IcomPacket::isPingResponse(uint16_t& pingSequence)
+    {
+        bool ret = false;
+        
+        if (size_ == PING_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<ping_packet>();
+            ret = typedPacket->reply == 1;
+            pingSequence = typedPacket->seq;
+        }
+        
+        return ret;
     }
     
     void IcomPacket::EncodePassword_(std::string str, char* output)

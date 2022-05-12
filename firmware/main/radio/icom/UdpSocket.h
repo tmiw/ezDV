@@ -77,7 +77,22 @@ namespace sm1000neo::radio::icom
                 }
                 else
                 {
-                    res = this->set_non_blocking();
+                    res = true; //this->set_non_blocking();
+                }
+                
+                if (res)
+                {
+                    // Bind to the same port that we're using to transmit. The IC-705 doesn't seem to
+                    // properly recognize certain source port ranges so we do this to give it somewhere
+                    // usable.
+                    struct sockaddr_in sin;
+                    sin.sin_family = AF_INET;
+            		sin.sin_addr.s_addr = htonl(INADDR_ANY);
+            		sin.sin_port = htons(this->ip->get_port());
+            		if (bind(this->socket_id, (struct sockaddr *) &sin, sizeof sin) < 0)
+                    {
+                        this->loge("Failed to bind socket");
+                    }
                 }
             }
             else
