@@ -107,6 +107,22 @@ namespace sm1000neo::radio::icom
         {
             return pingSequenceNumber_;
         }
+        
+        void retransmitPacket(uint16_t packet);
+        
+        void clearRadioCapabilities()
+        {
+            radioCapabilities_.clear();
+        }
+        
+        void insertCapability(radio_cap_packet_t radio)
+        {
+            IcomPacket packet((char*)&radio, sizeof(radio_cap_packet));
+            radioCapabilities_.push_back(packet);
+        }
+        
+        void initializeCivAndAudioStateMachines(int radioIndex);
+        
     private:
         StateMachineType smType_;
         smooth::core::Task& task_;
@@ -127,6 +143,14 @@ namespace sm1000neo::radio::icom
         
         uint32_t ourTokenRequest_;
         uint32_t theirToken_;
+        uint32_t numSavedBytesInPacketQueue_;
+        
+        std::vector<IcomPacket> radioCapabilities_;
+        
+        std::shared_ptr<ProtocolStateMachine> civStateMachine_;
+        std::shared_ptr<ProtocolStateMachine> audioStateMachine_;
+        int civSocket_;
+        int audioSocket_;
     };
     
     class AreYouThereState 

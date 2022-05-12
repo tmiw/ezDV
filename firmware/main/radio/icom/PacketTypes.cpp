@@ -16,10 +16,11 @@ namespace sm1000neo::radio::icom
     }
     
     IcomPacket::IcomPacket(char* existingPacket, int size)
-        : rawPacket_(existingPacket)
+        : rawPacket_(new char[size])
         , size_(size)
     {
         assert(rawPacket_ != nullptr);
+        memcpy(rawPacket_, existingPacket, size_);
     }
     
     IcomPacket::IcomPacket(int size)
@@ -434,6 +435,92 @@ namespace sm1000neo::radio::icom
         }
         
         return ret;
+    }
+    
+    bool IcomPacket::isCapabilitiesPacket(std::vector<radio_cap_packet_t>& radios)
+    {
+        auto rawData = get_data();
+        
+        bool result = false;
+        if ((size_ - CAPABILITIES_SIZE) % RADIO_CAP_SIZE == 0)
+        {
+            for (int index = CAPABILITIES_SIZE; index < size_; index += RADIO_CAP_SIZE)
+            {
+                radios.push_back((radio_cap_packet_t)(rawData + index));
+            }
+            
+            result = true;
+        }
+    
+        return result;
+    }
+    
+    bool IcomPacket::isRetransmitPacket(std::vector<uint16_t>& retryPackets)
+    {
+        bool result = false;
+        
+        if (size_ >= CONTROL_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<control_packet>();
+            if (typedPacket->type == 0x01)
+            {
+                result = true;
+                
+                if (size_ == CONTROL_SIZE)
+                {
+                    // only one packet to resend
+                    retryPackets.push_back(ToLittleEndian(typedPacket->seq));
+                }
+                else
+                {
+                    uint16_t* ids = (uint16_t*)(get_data() + CONTROL_SIZE);
+                    for (int sz = CONTROL_SIZE; sz < size_; sz += sizeof(uint16_t))
+                    {
+                        retryPackets.push_back(ToLittleEndian(*ids++));
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    bool IcomPacket::isConnInfoPacket(std::string& name, uint32_t& ip, bool& isBusy)
+    {
+        bool result = false;
+        
+        if (size_ == CONNINFO_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<conninfo_packet>();
+            result = true;
+            
+            auto data = get_data();
+            
+            name = typedPacket->name;
+            ip = *(uint32_t*)(data + 0x84);
+            isBusy = *(uint32_t*)(data + 0x60);
+        }
+        
+        return result;
+    }
+    
+    bool IcomPacket::isStatusPacket(bool& connSuccessful, bool& disconnected, uint16_t& civPort, uint16_t& audioPort)
+    {
+        bool result = false;
+        
+        if (size_ == STATUS_SIZE)
+        {
+            auto typedPacket = getConstTypedPacket<status_packet>();
+            result = true;
+            
+            connSuccessful = !(typedPacket->error == 0xffffffff);
+            disconnected = typedPacket->error == 0 && typedPacket->disc == 1;
+            
+            civPort = ToLittleEndian(typedPacket->civport);
+            audioPort = ToLittleEndian(typedPacket->audioport);
+        }
+        
+        return result;
     }
     
     void IcomPacket::EncodePassword_(std::string str, char* output)

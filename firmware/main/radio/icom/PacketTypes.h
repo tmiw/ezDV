@@ -18,7 +18,7 @@ namespace sm1000neo::radio::icom
     #pragma pack(push, 1)
 
     // Various settings used by both client and server
-    #define PURGE_SECONDS 1
+    #define PURGE_SECONDS 10
     #define TOKEN_RENEWAL 60000
     #define PING_PERIOD 500
     #define IDLE_PERIOD 100
@@ -32,6 +32,9 @@ namespace sm1000neo::radio::icom
     #define AUDIO_PERIOD 20 
     #define GUIDLEN 16
 
+    // Save no more than this number of bytes for retransmit.
+    #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT 4096
+    
 
     // Fixed Size Packets
     #define CONTROL_SIZE            0x10
@@ -486,6 +489,14 @@ namespace sm1000neo::radio::icom
         // Used in Login state to check for ping requests and responses
         bool isPingRequest(uint16_t& pingSequence);
         bool isPingResponse(uint16_t& pingSequence);
+        
+        bool isCapabilitiesPacket(std::vector<radio_cap_packet_t>& radios);
+        
+        bool isRetransmitPacket(std::vector<uint16_t>& retryPackets);
+        
+        bool isConnInfoPacket(std::string& name, uint32_t& ip, bool& isBusy);
+        
+        bool isStatusPacket(bool& connSuccessful, bool& disconnected, uint16_t& civPort, uint16_t& audioPort);
         
     private:
         char* rawPacket_;

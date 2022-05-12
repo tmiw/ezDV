@@ -11,7 +11,7 @@ namespace sm1000neo::radio::icom
     {
     public:
         IcomRadioTask()
-            : smooth::core::Task("IcomRadioTask", 4096, 10, std::chrono::milliseconds(1))
+            : smooth::core::Task("IcomRadioTask", 8192, 10, std::chrono::milliseconds(1))
             , controlChannelSM_(ProtocolStateMachine::StateMachineType::CONTROL_SM, *this)
         {
             // empty

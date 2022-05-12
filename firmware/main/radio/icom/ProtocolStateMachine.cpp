@@ -12,6 +12,9 @@ namespace sm1000neo::radio::icom
         , authSequenceNumber_(0)
         , sendSequenceNumber_(1) // Start sequence at 1.
         , localIp_(0)
+        , numSavedBytesInPacketQueue_(0)
+        , civSocket_(0)
+        , audioSocket_(0)
     {
         // empty
     }
@@ -81,6 +84,49 @@ namespace sm1000neo::radio::icom
     {
         uint8_t* rawPacket = const_cast<uint8_t*>(packet.get_data());
         
+        // If sequence number is now 0, we've probably rolled over.
+        if (sendSequenceNumber_ == 0)
+        {
+            sentPackets_.clear();
+            numSavedBytesInPacketQueue_ = 0;
+        }
+        else
+        {
+            // Iterate through the current sent queue and delete packets
+            // that are older than PURGE_SECONDS.
+            auto iter = sentPackets_.begin();
+            auto curTime = time(NULL);
+            while (iter != sentPackets_.end())
+            {
+                if (curTime - iter->second.first >= PURGE_SECONDS)
+                {
+                    numSavedBytesInPacketQueue_ -= iter->second.second.get_send_length();
+                    iter = sentPackets_.erase(iter);
+                }
+                else
+                {
+                    iter++;
+                }
+            }
+            
+            // If we're still going to have more than MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT
+            // in the queue after adding this packet, go ahead and delete some more.
+            if ((numSavedBytesInPacketQueue_ + packet.get_send_length()) >= MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT)
+            {
+                auto iter = sentPackets_.begin();
+                while (iter != sentPackets_.end())
+                {
+                    numSavedBytesInPacketQueue_ -= iter->second.second.get_send_length();
+                    iter = sentPackets_.erase(iter);
+                
+                    if (numSavedBytesInPacketQueue_ < MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        
         // We need to manually force the sequence number into the packet because
         // simply treating it like a control_packet doesn't work.
         rawPacket[6] = sendSequenceNumber_ & 0xFF;
@@ -88,6 +134,7 @@ namespace sm1000neo::radio::icom
         sendSequenceNumber_++;
         
         sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), packet);
+        numSavedBytesInPacketQueue_ += packet.get_send_length();
         socket_->send(packet);
     }
     
@@ -132,6 +179,109 @@ namespace sm1000neo::radio::icom
     void ProtocolStateMachine::event(const smooth::core::network::event::TransmitBufferEmptyEvent& event)
     {
         get_state()->event(event);
+    }
+    
+    void ProtocolStateMachine::retransmitPacket(uint16_t packet)
+    {
+        ESP_LOGI(get_name().c_str(), "Retransmitting packet %d", packet);
+        
+        if (sentPackets_.find(packet) != sentPackets_.end())
+        {
+            // No need to track as we've sent it before.
+            sendUntracked(sentPackets_[packet].second);
+        }
+        else
+        {
+            // Send idle packet with the same seq# if we can't find the original packet.
+            IcomPacket tmpPacket = IcomPacket::CreateIdlePacket(packet, getOurIdentifier(), getTheirIdentifier());
+            sendUntracked(tmpPacket);
+        }
+    }
+    
+    void ProtocolStateMachine::initializeCivAndAudioStateMachines(int radioIndex)
+    {
+        if (civSocket_ != 0 || audioSocket_ != 0)
+        {
+            // already in progress, don't do again
+            return;
+        }
+        
+        // We need to create CIV and audio sockets and get their local port numbers.
+        // The protocol seems to require it, which is weird but ok.
+        civSocket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        audioSocket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        assert(civSocket_ > 0 && audioSocket_ > 0); // TBD -- should just force a disconnect of the main SM instead.
+        
+        struct sockaddr_in sin;
+        sin.sin_family = AF_INET;
+		sin.sin_addr.s_addr = htonl(INADDR_ANY);
+		sin.sin_port = 0;
+		assert(bind(civSocket_, (struct sockaddr *) &sin, sizeof sin) >= 0);
+        
+        socklen_t addressLength = sizeof(sin);
+        getsockname(civSocket_, (struct sockaddr*)&sin, &addressLength);
+        int civPort = ntohs(sin.sin_port);
+        
+        ESP_LOGI(get_name().c_str(), "Local UDP port for CIV comms will be %d", civPort);
+        
+        sin.sin_family = AF_INET;
+		sin.sin_addr.s_addr = htonl(INADDR_ANY);
+		sin.sin_port = 0;
+		assert(bind(audioSocket_, (struct sockaddr *) &sin, sizeof sin) >= 0);
+        
+        addressLength = sizeof(sin);
+        getsockname(audioSocket_, (struct sockaddr*)&sin, &addressLength);
+        int audioPort = ntohs(sin.sin_port);
+        
+        ESP_LOGI(get_name().c_str(), "Local UDP port for audio comms will be %d", audioPort);
+        
+        IcomPacket packet(sizeof(conninfo_packet));
+        auto typedPacket = packet.getTypedPacket<conninfo_packet>();
+        
+        typedPacket->len = sizeof(conninfo_packet);
+        typedPacket->sentid = getOurIdentifier();
+        typedPacket->rcvdid = getTheirIdentifier();
+        typedPacket->payloadsize = ToBigEndian((uint16_t)(sizeof(conninfo_packet) - 0x10));
+        typedPacket->requesttype = 0x03;
+        typedPacket->requestreply = 0x01;
+        
+        IcomPacket capPacket = radioCapabilities_[radioIndex];
+        auto cap = capPacket.getConstTypedPacket<radio_cap_packet>();
+        if (cap->commoncap == 0x8010)
+        {
+            // can use MAC address in packet
+            typedPacket->commoncap = 0x8010;
+            memcpy(&typedPacket->macaddress, cap->macaddress, 6);
+        }
+        else
+        {
+            memcpy(&typedPacket->guid, cap->guid, GUIDLEN);
+        }
+        
+        typedPacket->innerseq = ToBigEndian(authSequenceNumber_++);
+        typedPacket->tokrequest = ourTokenRequest_;
+        typedPacket->token = theirToken_;
+        memcpy(typedPacket->name, cap->name, strlen(cap->name));
+        typedPacket->rxenable = 1;
+        typedPacket->txenable = 1;
+        
+        // Force 8K sample rate PCM
+        typedPacket->rxcodec = 4;
+        typedPacket->rxsample = ToBigEndian((uint32_t)8000);
+        typedPacket->txcodec = 4;
+        typedPacket->txsample = ToBigEndian((uint32_t)8000);
+        
+        // CIV/audio local port numbers and latency
+        typedPacket->civport = ToBigEndian((uint32_t)civPort);
+        typedPacket->audioport = ToBigEndian((uint32_t)audioPort);
+        typedPacket->txbuffer = ToBigEndian((uint32_t)150);
+        typedPacket->convert = 1;
+        
+        sendTracked(packet);
+        
+        // Create child state machines
+        civStateMachine_ = std::make_shared<ProtocolStateMachine>(CIV_SM, task_);
+        audioStateMachine_ = std::make_shared<ProtocolStateMachine>(AUDIO_SM, task_);
     }
     
     // 1. Control: Send Are You There message.
@@ -216,6 +366,8 @@ namespace sm1000neo::radio::icom
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
         sm_.sendLoginPacket();
         
+        sm_.clearRadioCapabilities();
+        
         // Start ping and idle timers at this point. Idle will be stopped/started
         // whenever we send something.
         timerExpiredQueue_ =
@@ -280,6 +432,87 @@ namespace sm1000neo::radio::icom
             // Got ping response, increment to next ping sequence number.
             ESP_LOGI(sm_.get_name().c_str(), "Got ping ack, seq %d", pingSequence);
             sm_.incrementPingSequence(pingSequence);
+        }
+        else
+        {
+            std::vector<radio_cap_packet_t> radios;
+            std::vector<uint16_t> retryPackets;
+            std::string radioName;
+            uint32_t radioIp;
+            bool isBusy;
+            bool connSuccess;
+            bool connDisconnected;
+            uint16_t civPort;
+            uint16_t audioPort;
+            
+            if (packet.isCapabilitiesPacket(radios))
+            {
+                ESP_LOGI(sm_.get_name().c_str(), "Available radios:");
+                int index = 0;
+                for (auto& radio : radios)
+                {
+                    ESP_LOGI(
+                        sm_.get_name().c_str(), 
+                        "[%d]    %s: MAC=%02x:%02x:%02x:%02x:%02x:%02x, CIV=%02x, Audio=%s (rxsample %d, txsample %d)", 
+                        index++, 
+                        radio->name,
+                        radio->macaddress[0], radio->macaddress[1], radio->macaddress[2], radio->macaddress[3], radio->macaddress[4], radio->macaddress[5],
+                        radio->civ, 
+                        radio->audio,
+                        radio->rxsample,
+                        radio->txsample);
+                        
+                    sm_.insertCapability(radio);
+                }
+            }
+            else if (packet.isRetransmitPacket(retryPackets))
+            {
+                for (auto packetId : retryPackets)
+                {
+                    sm_.retransmitPacket(packetId);
+                }
+            }
+            else if (packet.isConnInfoPacket(radioName, radioIp, isBusy))
+            {
+                ESP_LOGI(
+                    sm_.get_name().c_str(), 
+                    "Connection info for %s: IP = %x, Is Busy = %d",
+                    radioName.c_str(),
+                    radioIp,
+                    isBusy ? 1 : 0);
+                    
+                // TBD -- open CIV and audio now
+                sm_.initializeCivAndAudioStateMachines(0);
+            }
+            else if (packet.isStatusPacket(connSuccess, connDisconnected, civPort, audioPort))
+            {
+                if (connSuccess)
+                {
+                    ESP_LOGI(
+                        sm_.get_name().c_str(), 
+                        "Starting audio and CIV state machines using remote ports %d and %d",
+                        audioPort,
+                        civPort);
+                }
+                else if (connDisconnected)
+                {
+                    ESP_LOGE(
+                        sm_.get_name().c_str(), 
+                        "Disconnected from the radio"
+                    );
+                        
+                    // TBD -- reset state machines
+                }
+                else
+                {
+                    ESP_LOGE(
+                        sm_.get_name().c_str(), 
+                        "Connection failed"
+                    );
+                        
+                    // TBD -- reset state machines
+                }
+            }
         }
         
         if (packetSent)
