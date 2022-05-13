@@ -1,9 +1,6 @@
 #include "TLV320.h"
 #include "driver/gpio.h"
 
-// TLV320 I2C address
-#define TLV320_I2C_ADDRESS (0b0011000)
-
 // TLV320 reset pin GPIO
 #define TLV320_RESET_GPIO GPIO_NUM_12
 
@@ -15,7 +12,7 @@
 #define TLV320_DOUT_GPIO GPIO_NUM_11
 
 // TLV320 I2C interface GPIOs
-#define TLV320_SCL_GPIO GPIO_NUM_48
+#define TLV320_SCL_GPIO GPIO_NUM_45
 #define TLV320_SDA_GPIO GPIO_NUM_47
 #define TLV320_SCK_FREQ_HZ (100000)
 
@@ -26,22 +23,28 @@ using namespace sm1000neo::util;
 namespace sm1000neo::audio
 {
     void TLV320::init()
-    {
+    {            
+        ESP_LOGI(CURRENT_LOG_TAG, "initialize I2S and I2C");
+        
         // Initialize I2S first so MCLK is available to the TLV320.
         initializeI2S_();
         initializeI2C_();
         
         // To begin, we need to hard reset the TLV320.
+        ESP_LOGI(CURRENT_LOG_TAG, "reset TLV320");
         initializeResetGPIO_();
         tlv320HardReset_();
         
         // Enable required clocks.
+        ESP_LOGI(CURRENT_LOG_TAG, "configure clocks");
         tlv320ConfigureClocks_();
         
         // Set power and I/O routing.
+        ESP_LOGI(CURRENT_LOG_TAG, "configure power and routing");
         tlv320ConfigurePowerAndRouting_();
         
         // Enable audio
+        ESP_LOGI(CURRENT_LOG_TAG, "enable audio");
         tlv320EnableAudio_();
         
         // Set up I2S read timer and start it.
@@ -135,15 +138,17 @@ namespace sm1000neo::audio
     
     void TLV320::initializeI2C_()
     {
-        tlvMaster_ = std::unique_ptr<smooth::core::io::i2c::Master>(new smooth::core::io::i2c::Master(
-            I2C_NUM_0,
-            TLV320_SCL_GPIO,
-            false, // pullups already exist on board
-            TLV320_SDA_GPIO,
-            false, // pullups already exist on board
-            TLV320_SCK_FREQ_HZ
-        ));
-        assert(tlvMaster_ != nullptr);
+    	i2c_config_t conf;
+        memset(&conf, 0, sizeof(i2c_config_t));
+    	conf.mode = I2C_MODE_MASTER;
+    	conf.sda_io_num = TLV320_SDA_GPIO;
+    	conf.scl_io_num = TLV320_SCL_GPIO;
+    	conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+    	conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+    	conf.master.clk_speed = TLV320_SCK_FREQ_HZ;
+    	i2c_param_config(I2C_NUM_0, &conf);
+
+    	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
     }
     
     void TLV320::initializeResetGPIO_()
@@ -165,11 +170,6 @@ namespace sm1000neo::audio
         ets_delay_us(1);
         gpio_set_level(TLV320_RESET_GPIO, 1);
         vTaskDelay(pdMS_TO_TICKS(1));
-        
-        // Initialize TLV320 I2C interface now. This will force the current 
-        // page to 0.
-        tlvDevice_ = tlvMaster_->create_device<I2CDevice>(TLV320_I2C_ADDRESS);
-        assert(tlvDevice_ != nullptr);
     }
     
     void TLV320::tlv320ConfigureClocks_()
@@ -208,49 +208,49 @@ namespace sm1000neo::audio
         
         // Set CODEC_CLKIN to PLL and use MCLK for PLL
         // (Page 0, register 4)
-        tlvDevice_->setConfigurationOption(0, 4, (0 << 2) | 0b11);
+        setConfigurationOption_(0, 4, (0 << 2) | 0b11);
         
         // Set PLL P = 1, R = 1, J = 40, D = 0, power up PLL
         // (Page 0, registers 5-8)
-        tlvDevice_->setConfigurationOption(0, 6, 40); // J
-        tlvDevice_->setConfigurationOption(0, 7, 0); // D[MSB]
-        tlvDevice_->setConfigurationOption(0, 8, 0); // D[LSB]
-        tlvDevice_->setConfigurationOption(0, 5, (1 << 7) | (0b001 << 4) | (0b001)); // P, R, power up
+        setConfigurationOption_(0, 6, 40); // J
+        setConfigurationOption_(0, 7, 0); // D[MSB]
+        setConfigurationOption_(0, 8, 0); // D[LSB]
+        setConfigurationOption_(0, 5, (1 << 7) | (0b001 << 4) | (0b001)); // P, R, power up
         
         // Wait 10ms for PLL to become available
         // (Section 2.7.1, "TLV320AIC3254 Application Reference Guide")
         vTaskDelay(pdMS_TO_TICKS(10));
         
         // Set NADC and NDAC to 40 and power them up (Page 0, registers 11 and 18)
-        tlvDevice_->setConfigurationOption(0, 11, (1 << 7) | 40);
-        tlvDevice_->setConfigurationOption(0, 18, (1 << 7) | 40);
+        setConfigurationOption_(0, 11, (1 << 7) | 40);
+        setConfigurationOption_(0, 18, (1 << 7) | 40);
         
         // Set MADC and MDAC to 2 and power them up (Page 0, registers 12 and 19)
-        tlvDevice_->setConfigurationOption(0, 12, (1 << 7) | 2);
-        tlvDevice_->setConfigurationOption(0, 19, (1 << 7) | 2);
+        setConfigurationOption_(0, 12, (1 << 7) | 2);
+        setConfigurationOption_(0, 19, (1 << 7) | 2);
         
         // Program DOSR to 128 (Page 0, registers 13-14)
-        tlvDevice_->setConfigurationOption(0, 13, 0);
-        tlvDevice_->setConfigurationOption(0, 14, 128);
+        setConfigurationOption_(0, 13, 0);
+        setConfigurationOption_(0, 14, 128);
         
         // Program AOSR to 128 (Page 0, register 20).
-        tlvDevice_->setConfigurationOption(0, 20, 128);
+        setConfigurationOption_(0, 20, 128);
         
         // Set I2S word size to 16 bits (Page 0, register 27)
-        tlvDevice_->setConfigurationOption(0, 27, 0);
+        setConfigurationOption_(0, 27, 0);
         
         // Set ADC_PRB and DAC_PRB to P1 and R1 (Page 0, registers 60-61).
-        tlvDevice_->setConfigurationOption(0, 60, 1);
-        tlvDevice_->setConfigurationOption(0, 61, 1);
+        setConfigurationOption_(0, 60, 1);
+        setConfigurationOption_(0, 61, 1);
     }
     
     void TLV320::tlv320ConfigurePowerAndRouting_()
     {
         // Disable weak AVDD in presence of external AVDD supply (Page 1, register 1)
-        tlvDevice_->setConfigurationOption(1, 1, (1 << 3));
+        setConfigurationOption_(1, 1, (1 << 3));
         
         // AVDD/DVDD 1.72V, AVDD LDO powered up (Page 1, register 2)
-        tlvDevice_->setConfigurationOption(1, 2, (1 << 3) | (1 << 0));
+        setConfigurationOption_(1, 2, (1 << 3) | (1 << 0));
         
         // Set full chip common mode to 0.9V
         // HP output CM = 1.65V
@@ -258,50 +258,50 @@ namespace sm1000neo::audio
         // Line output CM = 1.65V
         // Line output supply = LDOin voltage
         // (Page 1, register 10)
-        tlvDevice_->setConfigurationOption(1, 10, (3 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
+        setConfigurationOption_(1, 10, (3 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
         
         // Set ADC PTM to PTM_R4 (Page 1, register 61)
-        tlvDevice_->setConfigurationOption(1, 61, 0);
+        setConfigurationOption_(1, 61, 0);
         
         // Set DAC PTM to PTM_R3 (Page 1, registers 3-4)
         // Note: PTM_R4 requires >= 20 bits for I2S, hence not used here.
-        tlvDevice_->setConfigurationOption(1, 3, 0);
-        tlvDevice_->setConfigurationOption(1, 4, 0);
+        setConfigurationOption_(1, 3, 0);
+        setConfigurationOption_(1, 4, 0);
         
         // Set MicPGA startup delay to 3.1ms (Page 1, register 71)
-        tlvDevice_->setConfigurationOption(1, 4, 0b110001);
+        setConfigurationOption_(1, 4, 0b110001);
         
         // REF will power up in 40ms (Page 1, register 123)
-        tlvDevice_->setConfigurationOption(1, 123, 1);
+        setConfigurationOption_(1, 123, 1);
         
         // 6kohm depop, N = 5.0, 50ms soft start (Page 1, register 20)
-        tlvDevice_->setConfigurationOption(1, 20, (1 << 6) | (0b1001 << 2) | (1 << 0));
+        setConfigurationOption_(1, 20, (1 << 6) | (0b1001 << 2) | (1 << 0));
         
         // Set ADC routing: IN1_L left channel, IN1_R right channel,
         // 20kohm impedence (Page 1, registers 52, 54, 55, 57)
-        tlvDevice_->setConfigurationOption(1, 52, 1 << 7);
-        tlvDevice_->setConfigurationOption(1, 54, 1 << 7);
-        tlvDevice_->setConfigurationOption(1, 55, 1 << 7);
-        tlvDevice_->setConfigurationOption(1, 57, 1 << 7);
+        setConfigurationOption_(1, 52, 1 << 7);
+        setConfigurationOption_(1, 54, 1 << 7);
+        setConfigurationOption_(1, 55, 1 << 7);
+        setConfigurationOption_(1, 57, 1 << 7);
         
         // Set DAC routing: HPL, HPR come from DAC
         // (Page 1, registers 12 and 13)
-        tlvDevice_->setConfigurationOption(1, 12, 1 << 3);
-        tlvDevice_->setConfigurationOption(1, 13, 1 << 3);
+        setConfigurationOption_(1, 12, 1 << 3);
+        setConfigurationOption_(1, 13, 1 << 3);
         
         // Unmute PGAs, gain = 6dB due to 20k impedence
         // (Page 1, registers 59 and 60)
-        tlvDevice_->setConfigurationOption(1, 59, 0x0c);
-        tlvDevice_->setConfigurationOption(1, 60, 0x0c);
+        setConfigurationOption_(1, 59, 0x0c);
+        setConfigurationOption_(1, 60, 0x0c);
         
         // Unmute HPL and HPR, gain = 0dB
         // (Page 1, registers 16 and 17)
-        tlvDevice_->setConfigurationOption(1, 16, 0);
-        tlvDevice_->setConfigurationOption(1, 17, 0);
+        setConfigurationOption_(1, 16, 20);
+        setConfigurationOption_(1, 17, 0);
         
         // Power up HPL and HPR
         // (Page 1, register 9)
-        tlvDevice_->setConfigurationOption(1, 9, (1 << 5) | (1 << 4));
+        setConfigurationOption_(1, 9, (1 << 5) | (1 << 4));
         
         // Wait until gain fully applied
         // (Page 1, register 63)
@@ -310,22 +310,24 @@ namespace sm1000neo::audio
         do
         {
             vTaskDelay(pdMS_TO_TICKS(1));
-            gainRegVal = tlvDevice_->getConfigurationOption(1, 63);
-        } while ((count++ < 50) && (gainRegVal & (11 << 6)) != 0);
+            gainRegVal = getConfigurationOption_(1, 63);
+        } while ((count++ < 50) && (gainRegVal & (11 << 6)) == 0);
+        
+        ESP_LOGI("TLV320", "gainRegVal: %x, count: %d", gainRegVal, count);
     }
     
     void TLV320::tlv320EnableAudio_()
     {
         // Power on DAC (Page 0, register 63)
-        tlvDevice_->setConfigurationOption(0, 63, (1 << 7) | (1 << 6) | (1 << 4) | (1 << 2));
+        setConfigurationOption_(0, 63, (1 << 7) | (1 << 6) | (1 << 4) | (1 << 2));
         
         // Unmute DAC (Page 0, register 64)
-        tlvDevice_->setConfigurationOption(0, 64, 0);
+        setConfigurationOption_(0, 64, 0);
         
         // Power on ADC (Page 0, register 81)
-        tlvDevice_->setConfigurationOption(0, 81, (1 << 7) | (1 << 6));
+        setConfigurationOption_(0, 81, (1 << 7) | (1 << 6));
         
         // Unmute ADC (Page 0, register 82)
-        tlvDevice_->setConfigurationOption(0, 82, 0);
+        setConfigurationOption_(0, 82, 0);
     }
 }

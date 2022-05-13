@@ -9,14 +9,14 @@
 #include "smooth/core/io/InterruptInput.h"
 #include "smooth/core/io/Output.h"
 
-#define GPIO_PTT_BUTTON GPIO_NUM_0 /* GPIO_NUM_4 */ /* testing while waiting for HW */
-#define GPIO_MODE_BUTTON GPIO_NUM_5
+#define GPIO_PTT_BUTTON GPIO_NUM_4
+#define GPIO_MODE_BUTTON GPIO_NUM_5 // PTT button doesn't work on v0.1 @ GPIO 4
 #define GPIO_VOL_UP_BUTTON GPIO_NUM_6
 #define GPIO_VOL_DOWN_BUTTON GPIO_NUM_7
 
 #define GPIO_SYNC_LED GPIO_NUM_1
 #define GPIO_OVL_LED GPIO_NUM_2
-#define GPIO_PTT_LED GPIO_NUM_4
+#define GPIO_PTT_LED GPIO_NUM_41
 #define GPIO_PTT_NPN GPIO_NUM_21 /* bridges GND and PTT together at the 3.5mm jack */
 #define GPIO_NET_LED GPIO_NUM_42
 

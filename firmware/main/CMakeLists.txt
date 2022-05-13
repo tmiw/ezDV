@@ -36,7 +36,7 @@ set(UNITTEST OFF)
 set(BUILD_SHARED_LIBS OFF)
 set(MICROCONTROLLER_BUILD ON)
 
-add_definitions(-D__EMBEDDED__)
+add_definitions(-D__EMBEDDED__ -D__REAL__)
 add_definitions(-DFREEDV_MODE_EN_DEFAULT=0 -DFREEDV_MODE_1600_EN=1 -DFREEDV_MODE_700D_EN=1 -DFREEDV_MODE_700E_EN=1 -DCODEC2_MODE_EN_DEFAULT=0 -DCODEC2_MODE_1300_EN=1 -DCODEC2_MODE_700C_EN=1)
                     
 # Disable export and install; codec2 tries to do this and ESP-IDF's build system doesn't support it.

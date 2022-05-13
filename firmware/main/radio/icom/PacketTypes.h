@@ -4,6 +4,7 @@
 #include <string>
 #include "smooth/core/network/IPacketAssembly.h"
 #include "smooth/core/network/IPacketDisassembly.h"
+#include "smooth/core/util/CircularBuffer.h"
 
 // Thanks to the wfview project for helping reverse engineer Icom's UDP protocol.
 // Original file at https://gitlab.com/eliggett/wfview/-/blob/master/packettypes.h, modified
@@ -35,6 +36,8 @@ namespace sm1000neo::radio::icom
     // Save no more than this number of bytes for retransmit.
     #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT 4096
     
+    // And this number of RX audio packets
+    #define MAX_RX_AUDIO_PACKETS 6
 
     // Fixed Size Packets
     #define CONTROL_SIZE            0x10
@@ -450,7 +453,7 @@ namespace sm1000neo::radio::icom
         IcomPacket(char* existingPacket, int size);
         IcomPacket(int size);
         IcomPacket(const IcomPacket& packet);
-        IcomPacket(IcomPacket&& packet);
+        IcomPacket(IcomPacket&& packet) = delete;
         virtual ~IcomPacket();
         
         virtual int get_send_length();
@@ -463,7 +466,7 @@ namespace sm1000neo::radio::icom
         const ActualPacketType* getConstTypedPacket();
         
         IcomPacket& operator=(const IcomPacket& packet);
-        IcomPacket& operator=(IcomPacket&& packet);
+        IcomPacket& operator=(IcomPacket&& packet) = delete;
         
         static IcomPacket CreateAreYouTherePacket(uint32_t ourId, uint32_t theirId);
         static IcomPacket CreateAreYouReadyPacket(uint32_t ourId, uint32_t theirId);
@@ -498,8 +501,10 @@ namespace sm1000neo::radio::icom
         
         bool isStatusPacket(bool& connSuccessful, bool& disconnected, uint16_t& civPort, uint16_t& audioPort);
         
+        bool isAudioPacket(uint16_t& seqId, short** dataStart);
+        
     private:
-        char* rawPacket_;
+        char rawPacket_[MAX_PACKET_SIZE];
         int size_;
         
         static void EncodePassword_(std::string str, char* output);
@@ -538,5 +543,112 @@ namespace sm1000neo::radio::icom
         return (const ActualPacketType*)rawPacket_;
     }
 }
+
+/*
+
+namespace smooth::core::util
+{
+    template<int Size>
+    class CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>
+        : public ICircularBuffer<sm1000neo::radio::icom::IcomPacket>
+    {
+    public:
+        CircularBuffer();
+
+        virtual ~CircularBuffer() = default;
+
+        void put(const sm1000neo::radio::icom::IcomPacket& data) override;
+
+        bool get(sm1000neo::radio::icom::IcomPacket& d) override;
+
+        bool is_empty() override
+        {
+            return count == 0;
+        }
+
+        bool is_full() override
+        {
+            return count == Size;
+        }
+
+        int available_items() override
+        {
+            return count;
+        }
+
+        int available_slots() override
+        {
+            return Size - count;
+        }
+
+        void clear() override
+        {
+            read_pos = 0;
+            write_pos = 0;
+            count = 0;
+        }
+
+        CircularBuffer(const CircularBuffer&) = delete;
+
+        CircularBuffer& operator=(const CircularBuffer&) = delete;
+
+    private:
+        int next_pos(int current)
+        {
+            return (current + 1) % Size;
+        }
+
+        sm1000neo::radio::icom::IcomPacket buffer[static_cast<std::size_t>(Size)];
+        int read_pos;
+        int write_pos;
+        int count;
+    };
+    
+    template<int Size>
+    CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::CircularBuffer()
+            : buffer(),
+              read_pos(0),
+              write_pos(0),
+              count(0)
+    {
+    }
+
+    template<int Size>
+    void CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::put(const sm1000neo::radio::icom::IcomPacket& data)
+    {
+        buffer[write_pos] = std::move(data);
+
+        if (!is_full())
+        {
+            ++count;
+        }
+
+        // Overwrite data not yet read
+        if (this->is_full() && read_pos == write_pos)
+        {
+            read_pos = next_pos(read_pos);
+        }
+
+        write_pos = next_pos(write_pos);
+    }
+
+    template<int Size>
+    bool CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::get(sm1000neo::radio::icom::IcomPacket& d)
+    {
+        bool res = false;
+
+        if (!this->is_empty())
+        {
+            d = std::move(buffer[read_pos]);
+            read_pos = this->next_pos(read_pos);
+            --count;
+
+            res = true;
+        }
+
+        return res;
+    }
+}
+*/
 
 #endif // RADIO__ICOM__PACKET_TYPES_H

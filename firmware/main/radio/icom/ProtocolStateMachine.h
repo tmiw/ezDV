@@ -10,6 +10,7 @@
 #include "smooth/core/timer/TimerExpiredEvent.h"
 #include "PacketTypes.h"
 #include "UdpSocket.h"
+#include "codec2_fifo.h"
 
 namespace sm1000neo::radio::icom
 {
@@ -20,6 +21,8 @@ namespace sm1000neo::radio::icom
     class BaseState
     {
     public:
+        int ctr = 0;
+                
         explicit BaseState(ProtocolStateMachine& sm)
             : sm_(sm)
         {
@@ -37,11 +40,28 @@ namespace sm1000neo::radio::icom
         virtual void packetReceived(IcomPacket& packet) { }
         
         virtual void event(const smooth::core::network::event::DataAvailableEvent<IcomProtocol>& event) 
-        { 
-            IcomPacket packet;
-            if (event.get(packet))
+        {
+            ctr++;
+            
+            int freeHeapSizeBefore = xPortGetFreeHeapSize();
+            int largestFreeBlockBefore = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+            
+            //ESP_LOGI(sm_.get_name().c_str(), "Heap memory: total free = %d, largest block = %d", xPortGetFreeHeapSize(), );
+            {   
+                IcomPacket packet;
+                if (event.get(packet))
+                {
+                    packetReceived(packet);
+                }
+            }
+            
+            int freeHeapSizeAfter = xPortGetFreeHeapSize();
+            int largestFreeBlockAfter = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+            
+            int heapDiff = freeHeapSizeAfter - freeHeapSizeBefore;
+            if (heapDiff < 0)
             {
-                packetReceived(packet);
+                //ESP_LOGW(name().c_str(), "LEAK of %d bytes while handling msg (total free = %d, largest block = %d)", -heapDiff, freeHeapSizeAfter, largestFreeBlockAfter);
             }
         }
         virtual void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) { }
@@ -55,8 +75,9 @@ namespace sm1000neo::radio::icom
         , public smooth::core::ipc::IEventListener<smooth::core::network::event::TransmitBufferEmptyEvent>
         , public smooth::core::ipc::IEventListener<smooth::core::network::event::ConnectionStatusEvent>
         , public smooth::core::ipc::IEventListener<smooth::core::network::event::DataAvailableEvent<IcomProtocol>>
+        , public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>
     {
-    public:
+    public:        
         enum StateMachineType
         {
             CONTROL_SM,
@@ -65,7 +86,7 @@ namespace sm1000neo::radio::icom
         };
         
         ProtocolStateMachine(StateMachineType smType, smooth::core::Task& task);
-        virtual ~ProtocolStateMachine() = default;
+        virtual ~ProtocolStateMachine();
         
         StateMachineType getStateMachineType() const;
         
@@ -77,6 +98,7 @@ namespace sm1000neo::radio::icom
         
         void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) override;
         void event(const smooth::core::network::event::ConnectionStatusEvent& event) override;
+        void event(const smooth::core::timer::TimerExpiredEvent& event) override;
         
         smooth::core::Task& getTask() { return task_; }        
         uint32_t getOurIdentifier() const { return ourIdentifier_; }
@@ -118,10 +140,16 @@ namespace sm1000neo::radio::icom
         void insertCapability(radio_cap_packet_t radio)
         {
             IcomPacket packet((char*)&radio, sizeof(radio_cap_packet));
+            //radioCapabilities_.push_back(std::move(packet));
             radioCapabilities_.push_back(packet);
         }
         
         void initializeCivAndAudioStateMachines(int radioIndex);
+        void startCivAndAudioStateMachines(int audioPort, int civPort);
+        void writeOutFifo(short* data, int len);
+        
+        std::map<uint16_t, IcomPacket> rxAudioPackets_;
+        uint16_t lastAudioPacketSeqId_;
         
     private:
         StateMachineType smType_;
@@ -151,6 +179,13 @@ namespace sm1000neo::radio::icom
         std::shared_ptr<ProtocolStateMachine> audioStateMachine_;
         int civSocket_;
         int audioSocket_;
+        struct FIFO* outFifo_;
+        
+        smooth::core::timer::TimerOwner audioOutTimer_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
+        
+        // For use only within the root SM for starting the auxiliary ones.
+        void start(std::string ip, uint16_t auxPort, int socket);
     };
     
     class AreYouThereState 

@@ -1,10 +1,13 @@
 #include <random>
 #include "ProtocolStateMachine.h"
+#include "../../audio/Messaging.h"
+#include "../../util/NamedQueue.h"
 
 namespace sm1000neo::radio::icom
 {
     ProtocolStateMachine::ProtocolStateMachine(StateMachineType smType, smooth::core::Task& task)
-        : smType_(smType)
+        : lastAudioPacketSeqId_(0)
+        , smType_(smType)
         , task_(task)
         , ourIdentifier_(0)
         , theirIdentifier_(0)
@@ -16,7 +19,45 @@ namespace sm1000neo::radio::icom
         , civSocket_(0)
         , audioSocket_(0)
     {
-        // empty
+        outFifo_ = codec2_fifo_create(1920);
+        assert(outFifo_ != nullptr);
+    }
+    
+    ProtocolStateMachine::~ProtocolStateMachine()
+    {
+        codec2_fifo_destroy(outFifo_);
+    }
+    
+    void ProtocolStateMachine::writeOutFifo(short* data, int len)
+    {
+        codec2_fifo_write(outFifo_, data, len);
+    }
+    
+    void ProtocolStateMachine::event(const smooth::core::timer::TimerExpiredEvent& event)
+    {
+        /*while (rxAudioPackets_.size() > MAX_RX_AUDIO_PACKETS)
+        {
+            auto frontPacket = rxAudioPackets_.begin()->second;
+            short* audioData;
+            uint16_t audioSeqId;
+            
+            // Extract raw audio data.
+            frontPacket.isAudioPacket(audioSeqId, &audioData);
+            
+            int totalSize = (frontPacket.get_send_length() - 0x18) / sizeof(short);
+            writeOutFifo(audioData, totalSize);  
+            
+            rxAudioPackets_.erase(rxAudioPackets_.begin());          
+        }*/
+        
+        do
+        {
+            sm1000neo::audio::AudioDataMessage audioMessage;
+            memset(audioMessage.audioData, 0, sizeof(short) * NUM_SAMPLES_PER_AUDIO_MESSAGE);
+            audioMessage.channel = RADIO_CHANNEL;
+            codec2_fifo_read(outFifo_, audioMessage.audioData, NUM_SAMPLES_PER_AUDIO_MESSAGE);
+            sm1000neo::util::NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, audioMessage);
+        } while (codec2_fifo_used(outFifo_) >= NUM_SAMPLES_PER_AUDIO_MESSAGE);
     }
     
     ProtocolStateMachine::StateMachineType ProtocolStateMachine::getStateMachineType() const
@@ -133,9 +174,10 @@ namespace sm1000neo::radio::icom
         rawPacket[7] = (sendSequenceNumber_ >> 8) & 0xFF;
         sendSequenceNumber_++;
         
-        sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), packet);
         numSavedBytesInPacketQueue_ += packet.get_send_length();
         socket_->send(packet);
+        //sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), std::move(packet));
+        sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), packet);
     }
     
     void ProtocolStateMachine::start(std::string ip, uint16_t controlPort, std::string username, std::string password)
@@ -161,6 +203,39 @@ namespace sm1000neo::radio::icom
         
         socket_ = UdpSocket<IcomProtocol, IcomPacket>::create(buffer_, std::chrono::milliseconds(0), std::chrono::milliseconds(0));
         socket_->start(address_);
+    }
+    
+    void ProtocolStateMachine::start(std::string ip, uint16_t auxPort, int socket)
+    {
+        address_ = std::shared_ptr<smooth::core::network::InetAddress>(new smooth::core::network::IPv4(ip, auxPort));
+        
+        buffer_ = 
+            std::make_shared<smooth::core::network::BufferContainer<IcomProtocol>>(task_,
+                                                                                   *this,
+                                                                                   *this,
+                                                                                   *this,
+                                                                                   std::make_unique<IcomProtocol>());
+                                                                                   
+        // Generate our identifier by concatenating the last two octets of our IP
+        // with the port we're using to connect. We bind to this port in UdpSocket prior to connection.
+        ourIdentifier_ = 
+            (((localIp_ >> 8) & 0xFF) << 24) | 
+            ((localIp_ & 0xFF) << 16) |
+            (auxPort & 0xFFFF);
+        
+        socket_ = UdpSocket<IcomProtocol, IcomPacket>::create(address_, socket, buffer_, std::chrono::milliseconds(0), std::chrono::milliseconds(0));
+        socket_->start(address_);
+        
+        if (getStateMachineType() == AUDIO_SM)
+        {
+            timerExpiredQueue_ =
+                smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, getTask(), *this);
+            audioOutTimer_ = 
+                smooth::core::timer::Timer::create(
+                        1, timerExpiredQueue_, true,
+                        std::chrono::milliseconds(1000/80));
+            audioOutTimer_->start();
+        }
     }
     
     void ProtocolStateMachine::event(const smooth::core::network::event::DataAvailableEvent<IcomProtocol>& event)
@@ -245,7 +320,7 @@ namespace sm1000neo::radio::icom
         typedPacket->requesttype = 0x03;
         typedPacket->requestreply = 0x01;
         
-        IcomPacket capPacket = radioCapabilities_[radioIndex];
+        IcomPacket& capPacket = radioCapabilities_[radioIndex];
         auto cap = capPacket.getConstTypedPacket<radio_cap_packet>();
         if (cap->commoncap == 0x8010)
         {
@@ -281,7 +356,14 @@ namespace sm1000neo::radio::icom
         
         // Create child state machines
         civStateMachine_ = std::make_shared<ProtocolStateMachine>(CIV_SM, task_);
+        civStateMachine_->localIp_ = localIp_;
         audioStateMachine_ = std::make_shared<ProtocolStateMachine>(AUDIO_SM, task_);
+        audioStateMachine_->localIp_ = localIp_;
+    }
+    
+    void ProtocolStateMachine::startCivAndAudioStateMachines(int audioPort, int civPort)
+    {
+        audioStateMachine_->start(address_->get_host(), audioPort, audioSocket_);
     }
     
     // 1. Control: Send Are You There message.
@@ -344,8 +426,15 @@ namespace sm1000neo::radio::icom
         
         auto packet = IcomPacket::CreateAreYouReadyPacket(sm_.getOurIdentifier(), sm_.getTheirIdentifier());
         sm_.sendUntracked(packet);
-    }
         
+        // If we're an audio state machine, we're already getting audio at this point.
+        // We can go straight to the main state and handle the I Am Ready response there.
+        if (sm_.getStateMachineType() == ProtocolStateMachine::AUDIO_SM)
+        {
+            sm_.set_state(new (sm_) LoginState(sm_));
+        }
+    }
+    
     void AreYouReadyState::packetReceived(IcomPacket& packet)
     {    
         if (packet.isIAmReady())
@@ -364,9 +453,13 @@ namespace sm1000neo::radio::icom
     void LoginState::enter_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
-        sm_.sendLoginPacket();
         
-        sm_.clearRadioCapabilities();
+        if (sm_.getStateMachineType() == ProtocolStateMachine::CONTROL_SM)
+        {
+            // Login packet is only necessary on the control state machine.
+            sm_.sendLoginPacket();
+            sm_.clearRadioCapabilities();
+        }
         
         // Start ping and idle timers at this point. Idle will be stopped/started
         // whenever we send something.
@@ -421,8 +514,9 @@ namespace sm1000neo::radio::icom
         }
         else if (packet.isPingRequest(pingSequence))
         {
-            // Respond to ping requests
-            ESP_LOGI(sm_.get_name().c_str(), "Got ping, seq %d", pingSequence);
+            // Respond to ping requests        
+            //ESP_LOGI(sm_.get_name().c_str(), "Got ping, seq %d", ctr, pingSequence);
+            //auto packet = std::move(IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier()));
             auto packet = IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier());
             sm_.sendUntracked(packet);
             packetSent = true;
@@ -430,7 +524,7 @@ namespace sm1000neo::radio::icom
         else if (packet.isPingResponse(pingSequence))
         {
             // Got ping response, increment to next ping sequence number.
-            ESP_LOGI(sm_.get_name().c_str(), "Got ping ack, seq %d", pingSequence);
+            //ESP_LOGI(sm_.get_name().c_str(), "Got ping ack, seq %d", pingSequence);
             sm_.incrementPingSequence(pingSequence);
         }
         else
@@ -444,6 +538,8 @@ namespace sm1000neo::radio::icom
             bool connDisconnected;
             uint16_t civPort;
             uint16_t audioPort;
+            short* audioData;
+            uint16_t audioSeqId;
             
             if (packet.isCapabilitiesPacket(radios))
             {
@@ -481,8 +577,8 @@ namespace sm1000neo::radio::icom
                     radioIp,
                     isBusy ? 1 : 0);
                     
-                // TBD -- open CIV and audio now
                 sm_.initializeCivAndAudioStateMachines(0);
+                packetSent = true;
             }
             else if (packet.isStatusPacket(connSuccess, connDisconnected, civPort, audioPort))
             {
@@ -493,6 +589,8 @@ namespace sm1000neo::radio::icom
                         "Starting audio and CIV state machines using remote ports %d and %d",
                         audioPort,
                         civPort);
+                    
+                    sm_.startCivAndAudioStateMachines(audioPort, civPort);
                 }
                 else if (connDisconnected)
                 {
@@ -513,6 +611,51 @@ namespace sm1000neo::radio::icom
                     // TBD -- reset state machines
                 }
             }
+            else if (packet.isAudioPacket(audioSeqId, &audioData))
+            {
+                /*
+                if (audioSeqId == 0)
+                {
+                    // Clear RX buffer
+                    sm_.rxAudioPackets_.clear();
+                }
+                
+                // The audio packet has to one we haven't already received to go in the map.
+                if (audioSeqId > sm_.lastAudioPacketSeqId_ && sm_.rxAudioPackets_.find(audioSeqId) == sm_.rxAudioPackets_.end())
+                {
+                    sm_.lastAudioPacketSeqId_ = audioSeqId;
+                    sm_.rxAudioPackets_[audioSeqId] = packet;
+                }
+                
+                // Iterate through map and look for gaps in the stream. We'll need to rerequest those missing
+                // packets.
+                int first = -1, second = -1;
+                std::vector<uint16_t> packetIdsToRetransmit;
+                for (auto& iter : sm_.rxAudioPackets_)
+                {
+                    first = second;
+                    second = iter.first;
+                    
+                    if (first != -1 && second != -1)
+                    {
+                        for (int seq = first; seq < second; seq++)
+                        {
+                            // gap found, request packets
+                            packetIdsToRetransmit.push_back(seq);
+                            
+                            ESP_LOGI(
+                                sm_.get_name().c_str(), 
+                                "Requesting retransmit of packet %d",
+                                seq);
+                        }
+                    }
+                }
+                
+                auto reqPacket = IcomPacket::CreateRetransmitRequest(sm_.getOurIdentifier(), sm_.getTheirIdentifier(), packetIdsToRetransmit);
+                sm_.sendUntracked(reqPacket);*/
+                int totalSize = (packet.get_send_length() - 0x18) / sizeof(short);
+                sm_.writeOutFifo(audioData, totalSize);  
+            }
         }
         
         if (packetSent)
@@ -530,7 +673,7 @@ namespace sm1000neo::radio::icom
             case 1:
             {
                 // Ping timer fired. Send ping request.
-                ESP_LOGI(sm_.get_name().c_str(), "Send ping, seq %d", sm_.getCurrentPingSequence());
+                //ESP_LOGI(sm_.get_name().c_str(), "Send ping, seq %d", sm_.getCurrentPingSequence());
                 auto packet = IcomPacket::CreatePingPacket(sm_.getCurrentPingSequence(), sm_.getOurIdentifier(), sm_.getTheirIdentifier());
                 sm_.sendUntracked(packet);
                 idleTimer_->stop();
