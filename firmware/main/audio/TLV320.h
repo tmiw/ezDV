@@ -16,8 +16,8 @@
 // TLV320 I2C address
 #define TLV320_I2C_ADDRESS (0x18)
 
-#define I2S_TIMER_INTERVAL_MS (10)
-#define I2S_NUM_SAMPLES_PER_INTERVAL NUM_SAMPLES_PER_AUDIO_MESSAGE
+#define I2S_TIMER_INTERVAL_MS (20)
+#define I2S_NUM_SAMPLES_PER_INTERVAL (160)
 
 namespace sm1000neo::audio
 {
@@ -85,6 +85,25 @@ namespace sm1000neo::audio
             i2c_cmd_link_delete(cmd);
         }
         
+        void setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size)
+        {
+            if (page != currentPage_)
+            {
+                setPage_(page);
+            }
+            
+    		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    		i2c_master_start(cmd);
+    		i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+            
+            i2c_master_write_byte(cmd, reg, true);
+    		i2c_master_write(cmd, val, size, true);
+            i2c_master_stop(cmd);
+            
+            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 10/portTICK_PERIOD_MS));
+            i2c_cmd_link_delete(cmd);
+        }
+        
         uint8_t getConfigurationOption_(uint8_t page, uint8_t reg)
         {
             if (page != currentPage_)
@@ -121,6 +140,7 @@ namespace sm1000neo::audio
         
         void tlv320HardReset_();
         void tlv320ConfigureClocks_();
+        void tlv320ConfigureProcessingBlocks_();
         void tlv320ConfigurePowerAndRouting_();
         void tlv320EnableAudio_();
     };

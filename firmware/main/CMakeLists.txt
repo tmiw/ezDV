@@ -26,11 +26,7 @@ endif()
 include(FetchContent)
 message("Setting up Codec2...")
 
-# This is needed because Codec2's C compiler checks otherwise fail on account of _exit not existing
-# in the Pi Pico's standard library.
-#set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
 
 set(UNITTEST OFF)
 set(BUILD_SHARED_LIBS OFF)
