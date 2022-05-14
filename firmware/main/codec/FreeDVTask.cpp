@@ -1,11 +1,48 @@
 #include "FreeDVTask.h"
 #include "../ui/Messaging.h"
+#include "esp_log.h"
+#include "../audio/TLV320.h"
 
 #define CURRENT_LOG_TAG "FreeDVTask"
 
 namespace sm1000neo::codec   
 {
-    void FreeDVTask::event(const smooth::core::timer::TimerExpiredEvent& event)
+    std::mutex FreeDVTask::FifoMutex_;
+    struct FIFO* FreeDVTask::InputFifo_ = nullptr;
+    struct FIFO* FreeDVTask::OutputFifo_ = nullptr;
+    
+    void FreeDVTask::EnqueueAudio(sm1000neo::audio::AudioDataMessage::ChannelLabel channel, short* audioData, size_t length)
+    {    
+        bool isAcceptingChannelForInput =
+            (isTransmitting_ && channel == USER_CHANNEL) ||
+            (!isTransmitting_ && channel == RADIO_CHANNEL);
+    
+        if (isAcceptingChannelForInput)
+        {
+            //ESP_LOGI(CURRENT_LOG_TAG, "Accepted inbound audio");
+        
+            {
+                std::unique_lock<std::mutex> lock(FifoMutex_);
+                codec2_fifo_write(InputFifo_, audioData, length);
+            }
+            
+            short audioData[length];
+            sm1000neo::audio::AudioDataMessage::ChannelLabel channel = isTransmitting_ ? RADIO_CHANNEL : USER_CHANNEL;
+            
+            int rv = 0;
+            {
+                std::unique_lock<std::mutex> lock(FifoMutex_);
+                rv = codec2_fifo_read(OutputFifo_, audioData, length);
+            }
+            
+            if (rv == 0)
+            {
+                sm1000neo::audio::TLV320::ThisTask().EnqueueAudio(channel, audioData, length);
+            }
+        }
+    }
+    
+    void FreeDVTask::tick()
     {
         bool syncLed = false;
         
@@ -16,10 +53,23 @@ namespace sm1000neo::codec
             short inputBuf[numSpeechSamples];
             short outputBuf[numModemSamples];
             
-            while(codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples) == 0)
+            int rv = 0;
             {
+                std::unique_lock<std::mutex> lock(FifoMutex_);
+                rv = codec2_fifo_read(InputFifo_, inputBuf, numSpeechSamples);
+            }
+            if (rv == 0)
+            {
+                auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
-                codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
+                auto timeEnd = esp_timer_get_time();
+                ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us", timeEnd - timeBegin);
+                {
+                    std::unique_lock<std::mutex> lock(FifoMutex_);
+                    //ESP_LOGI(CURRENT_LOG_TAG, "output FIFO has %d samples before tx", codec2_fifo_used(OutputFifo_));
+                    codec2_fifo_write(OutputFifo_, outputBuf, numModemSamples);
+                    //ESP_LOGI(CURRENT_LOG_TAG, "output FIFO has %d samples after tx", codec2_fifo_used(OutputFifo_));
+                }
             }
         }
         else
@@ -28,11 +78,20 @@ namespace sm1000neo::codec
             short outputBuf[freedv_get_n_speech_samples(dv_)];
             int nin = freedv_nin(dv_);
             
-            while(codec2_fifo_read(inputFifo_, inputBuf, nin) == 0)
+            int rv = 0;
+            {
+                std::unique_lock<std::mutex> lock(FifoMutex_);
+                rv = codec2_fifo_read(InputFifo_, inputBuf, nin);
+            }
+            
+            if (rv == 0)
             {
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
-                codec2_fifo_write(outputFifo_, outputBuf, nout);
-                nin = freedv_nin(dv_);               
+                {
+                    std::unique_lock<std::mutex> lock(FifoMutex_);
+                    codec2_fifo_write(OutputFifo_, outputBuf, nout);
+                    nin = freedv_nin(dv_);
+                }           
             }
             
             syncLed = freedv_get_sync(dv_) > 0;
@@ -48,27 +107,6 @@ namespace sm1000neo::codec
             uiMessage.value = syncLed;
             sm1000neo::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
         }
-                
-        sm1000neo::audio::AudioDataMessage result;
-        result.channel = isTransmitting_ ? RADIO_CHANNEL : USER_CHANNEL;
-        while(codec2_fifo_read(outputFifo_, result.audioData, NUM_SAMPLES_PER_AUDIO_MESSAGE) == 0)
-        {
-            sm1000neo::util::NamedQueue::Send(AUDIO_OUT_PIPE_NAME, result);
-        }
-    }
-    
-    void FreeDVTask::event(const sm1000neo::audio::AudioDataMessage& event)
-    {
-        // We just put data into the FIFO here. The timer is what actually
-        // processes it.
-        bool isAcceptingChannelForInput =
-            (isTransmitting_ && event.channel == USER_CHANNEL) ||
-            (!isTransmitting_ && event.channel == RADIO_CHANNEL);
-        
-        if (isAcceptingChannelForInput)
-        {
-            codec2_fifo_write(inputFifo_, const_cast<short*>(event.audioData), NUM_SAMPLES_PER_AUDIO_MESSAGE);
-        }
     }
     
     void FreeDVTask::event(const sm1000neo::codec::FreeDVChangeModeMessage& event)
@@ -78,6 +116,10 @@ namespace sm1000neo::codec
         freedv_close(dv_);
         dv_ = freedv_open(event.newMode);
         assert(dv_ != nullptr);
+        
+        // ESP32 doesn't like clipping and BPF for some reason. TBD
+        freedv_set_clip(dv_, 0);
+        freedv_set_tx_bpf(dv_, 0);
         
         resetFifos_();
     }
@@ -98,28 +140,29 @@ namespace sm1000neo::codec
         dv_ = freedv_open(FREEDV_MODE_700D);
         assert(dv_ != nullptr);
         
-        codecTimer_ = smooth::core::timer::Timer::create(
-            2, timerExpiredQueue_, true,
-            std::chrono::milliseconds(20));
-        codecTimer_->start();
+        // ESP32 doesn't like clipping and BPF for some reason. TBD
+        freedv_set_clip(dv_, 0);
+        freedv_set_tx_bpf(dv_, 0);
     }
     
     void FreeDVTask::resetFifos_()
     {
-        if (inputFifo_ != nullptr)
+        std::unique_lock<std::mutex> lock(FifoMutex_);
+        
+        if (InputFifo_ != nullptr)
         {
-            codec2_fifo_destroy(inputFifo_);
+            codec2_fifo_destroy(InputFifo_);
         }
         
-        if (outputFifo_ != nullptr)
+        if (OutputFifo_ != nullptr)
         {
-            codec2_fifo_destroy(outputFifo_);
+            codec2_fifo_destroy(OutputFifo_);
         }
         
-        inputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
-        assert(inputFifo_ != nullptr);
+        InputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(InputFifo_ != nullptr);
         
-        outputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
-        assert(outputFifo_ != nullptr);
+        OutputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(OutputFifo_ != nullptr);
     }
 }

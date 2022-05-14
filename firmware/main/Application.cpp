@@ -17,8 +17,8 @@ namespace sm1000neo
     {
         Application::init();
         
-        soundCodec.start();
-        freedvTask.start();
+        sm1000neo::audio::TLV320::ThisTask().start();
+        sm1000neo::codec::FreeDVTask::ThisTask().start();
         uiTask.start();
         
         smooth::core::network::Wifi& wifi = get_wifi();

@@ -17,8 +17,6 @@ namespace sm1000neo
         void init() override;
         
     private:
-        audio::TLV320 soundCodec;
-        codec::FreeDVTask freedvTask;
         ui::UserInterfaceTask uiTask;
         radio::icom::IcomRadioTask radioTask;
     };

@@ -12,7 +12,7 @@ namespace sm1000neo::audio
 {
     struct AudioDataMessage
     {
-        enum { LEFT_CHANNEL, RIGHT_CHANNEL } channel;
+        enum ChannelLabel { LEFT_CHANNEL, RIGHT_CHANNEL } channel;
         short audioData[NUM_SAMPLES_PER_AUDIO_MESSAGE];
     };
 }

@@ -10,6 +10,7 @@
 #include "Messaging.h"
 
 #include "codec2_fifo.h"
+#include "../codec/FreeDVTask.h"
 
 // Driver for the TLV320 audio codec chip from Texas Instruments.
 
@@ -22,30 +23,39 @@
 namespace sm1000neo::audio
 {
     class TLV320 : 
-        public smooth::core::Task,
-        public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>,
-        public smooth::core::ipc::IEventListener<AudioDataMessage>
+        public smooth::core::Task
     {
     public:
         TLV320()
-            : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(1))
+            : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
             , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
-            , timerExpiredQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(5, *this, *this))
-            , audioDataInputQueue_(smooth::core::ipc::TaskEventQueue<AudioDataMessage>::create(25, *this, *this))
         {
             // Create output FIFOs so we can recombine both channels into one I2S stream.
             leftChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
             assert(leftChannelOutFifo_ != nullptr);
             rightChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
             assert(rightChannelOutFifo_ != nullptr);
-            
-            // Register input channel for use by other tasks.
-            sm1000neo::util::NamedQueue::Add(AUDIO_OUT_PIPE_NAME, audioDataInputQueue_);
         }
         
-        void event(const smooth::core::timer::TimerExpiredEvent& event) override;
-        void event(const AudioDataMessage& event) override;
+        virtual void tick() override;
         
+        static TLV320& ThisTask()
+        {
+            static TLV320 task;
+            return task;
+        }
+        
+        void EnqueueAudio(sm1000neo::audio::AudioDataMessage::ChannelLabel channel, short* audioData, size_t length)
+        {
+            if (channel == sm1000neo::audio::AudioDataMessage::LEFT_CHANNEL)
+            {
+                codec2_fifo_write(leftChannelOutFifo_, audioData, length);
+            }
+            else
+            {
+                codec2_fifo_write(rightChannelOutFifo_, audioData, length);
+            }
+        }
     protected:
         virtual void init();
         
@@ -126,11 +136,7 @@ namespace sm1000neo::audio
         }
         
         int currentPage_;
-        
-        smooth::core::timer::TimerOwner readWriteTimer_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<AudioDataMessage>> audioDataInputQueue_;
-        
+                
         struct FIFO* leftChannelOutFifo_;
         struct FIFO* rightChannelOutFifo_;
         

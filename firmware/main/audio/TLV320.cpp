@@ -50,19 +50,14 @@ namespace sm1000neo::audio
         // Enable audio
         ESP_LOGI(CURRENT_LOG_TAG, "enable audio");
         tlv320EnableAudio_();
-        
-        // Set up I2S read timer and start it.
-        ESP_LOGI(CURRENT_LOG_TAG, "Starting I2S timer");
-        readWriteTimer_ = smooth::core::timer::Timer::create(
-            1, timerExpiredQueue_, true,
-            std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS));
-        readWriteTimer_->start();
     }
     
-    void TLV320::event(const smooth::core::timer::TimerExpiredEvent& event)
+    void TLV320::tick()
     {    
         short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
         memset(tempData, 0, sizeof(tempData));
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "tick()");
         
         // Perform read from I2S. 
         size_t bytesRead = sizeof(tempData);
@@ -78,8 +73,9 @@ namespace sm1000neo::audio
         }
         leftChannelMessage.channel = AudioDataMessage::LEFT_CHANNEL;
         rightChannelMessage.channel = AudioDataMessage::RIGHT_CHANNEL;
-        NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, leftChannelMessage);
-        NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, rightChannelMessage);
+        sm1000neo::codec::FreeDVTask& fdvTask = sm1000neo::codec::FreeDVTask::ThisTask();
+        fdvTask.EnqueueAudio(AudioDataMessage::LEFT_CHANNEL, leftChannelMessage.audioData, bytesRead / 2 / sizeof(short));
+        fdvTask.EnqueueAudio(AudioDataMessage::RIGHT_CHANNEL, rightChannelMessage.audioData, bytesRead / 2 / sizeof(short));
         
         // If we have available data in the FIFOs, send it out.
         short tempDataLeft[I2S_NUM_SAMPLES_PER_INTERVAL];
@@ -101,14 +97,13 @@ namespace sm1000neo::audio
             
             size_t bytesWritten = 0;
             ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
+            
+            //ESP_LOGW(CURRENT_LOG_TAG, "transmitted %d bytes over I2S", bytesWritten);
         }
-    }
-    
-    void TLV320::event(const AudioDataMessage& event)
-    {
-        // Add to the respective FIFO for now. The timer event will trigger write to I2S.
-        auto fifo = event.channel == AudioDataMessage::LEFT_CHANNEL ? leftChannelOutFifo_ : rightChannelOutFifo_;
-        codec2_fifo_write(fifo, const_cast<short*>(event.audioData), NUM_SAMPLES_PER_AUDIO_MESSAGE);
+        else
+        {
+            ESP_LOGW(CURRENT_LOG_TAG, "no audio data for TX");
+        }
     }
     
     void TLV320::initializeI2S_()
@@ -119,7 +114,7 @@ namespace sm1000neo::audio
         tlv320_i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
         tlv320_i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
         tlv320_i2s_config.dma_buf_count = 4;
-        tlv320_i2s_config.dma_buf_len = 1024;
+        tlv320_i2s_config.dma_buf_len = I2S_NUM_SAMPLES_PER_INTERVAL;
         tlv320_i2s_config.use_apll = false;
         tlv320_i2s_config.mclk_multiple = I2S_MCLK_MULTIPLE_256;
         tlv320_i2s_config.chan_mask = I2S_CHANNEL_STEREO;
