@@ -151,7 +151,9 @@ namespace sm1000neo::codec
     
     void FreeDVTask::setSquelch_(int mode)
     {
-        // ESP32 doesn't like clipping and BPF for some reason. TBD
+        // ESP32 doesn't like BPF for some reason. TBD
+        // Note: we may be able to work around the lack of BPF by using the 
+        // built in filtering on the TLV320 DAC. 
         freedv_set_clip(dv_, 0);
         freedv_set_tx_bpf(dv_, 0);
         
@@ -162,7 +164,7 @@ namespace sm1000neo::codec
                 freedv_set_squelch_en(dv_, 1);
                 break;
             case FREEDV_MODE_700E:
-                // Note: clipping is req'd for 700E but the ESP32 can't use it right now.
+                // Note: clipping/BPF is req'd for 700E but the ESP32 can't use it right now.
                 /*freedv_set_clip(dv_, 1);
                 freedv_set_tx_bpf(dv_, 1);*/
             default:
