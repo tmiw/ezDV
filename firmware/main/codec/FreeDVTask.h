@@ -5,7 +5,7 @@
 #include "smooth/core/timer/Timer.h"
 #include "util/NamedQueue.h"
 #include "Messaging.h"
-#include "../audio/Messaging.h"
+#include "../audio/Constants.h"
 #include "codec2_fifo.h"
 #include "freedv_api.h"
 
@@ -20,7 +20,9 @@ namespace sm1000neo::codec
     {
     public:
         FreeDVTask()
-            : smooth::core::Task("FreeDVTask", 48000, 50, std::chrono::milliseconds(20), 1)
+            : smooth::core::Task("FreeDVTask", 48000, 10, std::chrono::milliseconds(20), 1)
+            , inputFifo_(nullptr)
+            , outputFifo_(nullptr)
             , isTransmitting_(false)
             , dv_(nullptr)
             , sync_(false)
@@ -40,18 +42,19 @@ namespace sm1000neo::codec
         
         static FreeDVTask& ThisTask()
         {
-            static FreeDVTask task;
-            return task;
+            return Task_;
         } 
         
-        void EnqueueAudio(sm1000neo::audio::AudioDataMessage::ChannelLabel channel, short* audioData, size_t length);
+        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length);
     protected:
         virtual void init();
         
     private:
-        static std::mutex FifoMutex_;
-        static struct FIFO* InputFifo_;
-        static struct FIFO* OutputFifo_;
+        static FreeDVTask Task_;
+        
+        std::mutex fifoMutex_;
+        struct FIFO* inputFifo_;
+        struct FIFO* outputFifo_;
         
         bool isTransmitting_;
         struct freedv* dv_;

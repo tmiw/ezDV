@@ -1,6 +1,7 @@
 #include <random>
 #include "ProtocolStateMachine.h"
-#include "../../audio/Messaging.h"
+#include "../../audio/Constants.h"
+#include "../../codec/FreeDVTask.h"
 #include "../../util/NamedQueue.h"
 
 namespace sm1000neo::radio::icom
@@ -50,14 +51,16 @@ namespace sm1000neo::radio::icom
             rxAudioPackets_.erase(rxAudioPackets_.begin());          
         }*/
         
-        do
+        while (codec2_fifo_used(outFifo_) >= I2S_NUM_SAMPLES_PER_INTERVAL)
         {
-            sm1000neo::audio::AudioDataMessage audioMessage;
-            memset(audioMessage.audioData, 0, sizeof(short) * NUM_SAMPLES_PER_AUDIO_MESSAGE);
-            audioMessage.channel = RADIO_CHANNEL;
-            codec2_fifo_read(outFifo_, audioMessage.audioData, NUM_SAMPLES_PER_AUDIO_MESSAGE);
-            sm1000neo::util::NamedQueue::Send(FREEDV_AUDIO_IN_PIPE_NAME, audioMessage);
-        } while (codec2_fifo_used(outFifo_) >= NUM_SAMPLES_PER_AUDIO_MESSAGE);
+            short tmpAudio[I2S_NUM_SAMPLES_PER_INTERVAL];
+            memset(tmpAudio, 0, sizeof(short) * I2S_NUM_SAMPLES_PER_INTERVAL);
+            
+            codec2_fifo_read(outFifo_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            
+            auto& task = sm1000neo::codec::FreeDVTask::ThisTask();
+            task.enqueueAudio(sm1000neo::audio::ChannelLabel::RADIO_CHANNEL, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+        }
     }
     
     ProtocolStateMachine::StateMachineType ProtocolStateMachine::getStateMachineType() const

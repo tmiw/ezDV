@@ -7,7 +7,7 @@
 #include "smooth/core/util/FixedBuffer.h"
 #include "smooth/core/timer/Timer.h"
 #include "util/NamedQueue.h"
-#include "Messaging.h"
+#include "Constants.h"
 
 #include "codec2_fifo.h"
 #include "../codec/FreeDVTask.h"
@@ -17,9 +17,6 @@
 // TLV320 I2C address
 #define TLV320_I2C_ADDRESS (0x18)
 
-#define I2S_TIMER_INTERVAL_MS (20)
-#define I2S_NUM_SAMPLES_PER_INTERVAL (160)
-
 namespace sm1000neo::audio
 {
     class TLV320 : 
@@ -27,7 +24,7 @@ namespace sm1000neo::audio
     {
     public:
         TLV320()
-            : smooth::core::Task("TLV320", 4096, 50, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
+            : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
             , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
         {
             // Create output FIFOs so we can recombine both channels into one I2S stream.
@@ -41,13 +38,12 @@ namespace sm1000neo::audio
         
         static TLV320& ThisTask()
         {
-            static TLV320 task;
-            return task;
+            return Task_;
         }
         
-        void EnqueueAudio(sm1000neo::audio::AudioDataMessage::ChannelLabel channel, short* audioData, size_t length)
+        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length)
         {
-            if (channel == sm1000neo::audio::AudioDataMessage::LEFT_CHANNEL)
+            if (channel == sm1000neo::audio::ChannelLabel::LEFT_CHANNEL)
             {
                 codec2_fifo_write(leftChannelOutFifo_, audioData, length);
             }
@@ -60,6 +56,8 @@ namespace sm1000neo::audio
         virtual void init();
         
     private:
+        static TLV320 Task_;
+        
         void setPage_(uint8_t page)
         {
     		i2c_cmd_handle_t cmd = i2c_cmd_link_create();

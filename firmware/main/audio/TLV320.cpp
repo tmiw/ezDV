@@ -22,6 +22,8 @@ using namespace sm1000neo::util;
 
 namespace sm1000neo::audio
 {
+    TLV320 TLV320::Task_;
+    
     void TLV320::init()
     {            
         ESP_LOGI(CURRENT_LOG_TAG, "initialize I2S and I2C");
@@ -60,29 +62,24 @@ namespace sm1000neo::audio
         short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
         memset(tempData, 0, sizeof(tempData));
         
-        //ESP_LOGI(CURRENT_LOG_TAG, "tick()");
-        
         // Perform read from I2S. 
         size_t bytesRead = sizeof(tempData);
         ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, portMAX_DELAY));
         
         // Send to Codec2
-        AudioDataMessage leftChannelMessage;
-        AudioDataMessage rightChannelMessage;
+        short tempDataLeft[bytesRead / 2 / sizeof(short)];
+        short tempDataRight[bytesRead / 2 / sizeof(short)];
         for (auto index = 0; index < bytesRead / sizeof(short); index++)
         {
-            leftChannelMessage.audioData[index] = tempData[2*index];
-            rightChannelMessage.audioData[index] = tempData[2*index + 1];
+            tempDataLeft[index] = tempData[2*index];
+            tempDataRight[index] = tempData[2*index + 1];
         }
-        leftChannelMessage.channel = AudioDataMessage::LEFT_CHANNEL;
-        rightChannelMessage.channel = AudioDataMessage::RIGHT_CHANNEL;
+
         sm1000neo::codec::FreeDVTask& fdvTask = sm1000neo::codec::FreeDVTask::ThisTask();
-        fdvTask.EnqueueAudio(AudioDataMessage::LEFT_CHANNEL, leftChannelMessage.audioData, bytesRead / 2 / sizeof(short));
-        fdvTask.EnqueueAudio(AudioDataMessage::RIGHT_CHANNEL, rightChannelMessage.audioData, bytesRead / 2 / sizeof(short));
+        fdvTask.enqueueAudio(ChannelLabel::LEFT_CHANNEL, tempDataLeft, bytesRead / 2 / sizeof(short));
+        fdvTask.enqueueAudio(ChannelLabel::RIGHT_CHANNEL, tempDataRight, bytesRead / 2 / sizeof(short));
         
         // If we have available data in the FIFOs, send it out.
-        short tempDataLeft[I2S_NUM_SAMPLES_PER_INTERVAL];
-        short tempDataRight[I2S_NUM_SAMPLES_PER_INTERVAL];
         memset(tempDataLeft, 0, sizeof(tempDataLeft));
         memset(tempDataRight, 0, sizeof(tempDataRight));
         
@@ -100,7 +97,6 @@ namespace sm1000neo::audio
             
             size_t bytesWritten = 0;
             ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
-
             //ESP_LOGW(CURRENT_LOG_TAG, "transmitted %d bytes over I2S", bytesWritten);
         }
         else

@@ -7,39 +7,43 @@
 
 namespace sm1000neo::codec   
 {
-    std::mutex FreeDVTask::FifoMutex_;
-    struct FIFO* FreeDVTask::InputFifo_ = nullptr;
-    struct FIFO* FreeDVTask::OutputFifo_ = nullptr;
+    FreeDVTask FreeDVTask::Task_;
     
-    void FreeDVTask::EnqueueAudio(sm1000neo::audio::AudioDataMessage::ChannelLabel channel, short* audioData, size_t length)
+    void FreeDVTask::enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length)
     {    
         bool isAcceptingChannelForInput =
-            (isTransmitting_ && channel == USER_CHANNEL) ||
-            (!isTransmitting_ && channel == RADIO_CHANNEL);
+            (isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::USER_CHANNEL) ||
+            (!isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::RADIO_CHANNEL);
     
         if (isAcceptingChannelForInput)
         {
-            //ESP_LOGI(CURRENT_LOG_TAG, "Accepted inbound audio");
-        
             {
-                std::unique_lock<std::mutex> lock(FifoMutex_);
-                codec2_fifo_write(InputFifo_, audioData, length);
+                std::unique_lock<std::mutex> lock(fifoMutex_);
+                codec2_fifo_write(inputFifo_, audioData, length);
             }
             
-            short audioData[length];
-            memset(audioData, 0, length * sizeof(short));
-            sm1000neo::audio::AudioDataMessage::ChannelLabel channel = isTransmitting_ ? RADIO_CHANNEL : USER_CHANNEL;
+            short audioDataOut[length];
+            memset(audioDataOut, 0, length * sizeof(short));
+            sm1000neo::audio::ChannelLabel channel = 
+                isTransmitting_ ? 
+                sm1000neo::audio::ChannelLabel::RADIO_CHANNEL : 
+                sm1000neo::audio::ChannelLabel::USER_CHANNEL;
             
             {
-                std::unique_lock<std::mutex> lock(FifoMutex_);
-                codec2_fifo_read(OutputFifo_, audioData, length);
+                std::unique_lock<std::mutex> lock(fifoMutex_);
+                codec2_fifo_read(outputFifo_, audioDataOut, length);
             }
-            sm1000neo::audio::TLV320::ThisTask().EnqueueAudio(channel, audioData, length);
+            sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
+            task.enqueueAudio(channel, audioDataOut, length);
         }
     }
     
     void FreeDVTask::tick()
     {
+        // Note: we don't lock on the mutex in here because the mutex is only to make
+        // sure the fifos don't fall out from under the caller of EnqueueAudio().
+        // Thus, it only needs to be locked there and when we actually reset the fifos;
+        // all other fifo operations are thread safe (assuming 1 reader and 1 writer).
         bool syncLed = false;
         
         if (isTransmitting_)
@@ -49,23 +53,11 @@ namespace sm1000neo::codec
             short inputBuf[numSpeechSamples];
             short outputBuf[numModemSamples];
             
-            int rv = 0;
-            {
-                std::unique_lock<std::mutex> lock(FifoMutex_);
-                rv = codec2_fifo_read(InputFifo_, inputBuf, numSpeechSamples);
-            }
+            int rv = codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples);
             if (rv == 0)
             {
-                auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
-                auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us", timeEnd - timeBegin);
-                {
-                    std::unique_lock<std::mutex> lock(FifoMutex_);
-                    //ESP_LOGI(CURRENT_LOG_TAG, "output FIFO has %d samples before tx", codec2_fifo_used(OutputFifo_));
-                    codec2_fifo_write(OutputFifo_, outputBuf, numModemSamples);
-                    //ESP_LOGI(CURRENT_LOG_TAG, "output FIFO has %d samples after tx", codec2_fifo_used(OutputFifo_));
-                }
+                codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
             }
         }
         else
@@ -74,20 +66,12 @@ namespace sm1000neo::codec
             short outputBuf[freedv_get_n_speech_samples(dv_)];
             int nin = freedv_nin(dv_);
             
-            int rv = 0;
-            {
-                std::unique_lock<std::mutex> lock(FifoMutex_);
-                rv = codec2_fifo_read(InputFifo_, inputBuf, nin);
-            }
-            
+            int rv = codec2_fifo_read(inputFifo_, inputBuf, nin);
             if (rv == 0)
             {
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
-                {
-                    std::unique_lock<std::mutex> lock(FifoMutex_);
-                    codec2_fifo_write(OutputFifo_, outputBuf, nout);
-                    nin = freedv_nin(dv_);
-                }           
+                codec2_fifo_write(outputFifo_, outputBuf, nout);
+                nin = freedv_nin(dv_);
             }
             
             syncLed = freedv_get_sync(dv_) > 0;
@@ -138,23 +122,23 @@ namespace sm1000neo::codec
     
     void FreeDVTask::resetFifos_()
     {
-        std::unique_lock<std::mutex> lock(FifoMutex_);
+        std::unique_lock<std::mutex> lock(fifoMutex_);
         
-        if (InputFifo_ != nullptr)
+        if (inputFifo_ != nullptr)
         {
-            codec2_fifo_destroy(InputFifo_);
+            codec2_fifo_destroy(inputFifo_);
         }
         
-        if (OutputFifo_ != nullptr)
+        if (outputFifo_ != nullptr)
         {
-            codec2_fifo_destroy(OutputFifo_);
+            codec2_fifo_destroy(outputFifo_);
         }
         
-        InputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
-        assert(InputFifo_ != nullptr);
+        inputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(inputFifo_ != nullptr);
         
-        OutputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
-        assert(OutputFifo_ != nullptr);
+        outputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
+        assert(outputFifo_ != nullptr);
     }
     
     void FreeDVTask::setSquelch_(int mode)
