@@ -1,3 +1,6 @@
 [submodule "firmware/externals/smooth"]
 	path = firmware/externals/smooth
 	url = https://github.com/tmiw/Smooth.git
+[submodule "firmware/externals/esp-dsp"]
+	path = firmware/externals/esp-dsp
+	url = https://github.com/espressif/esp-dsp.git

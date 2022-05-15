@@ -2,6 +2,8 @@
 #include "../ui/Messaging.h"
 #include "esp_log.h"
 #include "../audio/TLV320.h"
+#include "codec2_math.h"
+#include "esp_dsp.h"
 
 #define CURRENT_LOG_TAG "FreeDVTask"
 
@@ -24,7 +26,7 @@ namespace sm1000neo::codec
             
             short audioDataOut[length];
             memset(audioDataOut, 0, length * sizeof(short));
-            sm1000neo::audio::ChannelLabel channel = 
+            sm1000neo::audio::ChannelLabel outChannel = 
                 isTransmitting_ ? 
                 sm1000neo::audio::ChannelLabel::RADIO_CHANNEL : 
                 sm1000neo::audio::ChannelLabel::USER_CHANNEL;
@@ -34,7 +36,7 @@ namespace sm1000neo::codec
                 codec2_fifo_read(outputFifo_, audioDataOut, length);
             }
             sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
-            task.enqueueAudio(channel, audioDataOut, length);
+            task.enqueueAudio(outChannel, audioDataOut, length);
         }
     }
     
@@ -56,7 +58,10 @@ namespace sm1000neo::codec
             int rv = codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples);
             if (rv == 0)
             {
+                auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
+                auto timeEnd = esp_timer_get_time();
+                ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, numSpeechSamples, numModemSamples);
                 codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
             }
         }
@@ -69,7 +74,10 @@ namespace sm1000neo::codec
             int rv = codec2_fifo_read(inputFifo_, inputBuf, nin);
             if (rv == 0)
             {
+                auto timeBegin = esp_timer_get_time();
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
+                auto timeEnd = esp_timer_get_time();
+                ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
                 codec2_fifo_write(outputFifo_, outputBuf, nout);
                 nin = freedv_nin(dv_);
             }
@@ -163,4 +171,28 @@ namespace sm1000neo::codec
                 break;
         }
     }
+}
+
+// Implement required Codec2 math methods below as CMSIS doesn't work on ESP32.
+
+void codec2_dot_product_f32(float* left, float* right, size_t len, float* result)
+{
+    dsps_dotprod_f32(left, right, result, len);
+}
+
+void codec2_complex_dot_product_f32(float* left, float* right, size_t len, float* resultReal, float* resultImag)
+{
+    // Complex number math: (a + bi)(c + di) = ac + bci + adi + (bi)(di) = ac - bd + (bc + ad)i
+    float realTimesRealResult; // ac
+    float realTimesImag1Result; // bci
+    float realTimesImag2Result; // adi
+    float imagTimesImagResult; // bi * di
+    
+    dsps_dotprode_f32(left, right, &realTimesRealResult, len, 0, 0);
+    dsps_dotprode_f32(left, right, &realTimesImag1Result, len, 1, 0);
+    dsps_dotprode_f32(left, right, &realTimesImag2Result, len, 0, 1);
+    dsps_dotprode_f32(left, right, &imagTimesImagResult, len, 1, 1);
+    
+    *resultReal = realTimesRealResult - imagTimesImagResult;
+    *resultImag = realTimesImag1Result + realTimesImag2Result;
 }

@@ -1,7 +1,7 @@
 #ifndef RADIO__AUDIO__CONSTANTS_H
 #define RADIO__AUDIO__CONSTANTS_H
 
-#define I2S_TIMER_INTERVAL_MS (20)
+#define I2S_TIMER_INTERVAL_MS (10)
 #define I2S_NUM_SAMPLES_PER_INTERVAL (160)
 
 namespace sm1000neo::audio

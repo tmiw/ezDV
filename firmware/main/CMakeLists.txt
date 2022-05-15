@@ -20,7 +20,8 @@ if(${ESP_PLATFORM})
                             #LDFRAGMENTS
                             #    "codec2.lf"
                             REQUIRES
-                                smooth_component)
+                                smooth_component
+                                esp-dsp)
 endif()
 
 # Compiles and links Codec2 into the application.

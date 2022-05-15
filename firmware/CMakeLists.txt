@@ -11,7 +11,8 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 # Include Smooth as a component
 set(EXTRA_COMPONENT_DIRS
-         externals/smooth/smooth_component)
+         externals/smooth/smooth_component
+         externals/esp-dsp)
 
 project(sm1000neo)
 
