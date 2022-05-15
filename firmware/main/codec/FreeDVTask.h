@@ -20,7 +20,7 @@ namespace sm1000neo::codec
     {
     public:
         FreeDVTask()
-            : smooth::core::Task("FreeDVTask", 48000, 10, std::chrono::milliseconds(20), 1)
+            : smooth::core::Task("FreeDVTask", 48000, 50, std::chrono::milliseconds(20), 1)
             , isTransmitting_(false)
             , dv_(nullptr)
             , sync_(false)
@@ -61,6 +61,7 @@ namespace sm1000neo::codec
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangePTTMessage>> pttInputQueue_;
         
         void resetFifos_();
+        void setSquelch_(int mode);
     };
 }
 

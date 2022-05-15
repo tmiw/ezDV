@@ -27,18 +27,14 @@ namespace sm1000neo::codec
             }
             
             short audioData[length];
+            memset(audioData, 0, length * sizeof(short));
             sm1000neo::audio::AudioDataMessage::ChannelLabel channel = isTransmitting_ ? RADIO_CHANNEL : USER_CHANNEL;
             
-            int rv = 0;
             {
                 std::unique_lock<std::mutex> lock(FifoMutex_);
-                rv = codec2_fifo_read(OutputFifo_, audioData, length);
+                codec2_fifo_read(OutputFifo_, audioData, length);
             }
-            
-            if (rv == 0)
-            {
-                sm1000neo::audio::TLV320::ThisTask().EnqueueAudio(channel, audioData, length);
-            }
+            sm1000neo::audio::TLV320::ThisTask().EnqueueAudio(channel, audioData, length);
         }
     }
     
@@ -63,7 +59,7 @@ namespace sm1000neo::codec
                 auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
                 auto timeEnd = esp_timer_get_time();
-                ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us", timeEnd - timeBegin);
+                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us", timeEnd - timeBegin);
                 {
                     std::unique_lock<std::mutex> lock(FifoMutex_);
                     //ESP_LOGI(CURRENT_LOG_TAG, "output FIFO has %d samples before tx", codec2_fifo_used(OutputFifo_));
@@ -117,10 +113,7 @@ namespace sm1000neo::codec
         dv_ = freedv_open(event.newMode);
         assert(dv_ != nullptr);
         
-        // ESP32 doesn't like clipping and BPF for some reason. TBD
-        freedv_set_clip(dv_, 0);
-        freedv_set_tx_bpf(dv_, 0);
-        
+        setSquelch_(event.newMode);
         resetFifos_();
     }
     
@@ -140,9 +133,7 @@ namespace sm1000neo::codec
         dv_ = freedv_open(FREEDV_MODE_700D);
         assert(dv_ != nullptr);
         
-        // ESP32 doesn't like clipping and BPF for some reason. TBD
-        freedv_set_clip(dv_, 0);
-        freedv_set_tx_bpf(dv_, 0);
+        setSquelch_(FREEDV_MODE_700D);
     }
     
     void FreeDVTask::resetFifos_()
@@ -164,5 +155,28 @@ namespace sm1000neo::codec
         
         OutputFifo_ = codec2_fifo_create(MAX_CODEC2_SAMPLES_IN_FIFO);
         assert(OutputFifo_ != nullptr);
+    }
+    
+    void FreeDVTask::setSquelch_(int mode)
+    {
+        // ESP32 doesn't like clipping and BPF for some reason. TBD
+        freedv_set_clip(dv_, 0);
+        freedv_set_tx_bpf(dv_, 0);
+        
+        switch (mode)
+        {
+            case FREEDV_MODE_700D:
+                freedv_set_snr_squelch_thresh(dv_, -2.0);  /* squelch at -2.0 dB      */
+                freedv_set_squelch_en(dv_, 1);
+                break;
+            case FREEDV_MODE_700E:
+                // Note: clipping is req'd for 700E but the ESP32 can't use it right now.
+                /*freedv_set_clip(dv_, 1);
+                freedv_set_tx_bpf(dv_, 1);*/
+            default:
+                freedv_set_snr_squelch_thresh(dv_, 0.0);  /* squelch at 0.0 dB      */
+                freedv_set_squelch_en(dv_, 1);
+                break;
+        }
     }
 }

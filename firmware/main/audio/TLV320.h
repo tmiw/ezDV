@@ -27,7 +27,7 @@ namespace sm1000neo::audio
     {
     public:
         TLV320()
-            : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
+            : smooth::core::Task("TLV320", 4096, 50, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
             , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
         {
             // Create output FIFOs so we can recombine both channels into one I2S stream.

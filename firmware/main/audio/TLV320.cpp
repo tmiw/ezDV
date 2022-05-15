@@ -57,7 +57,7 @@ namespace sm1000neo::audio
         short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
         memset(tempData, 0, sizeof(tempData));
         
-        ESP_LOGI(CURRENT_LOG_TAG, "tick()");
+        //ESP_LOGI(CURRENT_LOG_TAG, "tick()");
         
         // Perform read from I2S. 
         size_t bytesRead = sizeof(tempData);
@@ -316,10 +316,10 @@ namespace sm1000neo::audio
         setConfigurationOption_(1, 59, 0x0c);
         setConfigurationOption_(1, 60, 0x0c);
         
-        // Unmute HPL and HPR, gain = 0dB
+        // Unmute HPL and HPR, gain = -6dB HPL, -6 dB HPR
         // (Page 1, registers 16 and 17)
-        setConfigurationOption_(1, 16, 0);
-        setConfigurationOption_(1, 17, 0);
+        setConfigurationOption_(1, 16, -6 & 0b00111111);
+        setConfigurationOption_(1, 17, -6 & 0b00111111);
         
         // Power up HPL and HPR
         // (Page 1, register 9)
