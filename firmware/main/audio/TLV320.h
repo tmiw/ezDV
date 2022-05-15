@@ -147,8 +147,9 @@ namespace sm1000neo::audio
         void tlv320HardReset_();
         void tlv320ConfigureClocks_();
         void tlv320ConfigureProcessingBlocks_();
-        void tlv320ConfigurePowerAndRouting_();
-        void tlv320EnableAudio_();
+        void tlv320ConfigurePower_();
+        void tlv320ConfigureRoutingADC_();
+        void tlv320ConfigureRoutingDAC_();
     };
 
 }

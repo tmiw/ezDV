@@ -43,13 +43,16 @@ namespace sm1000neo::audio
         ESP_LOGI(CURRENT_LOG_TAG, "configure processing blocks");
         tlv320ConfigureProcessingBlocks_();
         
-        // Set power and I/O routing.
-        ESP_LOGI(CURRENT_LOG_TAG, "configure power and routing");
-        tlv320ConfigurePowerAndRouting_();
+        ESP_LOGI(CURRENT_LOG_TAG, "configure LDOs");
+        tlv320ConfigurePower_();
         
-        // Enable audio
-        ESP_LOGI(CURRENT_LOG_TAG, "enable audio");
-        tlv320EnableAudio_();
+        // Set power and I/O routing (ADC).
+        ESP_LOGI(CURRENT_LOG_TAG, "configure routing for ADC");
+        tlv320ConfigureRoutingADC_();
+        
+        // Set power and I/O routing (DAC).
+        ESP_LOGI(CURRENT_LOG_TAG, "configure routing for DAC");
+        tlv320ConfigureRoutingDAC_();
     }
     
     void TLV320::tick()
@@ -88,7 +91,7 @@ namespace sm1000neo::audio
         {
             codec2_fifo_read(leftChannelOutFifo_, tempDataLeft, I2S_NUM_SAMPLES_PER_INTERVAL);
             codec2_fifo_read(rightChannelOutFifo_, tempDataRight, I2S_NUM_SAMPLES_PER_INTERVAL);
-            
+
             for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
             {
                 tempData[2*index] = tempDataLeft[index];
@@ -97,7 +100,7 @@ namespace sm1000neo::audio
             
             size_t bytesWritten = 0;
             ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
-            
+
             //ESP_LOGW(CURRENT_LOG_TAG, "transmitted %d bytes over I2S", bytesWritten);
         }
         else
@@ -256,6 +259,43 @@ namespace sm1000neo::audio
         setConfigurationOption_(0, 27, 0);
     }
     
+    void TLV320::tlv320ConfigurePower_()
+    {
+        // Power up AVDD LDO
+        setConfigurationOption_(1, 2, (1 << 3) | (1 << 0));
+        
+        // Disable weak AVDD in presence of external AVDD supply (Page 1, register 1)
+        setConfigurationOption_(1, 1, (1 << 3));
+        
+        // AVDD/DVDD 1.72V, AVDD LDO powered up (Page 1, register 2)
+        setConfigurationOption_(1, 2, (0 << 3) | (1 << 0));
+        
+        // Set full chip common mode to 0.9V
+        // HP output CM = 1.65V
+        // HP driver supply = LDOin voltage
+        // Line output CM = 1.65V
+        // Line output supply = LDOin voltage
+        // (Page 1, register 10)
+        setConfigurationOption_(1, 10, (3 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
+        
+        // Set ADC PTM to PTM_R4 (Page 1, register 61)
+        setConfigurationOption_(1, 61, 0);
+        
+        // Set DAC PTM to PTM_R3 (Page 1, registers 3-4)
+        // Note: PTM_R4 requires >= 20 bits for I2S, hence not used here.
+        uint8_t dacPtm[] = {
+            0,
+            0
+        };
+        setConfigurationOptionMultiple_(1, 3, dacPtm, 2);
+        
+        // Set input powerup time to 3.1ms (Page 1, register 71)
+        setConfigurationOption_(1, 71, 0b110001);
+        
+        // REF will power up in 40ms (Page 1, register 123)
+        setConfigurationOption_(1, 123, 1);
+    }
+    
     void TLV320::tlv320ConfigureProcessingBlocks_()
     {
         // Set ADC_PRB and DAC_PRB to P1 and R1 (Page 0, registers 60-61).
@@ -266,30 +306,10 @@ namespace sm1000neo::audio
         setConfigurationOptionMultiple_(0, 60, prb, 2);
     }
     
-    void TLV320::tlv320ConfigurePowerAndRouting_()
+    void TLV320::tlv320ConfigureRoutingADC_()
     {
-        // Disable weak AVDD in presence of external AVDD supply (Page 1, register 1)
-        setConfigurationOption_(1, 1, (1 << 3));
-        
-        // AVDD/DVDD 1.72V, AVDD LDO powered up (Page 1, register 2)
-        setConfigurationOption_(1, 2, (0 << 3) | (1 << 0));
-        
-        // REF will power up in 40ms (Page 1, register 123)
-        setConfigurationOption_(1, 123, 1);
-        
-        // 6kohm depop, N = 5.0, 50ms soft start (Page 1, register 20)
-        setConfigurationOption_(1, 20, (1 << 6) | (0b1001 << 2) | (1 << 0));
-        
-        // Set full chip common mode to 0.9V
-        // HP output CM = 1.65V
-        // HP driver supply = LDOin voltage
-        // Line output CM = 1.65V
-        // Line output supply = LDOin voltage
-        // (Page 1, register 10)
-        setConfigurationOption_(1, 10, (3 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
-        
-        // Set MicPGA startup delay to 3.1ms (Page 1, register 71)
-        setConfigurationOption_(1, 4, 0b110001);
+        // Enable 2.5V mic bias on headset jack using LDOIN (Page 1, register 51)
+        setConfigurationOption_(1, 51, (1 << 6) | (0b10 << 4) | (1 << 3));
         
         // Set ADC routing: IN1_L left channel, IN1_R right channel,
         // 20kohm impedence (Page 1, registers 52, 54, 55, 57)
@@ -298,32 +318,38 @@ namespace sm1000neo::audio
         setConfigurationOption_(1, 55, 1 << 7);
         setConfigurationOption_(1, 57, 1 << 7);
         
-        // Set DAC routing: HPL, HPR come from DAC
-        // (Page 1, registers 12 and 13)
-        setConfigurationOption_(1, 12, 1 << 3);
-        setConfigurationOption_(1, 13, 1 << 3);
-        
-        // Set ADC PTM to PTM_R4 (Page 1, register 61)
-        setConfigurationOption_(1, 61, 0);
-        
-        // Set DAC PTM to PTM_R3 (Page 1, registers 3-4)
-        // Note: PTM_R4 requires >= 20 bits for I2S, hence not used here.
-        setConfigurationOption_(1, 3, 0);
-        setConfigurationOption_(1, 4, 0);
-        
         // Unmute PGAs, gain = 6dB due to 20k impedence
         // (Page 1, registers 59 and 60)
         setConfigurationOption_(1, 59, 0x0c);
         setConfigurationOption_(1, 60, 0x0c);
         
-        // Unmute HPL and HPR, gain = -6dB HPL, -6 dB HPR
-        // (Page 1, registers 16 and 17)
-        setConfigurationOption_(1, 16, -6 & 0b00111111);
-        setConfigurationOption_(1, 17, -6 & 0b00111111);
+        // Power on ADC (Page 0, register 81)
+        // Unmute ADC (Page 0, register 82)
+        uint8_t adc[] = {
+            (1 << 7) | (1 << 6),
+            0
+        };
+        setConfigurationOptionMultiple_(0, 81, adc, 2);
+    }
+    
+    void TLV320::tlv320ConfigureRoutingDAC_()
+    {
+        // 6kohm depop, N = 5.0, 50ms soft start (Page 1, register 20)
+        setConfigurationOption_(1, 20, (1 << 6) | (0b1001 << 2) | (1 << 0));
+        
+        // Set DAC routing: HPL, HPR come from DAC
+        // (Page 1, registers 12 and 13)
+        setConfigurationOption_(1, 12, 1 << 3);
+        setConfigurationOption_(1, 13, 1 << 3);
         
         // Power up HPL and HPR
         // (Page 1, register 9)
         setConfigurationOption_(1, 9, (1 << 5) | (1 << 4));
+        
+        // Unmute HPL and HPR, gain = -6dB HPL, -6 dB HPR
+        // (Page 1, registers 16 and 17)
+        setConfigurationOption_(1, 16, -6 & 0b00111111);
+        setConfigurationOption_(1, 17, -6 & 0b00111111);
         
         // Wait until gain fully applied
         // (Page 1, register 63)
@@ -335,11 +361,6 @@ namespace sm1000neo::audio
             gainRegVal = getConfigurationOption_(1, 63);
         } while ((count++ < 50) && (gainRegVal & (11 << 6)) == 0);
         
-        ESP_LOGI("TLV320", "gainRegVal: %x, count: %d", gainRegVal, count);
-    }
-    
-    void TLV320::tlv320EnableAudio_()
-    {
         // Power on DAC (Page 0, register 63)
         // Unmute DAC (Page 0, register 64)
         uint8_t dac[] = {
@@ -347,13 +368,5 @@ namespace sm1000neo::audio
             0
         };
         setConfigurationOptionMultiple_(0, 63, dac, 2);
-        
-        // Power on ADC (Page 0, register 81)
-        // Unmute ADC (Page 0, register 82)
-        uint8_t adc[] = {
-            (1 << 7) | (1 << 6),
-            0
-        };
-        setConfigurationOptionMultiple_(0, 81, adc, 2);
     }
 }
