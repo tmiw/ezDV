@@ -61,7 +61,7 @@ namespace sm1000neo::codec
                 auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
                 auto timeEnd = esp_timer_get_time();
-                ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, numSpeechSamples, numModemSamples);
+                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, numSpeechSamples, numModemSamples);
                 codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
             }
         }
@@ -77,7 +77,7 @@ namespace sm1000neo::codec
                 auto timeBegin = esp_timer_get_time();
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
                 auto timeEnd = esp_timer_get_time();
-                ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
+                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
                 codec2_fifo_write(outputFifo_, outputBuf, nout);
                 nin = freedv_nin(dv_);
             }
@@ -185,10 +185,10 @@ void codec2_dot_product_f32(float* left, float* right, size_t len, float* result
 void codec2_complex_dot_product_f32(float* left, float* right, size_t len, float* resultReal, float* resultImag)
 {
     // Complex number math: (a + bi)(c + di) = ac + bci + adi + (bi)(di) = ac - bd + (bc + ad)i
-    float realTimesRealResult; // ac
-    float realTimesImag1Result; // bci
-    float realTimesImag2Result; // adi
-    float imagTimesImagResult; // bi * di
+    float realTimesRealResult = 0; // ac
+    float realTimesImag1Result = 0; // bci
+    float realTimesImag2Result = 0; // adi
+    float imagTimesImagResult = 0; // bi * di
     
     dsps_dotprode_f32(left, right, &realTimesRealResult, len, 0, 0);
     dsps_dotprode_f32(left, right, &realTimesImag1Result, len, 1, 0);

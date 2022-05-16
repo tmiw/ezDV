@@ -1,5 +1,6 @@
 #include "UserInterfaceTask.h"
 #include "../codec/Messaging.h"
+#include "../radio/Messaging.h"
 
 #define CURRENT_LOG_TAG "UserInterfaceTask"
 
@@ -30,6 +31,10 @@ namespace sm1000neo::ui
                 sm1000neo::codec::FreeDVChangePTTMessage message;
                 message.pttEnabled = state;
                 sm1000neo::util::NamedQueue::Send(FREEDV_PTT_PIPE_NAME, message);
+                
+                //sm1000neo::radio::RadioPTTMessage radioMessage;
+                //radioMessage.value = state;
+                //sm1000neo::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, message);
                 break;
             case GPIO_MODE_BUTTON:
             case GPIO_VOL_UP_BUTTON:

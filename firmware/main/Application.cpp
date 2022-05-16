@@ -20,8 +20,9 @@ namespace sm1000neo
         sm1000neo::audio::TLV320::ThisTask().start();
         sm1000neo::codec::FreeDVTask::ThisTask().start();
         uiTask.start();
-        
-        /*smooth::core::network::Wifi& wifi = get_wifi();
+    
+#if 0
+        smooth::core::network::Wifi& wifi = get_wifi();
         wifi.set_host_name("sm1000neo");
         wifi.set_auto_connect(true);
         wifi.set_ap_credentials("YOUR WIRELESS NETWORK", "YOUR WIRELESS PASSWORD");
@@ -29,7 +30,8 @@ namespace sm1000neo
         
         vTaskDelay(pdMS_TO_TICKS(10000));
         radioTask.setLocalIp(wifi.get_local_ip());
-        radioTask.start();*/
+        radioTask.start();
+#endif
     }
 }
 

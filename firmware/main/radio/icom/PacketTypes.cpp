@@ -8,47 +8,47 @@
 namespace sm1000neo::radio::icom
 {
     IcomPacket::IcomPacket()
-        : /*rawPacket_(nullptr)
-        ,*/ size_(0)
+        : rawPacket_(nullptr)
+        , size_(0)
     {
         // empty
     }
     
     IcomPacket::IcomPacket(char* existingPacket, int size)
-        : /*rawPacket_(new char[size])
-        ,*/ size_(size)
+        : rawPacket_(new char[size])
+        , size_(size)
     {
         //assert(rawPacket_ != nullptr);
         memcpy(rawPacket_, existingPacket, size_);
     }
     
     IcomPacket::IcomPacket(int size)
-        : /*rawPacket_(new char[size])
-        ,*/ size_(size)
+        : rawPacket_(new char[size])
+        , size_(size)
     {
         //assert(rawPacket_ != nullptr);
         memset(rawPacket_, 0, size);
     }
         
     IcomPacket::IcomPacket(const IcomPacket& packet)
-        : /*rawPacket_(new char[packet.size_])
-        ,*/ size_(packet.size_)
+        : rawPacket_(new char[packet.size_])
+        , size_(packet.size_)
     {
         //assert(rawPacket_ != nullptr);
         memcpy(rawPacket_, packet.rawPacket_, size_);
     }
     
-    /*IcomPacket::IcomPacket(IcomPacket&& packet)
+    IcomPacket::IcomPacket(IcomPacket&& packet)
         : rawPacket_(std::move(packet.rawPacket_))
         , size_(packet.size_)
     {
         packet.rawPacket_ = nullptr;
         packet.size_ = 0;
-    }*/
+    }
     
     IcomPacket::~IcomPacket()
     {
-        //delete[] rawPacket_;
+        delete[] rawPacket_;
     }
     
     int IcomPacket::get_send_length()
@@ -64,17 +64,17 @@ namespace sm1000neo::radio::icom
     
     IcomPacket& IcomPacket::operator=(const IcomPacket& packet)
     {
-        /*delete[] rawPacket_;
+        delete[] rawPacket_;
         
         rawPacket_ = new char[packet.size_];
-        assert(rawPacket_ != nullptr);*/
+        assert(rawPacket_ != nullptr);
         memcpy(rawPacket_, packet.rawPacket_, packet.size_);
         size_ = packet.size_;
         
         return *this;
     }
     
-    /*IcomPacket& IcomPacket::operator=(IcomPacket&& packet)
+    IcomPacket& IcomPacket::operator=(IcomPacket&& packet)
     {
         delete[] rawPacket_;
         
@@ -84,7 +84,7 @@ namespace sm1000neo::radio::icom
         packet.size_ = 0;
         
         return *this;
-    }*/
+    }
     
     IcomProtocol::IcomProtocol()
         : amountRead_(0)
@@ -112,18 +112,17 @@ namespace sm1000neo::radio::icom
         memcpy(tmp, packet.rawPacket_, length);
         
         IcomPacket tmpPacket(tmp, length);
-        //packet = std::move(tmpPacket);
-        packet = tmpPacket;
+        packet = std::move(tmpPacket);
         
         delete[] tmp;
     }
     
     uint8_t* IcomProtocol::get_write_pos(IcomPacket& packet)
     {
-        /*if (packet.rawPacket_ == nullptr)
+        if (packet.rawPacket_ == nullptr)
         {
             packet.rawPacket_ = new char[MAX_PACKET_SIZE];
-        }*/
+        }
         return (uint8_t*)packet.rawPacket_;
     }
     
@@ -369,6 +368,42 @@ namespace sm1000neo::radio::icom
         return result;
     }
     
+    IcomPacket IcomPacket::CreateCIVPacket(uint32_t ourId, uint32_t theirId, uint16_t sendSeq, uint8_t* civData, uint16_t civLength)
+    {
+        IcomPacket result(0x15 + civLength);
+        auto packet = result.getTypedPacket<data_packet>();
+        packet->len = 0x15 + civLength;
+        
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        
+        packet->reply = (uint8_t)0xc1;
+        packet->datalen = civLength;
+        packet->sendseq = ToBigEndian(sendSeq);
+        memcpy(packet + 0x15, civData, civLength);
+
+        return result;
+    }
+    
+    IcomPacket IcomPacket::CreateCIVOpenClosePacket(uint16_t civSeq, uint32_t ourId, uint32_t theirId, bool close)
+    {
+        static_assert(OPENCLOSE_SIZE == sizeof(openclose_packet));
+        
+        IcomPacket result(sizeof(openclose_packet));
+        auto packet = result.getTypedPacket<openclose_packet>();
+        packet->len = sizeof(openclose_packet);
+        
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        
+        packet->data = 0x01c0;
+        packet->magic = close ? 0x00 : 0x04;
+        
+        packet->sendseq = ToBigEndian(civSeq);
+        
+        return result;   
+    }
+    
     bool IcomPacket::isIAmHere(uint32_t& theirId)
     {
         if (size_ == CONTROL_SIZE)
@@ -540,6 +575,21 @@ namespace sm1000neo::radio::icom
             result = true;
             seq = ToLittleEndian(typedPacket->seq);
             *dataStart = (short*)(get_data() + 0x18);
+        }
+        
+        return result;
+    }
+    
+    bool IcomPacket::isCivPacket(uint8_t* civPacket, uint16_t* civPacketLength)
+    {
+        bool result = false;
+        
+        auto typedPacket = getConstTypedPacket<data_packet>();
+        if (typedPacket->len > 0x15 && typedPacket->type != 0x01 && (typedPacket->datalen + 0x15) == typedPacket->len)
+        {
+            result = true;
+            //memcpy(civPacket, get_data() + 0x15, typedPacket->datalen);
+            //*civPacketLength = typedPacket->datalen;
         }
         
         return result;

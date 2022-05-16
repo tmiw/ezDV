@@ -12,16 +12,17 @@
  
 namespace sm1000neo::radio::icom
 {
-    // See https://github.com/microenh/NetworkIcom/blob/main/Background%20Information/RS-BA1%20Analysis.txt
-    // for origin of this value.
-    #define MAX_PACKET_SIZE 1388
+    // https://github.com/microenh/NetworkIcom/blob/main/Background%20Information/RS-BA1%20Analysis.txt
+    // says this should be 1388 but wireshark shows that we only get 480 byte audio packets at most. 
+    // We add a bit extra to that 480 just to be sure.
+    #define MAX_PACKET_SIZE 520
     
     #pragma pack(push, 1)
 
     // Various settings used by both client and server
-    #define PURGE_SECONDS 10
+    #define PURGE_SECONDS 2
     #define TOKEN_RENEWAL 60000
-    #define PING_PERIOD 500
+    #define PING_PERIOD 1000
     #define IDLE_PERIOD 100
     #define AREYOUTHERE_PERIOD 500
     #define WATCHDOG_PERIOD 500             
@@ -34,7 +35,7 @@ namespace sm1000neo::radio::icom
     #define GUIDLEN 16
 
     // Save no more than this number of bytes for retransmit.
-    #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT 4096
+    #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT MAX_PACKET_SIZE
     
     // And this number of RX audio packets
     #define MAX_RX_AUDIO_PACKETS 6
@@ -453,7 +454,7 @@ namespace sm1000neo::radio::icom
         IcomPacket(char* existingPacket, int size);
         IcomPacket(int size);
         IcomPacket(const IcomPacket& packet);
-        IcomPacket(IcomPacket&& packet) = delete;
+        IcomPacket(IcomPacket&& packet);
         virtual ~IcomPacket();
         
         virtual int get_send_length();
@@ -466,7 +467,7 @@ namespace sm1000neo::radio::icom
         const ActualPacketType* getConstTypedPacket();
         
         IcomPacket& operator=(const IcomPacket& packet);
-        IcomPacket& operator=(IcomPacket&& packet) = delete;
+        IcomPacket& operator=(IcomPacket&& packet);
         
         static IcomPacket CreateAreYouTherePacket(uint32_t ourId, uint32_t theirId);
         static IcomPacket CreateAreYouReadyPacket(uint32_t ourId, uint32_t theirId);
@@ -479,6 +480,8 @@ namespace sm1000neo::radio::icom
         static IcomPacket CreateTokenRenewPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
         static IcomPacket CreateTokenRemovePacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
         static IcomPacket CreateDisconnectPacket(uint32_t ourId, uint32_t theirId);
+        static IcomPacket CreateCIVPacket(uint32_t ourId, uint32_t theirId, uint16_t sendSeq, uint8_t* civData, uint16_t civLength);
+        static IcomPacket CreateCIVOpenClosePacket(uint16_t civSeq, uint32_t ourId, uint32_t theirId, bool close);
         
         // Used in Are You Here state for checking for I Am Here response
         bool isIAmHere(uint32_t& theirId);
@@ -503,8 +506,10 @@ namespace sm1000neo::radio::icom
         
         bool isAudioPacket(uint16_t& seqId, short** dataStart);
         
+        bool isCivPacket(uint8_t* civPacket, uint16_t* civPacketLength);
+        
     private:
-        char rawPacket_[MAX_PACKET_SIZE];
+        char* rawPacket_;
         int size_;
         
         static void EncodePassword_(std::string str, char* output);

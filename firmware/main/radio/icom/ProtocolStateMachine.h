@@ -111,6 +111,8 @@ namespace sm1000neo::radio::icom
         void sendUntracked(IcomPacket& packet);
         void sendPing();
         void sendLoginPacket();
+        void sendCIVOpenPacket();
+        void sendCIVPacket(uint8_t* packet, uint16_t size);
         void sendTokenAckPacket(uint32_t theirToken);
         void sendTokenRenewPacket();
         void sendTracked(IcomPacket& packet);
@@ -159,6 +161,7 @@ namespace sm1000neo::radio::icom
         uint16_t pingSequenceNumber_;
         uint16_t authSequenceNumber_;
         uint16_t sendSequenceNumber_;
+        uint16_t civSequenceNumber_;
         std::shared_ptr<smooth::core::network::BufferContainer<IcomProtocol>> buffer_;
         std::shared_ptr<smooth::core::network::Socket<IcomProtocol, IcomPacket>> socket_;
         std::shared_ptr<smooth::core::network::InetAddress> address_;
@@ -271,6 +274,29 @@ namespace sm1000neo::radio::icom
             smooth::core::timer::TimerOwner idleTimer_;
             smooth::core::timer::TimerOwner tokenRenewTimer_;
             std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
+    };
+    
+    class CIVState
+        : public LoginState
+    {
+    public:
+        explicit CIVState(ProtocolStateMachine& fsm)
+                : LoginState(fsm)
+        {
+            // empty
+        }
+
+        virtual ~CIVState() = default;
+        
+        std::string name() override
+        {
+            return "CIV";
+        }
+
+        virtual void enter_state() override;
+        virtual void leave_state() override;
+        
+        virtual void packetReceived(IcomPacket& packet) override;
     };
 }
 

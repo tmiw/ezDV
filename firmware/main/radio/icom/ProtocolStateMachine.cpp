@@ -15,6 +15,7 @@ namespace sm1000neo::radio::icom
         , pingSequenceNumber_(0)
         , authSequenceNumber_(0)
         , sendSequenceNumber_(1) // Start sequence at 1.
+        , civSequenceNumber_(0)
         , localIp_(0)
         , numSavedBytesInPacketQueue_(0)
         , civSocket_(0)
@@ -108,6 +109,29 @@ namespace sm1000neo::radio::icom
         
         setOurTokenRequest(typedPacket->tokrequest);
         sendTracked(packet);
+    }
+    
+    void ProtocolStateMachine::sendCIVOpenPacket()
+    {
+        ESP_LOGI(get_name().c_str(), "Sending CIV open packet");
+        auto packet = IcomPacket::CreateCIVOpenClosePacket(civSequenceNumber_++, ourIdentifier_, theirIdentifier_, false);
+        sendTracked(packet);
+    }
+    
+    void ProtocolStateMachine::sendCIVPacket(uint8_t* civPacket, uint16_t civLength)
+    {
+        if (civStateMachine_ != nullptr)
+        {
+            // Forward to CIV SM as the control channel has no idea how to handle these.
+            civStateMachine_->sendCIVPacket(civPacket, civLength);
+        }
+        else
+        {
+            ESP_LOGI(get_name().c_str(), "Sending CIV data packet");
+            
+            auto packet = IcomPacket::CreateCIVPacket(ourIdentifier_, theirIdentifier_, civSequenceNumber_++, civPacket, civLength);
+            sendTracked(packet);
+        }
     }
     
     void ProtocolStateMachine::sendTokenAckPacket(uint32_t theirToken)
@@ -236,7 +260,7 @@ namespace sm1000neo::radio::icom
             audioOutTimer_ = 
                 smooth::core::timer::Timer::create(
                         1, timerExpiredQueue_, true,
-                        std::chrono::milliseconds(1000/80));
+                        std::chrono::milliseconds(10));
             audioOutTimer_->start();
         }
     }
@@ -367,9 +391,10 @@ namespace sm1000neo::radio::icom
     void ProtocolStateMachine::startCivAndAudioStateMachines(int audioPort, int civPort)
     {
         audioStateMachine_->start(address_->get_host(), audioPort, audioSocket_);
+        civStateMachine_->start(address_->get_host(), civPort, civSocket_);
     }
     
-    // 1. Control: Send Are You There message.
+    // 1. Control/CIV/Audio: Send Are You There message.
     void AreYouThereState::enter_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
@@ -422,7 +447,8 @@ namespace sm1000neo::radio::icom
         areYouThereRetransmitTimer_->stop();
     }
     
-    // 2. Control: Send Are You Ready
+    // 2. Control/CIV: Send Are You Ready
+    // 2. Audio: Skip to Login
     void AreYouReadyState::enter_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
@@ -443,7 +469,15 @@ namespace sm1000neo::radio::icom
         if (packet.isIAmReady())
         {
             ESP_LOGI(sm_.get_name().c_str(), "Received I Am Ready");
-            sm_.set_state(new (sm_) LoginState(sm_));
+            
+            if (sm_.getStateMachineType() == ProtocolStateMachine::CIV_SM)
+            {
+                sm_.set_state(new (sm_) CIVState(sm_));
+            }
+            else
+            {
+                sm_.set_state(new (sm_) LoginState(sm_));
+            }
         }
     }
     
@@ -452,7 +486,8 @@ namespace sm1000neo::radio::icom
         ESP_LOGI(sm_.get_name().c_str(), "Leaving state");
     }
     
-    // 2. Control: Send Login
+    // 3. Control: Send Login
+    // 3. Audio: Handle RX/TX audio
     void LoginState::enter_state() 
     {
         ESP_LOGI(sm_.get_name().c_str(), "Entering state");
@@ -707,5 +742,33 @@ namespace sm1000neo::radio::icom
         idleTimer_->stop();
         pingTimer_->stop();
         tokenRenewTimer_->stop();
+    }
+    
+    // 3. CIV: Send Open CIV and handle RX/TX of CI-V packets
+    void CIVState::enter_state() 
+    {
+        LoginState::enter_state();
+        sm_.sendCIVOpenPacket();
+    }
+    
+    void CIVState::leave_state() 
+    {
+        LoginState::leave_state();
+    }
+    
+    void CIVState::packetReceived(IcomPacket& packet)
+    {
+        //uint8_t civPacket[1024];
+        //uint16_t civLength;
+        
+        if (packet.isCivPacket(NULL, NULL))
+        {
+            // ignore for now. TBD
+            ESP_LOGI(sm_.get_name().c_str(), "Received CIV packet");
+        }
+        else
+        {
+            LoginState::packetReceived(packet);
+        }
     }
 }
