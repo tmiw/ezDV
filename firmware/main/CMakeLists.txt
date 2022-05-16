@@ -2,6 +2,8 @@ set(SOURCES
     "Application.cpp"
     "audio/TLV320.cpp"
     "audio/TLV320.h"
+    "audio/AudioMixer.cpp"
+    "audio/AudioMixer.h"
     "codec/FreeDVTask.cpp"
     "codec/FreeDVTask.h"
     "radio/icom/IcomRadioTask.cpp"

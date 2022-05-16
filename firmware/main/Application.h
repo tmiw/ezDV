@@ -6,6 +6,7 @@
 #include "codec/FreeDVTask.h"
 #include "radio/icom/IcomRadioTask.h"
 #include "ui/UserInterfaceTask.h"
+#include "audio/AudioMixer.h"
 
 namespace sm1000neo
 {
@@ -18,7 +19,7 @@ namespace sm1000neo
         
     private:
         ui::UserInterfaceTask uiTask;
-        radio::icom::IcomRadioTask radioTask;
+        //radio::icom::IcomRadioTask radioTask;
     };
 }
 

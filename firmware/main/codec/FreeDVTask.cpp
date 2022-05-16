@@ -2,6 +2,7 @@
 #include "../ui/Messaging.h"
 #include "esp_log.h"
 #include "../audio/TLV320.h"
+#include "../audio/AudioMixer.h"
 #include "codec2_math.h"
 #include "esp_dsp.h"
 
@@ -35,8 +36,17 @@ namespace sm1000neo::codec
                 std::unique_lock<std::mutex> lock(fifoMutex_);
                 codec2_fifo_read(outputFifo_, audioDataOut, length);
             }
-            sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
-            task.enqueueAudio(outChannel, audioDataOut, length);
+            
+            if (isTransmitting_)
+            {
+                sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
+                task.enqueueAudio(outChannel, audioDataOut, length);
+            }
+            else
+            {
+                sm1000neo::audio::AudioMixer& task = sm1000neo::audio::AudioMixer::ThisTask();
+                task.enqueueAudio(outChannel, audioDataOut, length);
+            }
         }
     }
     

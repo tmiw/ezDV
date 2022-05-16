@@ -19,6 +19,7 @@ namespace sm1000neo
         
         sm1000neo::audio::TLV320::ThisTask().start();
         sm1000neo::codec::FreeDVTask::ThisTask().start();
+        sm1000neo::audio::AudioMixer::ThisTask().start();
         uiTask.start();
     
 #if 0
