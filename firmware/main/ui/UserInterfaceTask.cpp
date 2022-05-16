@@ -1,11 +1,74 @@
 #include "UserInterfaceTask.h"
 #include "../codec/Messaging.h"
 #include "../radio/Messaging.h"
+#include "../audio/AudioMixer.h"
 
 #define CURRENT_LOG_TAG "UserInterfaceTask"
 
+static std::map<char, std::string> CharacterToMorse_ = {
+    { 'A', ".-" },
+    { 'B', "-..." },
+    { 'C', "-.-." },
+    { 'D', "-.." },
+    { 'E', "." },
+    { 'F', "..-." },
+    { 'G', "--." },
+    { 'H', "...." },
+    { 'I', ".." },
+    { 'J', ".---" },
+    { 'K', "-.-" },
+    { 'L', ".-.." },
+    { 'M', "--" },
+    { 'N', "-." },
+    { 'O', "---" },
+    { 'P', ".--." },
+    { 'Q', "--.-" },
+    { 'R', ".-." },
+    { 'S', "..." },
+    { 'T', "-" },
+    { 'U', "..-" },
+    { 'V', "...-" },
+    { 'W', ".--" },
+    { 'X', "-..-" },
+    { 'Y', "-.--" },
+    { 'Z', "--.." },
+    
+    { '1', ".----" },
+    { '2', "..---" },
+    { '3', "...--" },
+    { '4', "....-" },
+    { '5', "....." },
+    { '6', "-...." },
+    { '7', "--..." },
+    { '8', "---.." },
+    { '9', "----." },
+    { '0', "-----" },
+};
+
 namespace sm1000neo::ui
 {
+    void UserInterfaceTask::event(const smooth::core::timer::TimerExpiredEvent& event)
+    {
+        // TBD -- assuming 8KHz sample rate
+        short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
+        auto emitSine = beeperList_[0];
+        beeperList_.erase(beeperList_.begin());
+        
+        if (emitSine)
+        {
+            for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
+            {
+                bufToQueue[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
+            }
+        }
+        else
+        {
+            sineCounter_ = 0;
+            memset(bufToQueue, 0, sizeof(bufToQueue));
+        }
+        
+        sm1000neo::audio::AudioMixer::ThisTask().enqueueAudio(sm1000neo::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+    }
     
     void UserInterfaceTask::event(const sm1000neo::ui::UserInterfaceControlMessage& event)
     {
@@ -48,5 +111,60 @@ namespace sm1000neo::ui
     void UserInterfaceTask::init()
     {
         // empty
+    }
+    
+    void UserInterfaceTask::stringToBeeperScript_(std::string str)
+    {
+        for (int index = 0; index < str.size(); index++)
+        {
+            // Inter-word spacing
+            for (int count = 0; count < SPACE_BETWEEN_WORDS; count++)
+            {
+                beeperList_.push_back(false);
+            }
+            
+            // Decode actual letter to beeper script.
+            auto ch = str[index];
+            if (ch != ' ')
+            {
+                charToBeeperScript_(ch);
+            }
+            else
+            {
+                // Add inter-word spacing
+                for (int count = 0; count < SPACE_BETWEEN_WORDS; count++)
+                {
+                    beeperList_.push_back(false);
+                }
+            }
+        }
+    }
+    
+    void UserInterfaceTask::charToBeeperScript_(char ch)
+    {
+        std::string morseString = CharacterToMorse_[ch];
+        
+        for (int index = 0; index < morseString.size(); index++)
+        {
+            int counts = morseString[index] == '-' ? DAH_SIZE : DIT_SIZE;
+            
+            // Add audio for the character
+            for (int count = 0; count < counts; count++)
+            {
+                beeperList_.push_back(true);
+            }
+            
+            // Add intra-character space
+            for (int count = 0; count < SPACE_BETWEEN_DITS; count++)
+            {
+                beeperList_.push_back(false);
+            }
+        }
+        
+        // Add inter-character space
+        for (int count = 0; count < SPACE_BETWEEN_CHARS; count++)
+        {
+            beeperList_.push_back(false);
+        }
     }
 }
