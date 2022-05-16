@@ -472,6 +472,10 @@ namespace sm1000neo::radio::icom
             
             if (sm_.getStateMachineType() == ProtocolStateMachine::CIV_SM)
             {
+                // Weirdly, we need to get the remote ID again here for CIV.
+                auto typedPacket = getTypedPacket<control_packet>();
+                sm_.setTheirIdentifier(typedPacket->sentid);
+                
                 sm_.set_state(new (sm_) CIVState(sm_));
             }
             else
