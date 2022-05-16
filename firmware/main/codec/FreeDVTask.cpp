@@ -58,52 +58,61 @@ namespace sm1000neo::codec
         // all other fifo operations are thread safe (assuming 1 reader and 1 writer).
         bool syncLed = false;
         
-        if (isTransmitting_)
+        if (dv_ == nullptr)
         {
-            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
-            int numModemSamples = freedv_get_n_nom_modem_samples(dv_);
-            short inputBuf[numSpeechSamples];
-            short outputBuf[numModemSamples];
+            // Analog mode, just pipe through the audio.
+            short inputBuf[I2S_NUM_SAMPLES_PER_INTERVAL];
+            memset(inputBuf, 0, sizeof(inputBuf));
             
-            int rv = codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples);
-            if (rv == 0)
-            {
-                auto timeBegin = esp_timer_get_time();
-                freedv_tx(dv_, outputBuf, inputBuf);
-                auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, numSpeechSamples, numModemSamples);
-                codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
-            }
+            int rv = codec2_fifo_read(inputFifo_, inputBuf, I2S_NUM_SAMPLES_PER_INTERVAL);
+            codec2_fifo_write(outputFifo_, inputBuf, I2S_NUM_SAMPLES_PER_INTERVAL);
         }
         else
         {
-            short inputBuf[freedv_get_n_max_modem_samples(dv_)];
-            short outputBuf[freedv_get_n_speech_samples(dv_)];
-            int nin = freedv_nin(dv_);
-            
-            int rv = codec2_fifo_read(inputFifo_, inputBuf, nin);
-            if (rv == 0)
+            if (isTransmitting_)
             {
-                auto timeBegin = esp_timer_get_time();
-                int nout = freedv_rx(dv_, outputBuf, inputBuf);
-                auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
-                codec2_fifo_write(outputFifo_, outputBuf, nout);
-                nin = freedv_nin(dv_);
+                int numSpeechSamples = freedv_get_n_speech_samples(dv_);
+                int numModemSamples = freedv_get_n_nom_modem_samples(dv_);
+                short inputBuf[numSpeechSamples];
+                short outputBuf[numModemSamples];
+            
+                int rv = codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples);
+                if (rv == 0)
+                {
+                    freedv_tx(dv_, outputBuf, inputBuf);
+                    codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
+                }
             }
+            else
+            {
+                short inputBuf[freedv_get_n_max_modem_samples(dv_)];
+                short outputBuf[freedv_get_n_speech_samples(dv_)];
+                int nin = freedv_nin(dv_);
             
-            syncLed = freedv_get_sync(dv_) > 0;
-        }
+                int rv = codec2_fifo_read(inputFifo_, inputBuf, nin);
+                if (rv == 0)
+                {
+                    auto timeBegin = esp_timer_get_time();
+                    int nout = freedv_rx(dv_, outputBuf, inputBuf);
+                    auto timeEnd = esp_timer_get_time();
+                    //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
+                    codec2_fifo_write(outputFifo_, outputBuf, nout);
+                    nin = freedv_nin(dv_);
+                }
+            
+                syncLed = freedv_get_sync(dv_) > 0;
+            }
         
-        // Send UI message to update sync LED if changed
-        if (syncLed != sync_)
-        {
-            sync_ = syncLed;
+            // Send UI message to update sync LED if changed
+            if (syncLed != sync_)
+            {
+                sync_ = syncLed;
             
-            sm1000neo::ui::UserInterfaceControlMessage uiMessage;
-            uiMessage.action = sm1000neo::ui::UserInterfaceControlMessage::UPDATE_SYNC;
-            uiMessage.value = syncLed;
-            sm1000neo::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
+                sm1000neo::ui::UserInterfaceControlMessage uiMessage;
+                uiMessage.action = sm1000neo::ui::UserInterfaceControlMessage::UPDATE_SYNC;
+                uiMessage.value = syncLed;
+                sm1000neo::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
+            }
         }
     }
     
@@ -111,12 +120,21 @@ namespace sm1000neo::codec
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Mode changing to %d", event.newMode);
         
-        freedv_close(dv_);
-        dv_ = freedv_open(event.newMode);
-        assert(dv_ != nullptr);
+        if (dv_ != nullptr)
+        {
+            freedv_close(dv_);
+            dv_ = nullptr;
+        }
         
-        setSquelch_(event.newMode);
-        resetFifos_();
+        if (event.newMode != -1)
+        {
+            // Not switching to analog mode.
+            dv_ = freedv_open(event.newMode);
+            assert(dv_ != nullptr);
+    
+            setSquelch_(event.newMode);
+            resetFifos_();
+        }
     }
     
     void FreeDVTask::event(const sm1000neo::codec::FreeDVChangePTTMessage& event)

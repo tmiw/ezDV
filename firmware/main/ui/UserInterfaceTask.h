@@ -48,7 +48,7 @@ namespace sm1000neo::ui
             , pttButton_(uiButtonQueue_, GPIO_PTT_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , volUpButton_(uiButtonQueue_, GPIO_VOL_UP_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , volDownButton_(uiButtonQueue_, GPIO_VOL_DOWN_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , changeModeButton_(uiButtonQueue_, GPIO_MODE_BUTTON, false, false, GPIO_INTR_ANYEDGE)
+            , changeModeButton_(uiButtonQueue_, GPIO_MODE_BUTTON, false, false, GPIO_INTR_POSEDGE)
             , syncLed_(GPIO_SYNC_LED, true, false, false)
             , overloadLed_(GPIO_OVL_LED, true, false, false)
             , pttLed_(GPIO_PTT_LED, true, false, false)
@@ -57,12 +57,13 @@ namespace sm1000neo::ui
             , beeperTimerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, *this, *this))
             , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds(CW_TIME_UNIT_MS)))
             , sineCounter_(0)
+            , currentFDVMode_(0)
         {
             // Register input channel for use by other tasks.
             sm1000neo::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
             
             // Queue up initial announcement string
-            stringToBeeperScript_("  EZDV");
+            stringToBeeperScript_("EZDV");
             
             // Start beeper timer
             beeperTimer_->start();
@@ -94,9 +95,11 @@ namespace sm1000neo::ui
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> beeperTimerEventQueue_;
         smooth::core::timer::TimerOwner beeperTimer_;
         int sineCounter_;
+        int currentFDVMode_;
         
         void stringToBeeperScript_(std::string str);
         void charToBeeperScript_(char ch);
+        void changeFDVMode_(int mode);
     };
 }
 
