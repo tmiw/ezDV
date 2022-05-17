@@ -20,7 +20,7 @@ namespace sm1000neo::codec
     {
     public:
         FreeDVTask()
-            : smooth::core::Task("FreeDVTask", 48000, 10, std::chrono::milliseconds(20), 1)
+            : smooth::core::Task("FreeDVTask", 40000, 10, std::chrono::milliseconds(20), 1)
             , inputFifo_(nullptr)
             , outputFifo_(nullptr)
             , isTransmitting_(false)

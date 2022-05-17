@@ -2,11 +2,7 @@
 #define SM1000_APP_H
 
 #include "smooth/core/Application.h"
-#include "audio/TLV320.h"
-#include "codec/FreeDVTask.h"
-#include "radio/icom/IcomRadioTask.h"
 #include "ui/UserInterfaceTask.h"
-#include "audio/AudioMixer.h"
 
 namespace sm1000neo
 {
@@ -19,7 +15,6 @@ namespace sm1000neo
         
     private:
         ui::UserInterfaceTask uiTask;
-        //radio::icom::IcomRadioTask radioTask;
     };
 }
 

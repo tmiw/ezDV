@@ -108,9 +108,9 @@ namespace sm1000neo::ui
                 message.pttEnabled = state;
                 sm1000neo::util::NamedQueue::Send(FREEDV_PTT_PIPE_NAME, message);
                 
-                //sm1000neo::radio::RadioPTTMessage radioMessage;
-                //radioMessage.value = state;
-                //sm1000neo::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, message);
+                sm1000neo::radio::RadioPTTMessage radioMessage;
+                radioMessage.value = state;
+                sm1000neo::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, radioMessage);
                 break;
             case GPIO_MODE_BUTTON:
                 currentFDVMode_ = (currentFDVMode_ + 1) % NUM_AVAILABLE_MODES;

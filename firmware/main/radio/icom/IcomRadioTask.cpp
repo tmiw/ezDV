@@ -5,7 +5,7 @@ namespace sm1000neo::radio::icom
 {
     void IcomRadioTask::init()
     {
-        controlChannelSM_.start("10.1.2.3", 50001, "YOUR_USERNAME", "YOUR_PASSWORD");
+        controlChannelSM_.start(host_, port_, username_, password_);
         sm1000neo::util::NamedQueue::Add(RADIO_CONTROL_PIPE_NAME, pttEventQueue_);
     }
     
@@ -16,7 +16,7 @@ namespace sm1000neo::radio::icom
         uint8_t civPacket[] = {
             0xFE,
             0xFE,
-            0xA4,
+            controlChannelSM_.getCIVId(),
             0xE0,
             0x1C, // PTT on/off command/subcommand
             0x00,

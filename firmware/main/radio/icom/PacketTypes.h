@@ -506,7 +506,7 @@ namespace sm1000neo::radio::icom
         
         bool isAudioPacket(uint16_t& seqId, short** dataStart);
         
-        bool isCivPacket(uint8_t* civPacket, uint16_t* civPacketLength);
+        bool isCivPacket(uint8_t** civPacket, uint16_t* civPacketLength);
         
     private:
         char* rawPacket_;

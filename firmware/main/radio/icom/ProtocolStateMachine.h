@@ -16,7 +16,7 @@ namespace sm1000neo::radio::icom
 {
     class ProtocolStateMachine;
     
-    constexpr std::size_t LargestStateSize = 64;
+    constexpr std::size_t LargestStateSize = 128;
     
     class BaseState
     {
@@ -117,6 +117,30 @@ namespace sm1000neo::radio::icom
         void sendTokenRenewPacket();
         void sendTracked(IcomPacket& packet);
         
+        void setCIVId(uint8_t civId)
+        {
+            if (civStateMachine_ != nullptr)
+            {
+                civStateMachine_->setCIVId(civId);
+            }
+            else
+            {
+                civId_ = civId;
+            }
+        }
+        
+        uint8_t getCIVId() const
+        {
+            if (civStateMachine_ != nullptr)
+            {
+                return civStateMachine_->getCIVId();
+            }
+            else
+            {
+                return civId_;
+            }
+        }
+        
         void setLocalIp(uint32_t ip)
         {
             localIp_ = ip;
@@ -186,6 +210,8 @@ namespace sm1000neo::radio::icom
         
         smooth::core::timer::TimerOwner audioOutTimer_;
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
+        
+        uint8_t civId_;
         
         // For use only within the root SM for starting the auxiliary ones.
         void start(std::string ip, uint16_t auxPort, int socket);

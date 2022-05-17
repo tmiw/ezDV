@@ -380,7 +380,7 @@ namespace sm1000neo::radio::icom
         packet->reply = (uint8_t)0xc1;
         packet->datalen = civLength;
         packet->sendseq = ToBigEndian(sendSeq);
-        memcpy(packet + 0x15, civData, civLength);
+        memcpy(const_cast<uint8_t*>(result.get_data()) + 0x15, civData, civLength);
 
         return result;
     }
@@ -580,7 +580,7 @@ namespace sm1000neo::radio::icom
         return result;
     }
     
-    bool IcomPacket::isCivPacket(uint8_t* civPacket, uint16_t* civPacketLength)
+    bool IcomPacket::isCivPacket(uint8_t** civPacket, uint16_t* civPacketLength)
     {
         bool result = false;
         
@@ -588,8 +588,8 @@ namespace sm1000neo::radio::icom
         if (typedPacket->len > 0x15 && typedPacket->type != 0x01 && (typedPacket->datalen + 0x15) == typedPacket->len)
         {
             result = true;
-            //memcpy(civPacket, get_data() + 0x15, typedPacket->datalen);
-            //*civPacketLength = typedPacket->datalen;
+            *civPacket = const_cast<uint8_t*>(get_data() + 0x15);
+            *civPacketLength = typedPacket->datalen;
         }
         
         return result;

@@ -20,6 +20,7 @@ namespace sm1000neo::radio::icom
         , numSavedBytesInPacketQueue_(0)
         , civSocket_(0)
         , audioSocket_(0)
+        , civId_(0)
     {
         outFifo_ = codec2_fifo_create(1920);
         assert(outFifo_ != nullptr);
@@ -203,8 +204,7 @@ namespace sm1000neo::radio::icom
         
         numSavedBytesInPacketQueue_ += packet.get_send_length();
         socket_->send(packet);
-        //sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), std::move(packet));
-        sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), packet);
+        sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), std::move(packet));
     }
     
     void ProtocolStateMachine::start(std::string ip, uint16_t controlPort, std::string username, std::string password)
@@ -525,7 +525,7 @@ namespace sm1000neo::radio::icom
     }
         
     void LoginState::packetReceived(IcomPacket& packet)
-    {
+    {    
         std::string connType;
         bool isPasswordIncorrect;
         uint16_t tokenRequest;
@@ -558,8 +558,7 @@ namespace sm1000neo::radio::icom
         {
             // Respond to ping requests        
             //ESP_LOGI(sm_.get_name().c_str(), "Got ping, seq %d", ctr, pingSequence);
-            //auto packet = std::move(IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier()));
-            auto packet = IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier());
+            auto packet = std::move(IcomPacket::CreatePingAckPacket(pingSequence, sm_.getOurIdentifier(), sm_.getTheirIdentifier()));
             sm_.sendUntracked(packet);
             packetSent = true;
         }
@@ -568,6 +567,8 @@ namespace sm1000neo::radio::icom
             // Got ping response, increment to next ping sequence number.
             //ESP_LOGI(sm_.get_name().c_str(), "Got ping ack, seq %d", pingSequence);
             sm_.incrementPingSequence(pingSequence);
+            
+            ESP_LOGI("HEAP", "Free memory: %d", xPortGetFreeHeapSize());
         }
         else
         {
@@ -753,6 +754,19 @@ namespace sm1000neo::radio::icom
     {
         LoginState::enter_state();
         sm_.sendCIVOpenPacket();
+        
+        // Send request to get the radio ID on the other side.
+        uint8_t civPacket[] = {
+            0xFE,
+            0xFE,
+            0x00,
+            0xE0,
+            0x19, // Request radio ID command/subcommand
+            0x00,
+            0xFD
+        };
+        
+        sm_.sendCIVPacket(civPacket, sizeof(civPacket));
     }
     
     void CIVState::leave_state() 
@@ -762,13 +776,18 @@ namespace sm1000neo::radio::icom
     
     void CIVState::packetReceived(IcomPacket& packet)
     {
-        //uint8_t civPacket[1024];
-        //uint16_t civLength;
+        uint8_t* civPacket;
+        uint16_t civLength;
         
-        if (packet.isCivPacket(NULL, NULL))
+        if (packet.isCivPacket(&civPacket, &civLength))
         {
-            // ignore for now. TBD
-            ESP_LOGI(sm_.get_name().c_str(), "Received CIV packet");
+            // ignore for now except to get the CI-V ID of the 705. TBD
+            ESP_LOGI(sm_.get_name().c_str(), "Received CIV packet (from %02x, to %02x, type %02x)", civPacket[3], civPacket[2], civPacket[4]);
+            
+            if (civPacket[2] == 0xE0)
+            {
+                sm_.setCIVId(civPacket[3]);
+            }
         }
         else
         {
