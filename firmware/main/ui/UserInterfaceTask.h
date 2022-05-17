@@ -55,18 +55,20 @@ namespace sm1000neo::ui
             , pttNPN_(GPIO_PTT_NPN, true, false, false)
             , netLed_(GPIO_NET_LED, true, false, false)
             , beeperTimerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, *this, *this))
-            , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds(CW_TIME_UNIT_MS)))
+            , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9))))
             , sineCounter_(0)
-            , currentFDVMode_(0)
+            , currentFDVMode_(1)
         {
             // Register input channel for use by other tasks.
             sm1000neo::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
             
             // Queue up initial announcement string
-            stringToBeeperScript_("EZDV");
+            stringToBeeperScript_(" V1");
             
             // Start beeper timer
             beeperTimer_->start();
+            
+            changeFDVMode_(currentFDVMode_);
         }
         
         void event(const sm1000neo::ui::UserInterfaceControlMessage& event) override;

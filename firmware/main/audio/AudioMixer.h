@@ -15,9 +15,9 @@ namespace sm1000neo::audio
             : smooth::core::Task("AudioMixer", 2048, 10, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS))
         {
             // Create input FIFOs so we can mix both both channels during the tick.
-            leftChannelFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
+            leftChannelFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 10);
             assert(leftChannelFifo_ != nullptr);
-            rightChannelFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
+            rightChannelFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 10);
             assert(rightChannelFifo_ != nullptr);
         }
         

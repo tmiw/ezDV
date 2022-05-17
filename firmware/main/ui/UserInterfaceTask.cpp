@@ -47,13 +47,15 @@ static std::map<char, std::string> CharacterToMorse_ = {
 };
 
 static std::pair<int, std::string> ModeList_[] = {
-    { -1, " ANA" },
-    { FREEDV_MODE_700D, " 700D" },
-    { FREEDV_MODE_700E, " 700E" },
-    { FREEDV_MODE_1600, " 1600" },
+    { -1, "ANA" },
+    { FREEDV_MODE_700D, "700D" },
+    { FREEDV_MODE_700E, "700E" },
+    { FREEDV_MODE_1600, "1600" },
 };
 
 #define NUM_AVAILABLE_MODES 4
+
+#include "esp_log.h"
 
 namespace sm1000neo::ui
 {
@@ -63,9 +65,10 @@ namespace sm1000neo::ui
         if (beeperList_.size() > 0)
         {
             short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
-            auto emitSine = beeperList_[0];
+            bool emitSine = beeperList_[0];
             beeperList_.erase(beeperList_.begin());
         
+            //ESP_LOGI("UserInterface", "Beep: %d", emitSine);
             if (emitSine)
             {
                 for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
@@ -142,13 +145,7 @@ namespace sm1000neo::ui
     void UserInterfaceTask::stringToBeeperScript_(std::string str)
     {
         for (int index = 0; index < str.size(); index++)
-        {
-            // Inter-word spacing
-            for (int count = 0; count < SPACE_BETWEEN_WORDS; count++)
-            {
-                beeperList_.push_back(false);
-            }
-            
+        {        
             // Decode actual letter to beeper script.
             auto ch = str[index];
             if (ch != ' ')
@@ -181,9 +178,12 @@ namespace sm1000neo::ui
             }
             
             // Add intra-character space
-            for (int count = 0; count < SPACE_BETWEEN_DITS; count++)
+            if (index < morseString.size() - 1)
             {
-                beeperList_.push_back(false);
+                for (int count = 0; count < SPACE_BETWEEN_DITS; count++)
+                {
+                    beeperList_.push_back(false);
+                }
             }
         }
         

@@ -7,10 +7,11 @@ namespace sm1000neo::audio
     
     void AudioMixer::tick()
     {
-        // Process on a byte by byte basis
+        // Process on a sample by sample basis
         short bufLeft;
         short bufRight;
-        while (codec2_fifo_used(leftChannelFifo_) > 0 || codec2_fifo_used(rightChannelFifo_) > 0)
+        int ctr = I2S_NUM_SAMPLES_PER_INTERVAL;
+        while (--ctr > 0 && (codec2_fifo_used(leftChannelFifo_) > 0 || codec2_fifo_used(rightChannelFifo_) > 0))
         {
             bufLeft = 0;
             bufRight = 0;
