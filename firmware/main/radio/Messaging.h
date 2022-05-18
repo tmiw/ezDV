@@ -3,7 +3,7 @@
 
 #define RADIO_CONTROL_PIPE_NAME "Radio_Control"
 
-namespace sm1000neo::radio
+namespace ezdv::radio
 {
     struct RadioPTTMessage
     {

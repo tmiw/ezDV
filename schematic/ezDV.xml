@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <export version="D">
   <design>
-    <source>/Users/mooneer/devel/SM1000neo/schematic/SM1000neo.sch</source>
+    <source>/Users/mooneer/devel/ezDV/schematic/ezDV.sch</source>
     <date>Wednesday, May 04, 2022 at 06:34:04 PM</date>
     <tool>Eeschema (5.1.7-0-10_14)</tool>
     <sheet number="1" name="/" tstamps="/">
@@ -10,7 +10,7 @@
         <company/>
         <rev/>
         <date/>
-        <source>SM1000neo.sch</source>
+        <source>ezDV.sch</source>
         <comment number="1" value=""/>
         <comment number="2" value=""/>
         <comment number="3" value=""/>
@@ -223,7 +223,7 @@
     </comp>
     <comp ref="U1">
       <value>TLV320AIC3254IRHBR</value>
-      <footprint>SM1000neo:IC_ADS125H01IRHBT</footprint>
+      <footprint>ezDV:IC_ADS125H01IRHBT</footprint>
       <datasheet>https://www.ti.com/cn/lit/ds/symlink/tlv320aic3254.pdf?ts=1651153824042</datasheet>
       <fields>
         <field name="LCSC">C9925</field>
@@ -810,7 +810,7 @@
       <uri>/Library/Application Support/kicad/library/Switch.lib</uri>
     </library>
     <library logical="TLV320AIC3254IRHBR">
-      <uri>/Users/mooneer/devel/SM1000neo/schematic/parts/TLV320AIC3254IRHBR.lib</uri>
+      <uri>/Users/mooneer/devel/ezDV/schematic/parts/TLV320AIC3254IRHBR.lib</uri>
     </library>
   </libraries>
   <nets>

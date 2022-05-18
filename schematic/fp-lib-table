@@ -1,3 +1,3 @@
 (fp_lib_table
-  (lib (name SM1000neo)(type KiCad)(uri ${KIPRJMOD}/parts/SM1000neo.pretty)(options "")(descr ""))
+  (lib (name ezDV)(type KiCad)(uri ${KIPRJMOD}/parts/ezDV.pretty)(options "")(descr ""))
 )

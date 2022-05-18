@@ -252,7 +252,7 @@
     (add_net User_Jack_Speaker)
   )
 
-  (module SM1000neo:IC_ADS125H01IRHBT (layer F.Cu) (tedit 6272A8F0) (tstamp 6272BCF2)
+  (module ezDV:IC_ADS125H01IRHBT (layer F.Cu) (tedit 6272A8F0) (tstamp 6272BCF2)
     (at 91.44 3.81 270)
     (path /627AE1EC/627C1D8A)
     (attr smd)
@@ -3575,7 +3575,7 @@
     )
   )
 
-  (gr_text "SM1000neo Dev Platform v0.1\nhttps://github.com/tmiw/SM1000neo" (at 124.46 -19.05 90) (layer F.SilkS)
+  (gr_text "ezDV Dev Platform v0.1\nhttps://github.com/tmiw/ezDV" (at 124.46 -19.05 90) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_text Down (at 60.96 -25.4) (layer F.SilkS)

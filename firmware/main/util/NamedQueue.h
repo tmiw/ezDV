@@ -6,7 +6,7 @@
 #include <mutex>
 #include "smooth/core/ipc/TaskEventQueue.h"
 
-namespace sm1000neo::util
+namespace ezdv::util
 {
     class NamedQueue
     {

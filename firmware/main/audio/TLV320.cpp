@@ -18,9 +18,9 @@
 
 #define CURRENT_LOG_TAG ("TLV320")
 
-using namespace sm1000neo::util;
+using namespace ezdv::util;
 
-namespace sm1000neo::audio
+namespace ezdv::audio
 {
     TLV320 TLV320::Task_;
     
@@ -75,9 +75,9 @@ namespace sm1000neo::audio
             tempDataRight[index] = tempData[2*index + 1];
         }
 
-        sm1000neo::codec::FreeDVTask& fdvTask = sm1000neo::codec::FreeDVTask::ThisTask();
-        fdvTask.enqueueAudio(ChannelLabel::LEFT_CHANNEL, sm1000neo::codec::FreeDVTask::Source::TLV320, tempDataLeft, bytesRead / 2 / sizeof(short));
-        fdvTask.enqueueAudio(ChannelLabel::RIGHT_CHANNEL, sm1000neo::codec::FreeDVTask::Source::TLV320, tempDataRight, bytesRead / 2 / sizeof(short));
+        ezdv::codec::FreeDVTask& fdvTask = ezdv::codec::FreeDVTask::ThisTask();
+        fdvTask.enqueueAudio(ChannelLabel::LEFT_CHANNEL, ezdv::codec::FreeDVTask::Source::TLV320, tempDataLeft, bytesRead / 2 / sizeof(short));
+        fdvTask.enqueueAudio(ChannelLabel::RIGHT_CHANNEL, ezdv::codec::FreeDVTask::Source::TLV320, tempDataRight, bytesRead / 2 / sizeof(short));
         
         // If we have available data in the FIFOs, send it out.
         memset(tempDataLeft, 0, sizeof(tempDataLeft));

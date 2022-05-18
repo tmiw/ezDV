@@ -3,7 +3,7 @@
 
 #define UI_CONTROL_PIPE_NAME "UI_Control"
 
-namespace sm1000neo::ui
+namespace ezdv::ui
 {
     struct UserInterfaceControlMessage
     {

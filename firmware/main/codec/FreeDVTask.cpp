@@ -9,11 +9,11 @@
 
 #define CURRENT_LOG_TAG "FreeDVTask"
 
-namespace sm1000neo::codec   
+namespace ezdv::codec   
 {
     FreeDVTask FreeDVTask::Task_;
     
-    void FreeDVTask::enqueueAudio(sm1000neo::audio::ChannelLabel channel, Source source, short* audioData, size_t length)
+    void FreeDVTask::enqueueAudio(ezdv::audio::ChannelLabel channel, Source source, short* audioData, size_t length)
     {
         if (source == IC705)
         {
@@ -21,12 +21,12 @@ namespace sm1000neo::codec
         }
         
         bool isAcceptingChannelForInput =
-            (isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::USER_CHANNEL) ||
-            (!isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::RADIO_CHANNEL);
+            (isTransmitting_ && channel == ezdv::audio::ChannelLabel::USER_CHANNEL) ||
+            (!isTransmitting_ && channel == ezdv::audio::ChannelLabel::RADIO_CHANNEL);
     
         bool isAcceptingChannelFromSource = 
-            channel == sm1000neo::audio::ChannelLabel::USER_CHANNEL ||
-                (channel == sm1000neo::audio::ChannelLabel::RADIO_CHANNEL &&
+            channel == ezdv::audio::ChannelLabel::USER_CHANNEL ||
+                (channel == ezdv::audio::ChannelLabel::RADIO_CHANNEL &&
                 ((wifiConnected_ && source == IC705) || (!wifiConnected_ && source == TLV320)));
         
         if (isAcceptingChannelForInput && isAcceptingChannelFromSource)
@@ -38,10 +38,10 @@ namespace sm1000neo::codec
             
             short audioDataOut[length];
             memset(audioDataOut, 0, length * sizeof(short));
-            sm1000neo::audio::ChannelLabel outChannel = 
+            ezdv::audio::ChannelLabel outChannel = 
                 isTransmitting_ ? 
-                sm1000neo::audio::ChannelLabel::RADIO_CHANNEL : 
-                sm1000neo::audio::ChannelLabel::USER_CHANNEL;
+                ezdv::audio::ChannelLabel::RADIO_CHANNEL : 
+                ezdv::audio::ChannelLabel::USER_CHANNEL;
             
             {
                 std::unique_lock<std::mutex> lock(fifoMutex_);
@@ -52,18 +52,18 @@ namespace sm1000neo::codec
             {
                 if (wifiConnected_)
                 {
-                    sm1000neo::radio::icom::IcomRadioTask& task = sm1000neo::radio::icom::IcomRadioTask::ThisTask();
+                    ezdv::radio::icom::IcomRadioTask& task = ezdv::radio::icom::IcomRadioTask::ThisTask();
                     task.audioOut(audioDataOut, length);
                 }
                 else
                 {
-                    sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
+                    ezdv::audio::TLV320& task = ezdv::audio::TLV320::ThisTask();
                     task.enqueueAudio(outChannel, audioDataOut, length);
                 }
             }
             else
             {
-                sm1000neo::audio::AudioMixer& task = sm1000neo::audio::AudioMixer::ThisTask();
+                ezdv::audio::AudioMixer& task = ezdv::audio::AudioMixer::ThisTask();
                 task.enqueueAudio(outChannel, audioDataOut, length);
             }
         }
@@ -127,15 +127,15 @@ namespace sm1000neo::codec
             {
                 sync_ = syncLed;
             
-                sm1000neo::ui::UserInterfaceControlMessage uiMessage;
-                uiMessage.action = sm1000neo::ui::UserInterfaceControlMessage::UPDATE_SYNC;
+                ezdv::ui::UserInterfaceControlMessage uiMessage;
+                uiMessage.action = ezdv::ui::UserInterfaceControlMessage::UPDATE_SYNC;
                 uiMessage.value = syncLed;
-                sm1000neo::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
+                ezdv::util::NamedQueue::Send(UI_CONTROL_PIPE_NAME, uiMessage); 
             }
         }
     }
     
-    void FreeDVTask::event(const sm1000neo::codec::FreeDVChangeModeMessage& event)
+    void FreeDVTask::event(const ezdv::codec::FreeDVChangeModeMessage& event)
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Mode changing to %d", event.newMode);
         
@@ -156,7 +156,7 @@ namespace sm1000neo::codec
         }
     }
     
-    void FreeDVTask::event(const sm1000neo::codec::FreeDVChangePTTMessage& event)
+    void FreeDVTask::event(const ezdv::codec::FreeDVChangePTTMessage& event)
     {
         if (event.pttEnabled != isTransmitting_)
         {

@@ -1,8 +1,8 @@
-# SM1000neo
+# ezDV
 
-This repository contains both the hardware schematic and firmware for an eventual handheld microphone
-that is able to (de)modulate [FreeDV](https://freedv.org/) from an attached radio. Currently this is
-a development board centered around the following components:
+This repository contains both the hardware schematic and firmware for an eventual device that is able to 
+(de)modulate [FreeDV](https://freedv.org/) from an attached radio. Currently this is a development board 
+centered around the following components:
 
 * [TLV320 digital audio codec chip](https://www.ti.com/cn/lit/ds/symlink/tlv320aic3254.pdf?ts=1651153824042) produced by Texas Instruments ([application notes](https://www.ti.com/lit/an/slaa408a/slaa408a.pdf?ts=1651208477772&ref_url=https%253A%252F%252Fwww.google.com%252F)).
 * The [nanoESP32-S3](https://github.com/wuxx/nanoESP32-S3) board (which can be purchased from [Tindie](https://www.tindie.com/products/johnnywu/nanoesp32-s3-development-board/)).

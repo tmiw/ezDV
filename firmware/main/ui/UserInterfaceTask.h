@@ -32,18 +32,18 @@
 #define CW_SIDETONE_FREQ_HZ ((float)600.0)
 #define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
 
-namespace sm1000neo::ui
+namespace ezdv::ui
 {
     class UserInterfaceTask : 
         public smooth::core::Task,
-        public smooth::core::ipc::IEventListener<sm1000neo::ui::UserInterfaceControlMessage>,
+        public smooth::core::ipc::IEventListener<ezdv::ui::UserInterfaceControlMessage>,
         public smooth::core::ipc::IEventListener<smooth::core::io::InterruptInputEvent>,
         public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>
     {
     public:
         UserInterfaceTask()
             : smooth::core::Task("UserInterfaceTask", 4096, 10, std::chrono::milliseconds(1))
-            , uiInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::ui::UserInterfaceControlMessage>::create(5, *this, *this))
+            , uiInputQueue_(smooth::core::ipc::TaskEventQueue<ezdv::ui::UserInterfaceControlMessage>::create(5, *this, *this))
             , uiButtonQueue_(smooth::core::ipc::ISRTaskEventQueue<smooth::core::io::InterruptInputEvent, 5>::create(*this, *this))
             , pttButton_(uiButtonQueue_, GPIO_PTT_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , volUpButton_(uiButtonQueue_, GPIO_VOL_UP_BUTTON, false, false, GPIO_INTR_ANYEDGE)
@@ -60,7 +60,7 @@ namespace sm1000neo::ui
             , currentFDVMode_(0)
         {
             // Register input channel for use by other tasks.
-            sm1000neo::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
+            ezdv::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
             
             // Queue up initial announcement string
             stringToBeeperScript_(" V1");
@@ -71,7 +71,7 @@ namespace sm1000neo::ui
             changeFDVMode_(currentFDVMode_);
         }
         
-        void event(const sm1000neo::ui::UserInterfaceControlMessage& event) override;
+        void event(const ezdv::ui::UserInterfaceControlMessage& event) override;
         void event(const smooth::core::io::InterruptInputEvent& event) override;
         void event(const smooth::core::timer::TimerExpiredEvent& event) override;
         
@@ -79,7 +79,7 @@ namespace sm1000neo::ui
         virtual void init();
         
     private:        
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::ui::UserInterfaceControlMessage>> uiInputQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::ui::UserInterfaceControlMessage>> uiInputQueue_;
         std::shared_ptr<smooth::core::ipc::IISRTaskEventQueue<smooth::core::io::InterruptInputEvent>> uiButtonQueue_;
         
         smooth::core::io::InterruptInput pttButton_;

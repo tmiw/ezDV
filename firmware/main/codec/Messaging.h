@@ -4,7 +4,7 @@
 #define FREEDV_CONTROL_PIPE_NAME "FreeDVTask_Control"
 #define FREEDV_PTT_PIPE_NAME "FreeDVTask_PTT"
 
-namespace sm1000neo::codec
+namespace ezdv::codec
 {
     struct FreeDVChangeModeMessage
     {

@@ -4,7 +4,7 @@
 #include "smooth/core/Application.h"
 #include "ui/UserInterfaceTask.h"
 
-namespace sm1000neo
+namespace ezdv
 {
     class App : public smooth::core::Application
     {

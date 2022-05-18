@@ -5,7 +5,7 @@
 #include "codec2_fifo.h"
 #include "smooth/core/Task.h"
 
-namespace sm1000neo::audio
+namespace ezdv::audio
 {
     class AudioMixer : 
         public smooth::core::Task
@@ -28,7 +28,7 @@ namespace sm1000neo::audio
             return Task_;
         }
         
-        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length);
+        void enqueueAudio(ezdv::audio::ChannelLabel channel, short* audioData, size_t length);
         
     private:
         static AudioMixer Task_;

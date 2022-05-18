@@ -5,7 +5,7 @@
 #include "PacketTypes.h"
 #include "esp_log.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     IcomPacket::IcomPacket()
         : rawPacket_(nullptr)

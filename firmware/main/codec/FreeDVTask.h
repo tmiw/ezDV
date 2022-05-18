@@ -11,12 +11,12 @@
 
 #define MAX_CODEC2_SAMPLES_IN_FIFO (2560)
 
-namespace sm1000neo::codec
+namespace ezdv::codec
 {
     class FreeDVTask : 
         public smooth::core::Task,
-        public smooth::core::ipc::IEventListener<sm1000neo::codec::FreeDVChangeModeMessage>,
-        public smooth::core::ipc::IEventListener<sm1000neo::codec::FreeDVChangePTTMessage>
+        public smooth::core::ipc::IEventListener<ezdv::codec::FreeDVChangeModeMessage>,
+        public smooth::core::ipc::IEventListener<ezdv::codec::FreeDVChangePTTMessage>
     {
     public:
         enum Source { TLV320, IC705 };
@@ -29,26 +29,26 @@ namespace sm1000neo::codec
             , dv_(nullptr)
             , sync_(false)
             , wifiConnected_(false)
-            , changeModeInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangeModeMessage>::create(2, *this, *this))
-            , pttInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangePTTMessage>::create(2, *this, *this))
+            , changeModeInputQueue_(smooth::core::ipc::TaskEventQueue<ezdv::codec::FreeDVChangeModeMessage>::create(2, *this, *this))
+            , pttInputQueue_(smooth::core::ipc::TaskEventQueue<ezdv::codec::FreeDVChangePTTMessage>::create(2, *this, *this))
         {
             resetFifos_();
             
             // Register input channels for use by other tasks.
-            sm1000neo::util::NamedQueue::Add(FREEDV_CONTROL_PIPE_NAME, changeModeInputQueue_);
-            sm1000neo::util::NamedQueue::Add(FREEDV_PTT_PIPE_NAME, pttInputQueue_);            
+            ezdv::util::NamedQueue::Add(FREEDV_CONTROL_PIPE_NAME, changeModeInputQueue_);
+            ezdv::util::NamedQueue::Add(FREEDV_PTT_PIPE_NAME, pttInputQueue_);            
         }
         
         virtual void tick() override;
-        void event(const sm1000neo::codec::FreeDVChangeModeMessage& event) override;
-        void event(const sm1000neo::codec::FreeDVChangePTTMessage& event) override;
+        void event(const ezdv::codec::FreeDVChangeModeMessage& event) override;
+        void event(const ezdv::codec::FreeDVChangePTTMessage& event) override;
         
         static FreeDVTask& ThisTask()
         {
             return Task_;
         } 
         
-        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, Source source, short* audioData, size_t length);
+        void enqueueAudio(ezdv::audio::ChannelLabel channel, Source source, short* audioData, size_t length);
     protected:
         virtual void init();
         
@@ -64,8 +64,8 @@ namespace sm1000neo::codec
         bool sync_;
         bool wifiConnected_;
         
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangeModeMessage>> changeModeInputQueue_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangePTTMessage>> pttInputQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::codec::FreeDVChangeModeMessage>> changeModeInputQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::codec::FreeDVChangePTTMessage>> pttInputQueue_;
         
         void resetFifos_();
         void setSquelch_(int mode);

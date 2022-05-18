@@ -5,17 +5,17 @@
 #include "ProtocolStateMachine.h"
 #include "../Messaging.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     class IcomRadioTask
         : public smooth::core::Task
-        , public smooth::core::ipc::IEventListener<sm1000neo::radio::RadioPTTMessage>
+        , public smooth::core::ipc::IEventListener<ezdv::radio::RadioPTTMessage>
     {
     public:
         IcomRadioTask()
             : smooth::core::Task("IcomRadioTask", 10240, 10, std::chrono::milliseconds(1))
             , controlChannelSM_(ProtocolStateMachine::StateMachineType::CONTROL_SM, *this)
-            , pttEventQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::radio::RadioPTTMessage>::create(2, *this, *this))
+            , pttEventQueue_(smooth::core::ipc::TaskEventQueue<ezdv::radio::RadioPTTMessage>::create(2, *this, *this))
         {
             // empty
         }
@@ -27,7 +27,7 @@ namespace sm1000neo::radio::icom
             controlChannelSM_.setLocalIp(ip);
         }
         
-        virtual void event(const sm1000neo::radio::RadioPTTMessage& event);
+        virtual void event(const ezdv::radio::RadioPTTMessage& event);
         
         static IcomRadioTask& ThisTask()
         {
@@ -52,7 +52,7 @@ namespace sm1000neo::radio::icom
         
     private:
         ProtocolStateMachine controlChannelSM_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::radio::RadioPTTMessage>> pttEventQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::radio::RadioPTTMessage>> pttEventQueue_;
         std::string host_;
         uint16_t port_;
         std::string username_;

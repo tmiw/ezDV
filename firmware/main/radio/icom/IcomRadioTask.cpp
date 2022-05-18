@@ -1,15 +1,15 @@
 #include "IcomRadioTask.h"
 #include "../../util/NamedQueue.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     void IcomRadioTask::init()
     {
         controlChannelSM_.start(host_, port_, username_, password_);
-        sm1000neo::util::NamedQueue::Add(RADIO_CONTROL_PIPE_NAME, pttEventQueue_);
+        ezdv::util::NamedQueue::Add(RADIO_CONTROL_PIPE_NAME, pttEventQueue_);
     }
     
-    void IcomRadioTask::event(const sm1000neo::radio::RadioPTTMessage& event)
+    void IcomRadioTask::event(const ezdv::radio::RadioPTTMessage& event)
     {
         ESP_LOGI("IcomRadioTask", "Sending PTT CIV message (PTT = %d)", event.value);
         

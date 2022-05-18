@@ -4,7 +4,7 @@
 #include "../../codec/FreeDVTask.h"
 #include "../../util/NamedQueue.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     ProtocolStateMachine::ProtocolStateMachine(StateMachineType smType, smooth::core::Task& task)
         : lastAudioPacketSeqId_(0)
@@ -78,8 +78,8 @@ namespace sm1000neo::radio::icom
             
             codec2_fifo_read(outFifo_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
             
-            auto& task = sm1000neo::codec::FreeDVTask::ThisTask();
-            task.enqueueAudio(sm1000neo::audio::ChannelLabel::RADIO_CHANNEL, sm1000neo::codec::FreeDVTask::Source::IC705, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            auto& task = ezdv::codec::FreeDVTask::ThisTask();
+            task.enqueueAudio(ezdv::audio::ChannelLabel::RADIO_CHANNEL, ezdv::codec::FreeDVTask::Source::IC705, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
             
             // Get input audio and write to socket
             memset(tmpAudio, 0, I2S_NUM_SAMPLES_PER_INTERVAL * sizeof(short));
@@ -130,7 +130,7 @@ namespace sm1000neo::radio::icom
     
     void ProtocolStateMachine::sendLoginPacket()
     {
-        auto packet = IcomPacket::CreateLoginPacket(authSequenceNumber_++, ourIdentifier_, theirIdentifier_, username_, password_, "sm1000neo");
+        auto packet = IcomPacket::CreateLoginPacket(authSequenceNumber_++, ourIdentifier_, theirIdentifier_, username_, password_, "ezdv");
         auto typedPacket = packet.getConstTypedPacket<login_packet>();
         
         setOurTokenRequest(typedPacket->tokrequest);

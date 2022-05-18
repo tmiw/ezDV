@@ -14,11 +14,11 @@ set(EXTRA_COMPONENT_DIRS
          externals/smooth/smooth_component
          externals/esp-dsp)
 
-project(sm1000neo)
+project(ezdv)
 
 else()
 
-project(sm1000neo)
+project(ezdv)
     
 if(${APPLE})
     include_directories(SYSTEM /usr/local/include)

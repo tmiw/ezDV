@@ -12,7 +12,7 @@
 #include "UdpSocket.h"
 #include "codec2_fifo.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     class ProtocolStateMachine;
     

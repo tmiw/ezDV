@@ -17,7 +17,7 @@
 // TLV320 I2C address
 #define TLV320_I2C_ADDRESS (0x18)
 
-namespace sm1000neo::audio
+namespace ezdv::audio
 {
     class TLV320 : 
         public smooth::core::Task
@@ -41,9 +41,9 @@ namespace sm1000neo::audio
             return Task_;
         }
         
-        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length)
+        void enqueueAudio(ezdv::audio::ChannelLabel channel, short* audioData, size_t length)
         {
-            if (channel == sm1000neo::audio::ChannelLabel::LEFT_CHANNEL)
+            if (channel == ezdv::audio::ChannelLabel::LEFT_CHANNEL)
             {
                 codec2_fifo_write(leftChannelOutFifo_, audioData, length);
             }

@@ -10,7 +10,7 @@
 // Original file at https://gitlab.com/eliggett/wfview/-/blob/master/packettypes.h, modified
 // to take into account lower resources on the ESP32 series MCUs and available integer types.
  
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     // https://github.com/microenh/NetworkIcom/blob/main/Background%20Information/RS-BA1%20Analysis.txt
     // says this should be 1388 but wireshark shows that we only get 480 byte audio packets at most. 
@@ -553,17 +553,17 @@ namespace sm1000neo::radio::icom
 namespace smooth::core::util
 {
     template<int Size>
-    class CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>
-        : public ICircularBuffer<sm1000neo::radio::icom::IcomPacket>
+    class CircularBuffer<ezdv::radio::icom::IcomPacket, Size>
+        : public ICircularBuffer<ezdv::radio::icom::IcomPacket>
     {
     public:
         CircularBuffer();
 
         virtual ~CircularBuffer() = default;
 
-        void put(const sm1000neo::radio::icom::IcomPacket& data) override;
+        void put(const ezdv::radio::icom::IcomPacket& data) override;
 
-        bool get(sm1000neo::radio::icom::IcomPacket& d) override;
+        bool get(ezdv::radio::icom::IcomPacket& d) override;
 
         bool is_empty() override
         {
@@ -602,14 +602,14 @@ namespace smooth::core::util
             return (current + 1) % Size;
         }
 
-        sm1000neo::radio::icom::IcomPacket buffer[static_cast<std::size_t>(Size)];
+        ezdv::radio::icom::IcomPacket buffer[static_cast<std::size_t>(Size)];
         int read_pos;
         int write_pos;
         int count;
     };
     
     template<int Size>
-    CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::CircularBuffer()
+    CircularBuffer<ezdv::radio::icom::IcomPacket, Size>::CircularBuffer()
             : buffer(),
               read_pos(0),
               write_pos(0),
@@ -618,7 +618,7 @@ namespace smooth::core::util
     }
 
     template<int Size>
-    void CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::put(const sm1000neo::radio::icom::IcomPacket& data)
+    void CircularBuffer<ezdv::radio::icom::IcomPacket, Size>::put(const ezdv::radio::icom::IcomPacket& data)
     {
         buffer[write_pos] = std::move(data);
 
@@ -637,7 +637,7 @@ namespace smooth::core::util
     }
 
     template<int Size>
-    bool CircularBuffer<sm1000neo::radio::icom::IcomPacket, Size>::get(sm1000neo::radio::icom::IcomPacket& d)
+    bool CircularBuffer<ezdv::radio::icom::IcomPacket, Size>::get(ezdv::radio::icom::IcomPacket& d)
     {
         bool res = false;
 

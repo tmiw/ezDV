@@ -57,7 +57,7 @@ static std::pair<int, std::string> ModeList_[] = {
 
 #include "esp_log.h"
 
-namespace sm1000neo::ui
+namespace ezdv::ui
 {
     void UserInterfaceTask::event(const smooth::core::timer::TimerExpiredEvent& event)
     {
@@ -82,11 +82,11 @@ namespace sm1000neo::ui
                 memset(bufToQueue, 0, sizeof(bufToQueue));
             }
         
-            sm1000neo::audio::AudioMixer::ThisTask().enqueueAudio(sm1000neo::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+            ezdv::audio::AudioMixer::ThisTask().enqueueAudio(ezdv::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
         }
     }
     
-    void UserInterfaceTask::event(const sm1000neo::ui::UserInterfaceControlMessage& event)
+    void UserInterfaceTask::event(const ezdv::ui::UserInterfaceControlMessage& event)
     {
         if (event.action == UserInterfaceControlMessage::UPDATE_SYNC)
         {
@@ -107,13 +107,13 @@ namespace sm1000neo::ui
                 pttLed_.set(state);
                 pttNPN_.set(state);
                 
-                sm1000neo::codec::FreeDVChangePTTMessage message;
+                ezdv::codec::FreeDVChangePTTMessage message;
                 message.pttEnabled = state;
-                sm1000neo::util::NamedQueue::Send(FREEDV_PTT_PIPE_NAME, message);
+                ezdv::util::NamedQueue::Send(FREEDV_PTT_PIPE_NAME, message);
                 
-                sm1000neo::radio::RadioPTTMessage radioMessage;
+                ezdv::radio::RadioPTTMessage radioMessage;
                 radioMessage.value = state;
-                sm1000neo::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, radioMessage);
+                ezdv::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, radioMessage);
                 break;
             case GPIO_MODE_BUTTON:
                 currentFDVMode_ = (currentFDVMode_ + 1) % NUM_AVAILABLE_MODES;
@@ -130,9 +130,9 @@ namespace sm1000neo::ui
     
     void UserInterfaceTask::changeFDVMode_(int mode)
     {
-        sm1000neo::codec::FreeDVChangeModeMessage modeMessage;
+        ezdv::codec::FreeDVChangeModeMessage modeMessage;
         modeMessage.newMode = ModeList_[mode].first;
-        sm1000neo::util::NamedQueue::Send(FREEDV_CONTROL_PIPE_NAME, modeMessage);
+        ezdv::util::NamedQueue::Send(FREEDV_CONTROL_PIPE_NAME, modeMessage);
         
         stringToBeeperScript_(ModeList_[mode].second);
     }

@@ -6,7 +6,7 @@
 #include "smooth/core/network/Socket.h"
 #include "smooth/core/network/SocketDispatcher.h"
 
-namespace sm1000neo::radio::icom
+namespace ezdv::radio::icom
 {
     // This is an override of Smooth's Socket class that creates the socket as UDP.
     // Smooth by default only creates TCP sockets. Based on the Smooth source code,

@@ -1,7 +1,7 @@
 #include "AudioMixer.h"
 #include "TLV320.h"
 
-namespace sm1000neo::audio
+namespace ezdv::audio
 {
     AudioMixer AudioMixer::Task_;
     
@@ -25,11 +25,11 @@ namespace sm1000neo::audio
             short resultShort = (short)addedSample;
             
             // TBD -- support other than the user channel.
-            TLV320::ThisTask().enqueueAudio(sm1000neo::audio::ChannelLabel::USER_CHANNEL, &resultShort, 1);
+            TLV320::ThisTask().enqueueAudio(ezdv::audio::ChannelLabel::USER_CHANNEL, &resultShort, 1);
         }
     }
     
-    void AudioMixer::enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length)
+    void AudioMixer::enqueueAudio(ezdv::audio::ChannelLabel channel, short* audioData, size_t length)
     {
         if (channel == LEFT_CHANNEL)
         {
