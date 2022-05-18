@@ -212,6 +212,7 @@ namespace sm1000neo::radio::icom
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
         
         uint8_t civId_;
+        uint16_t auxLocalPort_;
         
         // For use only within the root SM for starting the auxiliary ones.
         void start(std::string ip, uint16_t auxPort, int socket);

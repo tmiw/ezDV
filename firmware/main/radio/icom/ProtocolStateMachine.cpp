@@ -248,7 +248,7 @@ namespace sm1000neo::radio::icom
         ourIdentifier_ = 
             (((localIp_ >> 8) & 0xFF) << 24) | 
             ((localIp_ & 0xFF) << 16) |
-            (auxPort & 0xFFFF);
+            (auxLocalPort_ & 0xFFFF);
         
         socket_ = UdpSocket<IcomProtocol, IcomPacket>::create(address_, socket, buffer_, std::chrono::milliseconds(0), std::chrono::milliseconds(0));
         socket_->start(address_);
@@ -384,8 +384,10 @@ namespace sm1000neo::radio::icom
         // Create child state machines
         civStateMachine_ = std::make_shared<ProtocolStateMachine>(CIV_SM, task_);
         civStateMachine_->localIp_ = localIp_;
+        civStateMachine_->auxLocalPort_ = civPort;
         audioStateMachine_ = std::make_shared<ProtocolStateMachine>(AUDIO_SM, task_);
         audioStateMachine_->localIp_ = localIp_;
+        audioStateMachine_->auxLocalPort_ = audioPort;
     }
     
     void ProtocolStateMachine::startCivAndAudioStateMachines(int audioPort, int civPort)
