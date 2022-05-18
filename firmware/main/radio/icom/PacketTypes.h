@@ -482,6 +482,7 @@ namespace sm1000neo::radio::icom
         static IcomPacket CreateDisconnectPacket(uint32_t ourId, uint32_t theirId);
         static IcomPacket CreateCIVPacket(uint32_t ourId, uint32_t theirId, uint16_t sendSeq, uint8_t* civData, uint16_t civLength);
         static IcomPacket CreateCIVOpenClosePacket(uint16_t civSeq, uint32_t ourId, uint32_t theirId, bool close);
+        static IcomPacket CreateAudioPacket(uint16_t audioSeq, uint32_t ourId, uint32_t theirId, short* audio, uint16_t len);
         
         // Used in Are You Here state for checking for I Am Here response
         bool isIAmHere(uint32_t& theirId);
@@ -548,8 +549,6 @@ namespace sm1000neo::radio::icom
         return (const ActualPacketType*)rawPacket_;
     }
 }
-
-/*
 
 namespace smooth::core::util
 {
@@ -654,6 +653,5 @@ namespace smooth::core::util
         return res;
     }
 }
-*/
 
 #endif // RADIO__ICOM__PACKET_TYPES_H

@@ -404,6 +404,23 @@ namespace sm1000neo::radio::icom
         return result;   
     }
     
+    IcomPacket IcomPacket::CreateAudioPacket(uint16_t audioSeq, uint32_t ourId, uint32_t theirId, short* audio, uint16_t len)
+    {
+        IcomPacket result(sizeof(audio_packet) + len * sizeof(short));
+        auto packet = result.getTypedPacket<audio_packet>();
+        packet->len = sizeof(audio_packet) + len * sizeof(short);
+        
+        packet->sentid = ourId;
+        packet->rcvdid = theirId;
+        packet->ident = 0x0080;       
+        packet->datalen = ToBigEndian(len * sizeof(short)); 
+        packet->sendseq = ToBigEndian(audioSeq);
+        
+        memcpy(const_cast<uint8_t*>(result.get_data()), audio, len * sizeof(short));
+        
+        return result;
+    }
+    
     bool IcomPacket::isIAmHere(uint32_t& theirId)
     {
         if (size_ == CONTROL_SIZE)

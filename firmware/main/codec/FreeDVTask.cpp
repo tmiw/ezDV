@@ -5,6 +5,7 @@
 #include "../audio/AudioMixer.h"
 #include "codec2_math.h"
 #include "esp_dsp.h"
+#include "../radio/icom/IcomRadioTask.h"
 
 #define CURRENT_LOG_TAG "FreeDVTask"
 
@@ -12,13 +13,23 @@ namespace sm1000neo::codec
 {
     FreeDVTask FreeDVTask::Task_;
     
-    void FreeDVTask::enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length)
-    {    
+    void FreeDVTask::enqueueAudio(sm1000neo::audio::ChannelLabel channel, Source source, short* audioData, size_t length)
+    {
+        if (source == IC705)
+        {
+            wifiConnected_ = true;
+        }
+        
         bool isAcceptingChannelForInput =
             (isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::USER_CHANNEL) ||
             (!isTransmitting_ && channel == sm1000neo::audio::ChannelLabel::RADIO_CHANNEL);
     
-        if (isAcceptingChannelForInput)
+        bool isAcceptingChannelFromSource = 
+            channel == sm1000neo::audio::ChannelLabel::USER_CHANNEL ||
+                (channel == sm1000neo::audio::ChannelLabel::RADIO_CHANNEL &&
+                ((wifiConnected_ && source == IC705) || (!wifiConnected_ && source == TLV320)));
+        
+        if (isAcceptingChannelForInput && isAcceptingChannelFromSource)
         {
             {
                 std::unique_lock<std::mutex> lock(fifoMutex_);
@@ -39,8 +50,16 @@ namespace sm1000neo::codec
             
             if (isTransmitting_)
             {
-                sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
-                task.enqueueAudio(outChannel, audioDataOut, length);
+                if (wifiConnected_)
+                {
+                    sm1000neo::radio::icom::IcomRadioTask& task = sm1000neo::radio::icom::IcomRadioTask::ThisTask();
+                    task.audioOut(audioDataOut, length);
+                }
+                else
+                {
+                    sm1000neo::audio::TLV320& task = sm1000neo::audio::TLV320::ThisTask();
+                    task.enqueueAudio(outChannel, audioDataOut, length);
+                }
             }
             else
             {
@@ -150,10 +169,10 @@ namespace sm1000neo::codec
     
     void FreeDVTask::init()
     {
-        dv_ = freedv_open(FREEDV_MODE_700D);
+        /*dv_ = freedv_open(FREEDV_MODE_700D);
         assert(dv_ != nullptr);
         
-        setSquelch_(FREEDV_MODE_700D);
+        setSquelch_(FREEDV_MODE_700D);*/
     }
     
     void FreeDVTask::resetFifos_()

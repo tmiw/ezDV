@@ -19,6 +19,8 @@ namespace sm1000neo::codec
         public smooth::core::ipc::IEventListener<sm1000neo::codec::FreeDVChangePTTMessage>
     {
     public:
+        enum Source { TLV320, IC705 };
+        
         FreeDVTask()
             : smooth::core::Task("FreeDVTask", 40000, 10, std::chrono::milliseconds(20), 1)
             , inputFifo_(nullptr)
@@ -26,6 +28,7 @@ namespace sm1000neo::codec
             , isTransmitting_(false)
             , dv_(nullptr)
             , sync_(false)
+            , wifiConnected_(false)
             , changeModeInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangeModeMessage>::create(2, *this, *this))
             , pttInputQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangePTTMessage>::create(2, *this, *this))
         {
@@ -45,7 +48,7 @@ namespace sm1000neo::codec
             return Task_;
         } 
         
-        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, short* audioData, size_t length);
+        void enqueueAudio(sm1000neo::audio::ChannelLabel channel, Source source, short* audioData, size_t length);
     protected:
         virtual void init();
         
@@ -59,6 +62,7 @@ namespace sm1000neo::codec
         bool isTransmitting_;
         struct freedv* dv_;
         bool sync_;
+        bool wifiConnected_;
         
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangeModeMessage>> changeModeInputQueue_;
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<sm1000neo::codec::FreeDVChangePTTMessage>> pttInputQueue_;

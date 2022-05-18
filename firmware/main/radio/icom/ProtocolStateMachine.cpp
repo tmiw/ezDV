@@ -21,14 +21,34 @@ namespace sm1000neo::radio::icom
         , civSocket_(0)
         , audioSocket_(0)
         , civId_(0)
+        , audioSequenceNumber_(0)
     {
-        outFifo_ = codec2_fifo_create(1920);
-        assert(outFifo_ != nullptr);
+        if (smType == AUDIO_SM)
+        {
+            outFifo_ = codec2_fifo_create(1920);
+            assert(outFifo_ != nullptr);
+            
+            inFifo_ = codec2_fifo_create(1920);
+            assert(outFifo_ != nullptr);
+        }
+        else
+        {
+            outFifo_ = nullptr;
+            inFifo_ = nullptr;
+        }
     }
     
     ProtocolStateMachine::~ProtocolStateMachine()
     {
-        codec2_fifo_destroy(outFifo_);
+        if (outFifo_ != nullptr)
+        {
+            codec2_fifo_destroy(outFifo_);
+        }
+        
+        if (inFifo_ != nullptr)
+        {
+            codec2_fifo_destroy(inFifo_);
+        }
     }
     
     void ProtocolStateMachine::writeOutFifo(short* data, int len)
@@ -36,24 +56,22 @@ namespace sm1000neo::radio::icom
         codec2_fifo_write(outFifo_, data, len);
     }
     
-    void ProtocolStateMachine::event(const smooth::core::timer::TimerExpiredEvent& event)
+    void ProtocolStateMachine::writeInFifo(short* data, int len)
     {
-        /*while (rxAudioPackets_.size() > MAX_RX_AUDIO_PACKETS)
+        if (smType_ == AUDIO_SM)
         {
-            auto frontPacket = rxAudioPackets_.begin()->second;
-            short* audioData;
-            uint16_t audioSeqId;
-            
-            // Extract raw audio data.
-            frontPacket.isAudioPacket(audioSeqId, &audioData);
-            
-            int totalSize = (frontPacket.get_send_length() - 0x18) / sizeof(short);
-            writeOutFifo(audioData, totalSize);  
-            
-            rxAudioPackets_.erase(rxAudioPackets_.begin());          
-        }*/
-        
-        while (codec2_fifo_used(outFifo_) >= I2S_NUM_SAMPLES_PER_INTERVAL)
+            codec2_fifo_write(inFifo_, data, len);
+        }
+        else
+        {
+            assert(audioStateMachine_ != nullptr);
+            audioStateMachine_->writeInFifo(data, len);
+        }
+    }
+    
+    void ProtocolStateMachine::event(const smooth::core::timer::TimerExpiredEvent& event)
+    {        
+        if (codec2_fifo_used(outFifo_) >= I2S_NUM_SAMPLES_PER_INTERVAL)
         {
             short tmpAudio[I2S_NUM_SAMPLES_PER_INTERVAL];
             memset(tmpAudio, 0, sizeof(short) * I2S_NUM_SAMPLES_PER_INTERVAL);
@@ -61,7 +79,14 @@ namespace sm1000neo::radio::icom
             codec2_fifo_read(outFifo_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
             
             auto& task = sm1000neo::codec::FreeDVTask::ThisTask();
-            task.enqueueAudio(sm1000neo::audio::ChannelLabel::RADIO_CHANNEL, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            task.enqueueAudio(sm1000neo::audio::ChannelLabel::RADIO_CHANNEL, sm1000neo::codec::FreeDVTask::Source::IC705, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            
+            // Get input audio and write to socket
+            memset(tmpAudio, 0, I2S_NUM_SAMPLES_PER_INTERVAL * sizeof(short));
+            codec2_fifo_read(inFifo_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            
+            auto packet = IcomPacket::CreateAudioPacket(audioSequenceNumber_++, ourIdentifier_, theirIdentifier_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
+            sendTracked(packet);
         }
     }
     

@@ -173,6 +173,7 @@ namespace sm1000neo::radio::icom
         void initializeCivAndAudioStateMachines(int radioIndex);
         void startCivAndAudioStateMachines(int audioPort, int civPort);
         void writeOutFifo(short* data, int len);
+        void writeInFifo(short* data, int len);
         
         std::map<uint16_t, IcomPacket> rxAudioPackets_;
         uint16_t lastAudioPacketSeqId_;
@@ -207,12 +208,14 @@ namespace sm1000neo::radio::icom
         int civSocket_;
         int audioSocket_;
         struct FIFO* outFifo_;
+        struct FIFO* inFifo_;
         
         smooth::core::timer::TimerOwner audioOutTimer_;
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerExpiredQueue_;
         
         uint8_t civId_;
         uint16_t auxLocalPort_;
+        uint16_t audioSequenceNumber_;
         
         // For use only within the root SM for starting the auxiliary ones.
         void start(std::string ip, uint16_t auxPort, int socket);

@@ -57,7 +57,7 @@ namespace sm1000neo::ui
             , beeperTimerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, *this, *this))
             , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9))))
             , sineCounter_(0)
-            , currentFDVMode_(1)
+            , currentFDVMode_(0)
         {
             // Register input channel for use by other tasks.
             sm1000neo::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);

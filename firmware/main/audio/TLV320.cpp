@@ -76,8 +76,8 @@ namespace sm1000neo::audio
         }
 
         sm1000neo::codec::FreeDVTask& fdvTask = sm1000neo::codec::FreeDVTask::ThisTask();
-        fdvTask.enqueueAudio(ChannelLabel::LEFT_CHANNEL, tempDataLeft, bytesRead / 2 / sizeof(short));
-        fdvTask.enqueueAudio(ChannelLabel::RIGHT_CHANNEL, tempDataRight, bytesRead / 2 / sizeof(short));
+        fdvTask.enqueueAudio(ChannelLabel::LEFT_CHANNEL, sm1000neo::codec::FreeDVTask::Source::TLV320, tempDataLeft, bytesRead / 2 / sizeof(short));
+        fdvTask.enqueueAudio(ChannelLabel::RIGHT_CHANNEL, sm1000neo::codec::FreeDVTask::Source::TLV320, tempDataRight, bytesRead / 2 / sizeof(short));
         
         // If we have available data in the FIFOs, send it out.
         memset(tempDataLeft, 0, sizeof(tempDataLeft));

@@ -13,7 +13,7 @@ namespace sm1000neo::radio::icom
     {
     public:
         IcomRadioTask()
-            : smooth::core::Task("IcomRadioTask", 9216, 10, std::chrono::milliseconds(1))
+            : smooth::core::Task("IcomRadioTask", 10240, 10, std::chrono::milliseconds(1))
             , controlChannelSM_(ProtocolStateMachine::StateMachineType::CONTROL_SM, *this)
             , pttEventQueue_(smooth::core::ipc::TaskEventQueue<sm1000neo::radio::RadioPTTMessage>::create(2, *this, *this))
         {
@@ -41,6 +41,11 @@ namespace sm1000neo::radio::icom
             port_ = controlPort;
             username_ = username;
             password_ = password;
+        }
+        
+        void audioOut(short* data, int numFrames)
+        {
+            controlChannelSM_.writeInFifo(data, numFrames);
         }
     protected:
         virtual void init();
