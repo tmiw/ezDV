@@ -53,7 +53,15 @@ namespace ezdv::radio::icom
     
     void ProtocolStateMachine::writeOutFifo(short* data, int len)
     {
-        codec2_fifo_write(outFifo_, data, len);
+        if (smType_ == AUDIO_SM)
+        {
+            codec2_fifo_write(outFifo_, data, len);
+        }
+        else
+        {
+            assert(audioStateMachine_ != nullptr);
+            audioStateMachine_->writeOutFifo(data, len);
+        }
     }
     
     void ProtocolStateMachine::writeInFifo(short* data, int len)
