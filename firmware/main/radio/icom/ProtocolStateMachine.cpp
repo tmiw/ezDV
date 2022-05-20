@@ -88,13 +88,6 @@ namespace ezdv::radio::icom
             
             auto& task = ezdv::codec::FreeDVTask::ThisTask();
             task.enqueueAudio(ezdv::audio::ChannelLabel::RADIO_CHANNEL, ezdv::codec::FreeDVTask::Source::IC705, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
-            
-            // Get input audio and write to socket
-            memset(tmpAudio, 0, I2S_NUM_SAMPLES_PER_INTERVAL * sizeof(short));
-            codec2_fifo_read(inFifo_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
-            
-            auto packet = IcomPacket::CreateAudioPacket(audioSequenceNumber_++, ourIdentifier_, theirIdentifier_, tmpAudio, I2S_NUM_SAMPLES_PER_INTERVAL);
-            sendTracked(packet);
         }
     }
     
@@ -429,6 +422,28 @@ namespace ezdv::radio::icom
         civStateMachine_->start(address_->get_host(), civPort, civSocket_);
     }
     
+    void ProtocolStateMachine::sendAudioOut()
+    {
+        if (audioStateMachine_ != nullptr)
+        {
+            audioStateMachine_->sendAudioOut();
+        }
+        else
+        {
+            // Get input audio and write to socket
+            short tempAudioOut[MAX_PACKET_SIZE];
+            memset(tempAudioOut, 0, MAX_PACKET_SIZE * sizeof(short));
+
+            uint16_t samplesToRead = 160; // 320 bytes
+            if (codec2_fifo_used(inFifo_) >= samplesToRead)
+            {
+                codec2_fifo_read(inFifo_, tempAudioOut, samplesToRead);
+                auto packet = IcomPacket::CreateAudioPacket(audioSequenceNumber_++, ourIdentifier_, theirIdentifier_, tempAudioOut, samplesToRead);
+                sendTracked(packet);
+            }
+        }
+    }
+    
     // 1. Control/CIV/Audio: Send Are You There message.
     void AreYouThereState::enter_state() 
     {
@@ -495,7 +510,7 @@ namespace ezdv::radio::icom
         // We can go straight to the main state and handle the I Am Ready response there.
         if (sm_.getStateMachineType() == ProtocolStateMachine::AUDIO_SM)
         {
-            sm_.set_state(new (sm_) LoginState(sm_));
+            sm_.set_state(new (sm_) AudioState(sm_));
         }
     }
     
@@ -732,7 +747,7 @@ namespace ezdv::radio::icom
                 auto reqPacket = IcomPacket::CreateRetransmitRequest(sm_.getOurIdentifier(), sm_.getTheirIdentifier(), packetIdsToRetransmit);
                 sm_.sendUntracked(reqPacket);*/
                 int totalSize = (packet.get_send_length() - 0x18) / sizeof(short);
-                sm_.writeOutFifo(audioData, totalSize);  
+                sm_.writeOutFifo(audioData, totalSize); 
             }
         }
         
@@ -828,5 +843,11 @@ namespace ezdv::radio::icom
         {
             LoginState::packetReceived(packet);
         }
+    }
+    
+    void AudioState::event(const smooth::core::network::event::TransmitBufferEmptyEvent& event)
+    {
+        // Send audio packets only if empty so we don't drop any.
+        sm_.sendAudioOut();
     }
 }

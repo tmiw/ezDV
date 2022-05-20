@@ -406,17 +406,33 @@ namespace ezdv::radio::icom
     
     IcomPacket IcomPacket::CreateAudioPacket(uint16_t audioSeq, uint32_t ourId, uint32_t theirId, short* audio, uint16_t len)
     {
-        IcomPacket result(sizeof(audio_packet) + len * sizeof(short));
+        IcomPacket result(0x18 + len * sizeof(short));
         auto packet = result.getTypedPacket<audio_packet>();
-        packet->len = sizeof(audio_packet) + len * sizeof(short);
+        packet->len = 0x18 + len * sizeof(short);
         
         packet->sentid = ourId;
         packet->rcvdid = theirId;
-        packet->ident = 0x0080;       
-        packet->datalen = ToBigEndian(len * sizeof(short)); 
-        packet->sendseq = ToBigEndian(audioSeq);
         
-        memcpy(const_cast<uint8_t*>(result.get_data()), audio, len * sizeof(short));
+        // Other arguments need to be manually forced to be correctly sent. ESP issue??
+        
+        // packet->ident = 0x0080
+        ((uint8_t*)packet)[0x10] = 0x80;
+        ((uint8_t*)packet)[0x11] = 0x00;
+        
+        // packet->sendseq = ToBigEndian(audioSeq);
+        uint16_t tmp = ToBigEndian(audioSeq);
+        ((uint8_t*)packet)[0x12] = *((uint8_t*)&tmp);
+        ((uint8_t*)packet)[0x13] = *((uint8_t*)&tmp + 1);
+
+        // packet->datalen = ToBigEndian(len * sizeof(short)); 
+        tmp = len * sizeof(short);
+        tmp = ToBigEndian(tmp);
+        ((uint8_t*)packet)[0x16] = *((uint8_t*)&tmp);
+        ((uint8_t*)packet)[0x17] = *((uint8_t*)&tmp + 1);
+        
+        memcpy(const_cast<uint8_t*>(result.get_data()) + 0x18, audio, len * sizeof(short));
+        
+        //ESP_LOGI("CreateAudioPacket", "len: %d", len);
         
         return result;
     }

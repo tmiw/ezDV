@@ -99,10 +99,6 @@ namespace ezdv::audio
             ESP_ERROR_CHECK(i2s_write(I2S_NUM_0, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
             //ESP_LOGW(CURRENT_LOG_TAG, "transmitted %d bytes over I2S", bytesWritten);
         }
-        else
-        {
-            ESP_LOGW(CURRENT_LOG_TAG, "no audio data for TX");
-        }
     }
     
     void TLV320::initializeI2S_()

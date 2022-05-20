@@ -13,7 +13,7 @@ namespace ezdv::radio::icom
     {
     public:
         IcomRadioTask()
-            : smooth::core::Task("IcomRadioTask", 10240, 10, std::chrono::milliseconds(1))
+            : smooth::core::Task("IcomRadioTask", 12000, 10, std::chrono::milliseconds(1))
             , controlChannelSM_(ProtocolStateMachine::StateMachineType::CONTROL_SM, *this)
             , pttEventQueue_(smooth::core::ipc::TaskEventQueue<ezdv::radio::RadioPTTMessage>::create(2, *this, *this))
         {

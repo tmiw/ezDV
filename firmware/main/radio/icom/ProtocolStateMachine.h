@@ -174,6 +174,7 @@ namespace ezdv::radio::icom
         void startCivAndAudioStateMachines(int audioPort, int civPort);
         void writeOutFifo(short* data, int len);
         void writeInFifo(short* data, int len);
+        void sendAudioOut();
         
         std::map<uint16_t, IcomPacket> rxAudioPackets_;
         uint16_t lastAudioPacketSeqId_;
@@ -327,6 +328,26 @@ namespace ezdv::radio::icom
         virtual void leave_state() override;
         
         virtual void packetReceived(IcomPacket& packet) override;
+    };
+    
+    class AudioState
+        : public LoginState
+    {
+    public:
+        explicit AudioState(ProtocolStateMachine& fsm)
+                : LoginState(fsm)
+        {
+            // empty
+        }
+
+        virtual ~AudioState() = default;
+        
+        std::string name() override
+        {
+            return "Audio";
+        }
+
+        virtual void event(const smooth::core::network::event::TransmitBufferEmptyEvent& event) override;
     };
 }
 

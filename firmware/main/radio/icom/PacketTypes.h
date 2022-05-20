@@ -12,17 +12,14 @@
  
 namespace ezdv::radio::icom
 {
-    // https://github.com/microenh/NetworkIcom/blob/main/Background%20Information/RS-BA1%20Analysis.txt
-    // says this should be 1388 but wireshark shows that we only get 480 byte audio packets at most. 
-    // We add a bit extra to that 480 just to be sure.
-    #define MAX_PACKET_SIZE 520
+#define MAX_PACKET_SIZE 1388
     
     #pragma pack(push, 1)
 
     // Various settings used by both client and server
-    #define PURGE_SECONDS 2
+    #define PURGE_SECONDS 10
     #define TOKEN_RENEWAL 60000
-    #define PING_PERIOD 1000
+    #define PING_PERIOD 500
     #define IDLE_PERIOD 100
     #define AREYOUTHERE_PERIOD 500
     #define WATCHDOG_PERIOD 500             
@@ -35,7 +32,7 @@ namespace ezdv::radio::icom
     #define GUIDLEN 16
 
     // Save no more than this number of bytes for retransmit.
-    #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT MAX_PACKET_SIZE
+    #define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT (MAX_PACKET_SIZE * 4)
     
     // And this number of RX audio packets
     #define MAX_RX_AUDIO_PACKETS 6
