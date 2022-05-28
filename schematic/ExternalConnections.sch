@@ -107,9 +107,7 @@ GPIO35
 NoConn ~ 10150 2250
 NoConn ~ 8850 1150
 Text GLabel 10250 2350 2    50   BiDi ~ 0
-GPIO45
-Text GLabel 10250 2450 2    50   BiDi ~ 0
-GPIO48_TLV320_SCL
+GPIO45_TLV320_SCL
 Text GLabel 10250 2550 2    50   BiDi ~ 0
 GPIO47_TLV320_SDA
 Text GLabel 10250 2650 2    50   Output ~ 0
@@ -204,8 +202,6 @@ Wire Wire Line
 	10250 2650 10150 2650
 Wire Wire Line
 	10150 2550 10250 2550
-Wire Wire Line
-	10250 2450 10150 2450
 Wire Wire Line
 	10150 2350 10250 2350
 Wire Wire Line
@@ -745,10 +741,8 @@ Text GLabel 7650 5000 0    50   BiDi ~ 0
 GPIO36
 Text GLabel 7650 5100 0    50   BiDi ~ 0
 GPIO35
-Text GLabel 7650 5200 0    50   BiDi ~ 0
-GPIO45
 Text GLabel 7650 5300 0    50   BiDi ~ 0
-GPIO48_TLV320_SCL
+GPIO45_TLV320_SCL
 Text GLabel 7650 5400 0    50   BiDi ~ 0
 GPIO47_TLV320_SDA
 NoConn ~ 7650 3700
@@ -764,7 +758,6 @@ NoConn ~ 7650 4800
 NoConn ~ 7650 4900
 NoConn ~ 7650 5000
 NoConn ~ 7650 5100
-NoConn ~ 7650 5200
 Text GLabel 6850 1200 0    50   BiDi ~ 0
 3.3V
 $Comp
@@ -964,4 +957,5 @@ Wire Wire Line
 	7650 5300 8400 5300
 Wire Wire Line
 	8400 5400 7650 5400
+NoConn ~ 10150 2450
 $EndSCHEMATC
