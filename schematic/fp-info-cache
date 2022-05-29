@@ -1,4 +1,4 @@
-18628684796579487
+18628684961183189
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -74997,13 +74997,6 @@ rotary encoder
 0
 5
 4
-ezDV
-IC_ADS125H01IRHBT
-
-
-0
-38
-38
 Sensor_Audio
 CUI_CMC-4013-SMT
 Omnidirectional, -42dB, reflowable, electret condenser microphone https://www.cuidevices.com/product/resource/cmc-4013-smt-tr.pdf
@@ -81430,3 +81423,10 @@ varistor SIOV
 0
 2
 2
+ezDV
+IC_ADS125H01IRHBT
+
+
+0
+38
+38

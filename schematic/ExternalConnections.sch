@@ -115,7 +115,7 @@ GPIO21_PTT_OUT
 Text GLabel 10250 2750 2    50   Input ~ 0
 GPIO14_TLV320_MFP5
 Text GLabel 10250 2850 2    50   Input ~ 0
-GPIO13_TLV320_MFP4
+GPIO13_TLV320_RESET
 Text GLabel 10250 2950 2    50   Input ~ 0
 5V
 Text GLabel 8750 1250 0    50   Input ~ 0
@@ -151,7 +151,7 @@ GPIO10_TLV320_DIN
 Text GLabel 8750 2750 0    50   Input ~ 0
 GPIO11_TLV320_DOUT
 Text GLabel 8750 2850 0    50   Input ~ 0
-GPIO12_TLV320_RESET
+GPIO12_TLV320_MFP4
 Wire Wire Line
 	8850 950  8750 950 
 Wire Wire Line
@@ -958,4 +958,92 @@ Wire Wire Line
 Wire Wire Line
 	8400 5400 7650 5400
 NoConn ~ 10150 2450
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 629C4ADE
+P 9400 3750
+F 0 "H1" H 9500 3799 50  0000 L CNN
+F 1 "MountingHole_Pad" H 9500 3708 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 9400 3750 50  0001 C CNN
+F 3 "~" H 9400 3750 50  0001 C CNN
+	1    9400 3750
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 629C5347
+P 10400 3700
+F 0 "H3" H 10500 3749 50  0000 L CNN
+F 1 "MountingHole_Pad" H 10500 3658 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 10400 3700 50  0001 C CNN
+F 3 "~" H 10400 3700 50  0001 C CNN
+	1    10400 3700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 629C5F2C
+P 9400 4250
+F 0 "H2" H 9500 4299 50  0000 L CNN
+F 1 "MountingHole_Pad" H 9500 4208 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 9400 4250 50  0001 C CNN
+F 3 "~" H 9400 4250 50  0001 C CNN
+	1    9400 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H4
+U 1 1 629C6C55
+P 10400 4250
+F 0 "H4" H 10500 4299 50  0000 L CNN
+F 1 "MountingHole_Pad" H 10500 4208 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 10400 4250 50  0001 C CNN
+F 3 "~" H 10400 4250 50  0001 C CNN
+	1    10400 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR06
+U 1 1 629C7681
+P 9400 3850
+F 0 "#PWR06" H 9400 3600 50  0001 C CNN
+F 1 "GND" H 9405 3677 50  0000 C CNN
+F 2 "" H 9400 3850 50  0001 C CNN
+F 3 "" H 9400 3850 50  0001 C CNN
+	1    9400 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR08
+U 1 1 629C8134
+P 10400 3800
+F 0 "#PWR08" H 10400 3550 50  0001 C CNN
+F 1 "GND" H 10405 3627 50  0000 C CNN
+F 2 "" H 10400 3800 50  0001 C CNN
+F 3 "" H 10400 3800 50  0001 C CNN
+	1    10400 3800
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR07
+U 1 1 629C874D
+P 9400 4350
+F 0 "#PWR07" H 9400 4100 50  0001 C CNN
+F 1 "GND" H 9405 4177 50  0000 C CNN
+F 2 "" H 9400 4350 50  0001 C CNN
+F 3 "" H 9400 4350 50  0001 C CNN
+	1    9400 4350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR09
+U 1 1 629C8D72
+P 10400 4350
+F 0 "#PWR09" H 10400 4100 50  0001 C CNN
+F 1 "GND" H 10405 4177 50  0000 C CNN
+F 2 "" H 10400 4350 50  0001 C CNN
+F 3 "" H 10400 4350 50  0001 C CNN
+	1    10400 4350
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
