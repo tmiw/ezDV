@@ -2,7 +2,7 @@
 #include "driver/gpio.h"
 
 // TLV320 reset pin GPIO
-#define TLV320_RESET_GPIO GPIO_NUM_12
+#define TLV320_RESET_GPIO GPIO_NUM_13
 
 // TLV320 I2S interface GPIOs
 #define TLV320_MCLK_GPIO GPIO_NUM_3
