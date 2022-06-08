@@ -98,7 +98,10 @@ namespace ezdv::codec
                 int rv = codec2_fifo_read(inputFifo_, inputBuf, numSpeechSamples);
                 if (rv == 0)
                 {
+                    auto timeBegin = esp_timer_get_time();
                     freedv_tx(dv_, outputBuf, inputBuf);
+                    auto timeEnd = esp_timer_get_time();
+                    ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
                     codec2_fifo_write(outputFifo_, outputBuf, numModemSamples);
                 }
             }
