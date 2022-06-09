@@ -55,6 +55,8 @@ namespace ezdv::audio
         // Set power and I/O routing (DAC).
         ESP_LOGI(CURRENT_LOG_TAG, "configure routing for DAC");
         tlv320ConfigureRoutingDAC_();
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
     }
     
     void TLV320::tick()
@@ -221,21 +223,13 @@ namespace ezdv::audio
         // (Section 2.7.1, "TLV320AIC3254 Application Reference Guide")
         vTaskDelay(pdMS_TO_TICKS(10));
         
-        // Set NADC = 40, MADC = 2. Power up.
+        // Set NDAC = 40, MDAC = 2. Power on divider.
         // (Page 0, registers 11 and 12)
-        uint8_t adcOpts[] = {
-            (1 << 7) | 40,
-            (1 << 7) | 2
-        };
-        setConfigurationOptionMultiple_(0, 11, adcOpts, 2);
-        
-        // Set NDAC = 40, MDAC = 2. Power up.
-        // (Page 0, registers 18 and 19)
         uint8_t dacOpts[] = {
             (1 << 7) | 40,
             (1 << 7) | 2
         };
-        setConfigurationOptionMultiple_(0, 18, dacOpts, 2);
+        setConfigurationOptionMultiple_(0, 11, dacOpts, 2);
         
         // Program DOSR to 128 (Page 0, registers 13-14)
         uint8_t dosr[] = {
@@ -243,6 +237,15 @@ namespace ezdv::audio
             128
         };
         setConfigurationOptionMultiple_(0, 13, dosr, 2);
+        
+        // Set NADC = 40, MADC = 2. Keep dividers powered off as
+        // NADC == NDAC and MADC == MDAC.
+        // (Page 0, registers 18 and 19)
+        uint8_t adcOpts[] = {
+            40,
+            2
+        };
+        setConfigurationOptionMultiple_(0, 18, adcOpts, 2);
         
         // Program AOSR to 128 (Page 0, register 20).
         setConfigurationOption_(0, 20, 128);
@@ -310,18 +313,20 @@ namespace ezdv::audio
         setConfigurationOption_(1, 55, 1 << 7);
         setConfigurationOption_(1, 57, 1 << 7);
         
+        // Weakly connect all unused inputs to ground.
+        // (Page 1, register 58)
+        setConfigurationOption_(1, 58, (1 << 5) | (1 << 4) | (1 << 3) | (1 << 2));
+        
         // Unmute PGAs, gain = 6dB due to 20k impedence
         // (Page 1, registers 59 and 60)
         setConfigurationOption_(1, 59, 0x0c);
         setConfigurationOption_(1, 60, 0x0c);
         
         // Power on ADC (Page 0, register 81)
+        setConfigurationOption_(0, 81, (1 << 7) | (1 << 6));
+        
         // Unmute ADC (Page 0, register 82)
-        uint8_t adc[] = {
-            (1 << 7) | (1 << 6),
-            0
-        };
-        setConfigurationOptionMultiple_(0, 81, adc, 2);
+        setConfigurationOption_(0, 82, 0);
     }
     
     void TLV320::tlv320ConfigureRoutingDAC_()
@@ -338,10 +343,10 @@ namespace ezdv::audio
         // (Page 1, register 9)
         setConfigurationOption_(1, 9, (1 << 5) | (1 << 4));
         
-        // Unmute HPL and HPR, gain = -6dB HPL, -6 dB HPR
+        // Unmute HPL and HPR, gain = 0dB
         // (Page 1, registers 16 and 17)
-        setConfigurationOption_(1, 16, -6 & 0b00111111);
-        setConfigurationOption_(1, 17, -6 & 0b00111111);
+        setConfigurationOption_(1, 16, 0);
+        setConfigurationOption_(1, 17, 0);
         
         // Wait until gain fully applied
         // (Page 1, register 63)
@@ -354,11 +359,9 @@ namespace ezdv::audio
         } while ((count++ < 50) && (gainRegVal & (11 << 6)) == 0);
         
         // Power on DAC (Page 0, register 63)
+        setConfigurationOption_(0, 63, (1 << 7) | (1 << 6) | (1 << 4) | (1 << 2) | (1 << 1));
+        
         // Unmute DAC (Page 0, register 64)
-        uint8_t dac[] = {
-            (1 << 7) | (1 << 6) | (1 << 4) | (1 << 2) | (1 << 1),
-            0
-        };
-        setConfigurationOptionMultiple_(0, 63, dac, 2);
+        setConfigurationOption_(0, 64, 0);
     }
 }
