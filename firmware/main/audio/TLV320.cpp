@@ -69,9 +69,9 @@ namespace ezdv::audio
         ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, tempData, sizeof(tempData), &bytesRead, portMAX_DELAY));
         
         // Send to Codec2
-        short tempDataLeft[bytesRead / 2 / sizeof(short)];
-        short tempDataRight[bytesRead / 2 / sizeof(short)];
-        for (auto index = 0; index < bytesRead / sizeof(short); index++)
+        short tempDataLeft[I2S_NUM_SAMPLES_PER_INTERVAL];
+        short tempDataRight[I2S_NUM_SAMPLES_PER_INTERVAL];
+        for (auto index = 0; index < bytesRead / 2 / sizeof(short); index++)
         {
             tempDataLeft[index] = tempData[2*index];
             tempDataRight[index] = tempData[2*index + 1];
@@ -91,7 +91,7 @@ namespace ezdv::audio
             codec2_fifo_read(leftChannelOutFifo_, tempDataLeft, I2S_NUM_SAMPLES_PER_INTERVAL);
             codec2_fifo_read(rightChannelOutFifo_, tempDataRight, I2S_NUM_SAMPLES_PER_INTERVAL);
 
-            for (auto index = 0; index < bytesRead / 2 / sizeof(short); index++)
+            for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
             {
                 tempData[2*index] = tempDataLeft[index];
                 tempData[2*index + 1] = tempDataRight[index];
@@ -252,6 +252,9 @@ namespace ezdv::audio
         
         // Set I2S word size to 16 bits (Page 0, register 27)
         setConfigurationOption_(0, 27, 0);
+        
+        // Loopback audio at the ADC/DAC level
+        //setConfigurationOption_(0, 29, 1 << 4);
     }
     
     void TLV320::tlv320ConfigurePower_()

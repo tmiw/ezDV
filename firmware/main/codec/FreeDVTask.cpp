@@ -31,20 +31,12 @@ namespace ezdv::codec
         
         if (isAcceptingChannelForInput && isAcceptingChannelFromSource)
         {
+            short audioDataOut[length];
+            memset(audioDataOut, 0, length * sizeof(short));
+            
             {
                 std::unique_lock<std::mutex> lock(fifoMutex_);
                 codec2_fifo_write(inputFifo_, audioData, length);
-            }
-            
-            short audioDataOut[length];
-            memset(audioDataOut, 0, length * sizeof(short));
-            ezdv::audio::ChannelLabel outChannel = 
-                isTransmitting_ ? 
-                ezdv::audio::ChannelLabel::RADIO_CHANNEL : 
-                ezdv::audio::ChannelLabel::USER_CHANNEL;
-            
-            {
-                std::unique_lock<std::mutex> lock(fifoMutex_);
                 codec2_fifo_read(outputFifo_, audioDataOut, length);
             }
             
@@ -58,13 +50,13 @@ namespace ezdv::codec
                 else
                 {
                     ezdv::audio::TLV320& task = ezdv::audio::TLV320::ThisTask();
-                    task.enqueueAudio(outChannel, audioDataOut, length);
+                    task.enqueueAudio(ezdv::audio::ChannelLabel::RADIO_CHANNEL, audioDataOut, length);
                 }
             }
             else
             {
                 ezdv::audio::AudioMixer& task = ezdv::audio::AudioMixer::ThisTask();
-                task.enqueueAudio(outChannel, audioDataOut, length);
+                task.enqueueAudio(ezdv::audio::ChannelLabel::USER_CHANNEL, audioDataOut, length);
             }
         }
     }
