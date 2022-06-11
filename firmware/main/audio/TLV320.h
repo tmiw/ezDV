@@ -60,16 +60,16 @@ namespace ezdv::audio
         
         void setPage_(uint8_t page)
         {
-    		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    		i2c_master_start(cmd);
-    		i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+            i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+            i2c_master_start(cmd);
+            i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
             
             uint8_t buf[2] = { 0, page };
             
-    		i2c_master_write(cmd, buf, sizeof(buf), true);
+            i2c_master_write(cmd, buf, sizeof(buf), I2C_MASTER_ACK);
             i2c_master_stop(cmd);
             
-            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 10/portTICK_PERIOD_MS));
+            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS));
             i2c_cmd_link_delete(cmd);
         }
         
@@ -80,16 +80,16 @@ namespace ezdv::audio
                 setPage_(page);
             }
             
-    		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    		i2c_master_start(cmd);
-    		i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+            i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+            i2c_master_start(cmd);
+            i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
             
             uint8_t buf[2] = { reg, val };
             
-    		i2c_master_write(cmd, buf, sizeof(buf), true);
+            i2c_master_write(cmd, buf, sizeof(buf), I2C_MASTER_ACK);
             i2c_master_stop(cmd);
             
-            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 10/portTICK_PERIOD_MS));
+            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS));
             i2c_cmd_link_delete(cmd);
         }
         
@@ -100,15 +100,15 @@ namespace ezdv::audio
                 setPage_(page);
             }
             
-    		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    		i2c_master_start(cmd);
-    		i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
+            i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+            i2c_master_start(cmd);
+            i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, I2C_MASTER_ACK);
             
-            i2c_master_write_byte(cmd, reg, true);
-    		i2c_master_write(cmd, val, size, true);
+            i2c_master_write_byte(cmd, reg, I2C_MASTER_ACK);
+            i2c_master_write(cmd, val, size, I2C_MASTER_ACK);
             i2c_master_stop(cmd);
             
-            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 10/portTICK_PERIOD_MS));
+            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS));
             i2c_cmd_link_delete(cmd);
         }
         
@@ -119,16 +119,9 @@ namespace ezdv::audio
                 setPage_(page);
             }
             
-            uint8_t result;
-    		i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    		i2c_master_start(cmd);
-    		i2c_master_write_byte(cmd, (TLV320_I2C_ADDRESS << 1) | I2C_MASTER_READ, I2C_MASTER_ACK);
-            i2c_master_write_byte(cmd, reg, I2C_MASTER_ACK);
-            i2c_master_read_byte(cmd, &result, I2C_MASTER_NACK);
-            i2c_master_stop(cmd);
-            
-            ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, 10/portTICK_PERIOD_MS));
-            i2c_cmd_link_delete(cmd);
+            uint8_t result;            
+            uint8_t regBuf[] = { reg };
+            ESP_ERROR_CHECK(i2c_master_write_read_device(I2C_NUM_0, TLV320_I2C_ADDRESS, regBuf, 1, &result, 1, 1000/portTICK_PERIOD_MS));
             
             return result;
         }

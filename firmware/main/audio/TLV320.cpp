@@ -1,3 +1,7 @@
+#if 0
+#include <sstream>
+#endif // 0
+
 #include "TLV320.h"
 #include "driver/gpio.h"
 
@@ -14,7 +18,7 @@
 // TLV320 I2C interface GPIOs
 #define TLV320_SCL_GPIO GPIO_NUM_45
 #define TLV320_SDA_GPIO GPIO_NUM_47
-#define TLV320_SCK_FREQ_HZ (400000)
+#define TLV320_SCK_FREQ_HZ (100000)
 
 #define CURRENT_LOG_TAG ("TLV320")
 
@@ -57,6 +61,22 @@ namespace ezdv::audio
         tlv320ConfigureRoutingDAC_();
         
         ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
+        
+#if 0
+        for (int page = 0; page < 2; page++)
+        {
+            char buf[16];
+            std::ostringstream ss;
+            for (int reg = 0; reg < 128; reg++)
+            {
+                uint8_t res = getConfigurationOption_(page, reg);
+                sprintf(buf, "%02x", res);
+                ss << buf << " ";
+            }
+            
+            ESP_LOGI(CURRENT_LOG_TAG, "I2C: page %d: %s", page, ss.str().c_str());
+        }
+#endif // 0
     }
     
     void TLV320::tick()
@@ -137,17 +157,17 @@ namespace ezdv::audio
     
     void TLV320::initializeI2C_()
     {
-    	i2c_config_t conf;
+        i2c_config_t conf;
         memset(&conf, 0, sizeof(i2c_config_t));
-    	conf.mode = I2C_MODE_MASTER;
-    	conf.sda_io_num = TLV320_SDA_GPIO;
-    	conf.scl_io_num = TLV320_SCL_GPIO;
-    	conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
-    	conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
-    	conf.master.clk_speed = TLV320_SCK_FREQ_HZ;
-    	i2c_param_config(I2C_NUM_0, &conf);
+        conf.mode = I2C_MODE_MASTER;
+        conf.sda_io_num = TLV320_SDA_GPIO;
+        conf.scl_io_num = TLV320_SCL_GPIO;
+        conf.sda_pullup_en = GPIO_PULLUP_DISABLE;
+        conf.scl_pullup_en = GPIO_PULLUP_DISABLE;
+        conf.master.clk_speed = TLV320_SCK_FREQ_HZ;
+        i2c_param_config(I2C_NUM_0, &conf);
 
-    	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+        i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
     }
     
     void TLV320::initializeResetGPIO_()
@@ -276,14 +296,14 @@ namespace ezdv::audio
         // (Page 1, register 10)
         setConfigurationOption_(1, 10, (3 << 4) | (1 << 3) | (1 << 1) | (1 << 0));
         
-        // Set ADC PTM to PTM_R4 (Page 1, register 61)
-        setConfigurationOption_(1, 61, 0);
+        // Set ADC PTM to PTM_R1 (Page 1, register 61)
+        setConfigurationOption_(1, 61, 0xFF);
         
-        // Set DAC PTM to PTM_R3 (Page 1, registers 3-4)
-        // Note: PTM_R4 requires >= 20 bits for I2S, hence not used here.
+        // Set DAC PTM to PTM_P1 (Page 1, registers 3-4)
+        // Note: PTM_P4 requires >= 20 bits for I2S, hence not used here.
         uint8_t dacPtm[] = {
-            0,
-            0
+            0x2 << 2,
+            0x2 << 2
         };
         setConfigurationOptionMultiple_(1, 3, dacPtm, 2);
         
@@ -311,10 +331,10 @@ namespace ezdv::audio
         
         // Set ADC routing: IN1_L left channel, IN1_R right channel,
         // 20kohm impedence (Page 1, registers 52, 54, 55, 57)
-        setConfigurationOption_(1, 52, 1 << 7);
-        setConfigurationOption_(1, 54, 1 << 7);
-        setConfigurationOption_(1, 55, 1 << 7);
-        setConfigurationOption_(1, 57, 1 << 7);
+        setConfigurationOption_(1, 52, 0b10 << 6);
+        setConfigurationOption_(1, 54, 0b10 << 6);
+        setConfigurationOption_(1, 55, 0b10 << 6);
+        setConfigurationOption_(1, 57, 0b10 << 6);
         
         // Weakly connect all unused inputs to ground.
         // (Page 1, register 58)
@@ -330,6 +350,8 @@ namespace ezdv::audio
         
         // Unmute ADC (Page 0, register 82)
         setConfigurationOption_(0, 82, 0);
+        
+        //setConfigurationOption_(0, 84, 0b0101000 /*0x0c*/);
     }
     
     void TLV320::tlv320ConfigureRoutingDAC_()
