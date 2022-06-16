@@ -273,8 +273,10 @@ namespace ezdv::audio
         // Set I2S word size to 16 bits (Page 0, register 27)
         setConfigurationOption_(0, 27, 0);
         
+#if 0
         // Loopback audio at the ADC/DAC level
-        //setConfigurationOption_(0, 29, 1 << 4);
+        setConfigurationOption_(0, 29, 1 << 4);
+#endif // 0
     }
     
     void TLV320::tlv320ConfigurePower_()
