@@ -352,6 +352,8 @@ namespace ezdv::audio
         setConfigurationOption_(0, 82, 0);
         
         //setConfigurationOption_(0, 84, 0b0101000 /*0x0c*/);
+        
+        tlv320ConfigureAGC_();
     }
     
     void TLV320::tlv320ConfigureRoutingDAC_()
@@ -388,5 +390,35 @@ namespace ezdv::audio
         
         // Unmute DAC (Page 0, register 64)
         setConfigurationOption_(0, 64, 0);
+    }
+    
+    void TLV320::tlv320ConfigureAGC_()
+    {
+        uint8_t agcConfig[] = {
+            // Enable AGC, -10dB target, gain hysteresis disabled
+            (1 << 7) | (0b010 << 4) | (0b00 << 0),  
+            
+            // Hysteresis 2dB, -90dB noise threshold
+            (0b01 << 6) | (0b11111 << 1),
+            
+            // 40dB maximum gain
+            0x50, //0b100100,
+            
+            // Attack time = 20ms (25 * 32 clocks, scale 2)
+            0x08,
+            
+            // Decay time = 500ms (19 * 512 clocks, scale 2)
+            0x32,
+            
+            // Noise debounce = 0ms
+            0x00,
+            
+            // Signal debounce = 2ms
+            0x06,
+        };
+        
+        // Set AGC configuration for both channels (page 0, register 86 for left, register 94 for right)
+        setConfigurationOptionMultiple_(0, 86, agcConfig, sizeof(agcConfig));
+        setConfigurationOptionMultiple_(0, 94, agcConfig, sizeof(agcConfig));
     }
 }

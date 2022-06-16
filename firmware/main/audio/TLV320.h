@@ -141,6 +141,7 @@ namespace ezdv::audio
         void tlv320ConfigurePower_();
         void tlv320ConfigureRoutingADC_();
         void tlv320ConfigureRoutingDAC_();
+        void tlv320ConfigureAGC_();
     };
 
 }
