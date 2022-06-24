@@ -318,12 +318,33 @@ namespace ezdv::audio
     
     void TLV320::tlv320ConfigureProcessingBlocks_()
     {
-        // Set ADC_PRB and DAC_PRB to P1 and R1 (Page 0, registers 60-61).
+        // Set ADC_PRB and DAC_PRB to P2 and R1 (Page 0, registers 60-61).
         uint8_t prb[] = {
             1,
-            1
+            2
         };
         setConfigurationOptionMultiple_(0, 60, prb, 2);
+        
+        // Set ADC filter coefficients for HPF, center frequency 130 Hz.
+        // All five biquads on both channels are set to this filter to reduce
+        // background hiss in the recorded audio.
+        uint8_t adcFilter[] = {
+            0x77, 0x15, 0x39, 0x00,
+            0x88, 0xEA, 0xC7, 0x00,
+            0x77, 0x15, 0x39, 0x00,
+            0x76, 0xC5, 0xA2, 0x00,
+            0x91, 0x36, 0x60, 0x00
+        };
+        setConfigurationOptionMultiple_(8, 36, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(9, 44, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(8, 56, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(9, 64, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(8, 76, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(9, 84, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(8, 96, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(9, 104, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(8, 116, adcFilter, sizeof(adcFilter));
+        setConfigurationOptionMultiple_(9, 124, adcFilter, sizeof(adcFilter));
     }
     
     void TLV320::tlv320ConfigureRoutingADC_()
