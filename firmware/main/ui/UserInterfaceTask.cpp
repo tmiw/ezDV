@@ -2,6 +2,7 @@
 #include "../codec/Messaging.h"
 #include "../radio/Messaging.h"
 #include "../audio/AudioMixer.h"
+#include "../audio/Messaging.h"
 #include "freedv_api.h"
 
 #define CURRENT_LOG_TAG "UserInterfaceTask"
@@ -121,7 +122,17 @@ namespace ezdv::ui
                 changeFDVMode_(currentFDVMode_);
                 break;
             case GPIO_VOL_UP_BUTTON:
+                ezdv::audio::ChangeVolumeMessage volUpMessage;
+                volUpMessage.channel = ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                volUpMessage.direction = true;
+                ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volUpMessage);
+                break;
             case GPIO_VOL_DOWN_BUTTON:
+                ezdv::audio::ChangeVolumeMessage volDownMessage;
+                volDownMessage.channel = ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                volDownMessage.direction = true;
+                ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volDownMessage);
+                break;
             default:
                 // TBD
                 break;

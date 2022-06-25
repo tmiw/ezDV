@@ -123,6 +123,29 @@ namespace ezdv::audio
         }
     }
     
+    void TLV320::event(const ezdv::audio::ChangeVolumeMessage& event)
+    {
+        int reg = 0;
+        int increment = event.direction ? 1 : -1;
+        
+        if (event.channel == ChannelLabel::LEFT_CHANNEL)
+        {
+            reg = 65;
+        }
+        else
+        {
+            reg = 66;
+        }
+        
+        int8_t currentVal = getConfigurationOption_(0, reg);
+        currentVal += increment;
+        
+        if (currentVal <= -127) currentVal = -127;
+        else if (currentVal >= 50) currentVal = 50;
+        
+        setConfigurationOption_(0, reg, currentVal);
+    }
+    
     void TLV320::initializeI2S_()
     {
         i2s_config_t tlv320_i2s_config;

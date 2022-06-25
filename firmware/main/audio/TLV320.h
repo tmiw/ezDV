@@ -11,6 +11,7 @@
 
 #include "codec2_fifo.h"
 #include "../codec/FreeDVTask.h"
+#include "Messaging.h"
 
 // Driver for the TLV320 audio codec chip from Texas Instruments.
 
@@ -20,18 +21,22 @@
 namespace ezdv::audio
 {
     class TLV320 : 
-        public smooth::core::Task
+        public smooth::core::Task,
+        public smooth::core::ipc::IEventListener<ezdv::audio::ChangeVolumeMessage>
     {
     public:
         TLV320()
             : smooth::core::Task("TLV320", 4096, 10, std::chrono::milliseconds(I2S_TIMER_INTERVAL_MS), 0)
             , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
+            , tlv320ControlQueue_(smooth::core::ipc::TaskEventQueue<ezdv::audio::ChangeVolumeMessage>::create(2, *this, *this))
         {
             // Create output FIFOs so we can recombine both channels into one I2S stream.
             leftChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
             assert(leftChannelOutFifo_ != nullptr);
             rightChannelOutFifo_ = codec2_fifo_create(I2S_NUM_SAMPLES_PER_INTERVAL * 5);
             assert(rightChannelOutFifo_ != nullptr);
+            
+            ezdv::util::NamedQueue::Add(TLV320_CONTROL_PIPE_NAME, tlv320ControlQueue_);
         }
         
         virtual void tick() override;
@@ -52,6 +57,8 @@ namespace ezdv::audio
                 codec2_fifo_write(rightChannelOutFifo_, audioData, length);
             }
         }
+        
+        void event(const ezdv::audio::ChangeVolumeMessage& event) override;
     protected:
         virtual void init();
         
@@ -130,6 +137,7 @@ namespace ezdv::audio
                 
         struct FIFO* leftChannelOutFifo_;
         struct FIFO* rightChannelOutFifo_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::audio::ChangeVolumeMessage>> tlv320ControlQueue_;
         
         void initializeI2S_();
         void initializeI2C_();
