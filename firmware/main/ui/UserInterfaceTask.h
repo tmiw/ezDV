@@ -58,7 +58,14 @@ namespace ezdv::ui
             , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9))))
             , sineCounter_(0)
             , currentFDVMode_(0)
+            , inPOST_(true)
         {
+            // Turn on all LEDs until we're done initializing.
+            syncLed_.set(true);
+            overloadLed_.set(true);
+            pttLed_.set(true);
+            netLed_.set(true);
+            
             // Register input channel for use by other tasks.
             ezdv::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
             
@@ -74,7 +81,6 @@ namespace ezdv::ui
         void event(const ezdv::ui::UserInterfaceControlMessage& event) override;
         void event(const smooth::core::io::InterruptInputEvent& event) override;
         void event(const smooth::core::timer::TimerExpiredEvent& event) override;
-        
     protected:
         virtual void init();
         
@@ -98,6 +104,7 @@ namespace ezdv::ui
         smooth::core::timer::TimerOwner beeperTimer_;
         int sineCounter_;
         int currentFDVMode_;
+        bool inPOST_;
         
         void stringToBeeperScript_(std::string str);
         void charToBeeperScript_(char ch);

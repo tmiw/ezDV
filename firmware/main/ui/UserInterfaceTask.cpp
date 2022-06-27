@@ -85,6 +85,19 @@ namespace ezdv::ui
         
             ezdv::audio::AudioMixer::ThisTask().enqueueAudio(ezdv::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
         }
+        else
+        {
+            if (inPOST_)
+            {
+                // Turn off LEDs as we're fully up now.
+                syncLed_.set(false);
+                overloadLed_.set(false);
+                pttLed_.set(false);
+                netLed_.set(false);
+                
+                inPOST_ = false;
+            }
+        }
     }
     
     void UserInterfaceTask::event(const ezdv::ui::UserInterfaceControlMessage& event)
