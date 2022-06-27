@@ -138,10 +138,12 @@ namespace ezdv::audio
         }
         
         int8_t currentVal = getConfigurationOption_(0, reg);
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "Volume control: adding %d to %d", increment, currentVal);
         currentVal += increment;
         
         if (currentVal <= -127) currentVal = -127;
-        else if (currentVal >= 50) currentVal = 50;
+        else if (currentVal >= 48) currentVal = 48;
         
         setConfigurationOption_(0, reg, currentVal);
     }
