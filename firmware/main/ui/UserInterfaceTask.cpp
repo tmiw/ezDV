@@ -2,7 +2,6 @@
 #include "../codec/Messaging.h"
 #include "../radio/Messaging.h"
 #include "../audio/AudioMixer.h"
-#include "../audio/Messaging.h"
 #include "freedv_api.h"
 
 #define CURRENT_LOG_TAG "UserInterfaceTask"
@@ -62,40 +61,48 @@ namespace ezdv::ui
 {
     void UserInterfaceTask::event(const smooth::core::timer::TimerExpiredEvent& event)
     {
-        // TBD -- assuming 8KHz sample rate
-        if (beeperList_.size() > 0)
+        if (event.get_id() == 1)
         {
-            short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
-            bool emitSine = beeperList_[0];
-            beeperList_.erase(beeperList_.begin());
-        
-            //ESP_LOGI("UserInterface", "Beep: %d", emitSine);
-            if (emitSine)
-            {
-                for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
-                {
-                    bufToQueue[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
-                }
-            }
-            else
-            {
-                sineCounter_ = 0;
-                memset(bufToQueue, 0, sizeof(bufToQueue));
-            }
-        
-            ezdv::audio::AudioMixer::ThisTask().enqueueAudio(ezdv::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+            // Resend volume adjustment event while button is held down.
+            ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volMessage_);
         }
         else
         {
-            if (inPOST_)
+            // TBD -- assuming 8KHz sample rate
+            if (beeperList_.size() > 0)
             {
-                // Turn off LEDs as we're fully up now.
-                syncLed_.set(false);
-                overloadLed_.set(false);
-                pttLed_.set(false);
-                netLed_.set(false);
+                short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
+                bool emitSine = beeperList_[0];
+                beeperList_.erase(beeperList_.begin());
+        
+                //ESP_LOGI("UserInterface", "Beep: %d", emitSine);
+                if (emitSine)
+                {
+                    for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
+                    {
+                        bufToQueue[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
+                    }
+                }
+                else
+                {
+                    sineCounter_ = 0;
+                    memset(bufToQueue, 0, sizeof(bufToQueue));
+                }
+        
+                ezdv::audio::AudioMixer::ThisTask().enqueueAudio(ezdv::audio::ChannelLabel::RIGHT_CHANNEL, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+            }
+            else
+            {
+                if (inPOST_)
+                {
+                    // Turn off LEDs as we're fully up now.
+                    syncLed_.set(false);
+                    overloadLed_.set(false);
+                    pttLed_.set(false);
+                    netLed_.set(false);
                 
-                inPOST_ = false;
+                    inPOST_ = false;
+                }
             }
         }
     }
@@ -139,19 +146,29 @@ namespace ezdv::ui
             case GPIO_VOL_UP_BUTTON:
                 if (state)
                 {
-                    ezdv::audio::ChangeVolumeMessage volUpMessage;
-                    volUpMessage.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
-                    volUpMessage.direction = true;
-                    ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volUpMessage);
+                    volMessage_.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                    volMessage_.direction = true;
+                    ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volMessage_);
+                    
+                    volBtnTimer_->start();
+                }
+                else
+                {
+                    volBtnTimer_->stop();
                 }
                 break;
             case GPIO_VOL_DOWN_BUTTON:
                 if (state)
                 {
-                    ezdv::audio::ChangeVolumeMessage volDownMessage;
-                    volDownMessage.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
-                    volDownMessage.direction = false;
-                    ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volDownMessage);
+                    volMessage_.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                    volMessage_.direction = false;
+                    ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volMessage_);
+                    
+                    volBtnTimer_->start();
+                }
+                else
+                {
+                    volBtnTimer_->stop();
                 }
                 break;
             default:
@@ -171,10 +188,12 @@ namespace ezdv::ui
     
     void UserInterfaceTask::init()
     {
-        beeperTimer_ = smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9)));
-        
         // Start beeper timer
+        beeperTimer_ = smooth::core::timer::Timer::create(0, timerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9)));
         beeperTimer_->start();
+        
+        // Initialize volume button timer (but don't start yet).
+        volBtnTimer_ = smooth::core::timer::Timer::create(1, timerEventQueue_, true, std::chrono::milliseconds(100));
     }
     
     void UserInterfaceTask::stringToBeeperScript_(std::string str)

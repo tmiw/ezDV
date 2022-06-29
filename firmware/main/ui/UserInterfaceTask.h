@@ -10,6 +10,7 @@
 #include "smooth/core/io/InterruptInput.h"
 #include "smooth/core/io/Output.h"
 #include "smooth/core/timer/Timer.h"
+#include "audio/Messaging.h"
 
 #define GPIO_PTT_BUTTON GPIO_NUM_4
 #define GPIO_MODE_BUTTON GPIO_NUM_5 // PTT button doesn't work on v0.1 @ GPIO 4
@@ -54,7 +55,7 @@ namespace ezdv::ui
             , pttLed_(GPIO_PTT_LED, true, false, false)
             , pttNPN_(GPIO_PTT_NPN, true, false, false)
             , netLed_(GPIO_NET_LED, true, false, false)
-            , beeperTimerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, *this, *this))
+            , timerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(3, *this, *this))
             , sineCounter_(0)
             , currentFDVMode_(0)
             , inPOST_(true)
@@ -97,12 +98,14 @@ namespace ezdv::ui
         smooth::core::io::Output netLed_;
         
         std::vector<bool> beeperList_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> beeperTimerEventQueue_;
+        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerEventQueue_;
         smooth::core::timer::TimerOwner beeperTimer_;
+        smooth::core::timer::TimerOwner volBtnTimer_;
         int sineCounter_;
         int currentFDVMode_;
         bool inPOST_;
         bool inPTT_;
+        ezdv::audio::ChangeVolumeMessage volMessage_;
         
         void stringToBeeperScript_(std::string str);
         void charToBeeperScript_(char ch);
