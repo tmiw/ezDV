@@ -171,7 +171,10 @@ namespace ezdv::ui
     
     void UserInterfaceTask::init()
     {
-        // empty
+        beeperTimer_ = smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9)));
+        
+        // Start beeper timer
+        beeperTimer_->start();
     }
     
     void UserInterfaceTask::stringToBeeperScript_(std::string str)

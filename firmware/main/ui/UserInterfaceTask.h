@@ -55,7 +55,6 @@ namespace ezdv::ui
             , pttNPN_(GPIO_PTT_NPN, true, false, false)
             , netLed_(GPIO_NET_LED, true, false, false)
             , beeperTimerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(2, *this, *this))
-            , beeperTimer_(smooth::core::timer::Timer::create(0, beeperTimerEventQueue_, true, std::chrono::milliseconds((int)(CW_TIME_UNIT_MS*0.9))))
             , sineCounter_(0)
             , currentFDVMode_(0)
             , inPOST_(true)
@@ -72,9 +71,6 @@ namespace ezdv::ui
             
             // Queue up initial announcement string
             stringToBeeperScript_(" V1");
-            
-            // Start beeper timer
-            beeperTimer_->start();
             
             changeFDVMode_(currentFDVMode_);
         }
