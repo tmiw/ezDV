@@ -12,7 +12,6 @@ namespace ezdv
         App();
         
         void init() override;
-        
     private:
         ui::UserInterfaceTask uiTask;
     };

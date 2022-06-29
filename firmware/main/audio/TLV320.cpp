@@ -4,6 +4,7 @@
 
 #include "TLV320.h"
 #include "driver/gpio.h"
+#include "storage/SettingsManager.h"
 
 // TLV320 reset pin GPIO
 #define TLV320_RESET_GPIO GPIO_NUM_13
@@ -59,6 +60,11 @@ namespace ezdv::audio
         // Set power and I/O routing (DAC).
         ESP_LOGI(CURRENT_LOG_TAG, "configure routing for DAC");
         tlv320ConfigureRoutingDAC_();
+        
+        // Restore ADC volume.
+        ESP_LOGI(CURRENT_LOG_TAG, "restoring AGC volumes");
+        setVolume_(ChannelLabel::LEFT_CHANNEL, ezdv::storage::SettingsManager::ThisTask().getLeftChannelVolume());
+        setVolume_(ChannelLabel::RIGHT_CHANNEL, ezdv::storage::SettingsManager::ThisTask().getRightChannelVolume());
         
         ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
         
@@ -142,10 +148,37 @@ namespace ezdv::audio
         ESP_LOGI(CURRENT_LOG_TAG, "Volume control: adding %d to %d", increment, currentVal);
         currentVal += increment;
         
-        if (currentVal <= -127) currentVal = -127;
-        else if (currentVal >= 48) currentVal = 48;
+        setVolume_(event.channel, currentVal);
         
-        setConfigurationOption_(0, reg, currentVal);
+        // Save new volume setting to flash.
+        if (event.channel == ChannelLabel::LEFT_CHANNEL)
+        {
+            ezdv::storage::SettingsManager::ThisTask().setLeftChannelVolume(currentVal);
+        }
+        else
+        {
+             ezdv::storage::SettingsManager::ThisTask().setRightChannelVolume(currentVal);
+        }
+    }
+    
+    void TLV320::setVolume_(ChannelLabel channel, int8_t vol)
+    {
+        int reg = 0;
+        if (channel == ChannelLabel::LEFT_CHANNEL)
+        {
+            reg = 65;
+        }
+        else
+        {
+            reg = 66;
+        }
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "Volume control: setting volume for channel %d to %d", (int)channel, vol);
+        
+        if (vol <= -127) vol = -127;
+        else if (vol >= 48) vol = 48;
+        
+        setConfigurationOption_(0, reg, vol);
     }
     
     void TLV320::initializeI2S_()

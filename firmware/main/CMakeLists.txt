@@ -9,6 +9,7 @@ set(SOURCES
     "radio/icom/IcomRadioTask.cpp"
     "radio/icom/PacketTypes.cpp"
     "radio/icom/ProtocolStateMachine.cpp"
+    "storage/SettingsManager.cpp"
     "ui/UserInterfaceTask.cpp"
     "ui/UserInterfaceTask.h"
     "util/NamedQueue.cpp"

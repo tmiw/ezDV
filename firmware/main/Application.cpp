@@ -6,9 +6,12 @@
 #include "codec/FreeDVTask.h"
 #include "radio/icom/IcomRadioTask.h"
 #include "audio/AudioMixer.h"
+#include "storage/SettingsManager.h"
 
 using namespace smooth;
 using namespace smooth::core;
+
+#define CURRENT_LOG_TAG ("app")
 
 namespace ezdv
 {
@@ -21,6 +24,9 @@ namespace ezdv
     void App::init()
     {
         Application::init();
+        
+        // Ensure settings are live before proceeding.
+        ezdv::storage::SettingsManager::ThisTask().start();
         
         ezdv::audio::TLV320::ThisTask().start();
         ezdv::codec::FreeDVTask::ThisTask().start();

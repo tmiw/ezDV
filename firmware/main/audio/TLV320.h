@@ -119,6 +119,8 @@ namespace ezdv::audio
             i2c_cmd_link_delete(cmd);
         }
         
+        void setVolume_(ChannelLabel channel, int8_t vol);
+        
         uint8_t getConfigurationOption_(uint8_t page, uint8_t reg)
         {
             if (page != currentPage_)
