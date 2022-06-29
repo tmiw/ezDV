@@ -59,6 +59,7 @@ namespace ezdv::ui
             , sineCounter_(0)
             , currentFDVMode_(0)
             , inPOST_(true)
+            , inPTT_(false)
         {
             // Turn on all LEDs until we're done initializing.
             syncLed_.set(true);
@@ -105,6 +106,7 @@ namespace ezdv::ui
         int sineCounter_;
         int currentFDVMode_;
         bool inPOST_;
+        bool inPTT_;
         
         void stringToBeeperScript_(std::string str);
         void charToBeeperScript_(char ch);

@@ -121,6 +121,8 @@ namespace ezdv::ui
                 pttLed_.set(state);
                 pttNPN_.set(state);
                 
+                inPTT_ = state;
+                
                 ezdv::codec::FreeDVChangePTTMessage message;
                 message.pttEnabled = state;
                 ezdv::util::NamedQueue::Send(FREEDV_PTT_PIPE_NAME, message);
@@ -138,7 +140,7 @@ namespace ezdv::ui
                 if (state)
                 {
                     ezdv::audio::ChangeVolumeMessage volUpMessage;
-                    volUpMessage.channel = ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                    volUpMessage.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
                     volUpMessage.direction = true;
                     ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volUpMessage);
                 }
@@ -147,7 +149,7 @@ namespace ezdv::ui
                 if (state)
                 {
                     ezdv::audio::ChangeVolumeMessage volDownMessage;
-                    volDownMessage.channel = ezdv::audio::ChannelLabel::LEFT_CHANNEL;
+                    volDownMessage.channel = inPTT_ ? ezdv::audio::ChannelLabel::RIGHT_CHANNEL : ezdv::audio::ChannelLabel::LEFT_CHANNEL;
                     volDownMessage.direction = false;
                     ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volDownMessage);
                 }
