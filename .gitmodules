@@ -4,3 +4,6 @@
 [submodule "firmware/externals/esp-dsp"]
 	path = firmware/externals/esp-dsp
 	url = https://github.com/espressif/esp-dsp.git
+[submodule "enclosure/library/YAPP_Box"]
+	path = enclosure/library/YAPP_Box
+	url = https://github.com/mrWheel/YAPP_Box.git
