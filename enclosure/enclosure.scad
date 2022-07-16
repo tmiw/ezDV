@@ -38,7 +38,7 @@ difference() {
 include <./library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
 printBaseShell      = true;
-printLidShell       = false;
+printLidShell       = true;
 
 // Edit these parameters for your own board dimensions
 wallThickness       = 2.0;
@@ -86,4 +86,50 @@ cutoutsFront = [
     [48.77, 2.4, 8, 8, 0, yappCircle, yappCenter ],
     [22.15, 10, 28.21, 8.59, 0, yappRectangle ]
 ];
+
+snapJoins = [
+    [(shellLength/2)-2.5, 5, yappLeft, yappRight],
+    [(shellWidth/2)-2.5, 5, yappFront, yappBack]
+];
+
+cutoutsLid = [
+    // Buttons
+    [10.67, 14.48, 2, 2, 0, yappCircle],
+    [19.56, 14.48, 2, 2, 0, yappCircle],
+    [28.45, 14.48, 2, 2, 0, yappCircle],
+    [37.34, 14.48, 2, 2, 0, yappCircle],
+    
+    // Status LEDs
+    [9.65, 66.04, 2, 2, 0, yappCircle],
+    [13.46, 66.04, 2, 2, 0, yappCircle],
+    [17.27, 66.04, 2, 2, 0, yappCircle],
+    [21.08, 66.04, 2, 2, 0, yappCircle],
+];
+
+module addButton(x, y)
+{
+    translate([pcbX + y, pcbY + x, -10])
+    {
+        union()
+        {
+            difference()
+            {
+                color("red") cylinder(d=2.5, h=10);
+                translate([0,0,-1]) color("blue") cylinder(d=2, h=13);
+            };
+            translate([0,0,-lidWallHeight+pcbThickness]) cylinder(h=(baseWallHeight-standoffHeight)+lidWallHeight, d=1.8);
+            translate([0,0,13]) color("green") cube([2.5,2.5,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness]) cube([2.5,2.5,2], center=true);
+        }
+    }
+}
+
+module lidHookInside()
+{
+    addButton(14.48, 10.67);
+    addButton(14.48, 19.56);
+    addButton(14.48, 28.45);
+    addButton(14.48, 37.34);
+}
+
 YAPPgenerate();
