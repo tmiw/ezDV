@@ -37,7 +37,7 @@ difference() {
 
 include <./library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
-printBaseShell      = true;
+printBaseShell      = false;
 printLidShell       = true;
 
 // Edit these parameters for your own board dimensions
@@ -94,10 +94,10 @@ snapJoins = [
 
 cutoutsLid = [
     // Buttons
-    [10.67, 14.48, 2, 2, 0, yappCircle],
-    [19.56, 14.48, 2, 2, 0, yappCircle],
-    [28.45, 14.48, 2, 2, 0, yappCircle],
-    [37.34, 14.48, 2, 2, 0, yappCircle],
+    [10.67, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
+    [19.56, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
+    [28.45, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
+    [37.34, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
     
     // Status LEDs
     [9.65, 66.04, 2, 2, 0, yappCircle],
@@ -108,18 +108,21 @@ cutoutsLid = [
 
 module addButton(x, y)
 {
-    translate([pcbX + y, pcbY + x, -10])
+    translate([pcbX + y, pcbY + x, -4])
     {
         union()
         {
-            difference()
+            translate([-2.5, -2.5, -2]) difference()
             {
-                color("red") cylinder(d=2.5, h=10);
-                translate([0,0,-1]) color("blue") cylinder(d=2, h=13);
+                color("red") cube([5,5,5]);
+                color("black") translate([0.25,0.25,3.25]) cube([4.5,4.5,/*3.25,3.25,*/3]);
+                translate([1.25,1.25,-1]) color("blue") cube([2.5,2.5,13]);
+                //translate([0,0,4]) cube([3.5,3.5,1]);
+                //translate([0.3,0.3,2]) cube([3,3,2]);
             };
-            translate([0,0,-lidWallHeight+pcbThickness]) cylinder(h=(baseWallHeight-standoffHeight)+lidWallHeight, d=1.8);
-            translate([0,0,13]) color("green") cube([2.5,2.5,2], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness]) cube([2.5,2.5,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness+2.4]) cube([1.8,1.8,(baseWallHeight-standoffHeight)+lidWallHeight+0.9], center=true);
+            translate([0,0,3]) color("green") cube([3,3,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness-9]) cube([3,3,2], center=true);
         }
     }
 }
