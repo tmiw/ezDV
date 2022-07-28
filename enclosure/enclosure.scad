@@ -94,10 +94,10 @@ snapJoins = [
 
 cutoutsLid = [
     // Buttons
-    [10.67, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
-    [19.56, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
-    [28.45, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
-    [37.34, 14.48, 3.75, 3.75, 0, yappRectangle, yappCenter],
+    [10.67, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
+    [19.56, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
+    [28.45, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
+    [37.34, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
     
     // Status LEDs
     [9.65, 66.04, 2, 2, 0, yappCircle],
