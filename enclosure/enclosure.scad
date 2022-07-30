@@ -94,10 +94,10 @@ snapJoins = [
 
 cutoutsLid = [
     // Buttons
-    [10.67, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
-    [19.56, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
-    [28.45, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
-    [37.34, 14.48, 3.9, 3.9, 0, yappRectangle, yappCenter],
+    [10.67, 14.48, 4, 4, 0, yappRectangle, yappCenter],
+    [19.56, 14.48, 4, 4, 0, yappRectangle, yappCenter],
+    [28.45, 14.48, 4, 4, 0, yappRectangle, yappCenter],
+    [37.34, 14.48, 4, 4, 0, yappRectangle, yappCenter],
     
     // Status LEDs
     [9.65, 66.04, 2, 2, 0, yappCircle],
@@ -120,9 +120,10 @@ module addButton(x, y)
                 //translate([0,0,4]) cube([3.5,3.5,1]);
                 //translate([0.3,0.3,2]) cube([3,3,2]);
             };
-            translate([0,0,-lidWallHeight+pcbThickness+2.4]) cube([1.8,1.8,(baseWallHeight-standoffHeight)+lidWallHeight+0.9], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness+2.4]) cube([2,2,(baseWallHeight-standoffHeight)+lidWallHeight+0.9], center=true);
             translate([0,0,3]) color("green") cube([3,3,2], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness-9]) cube([3,3,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness-7]) cube([3,3,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness-9]) cube([5.5,5.5,2], center=true);
         }
     }
 }
