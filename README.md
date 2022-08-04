@@ -5,7 +5,7 @@ This repository contains both the hardware schematic and firmware for an eventua
 centered around the following components:
 
 * [TLV320 digital audio codec chip](https://www.ti.com/cn/lit/ds/symlink/tlv320aic3254.pdf?ts=1651153824042) produced by Texas Instruments ([application notes](https://www.ti.com/lit/an/slaa408a/slaa408a.pdf?ts=1651208477772&ref_url=https%253A%252F%252Fwww.google.com%252F)).
-* The [nanoESP32-S3](https://github.com/wuxx/nanoESP32-S3) board (which can be purchased from [Tindie](https://www.tindie.com/products/johnnywu/nanoesp32-s3-development-board/)). *Note: it is highly recommended to buy the N2R2 or N2R8 variant to ensure there is enough RAM available to handle audio and CAT control over Wi-Fi.*
+* The [nanoESP32-S3](https://github.com/wuxx/nanoESP32-S3) board (which can be purchased from [Tindie](https://www.tindie.com/products/johnnywu/nanoesp32-s3-development-board/)). *Note: it is highly recommended to buy the N8R2 or N8R8 variant to ensure there is enough RAM available to handle audio and CAT control over Wi-Fi.*
 
 ## Building and installing the firmware
 
