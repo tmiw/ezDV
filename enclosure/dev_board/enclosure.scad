@@ -35,7 +35,7 @@ difference() {
 }
 */
 
-include <./library/YAPP_Box/library/YAPPgenerator_v14.scad>
+include <../library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
 printBaseShell      = false;
 printLidShell       = true;
