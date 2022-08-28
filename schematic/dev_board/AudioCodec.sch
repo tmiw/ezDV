@@ -1,0 +1,828 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 2 3
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L power:GND #PWR?
+U 1 1 627C1D90
+P 2100 3900
+AR Path="/627C1D90" Ref="#PWR?"  Part="1" 
+AR Path="/627AE1EC/627C1D90" Ref="#PWR0101"  Part="1" 
+F 0 "#PWR0101" H 2100 3650 50  0001 C CNN
+F 1 "GND" V 2105 3772 50  0000 R CNN
+F 2 "" H 2100 3900 50  0001 C CNN
+F 3 "" H 2100 3900 50  0001 C CNN
+	1    2100 3900
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 627C1D97
+P 2100 6450
+AR Path="/627C1D97" Ref="C?"  Part="1" 
+AR Path="/627AE1EC/627C1D97" Ref="C2"  Part="1" 
+F 0 "C2" H 2215 6496 50  0000 L CNN
+F 1 "10uF" H 2215 6405 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 2138 6300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2007131004_Samsung-Electro-Mechanics-CL05A106MP5NUNC_C315248.pdf" H 2100 6450 50  0001 C CNN
+F 4 "C315248" H 2100 6450 50  0001 C CNN "LCSC"
+	1    2100 6450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 627C1D9D
+P 1850 6700
+AR Path="/627C1D9D" Ref="C?"  Part="1" 
+AR Path="/627AE1EC/627C1D9D" Ref="C1"  Part="1" 
+F 0 "C1" V 1598 6700 50  0000 C CNN
+F 1 "10uF" V 1689 6700 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 1888 6550 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2007131004_Samsung-Electro-Mechanics-CL05A106MP5NUNC_C315248.pdf" H 1850 6700 50  0001 C CNN
+F 4 "C315248" H 1850 6700 50  0001 C CNN "LCSC"
+	1    1850 6700
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 627C1DA3
+P 4300 4700
+AR Path="/627C1DA3" Ref="#PWR?"  Part="1" 
+AR Path="/627AE1EC/627C1DA3" Ref="#PWR0102"  Part="1" 
+F 0 "#PWR0102" H 4300 4450 50  0001 C CNN
+F 1 "GND" V 4305 4572 50  0000 R CNN
+F 2 "" H 4300 4700 50  0001 C CNN
+F 3 "" H 4300 4700 50  0001 C CNN
+	1    4300 4700
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4200 4600 4300 4600
+Wire Wire Line
+	4300 4600 4300 4700
+Wire Wire Line
+	4200 4700 4300 4700
+Connection ~ 4300 4700
+Wire Wire Line
+	4200 4800 4300 4800
+Wire Wire Line
+	4300 4800 4300 4700
+$Comp
+L Device:C C?
+U 1 1 627C1DAF
+P 2100 6950
+AR Path="/627C1DAF" Ref="C?"  Part="1" 
+AR Path="/627AE1EC/627C1DAF" Ref="C3"  Part="1" 
+F 0 "C3" H 2215 6996 50  0000 L CNN
+F 1 "10uF" H 2215 6905 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 2138 6800 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2007131004_Samsung-Electro-Mechanics-CL05A106MP5NUNC_C315248.pdf" H 2100 6950 50  0001 C CNN
+F 4 "C315248" H 2100 6950 50  0001 C CNN "LCSC"
+	1    2100 6950
+	1    0    0    -1  
+$EndComp
+Text GLabel 4300 2000 2    50   BiDi ~ 0
+TLV320_AVDD
+Text GLabel 4300 2100 2    50   BiDi ~ 0
+TLV320_DVDD
+Text GLabel 4300 3100 2    50   Input ~ 0
+TLV320_REF
+Wire Wire Line
+	4200 2000 4300 2000
+Wire Wire Line
+	4300 2100 4200 2100
+Wire Wire Line
+	4200 3100 4300 3100
+$Comp
+L power:GND #PWR?
+U 1 1 627C1DBB
+P 2200 6700
+AR Path="/627C1DBB" Ref="#PWR?"  Part="1" 
+AR Path="/627AE1EC/627C1DBB" Ref="#PWR0103"  Part="1" 
+F 0 "#PWR0103" H 2200 6450 50  0001 C CNN
+F 1 "GND" V 2205 6572 50  0000 R CNN
+F 2 "" H 2200 6700 50  0001 C CNN
+F 3 "" H 2200 6700 50  0001 C CNN
+	1    2200 6700
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2100 6600 2100 6700
+Wire Wire Line
+	2100 6700 2200 6700
+Wire Wire Line
+	2100 6800 2100 6700
+Connection ~ 2100 6700
+Wire Wire Line
+	2000 6700 2100 6700
+Text GLabel 2000 6300 0    50   BiDi ~ 0
+TLV320_AVDD
+Text GLabel 1600 6700 0    50   BiDi ~ 0
+TLV320_DVDD
+Text GLabel 2000 7100 0    50   Output ~ 0
+TLV320_REF
+Wire Wire Line
+	1700 6700 1650 6700
+Wire Wire Line
+	2100 6300 2000 6300
+Wire Wire Line
+	2100 7100 2000 7100
+NoConn ~ 4200 2700
+NoConn ~ 4200 2800
+Text GLabel 4300 2500 2    50   Output ~ 0
+TLV320_OUT_USER
+Text GLabel 4300 2600 2    50   Output ~ 0
+TLV320_OUT_RADIO
+Text GLabel 4300 2900 2    50   Output ~ 0
+TLV320_OUT_MICBIAS
+Wire Wire Line
+	4200 2500 4300 2500
+Wire Wire Line
+	4300 2600 4200 2600
+Wire Wire Line
+	4200 2900 4300 2900
+Text GLabel 2100 3400 0    50   Output ~ 0
+TLV320_LDOIN
+Wire Wire Line
+	2100 3400 2200 3400
+Text GLabel 4200 6550 2    50   Input ~ 0
+TLV320_LDOIN
+Text GLabel 2100 2800 0    50   Output ~ 0
+TLV320_IN_USER
+Text GLabel 2100 2900 0    50   Output ~ 0
+TLV320_IN_RADIO
+Wire Wire Line
+	2100 2800 2200 2800
+Wire Wire Line
+	2200 2900 2100 2900
+Wire Wire Line
+	4200 2200 4300 2200
+$Comp
+L Device:C C4
+U 1 1 627C509A
+P 3300 6700
+F 0 "C4" H 3415 6746 50  0000 L CNN
+F 1 "10uF" H 3415 6655 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 3338 6550 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2007131004_Samsung-Electro-Mechanics-CL05A106MP5NUNC_C315248.pdf" H 3300 6700 50  0001 C CNN
+F 4 "C315248" H 3300 6700 50  0001 C CNN "LCSC"
+	1    3300 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C5
+U 1 1 627C5BC2
+P 3700 6700
+F 0 "C5" H 3815 6746 50  0000 L CNN
+F 1 "1uF" H 3815 6655 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 3738 6550 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810191214_Samsung-Electro-Mechanics-CL05A105KP5NNNC_C14445.pdf" H 3700 6700 50  0001 C CNN
+F 4 "C14445" H 3700 6700 50  0001 C CNN "LCSC"
+	1    3700 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C6
+U 1 1 627C63EE
+P 4100 6700
+F 0 "C6" H 4215 6746 50  0000 L CNN
+F 1 "0.1uF" H 4215 6655 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 4138 6550 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810191219_Samsung-Electro-Mechanics-CL05B104KO5NNNC_C1525.pdf" H 4100 6700 50  0001 C CNN
+F 4 "C1525" H 4100 6700 50  0001 C CNN "LCSC"
+	1    4100 6700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3300 6550 3700 6550
+Wire Wire Line
+	3700 6550 4100 6550
+Connection ~ 3700 6550
+Wire Wire Line
+	4200 6550 4100 6550
+Connection ~ 4100 6550
+$Comp
+L power:GND #PWR0104
+U 1 1 627C9B08
+P 3700 6950
+F 0 "#PWR0104" H 3700 6700 50  0001 C CNN
+F 1 "GND" H 3705 6777 50  0000 C CNN
+F 2 "" H 3700 6950 50  0001 C CNN
+F 3 "" H 3700 6950 50  0001 C CNN
+	1    3700 6950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4100 6850 4100 6950
+Wire Wire Line
+	4100 6950 3700 6950
+Wire Wire Line
+	3700 6950 3700 6850
+Connection ~ 3700 6950
+Wire Wire Line
+	3700 6950 3300 6950
+Wire Wire Line
+	3300 6950 3300 6850
+Text GLabel 3150 6550 0    50   Output ~ 0
+3.3V
+Wire Wire Line
+	3300 6550 3150 6550
+Connection ~ 3300 6550
+Text Notes 3200 6100 0    50   ~ 0
+Audio Codec Power Rails
+$Comp
+L Device:R R1
+U 1 1 627D93F6
+P 6000 1750
+F 0 "R1" H 6070 1796 50  0000 L CNN
+F 1 "1K" H 6070 1705 50  0000 L CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 5930 1750 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260430_UNI-ROYAL-Uniroyal-Elec-0402WGF1021TCE_C85373.pdf" H 6000 1750 50  0001 C CNN
+F 4 "C85373" H 6000 1750 50  0001 C CNN "LCSC"
+	1    6000 1750
+	1    0    0    -1  
+$EndComp
+Text GLabel 6000 1400 1    50   Input ~ 0
+TLV320_OUT_MICBIAS
+Text GLabel 2100 3700 0    50   Output ~ 0
+TLV320_IN_DETECT
+Wire Wire Line
+	2200 3700 2100 3700
+Text GLabel 6500 2000 2    50   Input ~ 0
+TLV320_IN_DETECT
+Wire Wire Line
+	6100 2400 6000 2400
+Text GLabel 6500 2400 2    50   Input ~ 0
+TLV320_IN_USER
+Wire Wire Line
+	6400 2400 6500 2400
+Wire Wire Line
+	6000 1900 6000 2000
+Wire Wire Line
+	6500 2000 6000 2000
+Connection ~ 6000 2000
+Wire Wire Line
+	6000 2000 6000 2400
+Wire Wire Line
+	6000 1400 6000 1600
+Text GLabel 5900 2400 0    50   Output ~ 0
+User_Jack_Mic
+Wire Wire Line
+	5900 2400 6000 2400
+Connection ~ 6000 2400
+$Comp
+L Device:C C8
+U 1 1 627E9C4C
+P 6950 1100
+F 0 "C8" H 7065 1146 50  0000 L CNN
+F 1 "47uF" H 7065 1055 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric" H 6988 950 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1811081617_Murata-Electronics-GRM188R60J476ME15D_C140782.pdf" H 6950 1100 50  0001 C CNN
+F 4 "C140782" H 6950 1100 50  0001 C CNN "LCSC"
+	1    6950 1100
+	1    0    0    -1  
+$EndComp
+Text GLabel 7050 850  2    50   Output ~ 0
+TLV320_OUT_USER
+Text GLabel 7050 1350 2    50   Input ~ 0
+User_Jack_Speaker
+Wire Wire Line
+	7050 850  6950 850 
+Wire Wire Line
+	6950 850  6950 950 
+Wire Wire Line
+	6950 1250 6950 1350
+Wire Wire Line
+	6950 1350 7050 1350
+Text GLabel 8350 850  2    50   Output ~ 0
+TLV320_OUT_RADIO
+$Comp
+L Device:C C9
+U 1 1 627EBD26
+P 8250 1100
+F 0 "C9" H 8365 1146 50  0000 L CNN
+F 1 "47uF" H 8365 1055 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric" H 8288 950 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1811081617_Murata-Electronics-GRM188R60J476ME15D_C140782.pdf" H 8250 1100 50  0001 C CNN
+F 4 "C140782" H 8250 1100 50  0001 C CNN "LCSC"
+	1    8250 1100
+	1    0    0    -1  
+$EndComp
+Text GLabel 8350 1350 2    50   Input ~ 0
+Radio_Jack_Speaker
+Wire Wire Line
+	8350 850  8250 850 
+Wire Wire Line
+	8250 850  8250 950 
+Wire Wire Line
+	8250 1250 8250 1350
+Wire Wire Line
+	8250 1350 8350 1350
+Text GLabel 10250 800  2    50   Output ~ 0
+Radio_Jack_Mic
+Wire Wire Line
+	10150 900  10150 800 
+Wire Wire Line
+	10150 800  10250 800 
+Text GLabel 10250 1300 2    50   Input ~ 0
+TLV320_IN_RADIO
+Wire Wire Line
+	10150 1200 10150 1300
+Wire Wire Line
+	10150 1300 10250 1300
+Text GLabel 1450 4600 0    50   Output ~ 0
+3.3V
+Wire Wire Line
+	2200 4400 2100 4400
+Text GLabel 4300 2400 2    50   Input ~ 0
+TLV320_OUT_DOUT
+Text GLabel 2100 2600 0    50   Output ~ 0
+TLV320_IN_DIN
+Wire Wire Line
+	2100 2600 2200 2600
+Wire Wire Line
+	4300 2400 4200 2400
+Text GLabel 2100 3500 0    50   Output ~ 0
+TLV320_IN_MCLK
+Wire Wire Line
+	2200 3500 2100 3500
+Text GLabel 2100 2500 0    50   BiDi ~ 0
+TLV320_IO_BCLK
+Text GLabel 2100 4000 0    50   BiDi ~ 0
+TLV320_IO_WCLK
+Wire Wire Line
+	2200 2500 2100 2500
+Wire Wire Line
+	2200 4000 2100 4000
+Text GLabel 9200 4650 2    50   BiDi ~ 0
+TLV320_IO_BCLK
+Text GLabel 9200 4300 2    50   BiDi ~ 0
+TLV320_IO_WCLK
+Text GLabel 9200 3250 2    50   BiDi ~ 0
+TLV320_IN_MCLK
+Text GLabel 9200 3950 2    50   Output ~ 0
+TLV320_OUT_DOUT
+Text GLabel 9200 3600 2    50   Input ~ 0
+TLV320_IN_DIN
+$Comp
+L Device:R R3
+U 1 1 627FFD47
+P 8950 3250
+F 0 "R3" V 8743 3250 50  0000 C CNN
+F 1 "10" V 8834 3250 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8880 3250 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110252230_UNI-ROYAL-Uniroyal-Elec-0402WGF100JTCE_C25077.pdf" H 8950 3250 50  0001 C CNN
+F 4 "C25077" H 8950 3250 50  0001 C CNN "LCSC"
+	1    8950 3250
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 6280002B
+P 8950 3600
+F 0 "R4" V 8743 3600 50  0000 C CNN
+F 1 "27" V 8834 3600 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8880 3600 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260230_UNI-ROYAL-Uniroyal-Elec-0402WGF274JTCE_C31439.pdf" H 8950 3600 50  0001 C CNN
+F 4 "C31439" H 8950 3600 50  0001 C CNN "LCSC"
+	1    8950 3600
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 6280031F
+P 8950 3950
+F 0 "R5" V 8743 3950 50  0000 C CNN
+F 1 "27" V 8834 3950 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8880 3950 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260230_UNI-ROYAL-Uniroyal-Elec-0402WGF274JTCE_C31439.pdf" H 8950 3950 50  0001 C CNN
+F 4 "C31439" H 8950 3950 50  0001 C CNN "LCSC"
+	1    8950 3950
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R7
+U 1 1 62800845
+P 8950 4650
+F 0 "R7" V 8743 4650 50  0000 C CNN
+F 1 "27" V 8834 4650 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8880 4650 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260230_UNI-ROYAL-Uniroyal-Elec-0402WGF274JTCE_C31439.pdf" H 8950 4650 50  0001 C CNN
+F 4 "C31439" H 8950 4650 50  0001 C CNN "LCSC"
+	1    8950 4650
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R6
+U 1 1 62800B59
+P 8950 4300
+F 0 "R6" V 8743 4300 50  0000 C CNN
+F 1 "27" V 8834 4300 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8880 4300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260230_UNI-ROYAL-Uniroyal-Elec-0402WGF274JTCE_C31439.pdf" H 8950 4300 50  0001 C CNN
+F 4 "C31439" H 8950 4300 50  0001 C CNN "LCSC"
+	1    8950 4300
+	0    1    1    0   
+$EndComp
+Text GLabel 8700 3250 0    50   Output ~ 0
+GPIO3_TLV320_MCLK
+Text GLabel 8700 3600 0    50   Output ~ 0
+GPIO10_TLV320_DIN
+Text GLabel 8700 3950 0    50   Input ~ 0
+GPIO11_TLV320_DOUT
+Text GLabel 8700 4300 0    50   BiDi ~ 0
+GPIO9_TLV320_WCLK
+Text GLabel 8700 4650 0    50   BiDi ~ 0
+GPIO46_TLV320_BCLK
+Wire Wire Line
+	8800 3250 8700 3250
+Wire Wire Line
+	8700 3600 8800 3600
+Wire Wire Line
+	8800 3950 8700 3950
+Wire Wire Line
+	8700 4300 8800 4300
+Wire Wire Line
+	8800 4650 8700 4650
+Wire Wire Line
+	9100 4650 9200 4650
+Wire Wire Line
+	9200 4300 9100 4300
+Wire Wire Line
+	9100 3950 9200 3950
+Wire Wire Line
+	9100 3600 9200 3600
+Wire Wire Line
+	9200 3250 9100 3250
+Text GLabel 2100 3600 0    50   BiDi ~ 0
+TLV320_IO_SCL
+Text GLabel 2100 3800 0    50   BiDi ~ 0
+TLV320_IO_SDA
+Wire Wire Line
+	2100 3600 2200 3600
+Wire Wire Line
+	2200 3800 2100 3800
+$Comp
+L Device:R R2
+U 1 1 6281AE81
+P 8800 2300
+F 0 "R2" H 8870 2346 50  0000 L CNN
+F 1 "4.7K" H 8870 2255 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 8730 2300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810231411_YAGEO-RC0603FR-074K7L_C99782.pdf" H 8800 2300 50  0001 C CNN
+F 4 "C99782" H 8800 2300 50  0001 C CNN "LCSC"
+	1    8800 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R8
+U 1 1 6281B1B5
+P 9100 2300
+F 0 "R8" H 9170 2346 50  0000 L CNN
+F 1 "4.7K" H 9170 2255 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 9030 2300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810231411_YAGEO-RC0603FR-074K7L_C99782.pdf" H 9100 2300 50  0001 C CNN
+F 4 "C99782" H 9100 2300 50  0001 C CNN "LCSC"
+	1    9100 2300
+	1    0    0    -1  
+$EndComp
+Text GLabel 8950 1950 1    50   Output ~ 0
+3.3V
+Wire Wire Line
+	8950 1950 8950 2150
+Wire Wire Line
+	8950 2150 8800 2150
+Wire Wire Line
+	8950 2150 9100 2150
+Connection ~ 8950 2150
+Text GLabel 8700 2550 0    50   BiDi ~ 0
+TLV320_IO_SCL
+Text GLabel 9200 2550 2    50   BiDi ~ 0
+TLV320_IO_SDA
+Wire Wire Line
+	8800 2450 8800 2550
+Wire Wire Line
+	8800 2550 8700 2550
+Wire Wire Line
+	9100 2450 9100 2550
+Wire Wire Line
+	9100 2550 9200 2550
+$Comp
+L power:GND #PWR0105
+U 1 1 62825CCB
+P 2100 4200
+F 0 "#PWR0105" H 2100 3950 50  0001 C CNN
+F 1 "GND" V 2105 4072 50  0000 R CNN
+F 2 "" H 2100 4200 50  0001 C CNN
+F 3 "" H 2100 4200 50  0001 C CNN
+	1    2100 4200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2200 4200 2100 4200
+Text GLabel 6350 4550 0    50   BiDi ~ 0
+TLV320_MFP5
+Text GLabel 6350 4750 0    50   BiDi ~ 0
+TLV320_MFP4
+Text GLabel 4300 3000 2    50   BiDi ~ 0
+TLV320_MFP4
+Text GLabel 2100 2700 0    50   BiDi ~ 0
+TLV320_MFP5
+Wire Wire Line
+	2200 2700 2100 2700
+Wire Wire Line
+	4200 3000 4300 3000
+Text GLabel 2100 2400 0    50   Output ~ 0
+TLV320_RESET
+Wire Wire Line
+	2200 2400 2100 2400
+Text GLabel 9200 4900 2    50   Input ~ 0
+TLV320_RESET
+Text GLabel 8700 4900 0    50   Output ~ 0
+GPIO13_TLV320_RESET
+Wire Wire Line
+	8700 4900 8950 4900
+Text GLabel 6550 4550 2    50   Input ~ 0
+GPIO14_TLV320_MFP5
+Text GLabel 6550 4750 2    50   Input ~ 0
+GPIO12_TLV320_MFP4
+$Comp
+L power:PWR_FLAG #FLG0103
+U 1 1 6279CBB9
+P 2150 6250
+F 0 "#FLG0103" H 2150 6325 50  0001 C CNN
+F 1 "PWR_FLAG" V 2150 6378 50  0000 L CNN
+F 2 "" H 2150 6250 50  0001 C CNN
+F 3 "~" H 2150 6250 50  0001 C CNN
+	1    2150 6250
+	0    1    1    0   
+$EndComp
+$Comp
+L power:PWR_FLAG #FLG0104
+U 1 1 6279E12A
+P 1650 6850
+F 0 "#FLG0104" H 1650 6925 50  0001 C CNN
+F 1 "PWR_FLAG" V 1650 6977 50  0000 L CNN
+F 2 "" H 1650 6850 50  0001 C CNN
+F 3 "~" H 1650 6850 50  0001 C CNN
+	1    1650 6850
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	1650 6850 1650 6700
+Connection ~ 1650 6700
+Wire Wire Line
+	1650 6700 1600 6700
+Wire Wire Line
+	2150 6250 2100 6250
+Wire Wire Line
+	2100 6250 2100 6300
+Connection ~ 2100 6300
+$Comp
+L TLV320AIC3254IRHBR:TLV320AIC3254IRHBR U?
+U 1 1 627C1D8A
+P 3200 3400
+AR Path="/627C1D8A" Ref="U?"  Part="1" 
+AR Path="/627AE1EC/627C1D8A" Ref="U1"  Part="1" 
+F 0 "U1" H 3200 5070 50  0000 C CNN
+F 1 "TLV320AIC3254IRHBR" H 3200 4979 50  0000 C CNN
+F 2 "ezDV:IC_ADS125H01IRHBT" H 3200 3400 50  0001 L BNN
+F 3 "https://www.ti.com/cn/lit/ds/symlink/tlv320aic3254.pdf?ts=1651153824042" H 3200 3400 50  0001 L BNN
+F 4 "C9925" H 3200 3400 50  0001 C CNN "LCSC"
+	1    3200 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C11
+U 1 1 6277D2CC
+P 1150 3150
+F 0 "C11" V 898 3150 50  0000 C CNN
+F 1 "0.1uF" V 989 3150 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 1188 3000 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810191219_Samsung-Electro-Mechanics-CL05B104KO5NNNC_C1525.pdf" H 1150 3150 50  0001 C CNN
+F 4 "C1525" H 1150 3150 50  0001 C CNN "LCSC"
+	1    1150 3150
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2200 3000 2050 3000
+Wire Wire Line
+	2050 3000 2050 3100
+Wire Wire Line
+	2050 3300 2200 3300
+Wire Wire Line
+	1300 3150 2050 3150
+Connection ~ 2050 3150
+Wire Wire Line
+	2050 3150 2050 3200
+Wire Wire Line
+	2200 3100 2050 3100
+Connection ~ 2050 3100
+Wire Wire Line
+	2050 3100 2050 3150
+Wire Wire Line
+	2200 3200 2050 3200
+Connection ~ 2050 3200
+Wire Wire Line
+	2050 3200 2050 3300
+$Comp
+L power:GND #PWR02
+U 1 1 6278C65D
+P 900 3250
+F 0 "#PWR02" H 900 3000 50  0001 C CNN
+F 1 "GND" H 905 3077 50  0000 C CNN
+F 2 "" H 900 3250 50  0001 C CNN
+F 3 "" H 900 3250 50  0001 C CNN
+	1    900  3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1000 3150 900  3150
+Wire Wire Line
+	900  3150 900  3250
+$Comp
+L Device:R R25
+U 1 1 62792994
+P 9900 800
+F 0 "R25" V 9693 800 50  0000 C CNN
+F 1 "1M" V 9784 800 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 9830 800 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110252030_UNI-ROYAL-Uniroyal-Elec-0603WAF1004T5E_C22935.pdf" H 9900 800 50  0001 C CNN
+F 4 "C22935" H 9900 800 50  0001 C CNN "LCSC"
+	1    9900 800 
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR05
+U 1 1 62793975
+P 9650 900
+F 0 "#PWR05" H 9650 650 50  0001 C CNN
+F 1 "GND" H 9655 727 50  0000 C CNN
+F 2 "" H 9650 900 50  0001 C CNN
+F 3 "" H 9650 900 50  0001 C CNN
+	1    9650 900 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10150 800  10050 800 
+Connection ~ 10150 800 
+Wire Wire Line
+	9750 800  9650 800 
+Wire Wire Line
+	9650 800  9650 900 
+$Comp
+L Device:R R23
+U 1 1 627B02AE
+P 6000 2650
+F 0 "R23" H 6070 2696 50  0000 L CNN
+F 1 "1M" H 6070 2605 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 5930 2650 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110252030_UNI-ROYAL-Uniroyal-Elec-0603WAF1004T5E_C22935.pdf" H 6000 2650 50  0001 C CNN
+F 4 "C22935" H 6000 2650 50  0001 C CNN "LCSC"
+	1    6000 2650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR04
+U 1 1 627B0FEB
+P 6000 2900
+F 0 "#PWR04" H 6000 2650 50  0001 C CNN
+F 1 "GND" H 6005 2727 50  0000 C CNN
+F 2 "" H 6000 2900 50  0001 C CNN
+F 3 "" H 6000 2900 50  0001 C CNN
+	1    6000 2900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6000 2400 6000 2500
+Wire Wire Line
+	6000 2900 6000 2800
+Text GLabel 5250 6550 0    50   Input ~ 0
+3.3V
+$Comp
+L Device:C C12
+U 1 1 627CA266
+P 5350 6800
+F 0 "C12" H 5465 6846 50  0000 L CNN
+F 1 "0.1uF" H 5465 6755 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 5388 6650 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810191219_Samsung-Electro-Mechanics-CL05B104KO5NNNC_C1525.pdf" H 5350 6800 50  0001 C CNN
+F 4 "C1525" H 5350 6800 50  0001 C CNN "LCSC"
+	1    5350 6800
+	1    0    0    -1  
+$EndComp
+Text GLabel 5450 6550 2    50   Output ~ 0
+TLV320_IOVDD
+$Comp
+L power:GND #PWR03
+U 1 1 627CBD65
+P 5350 7050
+F 0 "#PWR03" H 5350 6800 50  0001 C CNN
+F 1 "GND" H 5355 6877 50  0000 C CNN
+F 2 "" H 5350 7050 50  0001 C CNN
+F 3 "" H 5350 7050 50  0001 C CNN
+	1    5350 7050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5250 6550 5350 6550
+Wire Wire Line
+	5350 6650 5350 6550
+Connection ~ 5350 6550
+Wire Wire Line
+	5350 6550 5450 6550
+Wire Wire Line
+	5350 6950 5350 7050
+Wire Notes Line
+	6250 7300 950  7300
+Wire Notes Line
+	950  7300 950  6150
+Wire Notes Line
+	950  6150 6250 6150
+Wire Notes Line
+	6250 6150 6250 7300
+Text GLabel 4300 2200 2    50   Input ~ 0
+TLV320_IOVDD
+$Comp
+L Device:C C7
+U 1 1 627DA54B
+P 6250 2400
+F 0 "C7" V 6502 2400 50  0000 C CNN
+F 1 "0.47uF" V 6411 2400 50  0000 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 6288 2250 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1912111437_Walsin-Tech-Corp-0402X474K250CT_C387962.pdf" H 6250 2400 50  0001 C CNN
+F 4 "C387962" H 6250 2400 50  0001 C CNN "LCSC"
+	1    6250 2400
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:C C10
+U 1 1 627EE610
+P 10150 1050
+F 0 "C10" H 10265 1096 50  0000 L CNN
+F 1 "0.47uF" H 10265 1005 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 10188 900 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1912111437_Walsin-Tech-Corp-0402X474K250CT_C387962.pdf" H 10150 1050 50  0001 C CNN
+F 4 "C387962" H 10150 1050 50  0001 C CNN "LCSC"
+	1    10150 1050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R22
+U 1 1 627F2B7B
+P 1850 4600
+F 0 "R22" V 2057 4600 50  0000 C CNN
+F 1 "4.7K" V 1966 4600 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1780 4600 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2110260030_UNI-ROYAL-Uniroyal-Elec-0402WGF4701TCE_C25900.pdf" H 1850 4600 50  0001 C CNN
+F 4 "C25900" H 1850 4600 50  0001 C CNN "LCSC"
+	1    1850 4600
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2000 4600 2100 4600
+Wire Wire Line
+	2100 4600 2100 4400
+Wire Wire Line
+	1700 4600 1450 4600
+$Comp
+L Device:R R24
+U 1 1 627FD1BE
+P 8950 5150
+F 0 "R24" H 9020 5196 50  0000 L CNN
+F 1 "4.7K" H 9020 5105 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 8880 5150 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810231411_YAGEO-RC0603FR-074K7L_C99782.pdf" H 8950 5150 50  0001 C CNN
+F 4 "C99782" H 8950 5150 50  0001 C CNN "LCSC"
+	1    8950 5150
+	1    0    0    -1  
+$EndComp
+Text GLabel 8850 5400 0    50   Input ~ 0
+3.3V
+Wire Wire Line
+	8850 5400 8950 5400
+Wire Wire Line
+	8950 5400 8950 5300
+Wire Wire Line
+	8950 5000 8950 4900
+Connection ~ 8950 4900
+Wire Wire Line
+	8950 4900 9200 4900
+Wire Wire Line
+	6350 4550 6550 4550
+Wire Wire Line
+	6350 4750 6550 4750
+Wire Wire Line
+	2200 3900 2100 3900
+$EndSCHEMATC
