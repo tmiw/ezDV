@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "ezDV_production")(type "KiCad")(uri "/Users/mooneer/devel/ezDV/schematic/ezDV_production")(options "")(descr ""))
+)
