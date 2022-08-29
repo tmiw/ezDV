@@ -24,7 +24,8 @@ if(${ESP_PLATFORM})
                             #    "codec2.lf"
                             REQUIRES
                                 smooth_component
-                                esp-dsp)
+                                esp-dsp
+                                ulp)
 endif()
 
 # Compiles and links Codec2 into the application.
@@ -68,6 +69,9 @@ add_subdirectory(${codec2_SOURCE_DIR} ${codec2_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 if(${ESP_PLATFORM})
     target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
+    
+    # RISC-V ULP setup 
+    ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
 else()
     project(ezdv.elf)
     add_executable(ezdv ${SOURCES})
