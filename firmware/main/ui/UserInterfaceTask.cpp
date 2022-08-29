@@ -57,6 +57,8 @@ static std::pair<int, std::string> ModeList_[] = {
 
 #include "esp_log.h"
 
+extern "C" void load_ulp_and_shutdown(void);
+
 namespace ezdv::ui
 {
     void UserInterfaceTask::event(const smooth::core::timer::TimerExpiredEvent& event)
@@ -65,6 +67,12 @@ namespace ezdv::ui
         {
             // Resend volume adjustment event while button is held down.
             ezdv::util::NamedQueue::Send(TLV320_CONTROL_PIPE_NAME, volMessage_);
+        }
+        else if (event.get_id() == 2)
+        {
+            // Trigger shutdown
+            ESP_LOGI(CURRENT_LOG_TAG, "Power down timer expired, shutting down");
+            load_ulp_and_shutdown();
         }
         else
         {
@@ -138,10 +146,22 @@ namespace ezdv::ui
                 radioMessage.value = state;
                 ezdv::util::NamedQueue::Send(RADIO_CONTROL_PIPE_NAME, radioMessage);
                 break;
-            case GPIO_MODE_BUTTON:
-                currentFDVMode_ = (currentFDVMode_ + 1) % NUM_AVAILABLE_MODES;
-                beeperList_.clear();
-                changeFDVMode_(currentFDVMode_);
+            case GPIO_MODE_BUTTON:            
+                if (state)
+                {
+                    currentFDVMode_ = (currentFDVMode_ + 1) % NUM_AVAILABLE_MODES;
+                    beeperList_.clear();
+                    changeFDVMode_(currentFDVMode_);
+                    
+                    ESP_LOGI(CURRENT_LOG_TAG, "Starting power-down timer");
+                    powerOffTimer_->start();
+                }
+                else
+                {
+                    ESP_LOGI(CURRENT_LOG_TAG, "Stopping power-down timer");
+                    powerOffTimer_->stop();
+                }
+                
                 break;
             case GPIO_VOL_UP_BUTTON:
                 if (state)
@@ -194,6 +214,9 @@ namespace ezdv::ui
         
         // Initialize volume button timer (but don't start yet).
         volBtnTimer_ = smooth::core::timer::Timer::create(1, timerEventQueue_, true, std::chrono::milliseconds(100));
+        
+        // Initialize power off timer
+        powerOffTimer_ = smooth::core::timer::Timer::create(2, timerEventQueue_, true, std::chrono::milliseconds(1000));
     }
     
     void UserInterfaceTask::stringToBeeperScript_(std::string str)

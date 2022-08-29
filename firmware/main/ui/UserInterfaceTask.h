@@ -49,7 +49,7 @@ namespace ezdv::ui
             , pttButton_(uiButtonQueue_, GPIO_PTT_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , volUpButton_(uiButtonQueue_, GPIO_VOL_UP_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , volDownButton_(uiButtonQueue_, GPIO_VOL_DOWN_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , changeModeButton_(uiButtonQueue_, GPIO_MODE_BUTTON, false, false, GPIO_INTR_POSEDGE)
+            , changeModeButton_(uiButtonQueue_, GPIO_MODE_BUTTON, false, false, GPIO_INTR_ANYEDGE)
             , syncLed_(GPIO_SYNC_LED, true, false, false)
             , overloadLed_(GPIO_OVL_LED, true, false, false)
             , pttLed_(GPIO_PTT_LED, true, false, false)
@@ -101,6 +101,7 @@ namespace ezdv::ui
         std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerEventQueue_;
         smooth::core::timer::TimerOwner beeperTimer_;
         smooth::core::timer::TimerOwner volBtnTimer_;
+        smooth::core::timer::TimerOwner powerOffTimer_;
         int sineCounter_;
         int currentFDVMode_;
         bool inPOST_;

@@ -63,7 +63,7 @@ extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
 extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
     
 #ifdef ESP_PLATFORM
-static void load_ulp_and_shutdown(void)
+void load_ulp_and_shutdown(void)
 {
     /* Initialize mode button GPIO as RTC IO, enable input, disable pullup and pulldown */
     rtc_gpio_init(GPIO_NUM_5);
