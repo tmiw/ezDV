@@ -97,8 +97,18 @@ void load_ulp_and_shutdown(void)
 void app_main()
 {
     // Make sure the ULP program isn't running.
-    //ulp_riscv_timer_stop();
-    //ulp_riscv_halt();
+    // NOTE: these are copied from ulp_riscv_timer_stop() and ulp_riscv_halt()
+    // in ESP-IDF master; 4.4 doesn't have these but are needed to make sure we
+    // can reliably and repeatedly enter sleep.
+    
+    /* stop ULP timer */
+    CLEAR_PERI_REG_MASK(RTC_CNTL_ULP_CP_TIMER_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN);
+
+    /* suspends the ulp operation*/
+    SET_PERI_REG_MASK(RTC_CNTL_COCPU_CTRL_REG, RTC_CNTL_COCPU_DONE);
+
+    /* Resets the processor */
+    SET_PERI_REG_MASK(RTC_CNTL_COCPU_CTRL_REG, RTC_CNTL_COCPU_SHUT_RESET_EN);
     
     esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
     /* not a wakeup from ULP, load the firmware */
