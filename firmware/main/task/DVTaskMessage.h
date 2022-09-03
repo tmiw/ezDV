@@ -34,16 +34,12 @@ public:
     DVTaskMessage() = default;
     virtual ~DVTaskMessage() = default;
 
-    virtual uint32_t getSize() const 
-    {
-        return sizeof(std::remove_reference_t<decltype(*this)>);
-    }
-
+    virtual uint32_t getSize() const = 0;
     virtual esp_event_base_t getEventBase() const = 0;
     virtual uint32_t getEventType() const = 0;
 };
 
-template<uint32_t EVENT_TYPE_ID>
+template<uint32_t EVENT_TYPE_ID, typename MessageType>
 class DVTaskMessageBase : public DVTaskMessage
 {
 public:
@@ -63,6 +59,11 @@ public:
     virtual uint32_t getEventType() const override
     {
         return EVENT_TYPE_ID;
+    }
+    
+    virtual uint32_t getSize() const override
+    {
+        return sizeof(MessageType);
     }
 
 private:

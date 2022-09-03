@@ -19,6 +19,7 @@
 #define EZDV_APPLICATION_H
 
 #include "task/DVTask.h"
+#include "task/DVTimer.h"
 
 using namespace ezdv::task;
 
@@ -34,6 +35,9 @@ protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
+    
+private:
+    DVTimer timer_;
 };
 
 }

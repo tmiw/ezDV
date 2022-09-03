@@ -41,27 +41,27 @@ enum DVTaskControlMessageTypes
     TASK_SHUTDOWN = 4, // Not currently used, just here for the future
 };
 
-class TaskStartMessage : public DVTaskMessageBase<TASK_START>
+class TaskStartMessage : public DVTaskMessageBase<TASK_START, TaskStartMessage>
 {
 public:
     TaskStartMessage()
-        : DVTaskMessageBase<TASK_START>(DV_TASK_CONTROL_MESSAGE) { }
+        : DVTaskMessageBase<TASK_START, TaskStartMessage>(DV_TASK_CONTROL_MESSAGE) { }
     virtual ~TaskStartMessage() = default;
 };
 
-class TaskWakeMessage : public DVTaskMessageBase<TASK_WAKE>
+class TaskWakeMessage : public DVTaskMessageBase<TASK_WAKE, TaskWakeMessage>
 {
 public:
     TaskWakeMessage()
-        : DVTaskMessageBase<TASK_WAKE>(DV_TASK_CONTROL_MESSAGE) { }
+        : DVTaskMessageBase<TASK_WAKE, TaskWakeMessage>(DV_TASK_CONTROL_MESSAGE) { }
     virtual ~TaskWakeMessage() = default;
 };
 
-class TaskSleepMessage : public DVTaskMessageBase<TASK_SLEEP>
+class TaskSleepMessage : public DVTaskMessageBase<TASK_SLEEP, TaskSleepMessage>
 {
 public:
     TaskSleepMessage()
-        : DVTaskMessageBase<TASK_SLEEP>(DV_TASK_CONTROL_MESSAGE) { }
+        : DVTaskMessageBase<TASK_SLEEP, TaskSleepMessage>(DV_TASK_CONTROL_MESSAGE) { }
     virtual ~TaskSleepMessage() = default;
 };
 

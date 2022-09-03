@@ -1,7 +1,8 @@
 set(SOURCES 
     "Application.cpp"
     "task/DVTask.cpp"
-    "task/DVTaskControlMessage.cpp")
+    "task/DVTaskControlMessage.cpp"
+    "task/DVTimer.cpp")
     #"audio/TLV320.cpp"
     #"audio/TLV320.h"
     #"audio/AudioMixer.cpp"
@@ -28,6 +29,7 @@ if(${ESP_PLATFORM})
                                 esp-dsp
                                 ulp
                                 soc
+                                esp_timer
                                 esp_event
                                 driver)
 

@@ -27,6 +27,7 @@ namespace ezdv
 {
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
+    , timer_(this, [this](DVTimer*) { ESP_LOGI(CURRENT_LOG_TAG, "timer fired!"); }, 1000000)
 {
     // empty
 }
@@ -39,6 +40,8 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
+    
+    timer_.start();
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
