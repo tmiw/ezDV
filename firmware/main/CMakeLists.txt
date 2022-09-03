@@ -1,5 +1,7 @@
 set(SOURCES 
     "Application.cpp"
+    "driver/I2CDevice.cpp"
+    "driver/TLV320.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp")

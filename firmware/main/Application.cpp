@@ -28,6 +28,7 @@ namespace ezdv
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
     , timer_(this, [this](DVTimer*) { ESP_LOGI(CURRENT_LOG_TAG, "timer fired!"); }, 1000000)
+    , tlv320Device_(&i2cDevice_)
 {
     // empty
 }
@@ -35,6 +36,9 @@ App::App()
 void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskStart_");
+
+    // Start device drivers
+    tlv320Device_.start();
 }
 
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -42,11 +46,17 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
     
     timer_.start();
+    
+    // Wake up device drivers
+    tlv320Device_.wake();
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
+
+    // Sleep device drivers
+    tlv320Device_.sleep();
 
     // TBD - sleep other tasks.
 
@@ -102,6 +112,8 @@ extern "C" void app_main()
         // Perform initial startup actions because we may not be fully ready yet
         app->start();
 
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        
         ESP_LOGI(CURRENT_LOG_TAG, "Starting power off application");
         app->sleep();
     }

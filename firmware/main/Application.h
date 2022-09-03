@@ -20,6 +20,8 @@
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+#include "driver/I2CDevice.h"
+#include "driver/TLV320.h"
 
 using namespace ezdv::task;
 
@@ -38,6 +40,8 @@ protected:
     
 private:
     DVTimer timer_;
+    driver::I2CDevice i2cDevice_;
+    driver::TLV320 tlv320Device_;
 };
 
 }
