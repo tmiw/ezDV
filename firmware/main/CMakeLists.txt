@@ -2,6 +2,7 @@ set(SOURCES
     "Application.cpp"
     "driver/I2CDevice.cpp"
     "driver/TLV320.cpp"
+    "storage/SettingsTask.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp")
@@ -33,7 +34,8 @@ if(${ESP_PLATFORM})
                                 soc
                                 esp_timer
                                 esp_event
-                                driver)
+                                driver
+                                nvs_flash)
 
 endif()
 

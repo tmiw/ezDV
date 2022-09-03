@@ -15,37 +15,51 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef SETTINGS_TASK_H
+#define SETTINGS_TASK_H
+
+#include <memory>
+
+#include "nvs_flash.h"
+#include "nvs.h"
+#include "nvs_handle.hpp"
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
-#include "driver/I2CDevice.h"
-#include "driver/TLV320.h"
-#include "storage/SettingsTask.h"
-
-using namespace ezdv::task;
-
 namespace ezdv
 {
 
-class App : public DVTask
+namespace storage
+{
+
+using namespace ezdv::task;
+
+class SettingsTask : public DVTask
 {
 public:
-    App();
+    SettingsTask();
+    virtual ~SettingsTask() = default;
 
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-    
+
 private:
-    DVTimer timer_;
-    driver::I2CDevice i2cDevice_;
-    driver::TLV320 tlv320Device_;
-    storage::SettingsTask settingsTask_;
+    int8_t leftChannelVolume_;
+    int8_t rightChannelVolume_;
+    DVTimer commitTimer_;
+    std::shared_ptr<nvs::NVSHandle> storageHandle_;
+
+    void loadAllSettings_();
+    void commit_();
+    void setLeftChannelVolume_(int8_t vol);
+    void setRightChannelVolume_(int8_t vol);
 };
 
-}
+} // namespace storage
 
-#endif // EZDV_APPLICATION_H
+} // namespace ezdv
+
+
+#endif // SETTINGS_TASK_H

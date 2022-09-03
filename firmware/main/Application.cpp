@@ -39,6 +39,9 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
     // Start device drivers
     tlv320Device_.start();
+
+    // Start storage handling
+    settingsTask_.start();
 }
 
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -49,6 +52,9 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     
     // Wake up device drivers
     tlv320Device_.wake();
+
+    // Wake storage handling
+    settingsTask_.wake();
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
@@ -58,6 +64,9 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     // Sleep device drivers
     tlv320Device_.sleep();
 
+    // Sleep storage handling
+    settingsTask_.sleep();
+    
     // TBD - sleep other tasks.
 
     /* Initialize mode button GPIO as RTC IO, enable input, disable pullup and pulldown */
@@ -113,7 +122,7 @@ extern "C" void app_main()
         app->start();
 
         vTaskDelay(pdMS_TO_TICKS(2000));
-        
+
         ESP_LOGI(CURRENT_LOG_TAG, "Starting power off application");
         app->sleep();
     }
