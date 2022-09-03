@@ -14,28 +14,10 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+ 
+#include "DVTaskControlMessage.h"
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
-
-#include "task/DVTask.h"
-
-using namespace ezdv::task;
-
-namespace ezdv
+extern "C"
 {
-
-class App : public DVTask
-{
-public:
-    App();
-
-protected:
-    virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
-    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
-    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-};
-
+    ESP_EVENT_DEFINE_BASE(DV_TASK_CONTROL_MESSAGE);
 }
-
-#endif // EZDV_APPLICATION_H

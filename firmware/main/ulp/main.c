@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "ulp_riscv/ulp_riscv.h"
-#include "ulp_riscv/ulp_riscv_utils.h"
-#include "ulp_riscv/ulp_riscv_gpio.h"
+#include "ulp_riscv.h"
+#include "ulp_riscv_utils.h"
+#include "ulp_riscv_gpio.h"
 
 volatile int num_cycles_with_gpio_on;
 

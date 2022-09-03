@@ -9,9 +9,8 @@ if(${ESP_PLATFORM})
     
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-# Include Smooth as a component
+# Include ESP-DSP as a component
 set(EXTRA_COMPONENT_DIRS
-         externals/smooth/smooth_component
          externals/esp-dsp)
 
 project(ezdv)
@@ -20,13 +19,6 @@ else()
 
 project(ezdv)
     
-if(${APPLE})
-    include_directories(SYSTEM /usr/local/include)
-    link_directories(/usr/local/lib)
-endif()
-
 add_subdirectory(main)
-add_subdirectory(externals/smooth/lib)
-add_subdirectory(externals/smooth/mock-idf)
 
 endif()

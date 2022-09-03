@@ -1,4 +1,9 @@
 .DS_Store
+.vscode
+
+*.lock
+managed_components
+
 schematic/*-bak
 firmware/build
 firmware/sdkconfig.old

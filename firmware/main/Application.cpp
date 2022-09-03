@@ -1,70 +1,52 @@
 #include "Application.h"
-#include "smooth/core/task_priorities.h"
-#include "smooth/core/SystemStatistics.h"
 
+/*
 #include "audio/TLV320.h"
 #include "codec/FreeDVTask.h"
 #include "radio/icom/IcomRadioTask.h"
 #include "audio/AudioMixer.h"
 #include "storage/SettingsManager.h"
+*/
 
 #include "driver/rtc_io.h"
-#include "esp32s3/ulp.h"
-#include "esp32s3/ulp_riscv.h"
+#include "ulp_riscv.h"
 #include "ulp_main.h"
 #include "esp_sleep.h"
-
-using namespace smooth;
-using namespace smooth::core;
+#include "esp_log.h"
 
 #define CURRENT_LOG_TAG ("app")
 
-namespace ezdv
-{
-    App::App()
-        : Application(APPLICATION_BASE_PRIO, std::chrono::milliseconds(1000))
-    {
-        // empty
-    }
-
-    void App::init()
-    {
-        Application::init();
-        
-        // Ensure settings are live before proceeding.
-        ezdv::storage::SettingsManager::ThisTask().start();
-        
-        ezdv::audio::TLV320::ThisTask().start();
-        ezdv::codec::FreeDVTask::ThisTask().start();
-        ezdv::audio::AudioMixer::ThisTask().start();
-        uiTask.start();
-
-#if 0    
-        smooth::core::network::Wifi& wifi = get_wifi();
-        wifi.set_host_name("ezdv");
-        wifi.set_auto_connect(true);
-        wifi.set_ap_credentials("YOUR WIFI NETWORK", "YOUR WIFI PASSWORD");
-        wifi.connect_to_ap();
-        
-        vTaskDelay(pdMS_TO_TICKS(10000));
-        auto& radioTask = ezdv::radio::icom::IcomRadioTask::ThisTask();
-        radioTask.setLocalIp(wifi.get_local_ip());
-        radioTask.setAuthInfo("192.168.59.1", 50001, "YOUR RADIO USERNAME", "YOUR RADIO PASSWORD");
-        radioTask.start();
-#endif
-    }
-}
-
 extern "C"
 {
-    
-// Power off handler application
-extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
-extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
-    
-#ifdef ESP_PLATFORM
-void load_ulp_and_shutdown(void)
+    // Power off handler application
+    extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
+    extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
+}
+
+namespace ezdv
 {
+App::App()
+    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
+{
+    // empty
+}
+
+void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "onTaskStart_");
+}
+
+void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
+}
+
+void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
+
+    // TBD - sleep other tasks.
+
     /* Initialize mode button GPIO as RTC IO, enable input, disable pullup and pulldown */
     rtc_gpio_init(GPIO_NUM_5);
     rtc_gpio_set_direction(GPIO_NUM_5, RTC_GPIO_MODE_INPUT_ONLY);
@@ -90,48 +72,39 @@ void load_ulp_and_shutdown(void)
     /* Small delay to ensure the messages are printed */
     vTaskDelay(100);
 
-    ESP_ERROR_CHECK( esp_sleep_enable_ulp_wakeup());
+    ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();    
 }
 
-void app_main()
+}
+
+ezdv::App* app;
+
+extern "C" void app_main()
 {
     // Make sure the ULP program isn't running.
-    // NOTE: these are copied from ulp_riscv_timer_stop() and ulp_riscv_halt()
-    // in ESP-IDF master; 4.4 doesn't have these but are needed to make sure we
-    // can reliably and repeatedly enter sleep.
-    
-    /* stop ULP timer */
-    CLEAR_PERI_REG_MASK(RTC_CNTL_ULP_CP_TIMER_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN);
+    ulp_riscv_timer_stop();
+    ulp_riscv_halt();
 
-    /* suspends the ulp operation*/
-    SET_PERI_REG_MASK(RTC_CNTL_COCPU_CTRL_REG, RTC_CNTL_COCPU_DONE);
-
-    /* Resets the processor */
-    SET_PERI_REG_MASK(RTC_CNTL_COCPU_CTRL_REG, RTC_CNTL_COCPU_SHUT_RESET_EN);
+    // Note: mandatory for publish to work.
+    esp_event_loop_create_default();
     
+    app = new ezdv::App();
+    assert(app != nullptr);
+
     esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+
     /* not a wakeup from ULP, load the firmware */
     if (cause != ESP_SLEEP_WAKEUP_ULP) {
+        // Perform initial startup actions because we may not be fully ready yet
+        app->start();
+
         ESP_LOGI(CURRENT_LOG_TAG, "Starting power off application");
-        load_ulp_and_shutdown();
+        app->sleep();
     }
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Woken up via ULP, booting...");
+        app->wake();
     }
-        
-    ezdv::App app{};
-    app.start();
-}
-#else
-int main(int /*argc*/, char** /*argv*/)
-{
-    smooth::core::SystemStatistics::instance().dump();
-    ezdv::App app{};
-    app.start();
-    return 0;
-}
-#endif
-
 }

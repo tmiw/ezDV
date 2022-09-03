@@ -1,19 +1,21 @@
 set(SOURCES 
     "Application.cpp"
-    "audio/TLV320.cpp"
-    "audio/TLV320.h"
-    "audio/AudioMixer.cpp"
-    "audio/AudioMixer.h"
-    "codec/FreeDVTask.cpp"
-    "codec/FreeDVTask.h"
-    "radio/icom/IcomRadioTask.cpp"
-    "radio/icom/PacketTypes.cpp"
-    "radio/icom/ProtocolStateMachine.cpp"
-    "storage/SettingsManager.cpp"
-    "ui/UserInterfaceTask.cpp"
-    "ui/UserInterfaceTask.h"
-    "util/NamedQueue.cpp"
-    "util/NamedQueue.h")
+    "task/DVTask.cpp"
+    "task/DVTaskControlMessage.cpp")
+    #"audio/TLV320.cpp"
+    #"audio/TLV320.h"
+    #"audio/AudioMixer.cpp"
+    #"audio/AudioMixer.h"
+    #"codec/FreeDVTask.cpp"
+    #"codec/FreeDVTask.h"
+    #"radio/icom/IcomRadioTask.cpp"
+    #"radio/icom/PacketTypes.cpp"
+    #"radio/icom/ProtocolStateMachine.cpp"
+    #"storage/SettingsManager.cpp"
+    #"ui/UserInterfaceTask.cpp"
+    #"ui/UserInterfaceTask.h"
+    #"util/NamedQueue.cpp"
+    #"util/NamedQueue.h")
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}
@@ -23,9 +25,12 @@ if(${ESP_PLATFORM})
                             #LDFRAGMENTS
                             #    "codec2.lf"
                             REQUIRES
-                                smooth_component
                                 esp-dsp
-                                ulp)
+                                ulp
+                                soc
+                                esp_event
+                                driver)
+
 endif()
 
 # Compiles and links Codec2 into the application.
@@ -67,14 +72,7 @@ set(CMAKE_REQUIRED_FLAGS "")
 set(LPCNET OFF CACHE BOOL "")
 add_subdirectory(${codec2_SOURCE_DIR} ${codec2_BINARY_DIR} EXCLUDE_FROM_ALL)
 
-if(${ESP_PLATFORM})
-    target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
+target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
     
-    # RISC-V ULP setup 
-    ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
-else()
-    project(ezdv.elf)
-    add_executable(ezdv ${SOURCES})
-    target_link_libraries(ezdv smooth pthread codec2)
-    target_include_directories(ezdv PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-endif()
+# RISC-V ULP setup 
+ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
