@@ -88,7 +88,7 @@ void App::onTaskStart_()
 
     // Start device drivers
     tlv320Device_.start();
-    waitForStart(&tlv320Device_, pdMS_TO_TICKS(5000));
+    waitForStart(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.start();
     
@@ -130,7 +130,7 @@ void App::onTaskWake_()
 
     // Wake up device drivers
     tlv320Device_.wake();
-    waitForAwake(&tlv320Device_, pdMS_TO_TICKS(5000));
+    waitForAwake(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.wake();
 
@@ -166,12 +166,14 @@ void App::onTaskSleep_()
     vTaskDelay(pdMS_TO_TICKS(2000));
 
     // Sleep audio processing
-    freedvTask_.sleep();
-    audioMixer_.sleep();
     beeperTask_.sleep();
-    waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
-    waitForSleep(&audioMixer_, pdMS_TO_TICKS(1000));
     waitForSleep(&beeperTask_, pdMS_TO_TICKS(1000));
+
+    freedvTask_.sleep();
+    waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
+
+    audioMixer_.sleep();
+    waitForSleep(&audioMixer_, pdMS_TO_TICKS(1000));
 
     // Sleep device drivers
     tlv320Device_.sleep();

@@ -118,6 +118,10 @@ public:
     /// @brief Static initializer, required before using DVTask.
     static void Initialize();
 protected:
+    virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message);
+    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message);
+    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message);
+    
     virtual void onTaskStart_() = 0;
     virtual void onTaskWake_() = 0;
     virtual void onTaskSleep_() = 0;
@@ -148,10 +152,6 @@ private:
     EventMap eventRegistrationMap_;
 
     QueueHandle_t taskQueue_;
-
-    virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message);
-    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message);
-    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message);
 
     MessageEntry* createMessageEntry_(DVTask* origin, DVTaskMessage* message);
 

@@ -60,9 +60,14 @@ void AudioMixer::onTimerTick_()
     struct FIFO* outputFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
 
     // Process on a sample by sample basis
+    int ctr = 
+        codec2_fifo_used(leftInputFifo) <= codec2_fifo_used(rightInputFifo) ?
+        codec2_fifo_used(leftInputFifo) :
+        codec2_fifo_used(rightInputFifo);
+
     short bufLeft;
     short bufRight;
-    while (codec2_fifo_used(leftInputFifo) > 0 || codec2_fifo_used(rightInputFifo) > 0)
+    while (ctr-- > 0 && (codec2_fifo_used(leftInputFifo) > 0 || codec2_fifo_used(rightInputFifo) > 0))
     {
         bufLeft = 0;
         bufRight = 0;

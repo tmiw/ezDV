@@ -31,6 +31,7 @@
 
 // Found via experimentation
 #define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS*0.9))
+#define BEEPER_TIMER_TICK_US (CW_TIME_UNIT_MS * 1000)
 
 #define CURRENT_LOG_TAG ("BeeperTask")
 
@@ -83,8 +84,9 @@ std::map<char, std::string> BeeperTask::CharacterToMorse_ = {
 BeeperTask::BeeperTask()
     : DVTask("BeeperTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
     , AudioInput(1, 1) // we don't need the input FIFO, just the output one
-    , beeperTimer_(this, std::bind(&BeeperTask::onTimerTick_, this), BEEPER_TIMER_TICK_MS)
+    , beeperTimer_(this, std::bind(&BeeperTask::onTimerTick_, this), BEEPER_TIMER_TICK_US)
     , sineCounter_(0)
+    , deferShutdown_(false)
 {
     registerMessageHandler(this, &BeeperTask::onSetBeeperText_);
     registerMessageHandler(this, &BeeperTask::onClearBeeperText_);
@@ -97,12 +99,12 @@ BeeperTask::~BeeperTask()
 
 void BeeperTask::onTaskStart_()
 {
-    // empty
+    deferShutdown_ = false;
 }
 
 void BeeperTask::onTaskWake_()
 {
-    // empty
+    deferShutdown_ = false;
 }
 
 void BeeperTask::onTaskSleep_()
@@ -110,6 +112,20 @@ void BeeperTask::onTaskSleep_()
     beeperTimer_.stop();
     beeperList_.clear();
     sineCounter_ = 0;
+}
+
+void BeeperTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
+    if (beeperList_.size() > 0)
+    {
+        // We're deferring shutdown until we've played through the beeper
+        // list.
+        deferShutdown_ = true;
+    }
+    else
+    {
+        DVTask::onTaskSleep_(origin, message);
+    }
 }
 
 void BeeperTask::onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message)
@@ -161,8 +177,16 @@ void BeeperTask::onTimerTick_()
     }
     else
     {
-        beeperTimer_.stop();
-        sineCounter_ = 0;
+        if (deferShutdown_)
+        {
+            // NOW we can shut down.
+            onTaskSleep_(nullptr, nullptr);
+        }
+        else
+        {
+            beeperTimer_.stop();
+            sineCounter_ = 0;
+        }
     }
 }
 

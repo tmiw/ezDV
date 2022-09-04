@@ -41,6 +41,8 @@ public:
     virtual ~BeeperTask();
 
 protected:
+    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
+
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;
     virtual void onTaskSleep_() override;
@@ -48,6 +50,7 @@ protected:
 private:
     DVTimer beeperTimer_;
     int sineCounter_;
+    bool deferShutdown_;
     std::vector<bool> beeperList_;
 
     void onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message);
