@@ -24,7 +24,8 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_event.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "DVTaskControlMessage.h"
 
@@ -96,15 +97,15 @@ protected:
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) = 0;
 
 private:
-    using EventHandlerFn = void(*)(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-    using EventIdentifierPair = std::pair<esp_event_base_t, uint32_t>;
+    using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
+    using EventIdentifierPair = std::pair<DVEventBaseType, uint32_t>;
     using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, void*>>;
     using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
 
     // Structure to help encode messages for queuing.
     struct MessageEntry
     {
-        esp_event_base_t eventBase;
+        DVEventBaseType eventBase;
         int32_t eventId;
 
         DVTask* origin;
@@ -128,7 +129,7 @@ private:
     static void ThreadEntry_(DVTask* thisObj);
 
     template<typename MessageType>
-    static void HandleEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    static void HandleEvent_(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
 };
 
 template<typename MessageType>
@@ -164,7 +165,7 @@ void DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DV
 }
 
 template<typename MessageType>
-void DVTask::HandleEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+void DVTask::HandleEvent_(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data)
 {
     std::function<void(DVTask*, MessageType*)>* fnPtr = (std::function<void(DVTask*, MessageType*)>*)event_handler_arg;
     

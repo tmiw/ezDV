@@ -19,7 +19,7 @@
 
 extern "C"
 {
-    ESP_EVENT_DEFINE_BASE(DV_TASK_TIMER_MESSAGE);
+    DV_EVENT_DEFINE_BASE(DV_TASK_TIMER_MESSAGE);
 }
 
 namespace ezdv

@@ -20,11 +20,10 @@
 
 #include <cstdint>
 #include "DVTaskMessage.h"
-#include "esp_event.h"
 
 extern "C"
 {
-    ESP_EVENT_DECLARE_BASE(DV_TASK_CONTROL_MESSAGE);
+    DV_EVENT_DECLARE_BASE(DV_TASK_CONTROL_MESSAGE);
 }
 
 namespace ezdv

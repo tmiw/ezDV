@@ -22,7 +22,7 @@
 
 extern "C"
 {
-    ESP_EVENT_DECLARE_BASE(BUTTON_MESSAGE);
+    DV_EVENT_DECLARE_BASE(BUTTON_MESSAGE);
 }
 
 namespace ezdv

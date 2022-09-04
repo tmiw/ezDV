@@ -140,9 +140,6 @@ extern "C" void app_main()
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
 
-    // Note: mandatory for publish to work.
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     // Note: GPIO ISRs use per GPIO ISRs.
     ESP_ERROR_CHECK(gpio_install_isr_service(0));
     

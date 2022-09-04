@@ -18,9 +18,12 @@
 #ifndef DV_TASK_MESSAGE_H
 #define DV_TASK_MESSAGE_H
 
-#include "esp_event.h"
 #include <cstdint>
 #include <type_traits>
+
+using DVEventBaseType = const char*;
+#define DV_EVENT_DECLARE_BASE(NAME) extern DVEventBaseType NAME
+#define DV_EVENT_DEFINE_BASE(NAME) DVEventBaseType NAME = #NAME
 
 namespace ezdv
 {
@@ -35,7 +38,7 @@ public:
     virtual ~DVTaskMessage() = default;
 
     virtual uint32_t getSize() const = 0;
-    virtual esp_event_base_t getEventBase() const = 0;
+    virtual DVEventBaseType getEventBase() const = 0;
     virtual uint32_t getEventType() const = 0;
 };
 
@@ -43,7 +46,7 @@ template<uint32_t EVENT_TYPE_ID, typename MessageType>
 class DVTaskMessageBase : public DVTaskMessage
 {
 public:
-    DVTaskMessageBase(esp_event_base_t base)
+    DVTaskMessageBase(DVEventBaseType base)
         : base_(base)
     {
         // empty
@@ -51,7 +54,7 @@ public:
 
     virtual ~DVTaskMessageBase() = default;
 
-    virtual esp_event_base_t getEventBase() const override
+    virtual DVEventBaseType getEventBase() const override
     {
         return base_;
     }
@@ -67,7 +70,7 @@ public:
     }
 
 private:
-    const esp_event_base_t base_;
+    const DVEventBaseType base_;
 };
 
 }

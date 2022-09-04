@@ -22,7 +22,7 @@
 
 extern "C"
 {
-    ESP_EVENT_DECLARE_BASE(LED_MESSAGE);
+    DV_EVENT_DECLARE_BASE(LED_MESSAGE);
 }
 
 namespace ezdv

@@ -19,7 +19,6 @@
 #include <cstring>
 #include <inttypes.h>
 
-#include "esp_event.h"
 #include "esp_log.h"
 #include "DVTask.h"
 

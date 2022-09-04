@@ -39,7 +39,6 @@ if(${ESP_PLATFORM})
                                 ulp
                                 soc
                                 esp_timer
-                                esp_event
                                 driver
                                 nvs_flash)
 

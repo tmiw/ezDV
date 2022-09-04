@@ -25,7 +25,7 @@
 
 extern "C"
 {
-    ESP_EVENT_DECLARE_BASE(INPUT_GPIO_MESSAGE);
+    DV_EVENT_DECLARE_BASE(INPUT_GPIO_MESSAGE);
 }
 
 namespace ezdv
