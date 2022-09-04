@@ -150,6 +150,8 @@ void FreeDVTask::onTaskTick_()
 
 void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV mode to %d", (int)message->mode);
+    
     if (dv_ != nullptr)
     {
         freedv_close(dv_);

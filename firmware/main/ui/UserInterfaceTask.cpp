@@ -150,6 +150,11 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
                 publish(setModeMessage);
                 delete setModeMessage;
 
+                // Send new mode to beeper
+                audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
+                publish(beeperMessage);
+                delete beeperMessage;
+
                 break;
             }
             case driver::ButtonLabel::VOL_UP:
