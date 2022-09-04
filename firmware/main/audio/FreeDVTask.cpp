@@ -33,13 +33,14 @@ namespace audio
 {
 
 FreeDVTask::FreeDVTask()
-    : DVTask("FreeDVTask", 10 /* TBD */, 48000, 1, 100)
+    : DVTask("FreeDVTask", 10 /* TBD */, 48000, 1, 10)
     , AudioInput(2, 2)
     , dv_(nullptr)
     , isTransmitting_(false)
     , isActive_(false)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
+    registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
 }
 
 FreeDVTask::~FreeDVTask()
@@ -64,7 +65,7 @@ void FreeDVTask::onTaskWake_()
 void FreeDVTask::onTaskSleep_()
 {
     isActive_ = false;
-    
+
     if (dv_ != nullptr)
     {
         freedv_close(dv_);
@@ -188,6 +189,8 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 
 void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV transmit state to %d", (int)message->pttState);
+
     isTransmitting_ = message->pttState;
 
     struct FIFO* leftInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);

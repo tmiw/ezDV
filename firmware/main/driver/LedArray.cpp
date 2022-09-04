@@ -23,6 +23,8 @@
 #define GPIO_PTT_NPN GPIO_NUM_21 /* bridges GND and PTT together at the 3.5mm jack */
 #define GPIO_NET_LED GPIO_NUM_42
 
+#define CURRENT_LOG_TAG ("LedArray")
+
 namespace ezdv
 {
 
@@ -62,6 +64,8 @@ void LedArray::onTaskSleep_()
 
 void LedArray::onSetLedState_(DVTask* origin, SetLedStateMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "LED %d now %d", (int)message->led, message->ledState);
+    
     switch(message->led)
     {
         case SetLedStateMessage::LedLabel::NETWORK:
