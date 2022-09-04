@@ -39,7 +39,7 @@ public:
 
     virtual uint32_t getSize() const = 0;
     virtual DVEventBaseType getEventBase() const = 0;
-    virtual uint32_t getEventType() const = 0;
+    virtual int32_t getEventType() const = 0;
 };
 
 template<uint32_t EVENT_TYPE_ID, typename MessageType>
@@ -59,7 +59,7 @@ public:
         return base_;
     }
 
-    virtual uint32_t getEventType() const override
+    virtual int32_t getEventType() const override
     {
         return EVENT_TYPE_ID;
     }

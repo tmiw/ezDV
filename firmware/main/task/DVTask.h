@@ -20,7 +20,10 @@
 
 #include <string>
 #include <map>
+#include <deque>
 #include <functional>
+
+#include "esp_log.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -76,6 +79,21 @@ public:
     /// @param message The message to publish.
     void publish(DVTaskMessage* message);
 
+    /// @brief Wait until the task fully starts.
+    /// @param ticksToWait The number of ticks to wait
+    /// @param taskToWaitFor The task to wait for.
+    void waitForStart(DVTask* taskToWaitFor, TickType_t ticksToWait);
+
+    /// @brief Wait until the task fully sleeps.
+    /// @param ticksToWait The number of ticks to wait
+    /// @param taskToWaitFor The task to wait for.
+    void waitForSleep(DVTask* taskToWaitFor, TickType_t ticksToWait);
+
+    /// @brief Wait until the task fully wakes up.
+    /// @param ticksToWait The number of ticks to wait
+    /// @param taskToWaitFor The task to wait for.
+    void waitForAwake(DVTask* taskToWaitFor, TickType_t ticksToWait);
+
     /// @brief Registers a new message handler.
     /// @tparam MessageType The type that the handler expects.
     /// @param handler The message handler.
@@ -89,6 +107,14 @@ public:
     template<typename MessageType, typename ObjType>
     void registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
 
+    /// @brief Waits until we receive a message of type ResultMessageType.
+    /// @tparam ResultMessageType The type of message we're expecting.
+    /// @param ticksToWait The maximum amount of time to wait.
+    /// @param origin The origin of the message if available.
+    /// @return Received message or nullptr if timed out. 
+    template<typename ResultMessageType>
+    ResultMessageType* waitFor(TickType_t ticksToWait, DVTask** origin);
+
     /// @brief Static initializer, required before using DVTask.
     static void Initialize();
 protected:
@@ -101,7 +127,7 @@ protected:
     
 private:
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
-    using EventIdentifierPair = std::pair<DVEventBaseType, uint32_t>;
+    using EventIdentifierPair = std::pair<DVEventBaseType, int32_t>;
     using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, void*>>;
     using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
 
@@ -116,6 +142,8 @@ private:
         char messageStart; // Placeholder to help write to correct memory location.
     };
 
+    std::string taskName_;
+
     TaskHandle_t taskObject_;
     EventMap eventRegistrationMap_;
 
@@ -129,6 +157,9 @@ private:
 
     void threadEntry_();
     void postHelper_(MessageEntry* entry);
+
+    template<typename ControlMessageType>
+    void waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait);
     
     static PublishMap SubscriberTasksByMessageType_;
     static SemaphoreHandle_t SubscriberTasksByMessageTypeSemaphore_;
@@ -179,6 +210,132 @@ void DVTask::HandleEvent_(void *event_handler_arg, DVEventBaseType event_base, i
     MessageEntry* entry = *(MessageEntry**)event_data;
     MessageType* message = (MessageType*)&entry->messageStart;
     (*fnPtr)(entry->origin, message);
+}
+
+template<typename ResultMessageType>
+ResultMessageType* DVTask::waitFor(TickType_t ticksToWait, DVTask** origin)
+{
+    ResultMessageType* result = nullptr;
+
+    // If we're not already in the publish list, we'll need to add ourselves to it 
+    // for the duration of this call. (We have direct access to the queue so we don't
+    // need to do a full subscription.)
+    ResultMessageType tmpMessage;
+    auto semRv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    assert(semRv == pdTRUE);
+
+    PublishMap::iterator publishIter = SubscriberTasksByMessageType_.end();
+
+    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto foundIterRange = SubscriberTasksByMessageType_.equal_range(key);
+    bool found = false;
+
+    for (auto iter = foundIterRange.first; iter != foundIterRange.second; iter++)
+    {
+        if (iter->second == this)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        publishIter = SubscriberTasksByMessageType_.emplace(key, this);
+    }
+
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+
+    // Receive inbound messages for up to ticksToWait ticks.
+    // For each received message in that interval:
+    //     1. If the received message is the one we want, stop.
+    //     2. Otherwise, hold onto it so we can reinject it into the queue at the end.
+    int64_t tickDiff = ticksToWait;
+    MessageEntry* entry = nullptr;
+    std::deque<MessageEntry*> poppedList;
+    while (tickDiff >= 0)
+    {
+        TickType_t beginTicks = xTaskGetTickCount();
+        auto rv = xQueueReceive(taskQueue_, &entry, (TickType_t)tickDiff);
+        tickDiff -= xTaskGetTickCount() - beginTicks;
+
+        if (rv == pdTRUE)
+        {
+            auto rxKey = std::make_pair(entry->eventBase, entry->eventId);
+            if (rxKey == key)
+            {
+                // Make copy of message for the caller.
+                result = new ResultMessageType();
+                assert(result != nullptr);
+                memcpy((void*)result, (void*)&entry->messageStart, tmpMessage.getSize());
+
+                if (origin)
+                {
+                    *origin = entry->origin;
+                }
+
+                delete entry;
+                break;
+            }
+
+            poppedList.push_front(entry);
+        }
+    }
+
+    // Unsubscribe from the publish list if needed.
+    if (!found)
+    {
+        SubscriberTasksByMessageType_.erase(publishIter);
+    }
+
+    // Reinject received messages so the normal message handling can handle them.
+    for (auto& msg : poppedList)
+    {
+        auto rv = xQueueSendToFront(taskQueue_, &msg, 0);
+        assert(rv == pdTRUE);
+    }
+
+    return result;
+}
+
+template<typename ControlMessageType>
+void DVTask::waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait)
+{
+    int64_t tickDiff = ticksToWait;
+    MessageEntry* entry = nullptr;
+    std::deque<MessageEntry*> poppedList;
+    bool found = false;
+
+    while (tickDiff >= 0)
+    {
+        TickType_t beginTicks = xTaskGetTickCount();
+        DVTask* origin = nullptr;
+        auto message = waitFor<ControlMessageType>((TickType_t)tickDiff, &origin);
+        assert(message != nullptr);
+        
+        tickDiff -= xTaskGetTickCount() - beginTicks;
+
+        if (taskToWaitFor == origin)
+        {
+            delete message;
+            found = true;
+            break;
+        }
+        else
+        {
+            entry = createMessageEntry_(origin, message);
+            poppedList.push_front(entry);
+        }
+    }
+
+    // Reinject received messages so the normal message handling can handle them.
+    for (auto& msg : poppedList)
+    {
+        auto rv = xQueueSendToFront(taskQueue_, &msg, 0);
+        assert(rv == pdTRUE);
+    }
+
+    assert(found);
 }
 
 }

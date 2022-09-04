@@ -26,7 +26,7 @@ namespace audio
 {
 
 AudioMixer::AudioMixer()
-    : DVTask("FreeDVTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 100)
+    : DVTask("AudioMixer", 10 /* TBD */, 4096, tskNO_AFFINITY, 100)
     , AudioInput(2, 1)
     , mixerTick_(this, std::bind(&AudioMixer::onTimerTick_, this), AUDIO_MIXER_TIMER_TICK_US)
 {

@@ -22,6 +22,8 @@
 #include "esp_log.h"
 #include "DVTask.h"
 
+#define CURRENT_LOG_TAG ("DVTask")
+
 namespace ezdv
 {
 
@@ -38,6 +40,7 @@ void DVTask::Initialize()
 }
 
 DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize)
+    : taskName_(taskName)
 {
     // Create task event queue
     taskQueue_ = xQueueCreate(taskQueueSize, sizeof(MessageEntry*));
@@ -147,14 +150,38 @@ void DVTask::publish(DVTaskMessage* message)
     // posting the messages.
     for (auto& task : tasksToPostTo)
     {
-        task->post(message);
+        MessageEntry* entry = createMessageEntry_(this, message);
+        task->postHelper_(entry);
     }
 
 }
 
+void DVTask::waitForStart(DVTask* taskToWaitFor, TickType_t ticksToWait)
+{
+    waitForOurs_<TaskStartedMessage>(taskToWaitFor, ticksToWait);
+}
+
+void DVTask::waitForSleep(DVTask* taskToWaitFor, TickType_t ticksToWait)
+{
+    waitForOurs_<TaskAsleepMessage>(taskToWaitFor, ticksToWait);
+}
+
+void DVTask::waitForAwake(DVTask* taskToWaitFor, TickType_t ticksToWait)
+{
+    waitForOurs_<TaskAwakeMessage>(taskToWaitFor, ticksToWait);
+}
+
 void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
+    // XXX - Slight delay in case main app is waiting for us.
+    // Otherwise very fast starting/stopping tasks will finish before
+    // the main app can wait, meaning that the app will never get the 
+    // completion message.
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     onTaskStart_();
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_.c_str());
 
     TaskStartedMessage result;
     publish(&result);
@@ -162,7 +189,15 @@ void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
 void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 {
+    // XXX - Slight delay in case main app is waiting for us.
+    // Otherwise very fast starting/stopping tasks will finish before
+    // the main app can wait, meaning that the app will never get the 
+    // completion message.
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     onTaskWake_();
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Task %s awake", taskName_.c_str());
 
     TaskAwakeMessage result;
     publish(&result);
@@ -170,7 +205,15 @@ void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
 void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
+    // XXX - Slight delay in case main app is waiting for us.
+    // Otherwise very fast starting/stopping tasks will finish before
+    // the main app can wait, meaning that the app will never get the 
+    // completion message.
+    vTaskDelay(pdMS_TO_TICKS(10));
+
     onTaskSleep_();
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());
 
     TaskAsleepMessage result;
     publish(&result);
