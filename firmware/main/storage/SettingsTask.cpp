@@ -64,17 +64,17 @@ SettingsTask::SettingsTask()
     }
 }
 
-void SettingsTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void SettingsTask::onTaskStart_()
 {
     loadAllSettings_();
 }
 
-void SettingsTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void SettingsTask::onTaskWake_()
 {
     loadAllSettings_();
 }
 
-void SettingsTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void SettingsTask::onTaskSleep_()
 {
     // none
 }

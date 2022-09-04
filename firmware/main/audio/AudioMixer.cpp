@@ -38,17 +38,17 @@ AudioMixer::~AudioMixer()
     mixerTick_.stop();
 }
 
-void AudioMixer::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void AudioMixer::onTaskStart_()
 {
     mixerTick_.start();
 }
 
-void AudioMixer::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void AudioMixer::onTaskWake_()
 {
     mixerTick_.start();
 }
 
-void AudioMixer::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void AudioMixer::onTaskSleep_()
 {
     mixerTick_.stop();
 }

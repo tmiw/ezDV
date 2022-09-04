@@ -50,7 +50,7 @@ ButtonArray::~ButtonArray()
     // empty
 }
 
-void ButtonArray::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void ButtonArray::onTaskStart_()
 {
     pttButton_.enableInterrupt(true);
     modeButton_.enableInterrupt(true);
@@ -58,13 +58,13 @@ void ButtonArray::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     volDownButton_.enableInterrupt(true);
 }
 
-void ButtonArray::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void ButtonArray::onTaskWake_()
 {
     // Use same actions as start.
-    onTaskStart_(origin, nullptr);
+    onTaskStart_();
 }
 
-void ButtonArray::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void ButtonArray::onTaskSleep_()
 {
     pttButton_.enableInterrupt(false);
     modeButton_.enableInterrupt(false);

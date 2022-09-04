@@ -66,12 +66,12 @@ UserInterfaceTask::~UserInterfaceTask()
     volHoldTimer_.stop();
 }
 
-void UserInterfaceTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void UserInterfaceTask::onTaskStart_()
 {
     isActive_ = true;
 }
 
-void UserInterfaceTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void UserInterfaceTask::onTaskWake_()
 {
     isActive_ = true;
 
@@ -92,7 +92,7 @@ void UserInterfaceTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     delete beeperMessage;
 }
 
-void UserInterfaceTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void UserInterfaceTask::onTaskSleep_()
 {
     isActive_ = false;
 

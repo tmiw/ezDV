@@ -50,17 +50,17 @@ FreeDVTask::~FreeDVTask()
     }
 }
 
-void FreeDVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void FreeDVTask::onTaskStart_()
 {
     // empty
 }
 
-void FreeDVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void FreeDVTask::onTaskWake_()
 {
-    onTaskStart_(origin, nullptr);
+    onTaskStart_();
 }
 
-void FreeDVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void FreeDVTask::onTaskSleep_()
 {
     if (dv_ != nullptr)
     {

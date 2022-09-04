@@ -67,7 +67,7 @@ App::App()
     );
 }
 
-void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void App::onTaskStart_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskStart_");
 
@@ -100,7 +100,7 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     uiTask_.start();
 }
 
-void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void App::onTaskWake_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
     
@@ -133,7 +133,7 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     uiTask_.wake();
 }
 
-void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void App::onTaskSleep_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
 

@@ -41,9 +41,9 @@ public:
     virtual ~BeeperTask();
 
 protected:
-    virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
-    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
-    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
+    virtual void onTaskStart_() override;
+    virtual void onTaskWake_() override;
+    virtual void onTaskSleep_() override;
 
 private:
     DVTimer beeperTimer_;

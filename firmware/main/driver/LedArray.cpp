@@ -45,17 +45,17 @@ LedArray::~LedArray()
     assert(0);
 }
 
-void LedArray::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void LedArray::onTaskStart_()
 {
     // empty
 }
 
-void LedArray::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void LedArray::onTaskWake_()
 {
     // empty
 }
 
-void LedArray::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void LedArray::onTaskSleep_()
 {
     // empty
 }

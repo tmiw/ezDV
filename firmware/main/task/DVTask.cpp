@@ -152,6 +152,30 @@ void DVTask::publish(DVTaskMessage* message)
 
 }
 
+void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+{
+    onTaskStart_();
+
+    TaskStartedMessage result;
+    publish(&result);
+}
+
+void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+{
+    onTaskWake_();
+
+    TaskAwakeMessage result;
+    publish(&result);
+}
+
+void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
+    onTaskSleep_();
+
+    TaskAsleepMessage result;
+    publish(&result);
+}
+
 void DVTask::postHelper_(MessageEntry* entry)
 {
     auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));

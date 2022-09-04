@@ -95,17 +95,17 @@ BeeperTask::~BeeperTask()
     beeperTimer_.stop();
 }
 
-void BeeperTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void BeeperTask::onTaskStart_()
 {
     // empty
 }
 
-void BeeperTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void BeeperTask::onTaskWake_()
 {
     // empty
 }
 
-void BeeperTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void BeeperTask::onTaskSleep_()
 {
     beeperTimer_.stop();
     beeperList_.clear();

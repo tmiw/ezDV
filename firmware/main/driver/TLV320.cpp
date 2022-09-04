@@ -63,7 +63,7 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     initializeResetGPIO_();
 }
 
-void TLV320::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+void TLV320::onTaskStart_()
 {
     // To begin, we need to hard reset the TLV320.
     ESP_LOGI(CURRENT_LOG_TAG, "reset TLV320");
@@ -94,15 +94,15 @@ void TLV320::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
 }
 
-void TLV320::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+void TLV320::onTaskWake_()
 {
     // TBD: investigate power consumption of using TLV320 sleep
     // and wakeup vs. simply hard resetting and forcing full
     // reinitialization.
-    onTaskStart_(origin, nullptr);
+    onTaskStart_();
 }
 
-void TLV320::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+void TLV320::onTaskSleep_()
 {
     // Stop reading from I2S.
     i2sRxDevice_ = nullptr;
