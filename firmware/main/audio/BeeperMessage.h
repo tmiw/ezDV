@@ -51,8 +51,8 @@ public:
             if (textProvided != nullptr)
             {
                 int amountToCopy = 
-                    strlen(text) < (sizeof(text) - 1) ?
-                    strlen(text) :
+                    strlen(textProvided) < (sizeof(text) - 1) ?
+                    strlen(textProvided) :
                     sizeof(text) - 1;
                 memcpy(text, textProvided, amountToCopy);
             }

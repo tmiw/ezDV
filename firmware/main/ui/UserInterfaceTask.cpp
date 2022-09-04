@@ -23,6 +23,8 @@
 
 #define VOL_BUTTON_HOLD_TIMER_TICK_US 100000
 
+#define CURRENT_LOG_TAG ("UserInterfaceTask")
+
 // Defined in Application.cpp.
 extern void StartSleeping();
 
@@ -84,6 +86,7 @@ void UserInterfaceTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     publish(&msg);
 
     // Send welcome message to beeper
+    ESP_LOGI(CURRENT_LOG_TAG, "Sending welcome message to beeper");
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
     publish(beeperMessage);
     delete beeperMessage;

@@ -15,8 +15,6 @@
 #include "esp_sleep.h"
 #include "esp_log.h"
 
-#include "driver/LedMessage.h"
-
 #define CURRENT_LOG_TAG ("app")
 
 extern "C"

@@ -128,16 +128,28 @@ void DVTask::publish(DVTaskMessage* message)
 {
     auto messagePair = std::make_pair(message->getEventBase(), message->getEventType());
 
-    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(20));
+    std::vector<DVTask*> tasksToPostTo;
+
+    // Get the list of tasks to post to first so we don't deadlock.
+    auto rv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(20));
+    assert(rv == pdTRUE);
 
     for (auto& taskPair : SubscriberTasksByMessageType_)
     {
         if (messagePair == taskPair.first)
         {
-            taskPair.second->post(message);
+            tasksToPostTo.push_back(taskPair.second);
         }
     }
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+
+    // Now that we have the list of tasks, we can take our time
+    // posting the messages.
+    for (auto& task : tasksToPostTo)
+    {
+        task->post(message);
+    }
+
 }
 
 void DVTask::postHelper_(MessageEntry* entry)

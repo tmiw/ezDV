@@ -32,6 +32,8 @@
 // Found via experimentation
 #define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS*0.9))
 
+#define CURRENT_LOG_TAG ("BeeperTask")
+
 namespace ezdv
 {
 
@@ -112,6 +114,8 @@ void BeeperTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
 void BeeperTask::onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Got beeper message %s", message->text);
+
     beeperTimer_.stop();
 
     beeperList_.clear();
