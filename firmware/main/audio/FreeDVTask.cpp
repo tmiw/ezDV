@@ -37,6 +37,7 @@ FreeDVTask::FreeDVTask()
     , AudioInput(2, 2)
     , dv_(nullptr)
     , isTransmitting_(false)
+    , isActive_(false)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
 }
@@ -52,7 +53,7 @@ FreeDVTask::~FreeDVTask()
 
 void FreeDVTask::onTaskStart_()
 {
-    // empty
+    isActive_ = true;
 }
 
 void FreeDVTask::onTaskWake_()
@@ -62,6 +63,8 @@ void FreeDVTask::onTaskWake_()
 
 void FreeDVTask::onTaskSleep_()
 {
+    isActive_ = false;
+    
     if (dv_ != nullptr)
     {
         freedv_close(dv_);
@@ -71,6 +74,8 @@ void FreeDVTask::onTaskSleep_()
 
 void FreeDVTask::onTaskTick_()
 {
+    if (!isActive_) return;
+
     //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
 
     struct FIFO* codecInputFifo = nullptr;
@@ -151,7 +156,7 @@ void FreeDVTask::onTaskTick_()
 void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV mode to %d", (int)message->mode);
-    
+
     if (dv_ != nullptr)
     {
         freedv_close(dv_);

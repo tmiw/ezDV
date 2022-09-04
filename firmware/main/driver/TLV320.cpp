@@ -109,7 +109,18 @@ void TLV320::onTaskWake_()
 
 void TLV320::onTaskSleep_()
 {
+    struct FIFO* leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
+    struct FIFO* rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
+
+    // Flush any remaining audio.
+    while (codec2_fifo_used(leftChannelFifo) > 0 || codec2_fifo_used(rightChannelFifo) > 0)
+    {
+        onTaskTick_();
+    }
+
     // Stop reading from I2S.
+    i2s_channel_disable(i2sRxDevice_);
+    i2s_channel_disable(i2sTxDevice_);
     i2sRxDevice_ = nullptr;
     i2sTxDevice_ = nullptr;
 

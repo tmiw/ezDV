@@ -51,6 +51,15 @@ void AudioMixer::onTaskWake_()
 void AudioMixer::onTaskSleep_()
 {
     mixerTick_.stop();
+
+    // Flush anything remaining in the fifos.
+    struct FIFO* leftInputFifo = getAudioInput(AudioInput::LEFT_CHANNEL);
+    struct FIFO* rightInputFifo = getAudioInput(AudioInput::RIGHT_CHANNEL);
+    int ctr = 2; // Should only need to run twice to flush everything
+    while (ctr-- > 0 && (codec2_fifo_used(leftInputFifo) > 0 || codec2_fifo_used(rightInputFifo) > 0))
+    {
+        onTimerTick_();
+    }
 }
 
 void AudioMixer::onTimerTick_()

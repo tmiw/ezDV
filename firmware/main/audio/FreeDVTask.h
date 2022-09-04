@@ -47,6 +47,7 @@ protected:
 private:
     struct freedv* dv_;
     bool isTransmitting_;
+    bool isActive_;
 
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);

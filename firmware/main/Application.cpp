@@ -167,17 +167,17 @@ void App::onTaskSleep_()
 
     // Sleep audio processing
     beeperTask_.sleep();
-    waitForSleep(&beeperTask_, pdMS_TO_TICKS(1000));
+    waitForSleep(&beeperTask_, pdMS_TO_TICKS(2000));
 
     freedvTask_.sleep();
     waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
 
     audioMixer_.sleep();
-    waitForSleep(&audioMixer_, pdMS_TO_TICKS(1000));
+    waitForSleep(&audioMixer_, pdMS_TO_TICKS(3000));
 
     // Sleep device drivers
     tlv320Device_.sleep();
-    waitForSleep(&tlv320Device_, pdMS_TO_TICKS(1000));
+    waitForSleep(&tlv320Device_, pdMS_TO_TICKS(2000));
 
     buttonArray_.sleep();
     ledArray_.sleep();
