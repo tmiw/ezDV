@@ -49,6 +49,10 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
 {
+    // Register message handlers
+    registerMessageHandler<storage::LeftChannelVolumeMessage>(this, &TLV320::onLeftChannelVolume_);
+    registerMessageHandler<storage::RightChannelVolumeMessage>(this, &TLV320::onRightChannelVolume_);
+
     initializeI2S_();
     initializeResetGPIO_();
 }
@@ -98,6 +102,26 @@ void TLV320::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     // and wakeup vs. simply hard resetting and forcing full
     // reinitialization.
     tlv320HardReset_();
+}
+
+void TLV320::setVolumeCommon_(uint8_t reg, int8_t vol)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Volume control: setting volume on register %d to %d", (int)reg, vol);
+        
+    if (vol <= -127) vol = -127;
+    else if (vol >= 48) vol = 48;
+    
+    setConfigurationOption_(0, reg, vol);
+}
+
+void TLV320::onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message)
+{
+    setVolumeCommon_(65, message->volume);
+}
+
+void TLV320::onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message)
+{
+    setVolumeCommon_(66, message->volume);
 }
 
 void TLV320::setPage_(uint8_t page)

@@ -19,6 +19,7 @@
 #include <cstring>
 #include <inttypes.h>
 #include "esp_event.h"
+#include "esp_log.h"
 #include "DVTask.h"
 
 namespace ezdv
@@ -106,13 +107,13 @@ void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 void DVTask::publish(DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(this, message);
-    ESP_ERROR_CHECK(esp_event_post(message->getEventBase(), message->getEventType(), entry, entry->size, 0));
+    ESP_ERROR_CHECK(esp_event_post(message->getEventBase(), message->getEventType(), entry, entry->size, pdMS_TO_TICKS(2000)));
     delete entry;
 }
 
 void DVTask::postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry)
 {
-    ESP_ERROR_CHECK(esp_event_post_to(taskEventLoop_, event_base, event_id, entry, entry->size, 0));
+    ESP_ERROR_CHECK(esp_event_post_to(taskEventLoop_, event_base, event_id, entry, entry->size, pdMS_TO_TICKS(2000)));
 }
 
 void DVTask::threadEntry_()

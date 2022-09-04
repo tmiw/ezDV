@@ -35,6 +35,10 @@ SettingsTask::SettingsTask()
     , rightChannelVolume_(0)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
+    // Subscribe to messages
+    registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
+    registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
+
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
     esp_err_t err = nvs_flash_init();
@@ -75,6 +79,16 @@ void SettingsTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     // none
 }
 
+void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)
+{
+    setLeftChannelVolume_(message->volume);
+}
+
+void SettingsTask::onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message)
+{
+    setRightChannelVolume_(message->volume);
+}
+
 void SettingsTask::loadAllSettings_()
 {
     if (storageHandle_)
@@ -92,6 +106,14 @@ void SettingsTask::loadAllSettings_()
         else
         {
             ESP_LOGI(CURRENT_LOG_TAG, "leftChannelVolume: %d", leftChannelVolume_);
+
+            // Broadcast volume so that other components can initialize themselves with it.
+            LeftChannelVolumeMessage* message = new LeftChannelVolumeMessage();
+            assert(message != nullptr);
+
+            message->volume = leftChannelVolume_;
+            publish(message);
+            delete message;
         }
         
         result = storageHandle_->get_item(RIGHT_CHAN_VOL_ID, rightChannelVolume_);
@@ -107,6 +129,14 @@ void SettingsTask::loadAllSettings_()
         else
         {
             ESP_LOGI(CURRENT_LOG_TAG, "rightChannelVolume: %d", rightChannelVolume_);
+
+            // Broadcast volume so that other components can initialize themselves with it.
+            RightChannelVolumeMessage* message = new RightChannelVolumeMessage();
+            assert(message != nullptr);
+
+            message->volume = rightChannelVolume_;
+            publish(message);
+            delete message;
         }
     }
 }
@@ -136,6 +166,14 @@ void SettingsTask::setLeftChannelVolume_(int8_t vol)
 
         commitTimer_.stop();
         commitTimer_.start(true);
+
+        // Publish new volume setting to everyone who may care.
+        LeftChannelVolumeMessage* message = new LeftChannelVolumeMessage();
+        assert(message != nullptr);
+
+        message->volume = vol;
+        publish(message);
+        delete message;
     }
 }
 
@@ -152,6 +190,14 @@ void SettingsTask::setRightChannelVolume_(int8_t vol)
         }
         commitTimer_.stop();
         commitTimer_.start(true);
+
+        // Publish new volume setting to everyone who may care.
+        RightChannelVolumeMessage* message = new RightChannelVolumeMessage();
+        assert(message != nullptr);
+
+        message->volume = vol;
+        publish(message);
+        delete message;
     }
 }
 

@@ -26,6 +26,9 @@
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+
+#include "SettingsMessage.h"
+
 namespace ezdv
 {
 
@@ -50,6 +53,9 @@ private:
     int8_t rightChannelVolume_;
     DVTimer commitTimer_;
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
+
+    void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
+    void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);
 
     void loadAllSettings_();
     void commit_();

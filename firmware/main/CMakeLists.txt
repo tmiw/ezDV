@@ -2,6 +2,7 @@ set(SOURCES
     "Application.cpp"
     "driver/I2CDevice.cpp"
     "driver/TLV320.cpp"
+    "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"

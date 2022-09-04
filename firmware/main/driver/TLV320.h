@@ -19,6 +19,8 @@
 #define TLV320_DRIVER_H
 
 #include "driver/i2s_std.h"
+
+#include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 
 namespace ezdv
@@ -42,6 +44,9 @@ protected:
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
+    void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
+    void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);
+
 private:
     I2CDevice* i2cDevice_;
     int currentPage_;
@@ -52,6 +57,8 @@ private:
     void setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val);
     void setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size);
     uint8_t getConfigurationOption_(uint8_t page, uint8_t reg);
+
+    void setVolumeCommon_(uint8_t reg, int8_t vol);
 
     void initializeI2S_();
     void initializeResetGPIO_();
