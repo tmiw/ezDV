@@ -96,26 +96,31 @@ protected:
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) = 0;
 
 private:
+    using EventHandlerFn = void(*)(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     using EventIdentifierPair = std::pair<esp_event_base_t, uint32_t>;
-    using EventMap = std::multimap<EventIdentifierPair, esp_event_handler_instance_t>;
+    using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, void*>>;
     using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
 
     // Structure to help encode messages for queuing.
     struct MessageEntry
     {
+        esp_event_base_t eventBase;
+        int32_t eventId;
+
         DVTask* origin;
         uint32_t size;
         char messageStart; // Placeholder to help write to correct memory location.
     };
 
     TaskHandle_t taskObject_;
-    esp_event_loop_handle_t taskEventLoop_;
     EventMap eventRegistrationMap_;
+
+    QueueHandle_t taskQueue_;
 
     MessageEntry* createMessageEntry_(DVTask* origin, DVTaskMessage* message);
 
     void threadEntry_();
-    void postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry);
+    void postHelper_(MessageEntry* entry);
     
     static PublishMap SubscriberTasksByMessageType_;
     static SemaphoreHandle_t SubscriberTasksByMessageTypeSemaphore_;
@@ -132,16 +137,10 @@ void DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> h
     std::function<void(DVTask*, MessageType*)>* fnPtr = new std::function<void(DVTask*, MessageType*)>(handler);
 
     // Register task specific handler.
-    esp_event_handler_instance_t eventHandle;
     MessageType tmpMessage;
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register_with(
-            taskEventLoop_, tmpMessage.getEventBase(), tmpMessage.getEventType(), 
-            (esp_event_handler_t)&HandleEvent_<MessageType>, fnPtr, &eventHandle)
-    );
-
     eventRegistrationMap_.emplace(
-        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()), eventHandle
+        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()),
+        std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, fnPtr)
     );
 
     // Register for use by publish.
@@ -172,7 +171,6 @@ void DVTask::HandleEvent_(void *event_handler_arg, esp_event_base_t event_base, 
     MessageEntry* entry = *(MessageEntry**)event_data;
     MessageType* message = (MessageType*)&entry->messageStart;
     (*fnPtr)(entry->origin, message);
-    delete entry;
 }
 
 }

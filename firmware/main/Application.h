@@ -21,6 +21,7 @@
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 #include "driver/ButtonArray.h"
+#include "driver/ButtonMessage.h"
 #include "driver/I2CDevice.h"
 #include "driver/LedArray.h"
 #include "driver/TLV320.h"
@@ -48,6 +49,8 @@ private:
     driver::LedArray ledArray_;
     driver::TLV320 tlv320Device_;
     storage::SettingsTask settingsTask_;
+
+    void onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message);
 };
 
 }

@@ -19,7 +19,9 @@
 #define BUTTON_ARRAY_H
 
 #include "task/DVTask.h"
+#include "task/DVTimer.h"
 #include "InputGPIO.h"
+#include "ButtonMessage.h"
 
 #define GPIO_PTT_BUTTON GPIO_NUM_4
 #define GPIO_MODE_BUTTON GPIO_NUM_5 // PTT button doesn't work on v0.1 @ GPIO 4
@@ -46,13 +48,10 @@ protected:
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
 private:
-    enum ButtonLabel
-    {
-        PTT,
-        MODE,
-        VOL_UP,
-        VOL_DOWN
-    };
+    DVTimer pttButtonTimer_;
+    DVTimer modeButtonTimer_;
+    DVTimer volUpButtonTimer_;
+    DVTimer volDownButtonTimer_;
 
     InputGPIO<GPIO_PTT_BUTTON> pttButton_;
     InputGPIO<GPIO_MODE_BUTTON> modeButton_;
@@ -60,6 +59,7 @@ private:
     InputGPIO<GPIO_VOL_DOWN_BUTTON> volDownButton_;
 
     void handleButton_(ButtonLabel label, bool val);
+    void handleLongPressButton_(ButtonLabel label);
 };
 
 }

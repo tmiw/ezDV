@@ -1,6 +1,7 @@
 set(SOURCES 
     "Application.cpp"
     "driver/ButtonArray.cpp"
+    "driver/ButtonMessage.cpp"
     "driver/InputGPIO.cpp"
     "driver/I2CDevice.cpp"
     "driver/LedArray.cpp"

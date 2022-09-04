@@ -33,6 +33,7 @@ DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicrosecon
     , fn_(fn)
     , intervalInMicroseconds_(intervalInMicroseconds)
     , running_(false)
+    , once_(false)
 {
     esp_timer_create_args_t args = {
         .callback = &OnESPTimerFire_,
@@ -59,22 +60,30 @@ DVTimer::~DVTimer()
 
 void DVTimer::start(bool once)
 {
-    if (once)
+    if (!running_)
     {
-        ESP_ERROR_CHECK(esp_timer_start_once(timerHandle_, intervalInMicroseconds_));
+        if (once)
+        {
+            once_ = true;
+            ESP_ERROR_CHECK(esp_timer_start_once(timerHandle_, intervalInMicroseconds_));
+        }
+        else
+        {
+            ESP_ERROR_CHECK(esp_timer_start_periodic(timerHandle_, intervalInMicroseconds_));
+        }
+        
+        running_ = true;
     }
-    else
-    {
-        ESP_ERROR_CHECK(esp_timer_start_periodic(timerHandle_, intervalInMicroseconds_));
-    }
-    
-    running_ = true;
 }
 
 void DVTimer::stop()
 {
-    ESP_ERROR_CHECK(esp_timer_stop(timerHandle_));
-    running_ = false;
+    if (running_)
+    {
+        ESP_ERROR_CHECK(esp_timer_stop(timerHandle_));
+        running_ = false;
+        once_ = false;
+    }
 }
 
 void DVTimer::onTimerFire_(DVTask* origin, TimerFireMessage* message)
@@ -89,10 +98,18 @@ void DVTimer::OnESPTimerFire_(void* ptr)
 {
     DVTimer* obj = (DVTimer*)ptr;
     
+    if (obj->once_)
+    {
+        obj->once_ = false;
+        obj->running_ = false;
+    }
+
     auto message = new TimerFireMessage();
+    assert(message != nullptr);
+
     message->timer = obj;
-    
     obj->owner_->post(message);
+    delete message;
 }
 
 }

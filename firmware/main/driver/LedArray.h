@@ -22,12 +22,6 @@
 #include "LedMessage.h"
 #include "OutputGPIO.h"
 
-#define GPIO_SYNC_LED GPIO_NUM_1
-#define GPIO_OVL_LED GPIO_NUM_2
-#define GPIO_PTT_LED GPIO_NUM_41
-#define GPIO_PTT_NPN GPIO_NUM_21 /* bridges GND and PTT together at the 3.5mm jack */
-#define GPIO_NET_LED GPIO_NUM_42
-
 namespace ezdv
 {
 

@@ -65,6 +65,7 @@ private:
     TimerHandlerFn fn_;
     uint64_t intervalInMicroseconds_;
     bool running_;
+    bool once_;
     esp_timer_handle_t timerHandle_;
     
     void onTimerFire_(DVTask* origin, TimerFireMessage* message);

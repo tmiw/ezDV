@@ -40,16 +40,9 @@ void DVTask::Initialize()
 
 DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize)
 {
-    // Create task's event loop.
-    esp_event_loop_args_t createArgs = {
-        .queue_size = taskQueueSize,
-        .task_name = nullptr,
-        .task_priority = 0,
-        .task_stack_size = 0,
-        .task_core_id = 0
-    };
-
-    ESP_ERROR_CHECK(esp_event_loop_create(&createArgs, &taskEventLoop_));
+    // Create task event queue
+    taskQueue_ = xQueueCreate(taskQueueSize, sizeof(MessageEntry*));
+    assert(taskQueue_ != nullptr);
 
     // Register task start/wake/sleep handlers.
     registerMessageHandler(this, &DVTask::onTaskStart_);
@@ -94,6 +87,8 @@ DVTask::MessageEntry* DVTask::createMessageEntry_(DVTask* origin, DVTaskMessage*
     memcpy(&entry->messageStart, message, message->getSize());
 
     // Fill in remaining data fields.
+    entry->eventBase = message->getEventBase();
+    entry->eventId = message->getEventType();
     entry->size = size;
     entry->origin = origin;
 
@@ -103,7 +98,7 @@ DVTask::MessageEntry* DVTask::createMessageEntry_(DVTask* origin, DVTaskMessage*
 void DVTask::post(DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(nullptr, message);
-    postHelper_(message->getEventBase(), message->getEventType(), entry);
+    postHelper_(entry);
 }
 
 void DVTask::postISR(DVTaskMessage* message)
@@ -111,11 +106,7 @@ void DVTask::postISR(DVTaskMessage* message)
     MessageEntry* entry = createMessageEntry_(nullptr, message);
     BaseType_t taskUnblocked = pdFALSE;
 
-    ESP_ERROR_CHECK(
-        esp_event_isr_post_to(
-            taskEventLoop_, message->getEventBase(), message->getEventType(), &entry, sizeof(MessageEntry*),
-            &taskUnblocked)
-    );
+    xQueueSendToBackFromISR(taskQueue_, &entry, &taskUnblocked);
 
     if (taskUnblocked != pdFALSE)
     {
@@ -126,14 +117,14 @@ void DVTask::postISR(DVTaskMessage* message)
 void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(this, message);
-    destination->postHelper_(message->getEventBase(), message->getEventType(), entry);
+    destination->postHelper_(entry);
 }
 
 void DVTask::publish(DVTaskMessage* message)
 {
     auto messagePair = std::make_pair(message->getEventBase(), message->getEventType());
 
-    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(20));
 
     for (auto& taskPair : SubscriberTasksByMessageType_)
     {
@@ -145,9 +136,10 @@ void DVTask::publish(DVTaskMessage* message)
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
 
-void DVTask::postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry)
+void DVTask::postHelper_(MessageEntry* entry)
 {
-    ESP_ERROR_CHECK(esp_event_post_to(taskEventLoop_, event_base, event_id, &entry, sizeof(MessageEntry*), pdMS_TO_TICKS(2000)));
+    auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(20));
+    assert(rv == pdTRUE);
 }
 
 void DVTask::threadEntry_()
@@ -156,7 +148,20 @@ void DVTask::threadEntry_()
     // and processing them.
     for (;;)
     {
-        ESP_ERROR_CHECK(esp_event_loop_run(taskEventLoop_, pdMS_TO_TICKS(20)));
+        MessageEntry* entry = nullptr;
+        while (xQueueReceive(taskQueue_, &entry, pdMS_TO_TICKS(20)) == pdTRUE)
+        {
+            auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
+            EventMap::iterator iter = iterPair.first;
+            while (iter != iterPair.second)
+            {
+                (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
+                iter++;
+            }
+
+            // Deallocate message now that we're done with it.
+            delete entry;
+        }
     }
 }
 

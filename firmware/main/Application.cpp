@@ -71,6 +71,8 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     ledArray_.post(&msg);
     msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
     ledArray_.post(&msg);
+
+    registerMessageHandler(this, &App::onLongButtonPressed_);
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
@@ -114,6 +116,15 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();    
+}
+
+void App::onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message)
+{
+    if (message->button == driver::ButtonLabel::MODE)
+    {
+        // TBD -- UI should trigger sleep
+        sleep();
+    }
 }
 
 }

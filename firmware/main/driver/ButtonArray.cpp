@@ -20,6 +20,9 @@
 #include "ButtonArray.h"
 #include "InputGPIO.h"
 
+// One second for long press
+#define LONG_PRESS_INTERVAL_US (1000000)
+
 namespace ezdv
 {
 
@@ -30,6 +33,10 @@ using namespace std::placeholders;
 
 ButtonArray::ButtonArray()
     : DVTask("ButtonArray", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
+    , pttButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::PTT), LONG_PRESS_INTERVAL_US)
+    , modeButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::MODE), LONG_PRESS_INTERVAL_US)
+    , volUpButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::VOL_UP), LONG_PRESS_INTERVAL_US)
+    , volDownButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::VOL_DOWN), LONG_PRESS_INTERVAL_US)
     , pttButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::PTT, _2))
     , modeButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::MODE, _2))
     , volUpButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_UP, _2))
@@ -67,6 +74,57 @@ void ButtonArray::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
 void ButtonArray::handleButton_(ButtonLabel label, bool val)
 {
+    DVTimer* timerToSet = nullptr;
+    bool buttonPressed = !val;
+
+    char* buttonName = "";
+
+    switch(label)
+    {
+        case ButtonLabel::PTT:
+            buttonName = "PTT";
+            timerToSet = &pttButtonTimer_;
+            break;
+        case ButtonLabel::MODE:
+            buttonName = "Mode";
+            timerToSet = &modeButtonTimer_;
+            break;
+        case ButtonLabel::VOL_UP:
+            buttonName = "VolUp";
+            timerToSet = &volUpButtonTimer_;
+            break;
+        case ButtonLabel::VOL_DOWN:
+            buttonName = "VolDown";
+            timerToSet = &volDownButtonTimer_;
+            break;
+        default:
+            assert(0);
+    }
+
+    ESP_LOGI("ButtonArray", "Button %s now %d", buttonName, (int)buttonPressed);
+
+    // Start long press timer
+    if (buttonPressed)
+    {
+        ButtonShortPressedMessage* message = new ButtonShortPressedMessage(label);
+        publish(message);
+        delete message;
+
+        timerToSet->stop();
+        timerToSet->start(true);
+    }
+    else
+    {
+        timerToSet->stop();
+
+        ButtonReleasedMessage* message = new ButtonReleasedMessage(label);
+        publish(message);
+        delete message;
+    }
+}
+
+void ButtonArray::handleLongPressButton_(ButtonLabel label)
+{
     char* buttonName = "";
 
     switch(label)
@@ -83,9 +141,15 @@ void ButtonArray::handleButton_(ButtonLabel label, bool val)
         case ButtonLabel::VOL_DOWN:
             buttonName = "VolDown";
             break;
+        default:
+            assert(0);
     }
 
-    ESP_LOGI("ButtonArray", "Button %s now %d", buttonName, (int)val);
+    ESP_LOGI("ButtonArray", "Button %s long pressed", buttonName);
+
+    ButtonLongPressedMessage* message = new ButtonLongPressedMessage(label);
+    publish(message);
+    delete message;
 }
 
 }
