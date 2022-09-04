@@ -88,28 +88,25 @@ void App::onTaskStart_()
 
     // Start device drivers
     tlv320Device_.start();
-    waitForStart(&tlv320Device_, pdMS_TO_TICKS(1000));
+    waitForStart(&tlv320Device_, pdMS_TO_TICKS(5000));
 
     buttonArray_.start();
-    waitForStart(&buttonArray_, pdMS_TO_TICKS(1000));
     
-    // Start storage handling
-    settingsTask_.start();
-    waitForStart(&settingsTask_, pdMS_TO_TICKS(1000));
-
     // Start audio processing
     freedvTask_.start();
-    waitForStart(&freedvTask_, pdMS_TO_TICKS(1000));
-
     audioMixer_.start();
-    waitForStart(&audioMixer_, pdMS_TO_TICKS(1000));
-
     beeperTask_.start();
+
+    waitForStart(&freedvTask_, pdMS_TO_TICKS(1000));
+    waitForStart(&audioMixer_, pdMS_TO_TICKS(1000));
     waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Start UI
     uiTask_.start();
     waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
+
+    // Start storage handling
+    settingsTask_.start();
 }
 
 void App::onTaskWake_()
@@ -133,28 +130,24 @@ void App::onTaskWake_()
 
     // Wake up device drivers
     tlv320Device_.wake();
-    waitForAwake(&tlv320Device_, pdMS_TO_TICKS(1000));
+    waitForAwake(&tlv320Device_, pdMS_TO_TICKS(5000));
 
     buttonArray_.wake();
-    waitForAwake(&buttonArray_, pdMS_TO_TICKS(1000));
-
-    // Wake storage handling
-    settingsTask_.wake();
-    waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
 
     // Wake audio processing
     freedvTask_.wake();
-    waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
-
     audioMixer_.wake();
-    waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
-
     beeperTask_.wake();
+    waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
+    waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
     waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Wake UI
     uiTask_.wake();
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
+
+    // Wake storage handling
+    settingsTask_.wake();
 }
 
 void App::onTaskSleep_()
@@ -165,32 +158,29 @@ void App::onTaskSleep_()
     uiTask_.sleep();
     waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
 
+    // Sleep storage handling
+    settingsTask_.sleep();
+    waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
+
     // Delay a second or two to allow final beeper to play
     vTaskDelay(pdMS_TO_TICKS(2000));
+
+    // Sleep audio processing
+    freedvTask_.sleep();
+    audioMixer_.sleep();
+    beeperTask_.sleep();
+    waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
+    waitForSleep(&audioMixer_, pdMS_TO_TICKS(1000));
+    waitForSleep(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Sleep device drivers
     tlv320Device_.sleep();
     waitForSleep(&tlv320Device_, pdMS_TO_TICKS(1000));
 
     buttonArray_.sleep();
-    waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
-
     ledArray_.sleep();
+    waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
     waitForSleep(&ledArray_, pdMS_TO_TICKS(1000));
-
-    // Sleep storage handling
-    settingsTask_.sleep();
-    waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
-
-    // Sleep audio processing
-    freedvTask_.sleep();
-    waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
-
-    audioMixer_.sleep();
-    waitForSleep(&audioMixer_, pdMS_TO_TICKS(1000));
-
-    beeperTask_.sleep();
-    waitForSleep(&beeperTask_, pdMS_TO_TICKS(1000));
     
     /* Initialize mode button GPIO as RTC IO, enable input, disable pullup and pulldown */
     rtc_gpio_init(GPIO_NUM_5);

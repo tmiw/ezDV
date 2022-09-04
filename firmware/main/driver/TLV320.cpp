@@ -92,6 +92,11 @@ void TLV320::onTaskStart_()
     // Note: restoring AGC volumes is delayed until we get the power-on
     // volumes from storage.
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
+
+    // For some reason the TLV320 still needs a few seconds after
+    // sending the I2C commands above to start recording and playing
+    // audio.
+    vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
 void TLV320::onTaskWake_()
