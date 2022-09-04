@@ -112,6 +112,9 @@ extern "C" void app_main()
     ulp_riscv_timer_stop();
     ulp_riscv_halt();
 
+    // Note: mandatory before using DVTask.
+    DVTask::Initialize();
+    
     // Note: mandatory for publish to work.
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 

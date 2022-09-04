@@ -88,6 +88,8 @@ public:
     template<typename MessageType, typename ObjType>
     void registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
 
+    /// @brief Static initializer, required before using DVTask.
+    static void Initialize();
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) = 0;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) = 0;
@@ -96,6 +98,7 @@ protected:
 private:
     using EventIdentifierPair = std::pair<esp_event_base_t, uint32_t>;
     using EventMap = std::multimap<EventIdentifierPair, esp_event_handler_instance_t>;
+    using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
 
     // Structure to help encode messages for queuing.
     struct MessageEntry
@@ -105,27 +108,22 @@ private:
         char messageStart; // Placeholder to help write to correct memory location.
     };
 
-    struct PublishHandlerData
-    {
-        DVTask* taskObj;
-    };
-
     TaskHandle_t taskObject_;
     esp_event_loop_handle_t taskEventLoop_;
     EventMap eventRegistrationMap_;
-    EventMap defaultEventRegistrationMap_; // for use by publish
 
     MessageEntry* createMessageEntry_(DVTask* origin, DVTaskMessage* message);
 
     void threadEntry_();
     void postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry);
     
+    static PublishMap SubscriberTasksByMessageType_;
+    static SemaphoreHandle_t SubscriberTasksByMessageTypeSemaphore_;
+
     static void ThreadEntry_(DVTask* thisObj);
 
     template<typename MessageType>
     static void HandleEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-
-    static void HandlePublishEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 };
 
 template<typename MessageType>
@@ -146,19 +144,12 @@ void DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> h
         std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()), eventHandle
     );
 
-    // Register on default handler for use by publish.
-    PublishHandlerData* handlerData = new PublishHandlerData();
-    handlerData->taskObj = this;
-
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register(
-            tmpMessage.getEventBase(), tmpMessage.getEventType(), 
-            (esp_event_handler_t)&HandlePublishEvent_, handlerData, &eventHandle)
+    // Register for use by publish.
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    SubscriberTasksByMessageType_.emplace(
+        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()), this
     );
-
-    defaultEventRegistrationMap_.emplace(
-        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()), eventHandle
-    );
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
 
 template<typename MessageType, typename ObjType>

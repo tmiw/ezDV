@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <inttypes.h>
+
 #include "esp_event.h"
 #include "esp_log.h"
 #include "DVTask.h"
@@ -27,6 +28,15 @@ namespace ezdv
 
 namespace task
 {
+
+DVTask::PublishMap DVTask::SubscriberTasksByMessageType_;
+SemaphoreHandle_t DVTask::SubscriberTasksByMessageTypeSemaphore_;
+
+void DVTask::Initialize()
+{
+    SubscriberTasksByMessageTypeSemaphore_ = xSemaphoreCreateBinary();
+    assert(SubscriberTasksByMessageTypeSemaphore_ != nullptr);
+}
 
 DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize)
 {
@@ -121,8 +131,18 @@ void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 
 void DVTask::publish(DVTaskMessage* message)
 {
-    MessageEntry* entry = createMessageEntry_(this, message);
-    ESP_ERROR_CHECK(esp_event_post(message->getEventBase(), message->getEventType(), &entry, sizeof(MessageEntry*), pdMS_TO_TICKS(2000)));
+    auto messagePair = std::make_pair(message->getEventBase(), message->getEventType());
+
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+
+    for (auto& taskPair : SubscriberTasksByMessageType_)
+    {
+        if (messagePair == taskPair.first)
+        {
+            taskPair.second->post(message);
+        }
+    }
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
 
 void DVTask::postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry)
@@ -143,12 +163,6 @@ void DVTask::threadEntry_()
 void DVTask::ThreadEntry_(DVTask* thisObj)
 {
     thisObj->threadEntry_();
-}
-
-void DVTask::HandlePublishEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    PublishHandlerData* publishData = (PublishHandlerData*)event_handler_arg;
-    publishData->taskObj->postHelper_(event_base, event_id, *(MessageEntry**)event_data);
 }
 
 }
