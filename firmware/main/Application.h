@@ -29,6 +29,7 @@
 #include "driver/LedArray.h"
 #include "driver/TLV320.h"
 #include "storage/SettingsTask.h"
+#include "ui/UserInterfaceTask.h"
 
 using namespace ezdv::task;
 
@@ -46,7 +47,6 @@ protected:
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
     
 private:
-    DVTimer timer_;
     audio::AudioMixer audioMixer_;
     audio::BeeperTask beeperTask_;
     audio::FreeDVTask freedvTask_;
@@ -55,8 +55,7 @@ private:
     driver::LedArray ledArray_;
     driver::TLV320 tlv320Device_;
     storage::SettingsTask settingsTask_;
-
-    void onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message);
+    ui::UserInterfaceTask uiTask_;
 };
 
 }

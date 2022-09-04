@@ -30,7 +30,6 @@ namespace ezdv
 {
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
-    , timer_(this, [this](DVTimer*) { ESP_LOGI(CURRENT_LOG_TAG, "timer fired!"); }, 1000000)
     , tlv320Device_(&i2cDevice_)
 {
     // Link TLV320 output FIFOs to FreeDVTask
@@ -74,11 +73,23 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskStart_");
 
+    // Initialize LED array early as we want all the LEDs lit during the boot process.
+    ledArray_.start();
+    {
+        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+        ledArray_.post(&msg);
+    }
+
     // Start device drivers
     tlv320Device_.start();
     buttonArray_.start();
-    ledArray_.start();
-
+    
     // Start storage handling
     settingsTask_.start();
 
@@ -86,18 +97,31 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     freedvTask_.start();
     audioMixer_.start();
     beeperTask_.start();
+
+    // Start UI
+    uiTask_.start();
 }
 
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
     
-    timer_.start();
-    
+    // Initialize LED array early as we want all the LEDs lit during the boot process.
+    ledArray_.wake();
+    {
+        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+        ledArray_.post(&msg);
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+        ledArray_.post(&msg);
+    }
+
     // Wake up device drivers
     tlv320Device_.wake();
     buttonArray_.wake();
-    ledArray_.wake();
 
     // Wake storage handling
     settingsTask_.wake();
@@ -107,21 +131,19 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     audioMixer_.wake();
     beeperTask_.wake();
 
-    ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
-    ledArray_.post(&msg);
-    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
-    ledArray_.post(&msg);
-    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
-    ledArray_.post(&msg);
-    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
-    ledArray_.post(&msg);
-
-    registerMessageHandler(this, &App::onLongButtonPressed_);
+    // Wake UI
+    uiTask_.wake();
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
+
+    // Sleep UI
+    uiTask_.sleep();
+
+    // Delay a second or two to allow final beeper to play
+    vTaskDelay(pdMS_TO_TICKS(2000));
 
     // Sleep device drivers
     tlv320Device_.sleep();
@@ -136,8 +158,6 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     audioMixer_.sleep();
     beeperTask_.sleep();
     
-    // TBD - sleep other tasks.
-
     /* Initialize mode button GPIO as RTC IO, enable input, disable pullup and pulldown */
     rtc_gpio_init(GPIO_NUM_5);
     rtc_gpio_set_direction(GPIO_NUM_5, RTC_GPIO_MODE_INPUT_ONLY);
@@ -148,12 +168,7 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
 
-    /* The first argument is the period index, which is not used by the ULP-RISC-V timer
-     * The second argument is the period in microseconds, which gives a wakeup time period of: 20ms
-     */
-    //ulp_set_wakeup_period(0, 20000);
-
-    /* Start the program */
+    /* Start the ULV program */
     err = ulp_riscv_run();
     ESP_ERROR_CHECK(err);
     
@@ -167,18 +182,15 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     esp_deep_sleep_start();    
 }
 
-void App::onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message)
-{
-    if (message->button == driver::ButtonLabel::MODE)
-    {
-        // TBD -- UI should trigger sleep
-        sleep();
-    }
-}
-
 }
 
 ezdv::App* app;
+
+// Global method to trigger sleep
+void StartSleeping()
+{
+    app->sleep();
+}
 
 extern "C" void app_main()
 {

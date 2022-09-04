@@ -155,6 +155,11 @@ void BeeperTask::onTimerTick_()
 
         codec2_fifo_write(outputFifo, bufToQueue, sizeof(bufToQueue) / sizeof(short));
     }
+    else
+    {
+        beeperTimer_.stop();
+        sineCounter_ = 0;
+    }
 }
 
 void BeeperTask::stringToBeeperScript_(std::string str)

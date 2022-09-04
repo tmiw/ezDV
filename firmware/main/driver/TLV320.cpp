@@ -51,7 +51,7 @@ namespace driver
 {
 
 TLV320::TLV320(I2CDevice* i2cDevice)
-    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 100)
+    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 200)
     , audio::AudioInput(2, 2)
     , i2sTimer_(this, std::bind(&TLV320::onTimerTick_, this), I2S_TIMER_TICK_US)
     , i2cDevice_(i2cDevice)

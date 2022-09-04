@@ -18,20 +18,11 @@ set(SOURCES
     "storage/SettingsTask.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
-    "task/DVTimer.cpp")
-    #"audio/TLV320.cpp"
-    #"audio/TLV320.h"
-    #"audio/AudioMixer.cpp"
-    #"audio/AudioMixer.h"
-    #"codec/FreeDVTask.cpp"
-    #"codec/FreeDVTask.h"
+    "task/DVTimer.cpp"
+    "ui/UserInterfaceTask.cpp")
     #"radio/icom/IcomRadioTask.cpp"
     #"radio/icom/PacketTypes.cpp"
     #"radio/icom/ProtocolStateMachine.cpp"
-    #"ui/UserInterfaceTask.cpp"
-    #"ui/UserInterfaceTask.h"
-    #"util/NamedQueue.cpp"
-    #"util/NamedQueue.h")
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}

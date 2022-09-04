@@ -45,8 +45,9 @@ template<uint32_t TYPE_ID>
 class VolumeMessageCommon : public DVTaskMessageBase<TYPE_ID, VolumeMessageCommon<TYPE_ID>>
 {
 public:
-    VolumeMessageCommon()
-        : DVTaskMessageBase<TYPE_ID, VolumeMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) { }
+    VolumeMessageCommon(int8_t volProvided = 0)
+        : DVTaskMessageBase<TYPE_ID, VolumeMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , volume(volProvided) { }
     virtual ~VolumeMessageCommon() = default;
 
     int8_t volume;

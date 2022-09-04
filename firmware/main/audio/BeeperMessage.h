@@ -50,7 +50,11 @@ public:
             memset(text, 0, sizeof(text));
             if (textProvided != nullptr)
             {
-                memcpy(text, textProvided, sizeof(text) - 1);
+                int amountToCopy = 
+                    strlen(text) < (sizeof(text) - 1) ?
+                    strlen(text) :
+                    sizeof(text) - 1;
+                memcpy(text, textProvided, amountToCopy);
             }
         }
     virtual ~SetBeeperTextMessage() = default;

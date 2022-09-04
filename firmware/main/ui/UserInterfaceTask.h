@@ -1,117 +1,75 @@
-#ifndef UI__USER_INTERFACE_TASK_H
-#define UI__USER_INTERFACE_TASK_H
+/* 
+ * This file is part of the ezDV project (https://github.com/tmiw/ezDV).
+ * Copyright (c) 2022 Mooneer Salem
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#include <vector>
-#include "driver/gpio.h"
-#include "smooth/core/Task.h"
-#include "util/NamedQueue.h"
-#include "Messaging.h"
-#include "smooth/core/ipc/ISRTaskEventQueue.h"
-#include "smooth/core/io/InterruptInput.h"
-#include "smooth/core/io/Output.h"
-#include "smooth/core/timer/Timer.h"
-#include "audio/Messaging.h"
+#ifndef USER_INTERFACE_TASK_H
+#define USER_INTERFACE_TASK_H
 
-#define GPIO_PTT_BUTTON GPIO_NUM_4
-#define GPIO_MODE_BUTTON GPIO_NUM_5 // PTT button doesn't work on v0.1 @ GPIO 4
-#define GPIO_VOL_UP_BUTTON GPIO_NUM_6
-#define GPIO_VOL_DOWN_BUTTON GPIO_NUM_7
+#include "task/DVTask.h"
+#include "task/DVTimer.h"
+#include "audio/FreeDVMessage.h"
+#include "driver/ButtonMessage.h"
+#include "storage/SettingsMessage.h"
 
-#define GPIO_SYNC_LED GPIO_NUM_1
-#define GPIO_OVL_LED GPIO_NUM_2
-#define GPIO_PTT_LED GPIO_NUM_41
-#define GPIO_PTT_NPN GPIO_NUM_21 /* bridges GND and PTT together at the 3.5mm jack */
-#define GPIO_NET_LED GPIO_NUM_42
-
-// Beeper constants. This is based on 1 dit per 60/(50 * wpm) = 60/(50*15) = 0.08s
-#define CW_TIME_UNIT_MS 80
-#define DIT_SIZE 1
-#define DAH_SIZE 3
-#define SPACE_BETWEEN_DITS 1
-#define SPACE_BETWEEN_CHARS 3
-#define SPACE_BETWEEN_WORDS 7
-#define CW_SIDETONE_FREQ_HZ ((float)600.0)
-#define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
-
-namespace ezdv::ui
+namespace ezdv
 {
-    class UserInterfaceTask : 
-        public smooth::core::Task,
-        public smooth::core::ipc::IEventListener<ezdv::ui::UserInterfaceControlMessage>,
-        public smooth::core::ipc::IEventListener<smooth::core::io::InterruptInputEvent>,
-        public smooth::core::ipc::IEventListener<smooth::core::timer::TimerExpiredEvent>
-    {
-    public:
-        UserInterfaceTask()
-            : smooth::core::Task("UserInterfaceTask", 4096, 10, std::chrono::milliseconds(1))
-            , uiInputQueue_(smooth::core::ipc::TaskEventQueue<ezdv::ui::UserInterfaceControlMessage>::create(5, *this, *this))
-            , uiButtonQueue_(smooth::core::ipc::ISRTaskEventQueue<smooth::core::io::InterruptInputEvent, 5>::create(*this, *this))
-            , pttButton_(uiButtonQueue_, GPIO_PTT_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , volUpButton_(uiButtonQueue_, GPIO_VOL_UP_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , volDownButton_(uiButtonQueue_, GPIO_VOL_DOWN_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , changeModeButton_(uiButtonQueue_, GPIO_MODE_BUTTON, false, false, GPIO_INTR_ANYEDGE)
-            , syncLed_(GPIO_SYNC_LED, true, false, false)
-            , overloadLed_(GPIO_OVL_LED, true, false, false)
-            , pttLed_(GPIO_PTT_LED, true, false, false)
-            , pttNPN_(GPIO_PTT_NPN, true, false, false)
-            , netLed_(GPIO_NET_LED, true, false, false)
-            , timerEventQueue_(smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>::create(3, *this, *this))
-            , sineCounter_(0)
-            , currentFDVMode_(0)
-            , inPOST_(true)
-            , inPTT_(false)
-        {
-            // Turn on all LEDs until we're done initializing.
-            syncLed_.set(true);
-            overloadLed_.set(true);
-            pttLed_.set(true);
-            netLed_.set(true);
-            
-            // Register input channel for use by other tasks.
-            ezdv::util::NamedQueue::Add(UI_CONTROL_PIPE_NAME, uiInputQueue_);
-            
-            // Queue up initial announcement string
-            stringToBeeperScript_(" V1");
-            
-            changeFDVMode_(currentFDVMode_);
-        }
-        
-        void event(const ezdv::ui::UserInterfaceControlMessage& event) override;
-        void event(const smooth::core::io::InterruptInputEvent& event) override;
-        void event(const smooth::core::timer::TimerExpiredEvent& event) override;
-    protected:
-        virtual void init();
-        
-    private:        
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<ezdv::ui::UserInterfaceControlMessage>> uiInputQueue_;
-        std::shared_ptr<smooth::core::ipc::IISRTaskEventQueue<smooth::core::io::InterruptInputEvent>> uiButtonQueue_;
-        
-        smooth::core::io::InterruptInput pttButton_;
-        smooth::core::io::InterruptInput volUpButton_;
-        smooth::core::io::InterruptInput volDownButton_;
-        smooth::core::io::InterruptInput changeModeButton_;
-        
-        smooth::core::io::Output syncLed_;
-        smooth::core::io::Output overloadLed_;
-        smooth::core::io::Output pttLed_;
-        smooth::core::io::Output pttNPN_;
-        smooth::core::io::Output netLed_;
-        
-        std::vector<bool> beeperList_;
-        std::shared_ptr<smooth::core::ipc::TaskEventQueue<smooth::core::timer::TimerExpiredEvent>> timerEventQueue_;
-        smooth::core::timer::TimerOwner beeperTimer_;
-        smooth::core::timer::TimerOwner volBtnTimer_;
-        smooth::core::timer::TimerOwner powerOffTimer_;
-        int sineCounter_;
-        int currentFDVMode_;
-        bool inPOST_;
-        bool inPTT_;
-        ezdv::audio::ChangeVolumeMessage volMessage_;
-        
-        void stringToBeeperScript_(std::string str);
-        void charToBeeperScript_(char ch);
-        void changeFDVMode_(int mode);
-    };
+
+namespace ui
+{
+
+using namespace ezdv::task;
+
+class UserInterfaceTask : public DVTask
+{
+public:
+    UserInterfaceTask();
+    virtual ~UserInterfaceTask();
+
+protected:
+    virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
+    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
+    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
+
+private:
+    DVTimer volHoldTimer_;
+    audio::SetFreeDVModeMessage::FreeDVMode currentMode_;
+    bool isTransmitting_;
+    bool isActive_;
+    int8_t leftVolume_;
+    int8_t rightVolume_;
+    int8_t volIncrement_;
+
+    // Button handling
+    void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
+    void onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message);
+    void onButtonReleasedMessage_(DVTask* origin, driver::ButtonReleasedMessage* message);
+
+    // Sync state handling
+    void onFreeDVSyncStateMessage_(DVTask* origin, audio::FreeDVSyncStateMessage* message);
+
+    // Storage update handling
+    void onLeftChannelVolumeMessage_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
+    void onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message);
+
+    // Timer handling
+    void updateVolumeCommon_();
+};
+
 }
 
-#endif // UI__USER_INTERFACE_TASK_H
+}
+
+#endif // USER_INTERFACE_TASK_H
