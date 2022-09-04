@@ -2,6 +2,8 @@ set(SOURCES
     "Application.cpp"
     "audio/AudioInput.cpp"
     "audio/AudioMixer.cpp"
+    "audio/BeeperMessage.cpp"
+    "audio/BeeperTask.cpp"
     "audio/FreeDVMessage.cpp"
     "audio/FreeDVTask.cpp"
     "driver/ButtonArray.cpp"

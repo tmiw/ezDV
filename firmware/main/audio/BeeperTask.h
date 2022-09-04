@@ -15,50 +15,55 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef BEEPER_TASK_H
+#define BEEPER_TASK_H
 
+#include <map>
+#include <string>
+
+#include "AudioInput.h"
+#include "BeeperMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
-#include "audio/AudioMixer.h"
-#include "audio/BeeperTask.h"
-#include "audio/FreeDVTask.h"
-#include "driver/ButtonArray.h"
-#include "driver/ButtonMessage.h"
-#include "driver/I2CDevice.h"
-#include "driver/LedArray.h"
-#include "driver/TLV320.h"
-#include "storage/SettingsTask.h"
-
-using namespace ezdv::task;
 
 namespace ezdv
 {
 
-class App : public DVTask
+namespace audio
+{
+
+using namespace ezdv::task;
+
+class BeeperTask : public DVTask, public AudioInput
 {
 public:
-    App();
+    BeeperTask();
+    virtual ~BeeperTask();
 
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-    
-private:
-    DVTimer timer_;
-    audio::AudioMixer audioMixer_;
-    audio::BeeperTask beeperTask_;
-    audio::FreeDVTask freedvTask_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::LedArray ledArray_;
-    driver::TLV320 tlv320Device_;
-    storage::SettingsTask settingsTask_;
 
-    void onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message);
+private:
+    DVTimer beeperTimer_;
+    int sineCounter_;
+    std::vector<bool> beeperList_;
+
+    void onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message);
+    void onClearBeeperText_(DVTask* origin, ClearBeeperTextMessage* message);
+
+    void onTimerTick_();
+
+    void stringToBeeperScript_(std::string str);
+    void charToBeeperScript_(char ch);
+
+    static std::map<char, std::string> CharacterToMorse_;
 };
 
-}
+} // namespace audio
 
-#endif // EZDV_APPLICATION_H
+} // namespace ezdv
+
+
+#endif // BEEPER_TASK_H
