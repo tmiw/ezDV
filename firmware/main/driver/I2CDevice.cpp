@@ -55,7 +55,7 @@ I2CDevice::~I2CDevice()
 
 void I2CDevice::writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* val, uint8_t size)
 {
-    xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(1000));
+    xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(100));
 
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -73,7 +73,7 @@ void I2CDevice::writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t*
 
 void I2CDevice::readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* buffer, uint8_t size)
 {
-    xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(1000));
+    xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(100));
 
     uint8_t regBuf[] = { registerAddress };
     ESP_ERROR_CHECK(i2c_master_write_read_device(I2C_NUM_0, i2cAddress, regBuf, 1, buffer, size, pdMS_TO_TICKS(1000)));

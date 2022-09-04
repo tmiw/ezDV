@@ -274,30 +274,25 @@ void TLV320::tlv320ConfigureClocks_()
     
     // Set NDAC = 40, MDAC = 2. Power on divider.
     // (Page 0, registers 11 and 12)
+    // Program DOSR to 128 (Page 0, registers 13-14)
     uint8_t dacOpts[] = {
         (1 << 7) | 40,
-        (1 << 7) | 2
-    };
-    setConfigurationOptionMultiple_(0, 11, dacOpts, 2);
-    
-    // Program DOSR to 128 (Page 0, registers 13-14)
-    uint8_t dosr[] = {
+        (1 << 7) | 2,
         0,
         128
     };
-    setConfigurationOptionMultiple_(0, 13, dosr, 2);
-    
+    setConfigurationOptionMultiple_(0, 11, dacOpts, 4);
+        
     // Set NADC = 40, MADC = 2. Keep dividers powered off as
     // NADC == NDAC and MADC == MDAC.
     // (Page 0, registers 18 and 19)
+    // Program AOSR to 128 (Page 0, register 20).
     uint8_t adcOpts[] = {
         40,
-        2
+        2,
+        128
     };
     setConfigurationOptionMultiple_(0, 18, adcOpts, 2);
-    
-    // Program AOSR to 128 (Page 0, register 20).
-    setConfigurationOption_(0, 20, 128);
     
     // Set I2S word size to 16 bits (Page 0, register 27)
     setConfigurationOption_(0, 27, 0);
