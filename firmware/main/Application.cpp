@@ -9,6 +9,7 @@
 */
 
 #include "driver/rtc_io.h"
+#include "driver/gpio.h"
 #include "ulp_riscv.h"
 #include "ulp_main.h"
 #include "esp_sleep.h"
@@ -39,6 +40,7 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
     // Start device drivers
     tlv320Device_.start();
+    buttonArray_.start();
 
     // Start storage handling
     settingsTask_.start();
@@ -52,6 +54,7 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     
     // Wake up device drivers
     tlv320Device_.wake();
+    buttonArray_.wake();
 
     // Wake storage handling
     settingsTask_.wake();
@@ -63,6 +66,7 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     // Sleep device drivers
     tlv320Device_.sleep();
+    buttonArray_.sleep();
 
     // Sleep storage handling
     settingsTask_.sleep();
@@ -109,7 +113,10 @@ extern "C" void app_main()
     ulp_riscv_halt();
 
     // Note: mandatory for publish to work.
-    esp_event_loop_create_default();
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // Note: GPIO ISRs use per GPIO ISRs.
+    ESP_ERROR_CHECK(gpio_install_isr_service(0));
     
     app = new ezdv::App();
     assert(app != nullptr);

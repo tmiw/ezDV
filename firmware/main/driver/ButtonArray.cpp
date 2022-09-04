@@ -1,0 +1,93 @@
+/* 
+ * This file is part of the ezDV project (https://github.com/tmiw/ezDV).
+ * Copyright (c) 2022 Mooneer Salem
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "esp_log.h"
+
+#include "ButtonArray.h"
+#include "InputGPIO.h"
+
+namespace ezdv
+{
+
+namespace driver
+{
+
+using namespace std::placeholders;
+
+ButtonArray::ButtonArray()
+    : DVTask("ButtonArray", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
+    , pttButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::PTT, _2))
+    , modeButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::MODE, _2))
+    , volUpButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_UP, _2))
+    , volDownButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_DOWN, _2))
+{
+    // empty
+}
+
+ButtonArray::~ButtonArray()
+{
+    // empty
+}
+
+void ButtonArray::onTaskStart_(DVTask* origin, TaskStartMessage* message)
+{
+    pttButton_.enableInterrupt(true);
+    modeButton_.enableInterrupt(true);
+    volUpButton_.enableInterrupt(true);
+    volDownButton_.enableInterrupt(true);
+}
+
+void ButtonArray::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
+{
+    // Use same actions as start.
+    onTaskStart_(origin, nullptr);
+}
+
+void ButtonArray::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
+    pttButton_.enableInterrupt(false);
+    modeButton_.enableInterrupt(false);
+    volUpButton_.enableInterrupt(false);
+    volDownButton_.enableInterrupt(false);
+}
+
+void ButtonArray::handleButton_(ButtonLabel label, bool val)
+{
+    char* buttonName = "";
+
+    switch(label)
+    {
+        case ButtonLabel::PTT:
+            buttonName = "PTT";
+            break;
+        case ButtonLabel::MODE:
+            buttonName = "Mode";
+            break;
+        case ButtonLabel::VOL_UP:
+            buttonName = "VolUp";
+            break;
+        case ButtonLabel::VOL_DOWN:
+            buttonName = "VolDown";
+            break;
+    }
+
+    ESP_LOGI("ButtonArray", "Button %s now %d", buttonName, (int)val);
+}
+
+}
+
+}

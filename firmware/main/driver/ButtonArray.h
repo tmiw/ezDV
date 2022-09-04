@@ -15,39 +15,55 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef BUTTON_ARRAY_H
+#define BUTTON_ARRAY_H
 
 #include "task/DVTask.h"
-#include "task/DVTimer.h"
-#include "driver/ButtonArray.h"
-#include "driver/I2CDevice.h"
-#include "driver/TLV320.h"
-#include "storage/SettingsTask.h"
+#include "InputGPIO.h"
 
-using namespace ezdv::task;
+#define GPIO_PTT_BUTTON GPIO_NUM_4
+#define GPIO_MODE_BUTTON GPIO_NUM_5 // PTT button doesn't work on v0.1 @ GPIO 4
+#define GPIO_VOL_UP_BUTTON GPIO_NUM_6
+#define GPIO_VOL_DOWN_BUTTON GPIO_NUM_7
 
 namespace ezdv
 {
 
-class App : public DVTask
+namespace driver
+{
+
+using namespace ezdv::task;
+
+class ButtonArray : public DVTask
 {
 public:
-    App();
+    ButtonArray();
+    virtual ~ButtonArray();
 
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-    
+
 private:
-    DVTimer timer_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::TLV320 tlv320Device_;
-    storage::SettingsTask settingsTask_;
+    enum ButtonLabel
+    {
+        PTT,
+        MODE,
+        VOL_UP,
+        VOL_DOWN
+    };
+
+    InputGPIO<GPIO_PTT_BUTTON> pttButton_;
+    InputGPIO<GPIO_MODE_BUTTON> modeButton_;
+    InputGPIO<GPIO_VOL_UP_BUTTON> volUpButton_;
+    InputGPIO<GPIO_VOL_DOWN_BUTTON> volDownButton_;
+
+    void handleButton_(ButtonLabel label, bool val);
 };
 
 }
 
-#endif // EZDV_APPLICATION_H
+}
+
+#endif // BUTTON_ARRAY_H

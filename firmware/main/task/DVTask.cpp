@@ -94,26 +94,40 @@ void DVTask::post(DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(nullptr, message);
     postHelper_(message->getEventBase(), message->getEventType(), entry);
-    delete entry;
+}
+
+void DVTask::postISR(DVTaskMessage* message)
+{
+    MessageEntry* entry = createMessageEntry_(nullptr, message);
+    BaseType_t taskUnblocked = pdFALSE;
+
+    ESP_ERROR_CHECK(
+        esp_event_isr_post_to(
+            taskEventLoop_, message->getEventBase(), message->getEventType(), &entry, sizeof(MessageEntry*),
+            &taskUnblocked)
+    );
+
+    if (taskUnblocked != pdFALSE)
+    {
+        portYIELD_FROM_ISR();
+    }
 }
 
 void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(this, message);
     destination->postHelper_(message->getEventBase(), message->getEventType(), entry);
-    delete entry;
 }
 
 void DVTask::publish(DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(this, message);
-    ESP_ERROR_CHECK(esp_event_post(message->getEventBase(), message->getEventType(), entry, entry->size, pdMS_TO_TICKS(2000)));
-    delete entry;
+    ESP_ERROR_CHECK(esp_event_post(message->getEventBase(), message->getEventType(), &entry, sizeof(MessageEntry*), pdMS_TO_TICKS(2000)));
 }
 
 void DVTask::postHelper_(esp_event_base_t event_base, int32_t event_id, MessageEntry* entry)
 {
-    ESP_ERROR_CHECK(esp_event_post_to(taskEventLoop_, event_base, event_id, entry, entry->size, pdMS_TO_TICKS(2000)));
+    ESP_ERROR_CHECK(esp_event_post_to(taskEventLoop_, event_base, event_id, &entry, sizeof(MessageEntry*), pdMS_TO_TICKS(2000)));
 }
 
 void DVTask::threadEntry_()
@@ -134,7 +148,7 @@ void DVTask::ThreadEntry_(DVTask* thisObj)
 void DVTask::HandlePublishEvent_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     PublishHandlerData* publishData = (PublishHandlerData*)event_handler_arg;
-    publishData->taskObj->postHelper_(event_base, event_id, (MessageEntry*)event_data);
+    publishData->taskObj->postHelper_(event_base, event_id, *(MessageEntry**)event_data);
 }
 
 }

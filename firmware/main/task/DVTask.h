@@ -62,6 +62,10 @@ public:
     /// @param message The message to post to the task.
     void post(DVTaskMessage* message);
 
+    /// @brief Posts a message to own event queue (from ISR). May not return.
+    /// @param message The message to post to the task.
+    void postISR(DVTaskMessage* message);
+
     /// @brief Posts a message to destination's event queue.
     /// @param destination The destination task to send the event to.
     /// @param message The message to send.
@@ -174,9 +178,10 @@ void DVTask::HandleEvent_(void *event_handler_arg, esp_event_base_t event_base, 
 {
     std::function<void(DVTask*, MessageType*)>* fnPtr = (std::function<void(DVTask*, MessageType*)>*)event_handler_arg;
     
-    MessageEntry* entry = (MessageEntry*)event_data;
+    MessageEntry* entry = *(MessageEntry**)event_data;
     MessageType* message = (MessageType*)&entry->messageStart;
     (*fnPtr)(entry->origin, message);
+    delete entry;
 }
 
 }
