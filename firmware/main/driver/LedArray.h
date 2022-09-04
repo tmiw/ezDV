@@ -15,41 +15,50 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef LED_ARRAY_H
+#define LED_ARRAY_H
 
 #include "task/DVTask.h"
-#include "task/DVTimer.h"
-#include "driver/ButtonArray.h"
-#include "driver/I2CDevice.h"
-#include "driver/LedArray.h"
-#include "driver/TLV320.h"
-#include "storage/SettingsTask.h"
+#include "LedMessage.h"
+#include "OutputGPIO.h"
 
-using namespace ezdv::task;
+#define GPIO_SYNC_LED GPIO_NUM_1
+#define GPIO_OVL_LED GPIO_NUM_2
+#define GPIO_PTT_LED GPIO_NUM_41
+#define GPIO_PTT_NPN GPIO_NUM_21 /* bridges GND and PTT together at the 3.5mm jack */
+#define GPIO_NET_LED GPIO_NUM_42
 
 namespace ezdv
 {
 
-class App : public DVTask
+namespace driver
+{
+
+using namespace ezdv::task;
+
+class LedArray : public DVTask
 {
 public:
-    App();
+    LedArray();
+    virtual ~LedArray();
 
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-    
+
 private:
-    DVTimer timer_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::LedArray ledArray_;
-    driver::TLV320 tlv320Device_;
-    storage::SettingsTask settingsTask_;
+    OutputGPIO syncLed_;
+    OutputGPIO overloadLed_;
+    OutputGPIO pttLed_;
+    OutputGPIO pttNpmLed_;
+    OutputGPIO networkLed_;
+
+    void onSetLedState_(DVTask* origin, SetLedStateMessage* message);
 };
 
 }
 
-#endif // EZDV_APPLICATION_H
+}
+
+#endif // LED_ARRAY_H

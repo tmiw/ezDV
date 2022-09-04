@@ -15,6 +15,8 @@
 #include "esp_sleep.h"
 #include "esp_log.h"
 
+#include "driver/LedMessage.h"
+
 #define CURRENT_LOG_TAG ("app")
 
 extern "C"
@@ -41,6 +43,7 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     // Start device drivers
     tlv320Device_.start();
     buttonArray_.start();
+    ledArray_.start();
 
     // Start storage handling
     settingsTask_.start();
@@ -55,9 +58,19 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
     // Wake up device drivers
     tlv320Device_.wake();
     buttonArray_.wake();
+    ledArray_.wake();
 
     // Wake storage handling
     settingsTask_.wake();
+
+    ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
+    ledArray_.post(&msg);
+    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+    ledArray_.post(&msg);
+    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+    ledArray_.post(&msg);
+    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+    ledArray_.post(&msg);
 }
 
 void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
@@ -67,6 +80,7 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     // Sleep device drivers
     tlv320Device_.sleep();
     buttonArray_.sleep();
+    ledArray_.sleep();
 
     // Sleep storage handling
     settingsTask_.sleep();
@@ -114,7 +128,7 @@ extern "C" void app_main()
 
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
-    
+
     // Note: mandatory for publish to work.
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
