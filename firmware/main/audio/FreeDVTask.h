@@ -19,6 +19,7 @@
 #define FREEDV_TASK_H
 
 #include "AudioInput.h"
+#include "FreeDVMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 
@@ -46,6 +47,9 @@ private:
     struct freedv* dv_;
     bool isTransmitting_;
 
+    void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
+    void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
+    
     void onTimerTick_();
 };
 
