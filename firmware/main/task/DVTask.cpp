@@ -74,6 +74,11 @@ void DVTask::sleep()
     post(new TaskSleepMessage());
 }
 
+void DVTask::onTaskTick_()
+{
+    // optional, default doesn't do anything
+}
+
 DVTask::MessageEntry* DVTask::createMessageEntry_(DVTask* origin, DVTaskMessage* message)
 {
     // Create object that's big enough to hold the passed-in message.
@@ -161,6 +166,8 @@ void DVTask::threadEntry_()
             // Deallocate message now that we're done with it.
             delete entry;
         }
+
+        onTaskTick_();
     }
 }
 

@@ -24,7 +24,6 @@
 #include "FreeDVTask.h"
 
 #define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP 160
-#define FREEDV_TIMER_TICK_US 20000
 #define CURRENT_LOG_TAG ("FreeDV")
 
 namespace ezdv
@@ -36,7 +35,6 @@ namespace audio
 FreeDVTask::FreeDVTask()
     : DVTask("FreeDVTask", 10 /* TBD */, 48000, 1, 100)
     , AudioInput(2, 2)
-    , freedvTick_(this, std::bind(&FreeDVTask::onTimerTick_, this), FREEDV_TIMER_TICK_US)
     , dv_(nullptr)
     , isTransmitting_(false)
 {
@@ -54,7 +52,7 @@ FreeDVTask::~FreeDVTask()
 
 void FreeDVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
-    freedvTick_.start();
+    // empty
 }
 
 void FreeDVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -64,8 +62,6 @@ void FreeDVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
 void FreeDVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
-    freedvTick_.stop();
-
     if (dv_ != nullptr)
     {
         freedv_close(dv_);
@@ -73,7 +69,7 @@ void FreeDVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     }
 }
 
-void FreeDVTask::onTimerTick_()
+void FreeDVTask::onTaskTick_()
 {
     //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
 

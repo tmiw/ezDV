@@ -41,7 +41,6 @@
 #define CURRENT_LOG_TAG ("TLV320Driver")
 
 // Timer constants below are for 8000 Hz sample rate
-#define I2S_TIMER_TICK_US 10000
 #define I2S_NUM_SAMPLES_PER_INTERVAL (160)
 
 namespace ezdv
@@ -51,9 +50,8 @@ namespace driver
 {
 
 TLV320::TLV320(I2CDevice* i2cDevice)
-    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 200)
+    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
     , audio::AudioInput(2, 2)
-    , i2sTimer_(this, std::bind(&TLV320::onTimerTick_, this), I2S_TIMER_TICK_US)
     , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
 {
@@ -94,9 +92,6 @@ void TLV320::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     // Note: restoring AGC volumes is delayed until we get the power-on
     // volumes from storage.
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
-
-    // Start reading and writing from I2S.
-    i2sTimer_.start();
 }
 
 void TLV320::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -110,7 +105,8 @@ void TLV320::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 void TLV320::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     // Stop reading from I2S.
-    i2sTimer_.stop();
+    i2sRxDevice_ = nullptr;
+    i2sTxDevice_ = nullptr;
 
     // TBD: investigate power consumption of using TLV320 sleep
     // and wakeup vs. simply hard resetting and forcing full
@@ -118,8 +114,10 @@ void TLV320::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     tlv320HardReset_();
 }
 
-void TLV320::onTimerTick_()
+void TLV320::onTaskTick_()
 {
+    if (i2sRxDevice_ == nullptr || i2sTxDevice_ == nullptr) return;
+
     short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
     memset(tempData, 0, sizeof(tempData));
     

@@ -96,6 +96,9 @@ protected:
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) = 0;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) = 0;
 
+    /// @brief Task to unconditionally execute each time through the loop. Optional.
+    virtual void onTaskTick_();
+    
 private:
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
     using EventIdentifierPair = std::pair<DVEventBaseType, uint32_t>;

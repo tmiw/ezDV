@@ -42,15 +42,14 @@ protected:
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
+    virtual void onTaskTick_() override;
+    
 private:
-    DVTimer freedvTick_;
     struct freedv* dv_;
     bool isTransmitting_;
 
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
-    
-    void onTimerTick_();
 };
 
 }

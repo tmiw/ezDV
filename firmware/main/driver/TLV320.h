@@ -46,8 +46,9 @@ protected:
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
+    virtual void onTaskTick_() override;
+
 private:
-    task::DVTimer i2sTimer_;
     I2CDevice* i2cDevice_;
     int currentPage_;
     i2s_chan_handle_t i2sTxDevice_;
@@ -55,9 +56,6 @@ private:
 
     void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
     void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);
-
-    // Main I2S I/O method
-    void onTimerTick_();
 
     void setPage_(uint8_t page);
     void setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val);
