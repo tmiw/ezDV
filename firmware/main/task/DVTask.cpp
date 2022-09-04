@@ -137,8 +137,8 @@ void DVTask::publish(DVTaskMessage* message)
 
 void DVTask::postHelper_(MessageEntry* entry)
 {
-    auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(20));
-    assert(rv == pdTRUE);
+    auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
+    assert(rv != errQUEUE_FULL);
 }
 
 void DVTask::threadEntry_()

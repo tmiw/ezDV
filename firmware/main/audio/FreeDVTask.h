@@ -15,46 +15,42 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef FREEDV_TASK_H
+#define FREEDV_TASK_H
 
+#include "AudioInput.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
-#include "audio/FreeDVTask.h"
-#include "driver/ButtonArray.h"
-#include "driver/ButtonMessage.h"
-#include "driver/I2CDevice.h"
-#include "driver/LedArray.h"
-#include "driver/TLV320.h"
-#include "storage/SettingsTask.h"
-
-using namespace ezdv::task;
 
 namespace ezdv
 {
 
-class App : public DVTask
+namespace audio
+{
+
+using namespace ezdv::task;
+
+class FreeDVTask : public DVTask, public AudioInput
 {
 public:
-    App();
+    FreeDVTask();
+    virtual ~FreeDVTask();
 
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message) override;
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
-    
-private:
-    DVTimer timer_;
-    audio::FreeDVTask freedvTask_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::LedArray ledArray_;
-    driver::TLV320 tlv320Device_;
-    storage::SettingsTask settingsTask_;
 
-    void onLongButtonPressed_(DVTask* origin, driver::ButtonLongPressedMessage* message);
+private:
+    DVTimer freedvTick_;
+    struct freedv* dv_;
+    bool isTransmitting_;
+
+    void onTimerTick_();
 };
 
 }
 
-#endif // EZDV_APPLICATION_H
+}
+
+#endif // FREEDV_TASK_H

@@ -1,5 +1,7 @@
 set(SOURCES 
     "Application.cpp"
+    "audio/AudioInput.cpp"
+    "audio/FreeDVTask.cpp"
     "driver/ButtonArray.cpp"
     "driver/ButtonMessage.cpp"
     "driver/InputGPIO.cpp"

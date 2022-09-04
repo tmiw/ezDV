@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstring>
+
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/i2s_std.h"
@@ -38,6 +40,10 @@
 // Tag to prepend to log entries coming from this file.
 #define CURRENT_LOG_TAG ("TLV320Driver")
 
+// Timer constants below are for 8000 Hz sample rate
+#define I2S_TIMER_TICK_US 10000
+#define I2S_NUM_SAMPLES_PER_INTERVAL (160)
+
 namespace ezdv
 {
 
@@ -45,7 +51,9 @@ namespace driver
 {
 
 TLV320::TLV320(I2CDevice* i2cDevice)
-    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
+    : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 100)
+    , audio::AudioInput(2, 2)
+    , i2sTimer_(this, std::bind(&TLV320::onTimerTick_, this), I2S_TIMER_TICK_US)
     , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
 {
@@ -86,6 +94,9 @@ void TLV320::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     // Note: restoring AGC volumes is delayed until we get the power-on
     // volumes from storage.
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
+
+    // Start reading and writing from I2S.
+    i2sTimer_.start();
 }
 
 void TLV320::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -98,10 +109,47 @@ void TLV320::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
 void TLV320::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
+    // Stop reading from I2S.
+    i2sTimer_.stop();
+
     // TBD: investigate power consumption of using TLV320 sleep
     // and wakeup vs. simply hard resetting and forcing full
     // reinitialization.
     tlv320HardReset_();
+}
+
+void TLV320::onTimerTick_()
+{
+    short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
+    memset(tempData, 0, sizeof(tempData));
+    
+    // Perform read from I2S. 
+    size_t bytesRead = sizeof(tempData);
+    ESP_ERROR_CHECK(i2s_channel_read(i2sRxDevice_, tempData, sizeof(tempData), &bytesRead, portMAX_DELAY));
+
+    // Output channel bytes to configured output FIFOs.
+    struct FIFO* leftChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
+    struct FIFO* rightChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
+    for (int index = 0; index < bytesRead / 2 / sizeof(short); index++)
+    {
+        if (leftChannelFifo != nullptr) codec2_fifo_write(leftChannelFifo, &tempData[2*index], 1);
+        if (rightChannelFifo != nullptr) codec2_fifo_write(rightChannelFifo, &tempData[2*index + 1], 1);
+    }
+
+    leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
+    rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
+    if (codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL || 
+        codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL)
+    {
+        for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
+        {
+            codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
+            codec2_fifo_read(rightChannelFifo, &tempData[2*index + 1], 1);
+        }
+        
+        size_t bytesWritten = 0;
+        ESP_ERROR_CHECK(i2s_channel_write(i2sTxDevice_, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
+    }
 }
 
 void TLV320::setVolumeCommon_(uint8_t reg, int8_t vol)

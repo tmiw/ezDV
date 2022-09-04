@@ -33,7 +33,26 @@ App::App()
     , timer_(this, [this](DVTimer*) { ESP_LOGI(CURRENT_LOG_TAG, "timer fired!"); }, 1000000)
     , tlv320Device_(&i2cDevice_)
 {
-    // empty
+    // Link audio FIFOs together
+    tlv320Device_.setAudioOutput(
+        audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+        freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+    );
+
+    tlv320Device_.setAudioOutput(
+        audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
+        freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+    );
+
+    freedvTask_.setAudioOutput(
+        audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+    );
+
+    freedvTask_.setAudioOutput(
+        audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
+        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+    );
 }
 
 void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
@@ -47,6 +66,9 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
     // Start storage handling
     settingsTask_.start();
+
+    // Start audio processing
+    freedvTask_.start();
 }
 
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -62,6 +84,9 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
     // Wake storage handling
     settingsTask_.wake();
+
+    // Wake audio processing
+    freedvTask_.wake();
 
     ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
     ledArray_.post(&msg);
@@ -86,6 +111,9 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     // Sleep storage handling
     settingsTask_.sleep();
+
+    // Sleep audio processing
+    freedvTask_.sleep();
     
     // TBD - sleep other tasks.
 

@@ -20,8 +20,10 @@
 
 #include "driver/i2s_std.h"
 
+#include "audio/AudioInput.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
+#include "task/DVTimer.h"
 
 namespace ezdv
 {
@@ -33,7 +35,7 @@ class I2CDevice;
 
 using namespace ezdv::task;
 
-class TLV320 : public DVTask
+class TLV320 : public DVTask, public audio::AudioInput
 {
 public:
     TLV320(I2CDevice* i2cDevice);
@@ -44,14 +46,18 @@ protected:
     virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message) override;
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
-    void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
-    void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);
-
 private:
+    task::DVTimer i2sTimer_;
     I2CDevice* i2cDevice_;
     int currentPage_;
     i2s_chan_handle_t i2sTxDevice_;
     i2s_chan_handle_t i2sRxDevice_;
+
+    void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
+    void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);
+
+    // Main I2S I/O method
+    void onTimerTick_();
 
     void setPage_(uint8_t page);
     void setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val);
