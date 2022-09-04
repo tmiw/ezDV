@@ -1,6 +1,7 @@
 set(SOURCES 
     "Application.cpp"
     "audio/AudioInput.cpp"
+    "audio/AudioMixer.cpp"
     "audio/FreeDVMessage.cpp"
     "audio/FreeDVTask.cpp"
     "driver/ButtonArray.cpp"

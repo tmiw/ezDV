@@ -45,13 +45,20 @@ App::App()
     );
 
     freedvTask_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
-        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+        audio::AudioInput::ChannelLabel::USER_CHANNEL, 
+        audioMixer_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+    );
+
+    // TBD -- beeper task fifos
+
+    audioMixer_.setAudioOutput(
+        audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
     );
 
     freedvTask_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
-        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+        audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
     );
 }
 
@@ -69,6 +76,7 @@ void App::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
     // Start audio processing
     freedvTask_.start();
+    audioMixer_.start();
 }
 
 void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
@@ -87,6 +95,7 @@ void App::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
     // Wake audio processing
     freedvTask_.wake();
+    audioMixer_.wake();
 
     ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
     ledArray_.post(&msg);
@@ -114,6 +123,7 @@ void App::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     // Sleep audio processing
     freedvTask_.sleep();
+    audioMixer_.sleep();
     
     // TBD - sleep other tasks.
 

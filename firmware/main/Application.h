@@ -20,6 +20,7 @@
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+#include "audio/AudioMixer.h"
 #include "audio/FreeDVTask.h"
 #include "driver/ButtonArray.h"
 #include "driver/ButtonMessage.h"
@@ -45,6 +46,7 @@ protected:
     
 private:
     DVTimer timer_;
+    audio::AudioMixer audioMixer_;
     audio::FreeDVTask freedvTask_;
     driver::ButtonArray buttonArray_;
     driver::I2CDevice i2cDevice_;

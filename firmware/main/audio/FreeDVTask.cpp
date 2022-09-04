@@ -77,11 +77,6 @@ void FreeDVTask::onTimerTick_()
 {
     //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
 
-    /*struct FIFO* leftInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
-    struct FIFO* rightInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
-    struct FIFO* leftOutputFifo = getAudioOutput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
-    struct FIFO* rightOutputFifo = getAudioOutput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);*/
-
     struct FIFO* codecInputFifo = nullptr;
     struct FIFO* codecOutputFifo = nullptr;
     if (isTransmitting_)
@@ -191,6 +186,30 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message)
 {
     isTransmitting_ = message->pttState;
+
+    struct FIFO* leftInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
+    struct FIFO* rightInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
+
+    // Reset fifos by just reading all the contained data.
+    // TBD -- there really should be a reset function in codec2
+    int bytesUsed = codec2_fifo_used(leftInputFifo);
+    if (bytesUsed > 0)
+    {
+        short* tmp = new short[bytesUsed];
+        assert(tmp != nullptr);
+        codec2_fifo_read(leftInputFifo, tmp, bytesUsed);
+        delete tmp;
+    }
+
+    bytesUsed = codec2_fifo_used(rightInputFifo);
+    if (bytesUsed > 0)
+    {
+        short* tmp = new short[bytesUsed];
+        assert(tmp != nullptr);
+        codec2_fifo_read(rightInputFifo, tmp, bytesUsed);
+        delete tmp;
+    }
+
 }
 
 }
