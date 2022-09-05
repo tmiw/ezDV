@@ -139,7 +139,7 @@ void FreeDVTask::onTaskTick_()
                 auto timeBegin = esp_timer_get_time();
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
                 auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
+                ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
                 codec2_fifo_write(codecOutputFifo, outputBuf, nout);
                 nin = freedv_nin(dv_);
             }
