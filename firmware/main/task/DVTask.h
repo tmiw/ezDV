@@ -288,7 +288,12 @@ ResultMessageType* DVTask::waitFor(TickType_t ticksToWait, DVTask** origin)
     // Unsubscribe from the publish list if needed.
     if (!found)
     {
+        auto semRv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+        assert(semRv == pdTRUE);
+        
         SubscriberTasksByMessageType_.erase(publishIter);
+        
+        xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
     }
 
     // Reinject received messages so the normal message handling can handle them.
