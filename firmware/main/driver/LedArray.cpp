@@ -77,7 +77,7 @@ void LedArray::onSetLedState_(DVTask* origin, SetLedStateMessage* message)
         case SetLedStateMessage::LedLabel::PTT:
             pttLed_.setState(message->ledState);
             break;
-        case SetLedStateMessage::LedLabel::PTT_NPM:
+        case SetLedStateMessage::LedLabel::PTT_NPN:
             pttNpmLed_.setState(message->ledState);
             break;
         case SetLedStateMessage::LedLabel::SYNC:

@@ -544,7 +544,7 @@ CONFIG_SPI_SLAVE_ISR_IN_IRAM=y
 #
 # I2S Configuration
 #
-# CONFIG_I2S_ISR_IRAM_SAFE is not set
+CONFIG_I2S_ISR_IRAM_SAFE=y
 # CONFIG_I2S_SUPPRESS_DEPRECATE_WARN is not set
 # CONFIG_I2S_ENABLE_DEBUG_LOG is not set
 # end of I2S Configuration

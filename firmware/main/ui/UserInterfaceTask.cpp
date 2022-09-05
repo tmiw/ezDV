@@ -59,7 +59,7 @@ UserInterfaceTask::UserInterfaceTask()
 UserInterfaceTask::~UserInterfaceTask()
 {
     // Disable PTT
-    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPM, false);
+    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, false);
     publish(ledMessage);
     delete ledMessage;
 
@@ -130,7 +130,7 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
                 delete pttStateMessage;
 
                 // Enable LED and LED NPN so the radio itself starts transmitting
-                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPM, true);
+                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, true);
                 publish(ledMessage);
                 ledMessage->led = driver::SetLedStateMessage::PTT;
                 publish(ledMessage);
@@ -195,7 +195,7 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                 isTransmitting_ = false;
 
                 // Disable LED and LED NPN so the radio itself stops transmitting
-                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPM, false);
+                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, false);
                 publish(ledMessage);
                 ledMessage->led = driver::SetLedStateMessage::PTT;
                 publish(ledMessage);

@@ -47,7 +47,7 @@ public:
         SYNC,
         OVERLOAD,
         PTT,
-        PTT_NPM,
+        PTT_NPN,
         NETWORK
     };
 
