@@ -54,6 +54,8 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     , audio::AudioInput(2, 2)
     , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
+    , i2sTxDevice_(nullptr)
+    , i2sRxDevice_(nullptr)
 {
     // Register message handlers
     registerMessageHandler<storage::LeftChannelVolumeMessage>(this, &TLV320::onLeftChannelVolume_);
@@ -111,12 +113,6 @@ void TLV320::onTaskSleep_()
 {
     struct FIFO* leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
     struct FIFO* rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
-
-    // Flush any remaining audio.
-    while (codec2_fifo_used(leftChannelFifo) > 0 || codec2_fifo_used(rightChannelFifo) > 0)
-    {
-        onTaskTick_();
-    }
 
     // Stop reading from I2S.
     i2s_channel_disable(i2sRxDevice_);
@@ -237,7 +233,7 @@ void TLV320::initializeI2S_()
     chan_cfg.auto_clear = true;
     
     // Allocate a new full duplex channel and get the handles of the channels
-    i2s_new_channel(&chan_cfg, &i2sTxDevice_, &i2sRxDevice_);
+    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &i2sTxDevice_, &i2sRxDevice_));
 
     // Set up configuration for the I2S device:
     //     8 KHz sample rate

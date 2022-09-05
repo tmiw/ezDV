@@ -18,6 +18,7 @@
 #include "AudioMixer.h"
 
 #define AUDIO_MIXER_TIMER_TICK_US 10000
+#define AUDIO_MIXER_NUM_SAMPLES_PER_INTERVAL 160
 
 namespace ezdv
 {
@@ -69,11 +70,7 @@ void AudioMixer::onTimerTick_()
     struct FIFO* outputFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
 
     // Process on a sample by sample basis
-    int ctr = 
-        codec2_fifo_used(leftInputFifo) <= codec2_fifo_used(rightInputFifo) ?
-        codec2_fifo_used(leftInputFifo) :
-        codec2_fifo_used(rightInputFifo);
-
+    int ctr = AUDIO_MIXER_NUM_SAMPLES_PER_INTERVAL;
     short bufLeft;
     short bufRight;
     while (ctr-- > 0 && (codec2_fifo_used(leftInputFifo) > 0 || codec2_fifo_used(rightInputFifo) > 0))
