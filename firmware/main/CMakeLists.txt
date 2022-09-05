@@ -46,8 +46,6 @@ endif()
 include(FetchContent)
 message("Setting up Codec2...")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
-
 set(UNITTEST OFF)
 set(BUILD_SHARED_LIBS OFF)
 set(MICROCONTROLLER_BUILD ON)
@@ -81,6 +79,9 @@ set(LPCNET OFF CACHE BOOL "")
 add_subdirectory(${codec2_SOURCE_DIR} ${codec2_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 target_link_libraries(${COMPONENT_LIB} PUBLIC codec2)
-    
+
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
+target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion)
+
 # RISC-V ULP setup 
 ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
