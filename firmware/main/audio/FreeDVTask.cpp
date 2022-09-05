@@ -184,6 +184,27 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 
         dv_ = freedv_open(freedvApiMode);
         assert(dv_ != nullptr);
+        
+        // ESP32 doesn't like BPF for some reason. TBD
+        // Note: we may be able to work around the lack of BPF by using the 
+        // built in filtering on the TLV320 DAC. 
+        freedv_set_clip(dv_, 1);
+        freedv_set_tx_bpf(dv_, 1);
+        freedv_set_squelch_en(dv_, 1);
+        
+        switch (freedvApiMode)
+        {
+            case FREEDV_MODE_700D:
+                freedv_set_snr_squelch_thresh(dv_, -2.0);  /* squelch at -2.0 dB      */
+                break;
+            case FREEDV_MODE_700E:
+                // Note: clipping/BPF is req'd for 700E but the ESP32 can't use it right now.
+                /*freedv_set_clip(dv_, 1);
+                freedv_set_tx_bpf(dv_, 1);*/
+            default:
+                freedv_set_snr_squelch_thresh(dv_, 0.0);  /* squelch at 0.0 dB      */
+                break;
+        }
     }
 }
 
