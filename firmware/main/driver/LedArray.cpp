@@ -64,7 +64,7 @@ void LedArray::onTaskSleep_()
 
 void LedArray::onSetLedState_(DVTask* origin, SetLedStateMessage* message)
 {
-    ESP_LOGI(CURRENT_LOG_TAG, "LED %d now %d", (int)message->led, message->ledState);
+    //ESP_LOGI(CURRENT_LOG_TAG, "LED %d now %d", (int)message->led, message->ledState);
     
     switch(message->led)
     {

@@ -54,6 +54,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonReleasedMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onFreeDVSyncStateMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
