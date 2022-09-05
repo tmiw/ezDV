@@ -39,8 +39,9 @@ void DVTask::Initialize()
     assert(SubscriberTasksByMessageTypeSemaphore_ != nullptr);
 }
 
-DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize)
+DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
     : taskName_(taskName)
+    , taskTick_(taskTick)
 {
     // Create task event queue
     taskQueue_ = xQueueCreate(taskQueueSize, sizeof(MessageEntry*));
@@ -232,7 +233,7 @@ void DVTask::threadEntry_()
     for (;;)
     {
         MessageEntry* entry = nullptr;
-        while (xQueueReceive(taskQueue_, &entry, pdMS_TO_TICKS(20)) == pdTRUE)
+        while (xQueueReceive(taskQueue_, &entry, taskTick_) == pdTRUE)
         {
             auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
             EventMap::iterator iter = iterPair.first;
