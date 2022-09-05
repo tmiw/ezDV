@@ -120,10 +120,10 @@ void FreeDVTask::onTaskTick_()
             int rv = codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples);
             if (rv == 0)
             {
-                auto timeBegin = esp_timer_get_time();
+                //auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
-                auto timeEnd = esp_timer_get_time();
-                ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
+                //auto timeEnd = esp_timer_get_time();
+                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
                 codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
             }
         }
@@ -136,10 +136,10 @@ void FreeDVTask::onTaskTick_()
             int rv = codec2_fifo_read(codecInputFifo, inputBuf, nin);
             if (rv == 0)
             {
-                auto timeBegin = esp_timer_get_time();
+                //auto timeBegin = esp_timer_get_time();
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
-                auto timeEnd = esp_timer_get_time();
-                ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
+                //auto timeEnd = esp_timer_get_time();
+                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
                 codec2_fifo_write(codecOutputFifo, outputBuf, nout);
                 nin = freedv_nin(dv_);
             }
@@ -198,6 +198,7 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
                 freedv_set_tx_bpf(dv_, 1);
                 freedv_set_squelch_en(dv_, 1);
                 freedv_set_snr_squelch_thresh(dv_, 1);  /* squelch at 1.0 dB      */
+                break;
             case FREEDV_MODE_1600:
                 freedv_set_clip(dv_, 0);
                 freedv_set_tx_bpf(dv_, 0);

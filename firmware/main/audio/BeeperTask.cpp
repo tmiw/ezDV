@@ -31,7 +31,7 @@
 
 // Found via experimentation
 #define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS*0.9))
-#define BEEPER_TIMER_TICK_US (CW_TIME_UNIT_MS * 1000)
+#define BEEPER_TIMER_TICK_US (BEEPER_TIMER_TICK_MS * 1000)
 
 #define CURRENT_LOG_TAG ("BeeperTask")
 
