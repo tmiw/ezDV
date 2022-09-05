@@ -104,6 +104,9 @@ void App::onTaskStart_()
     // Start UI
     uiTask_.start();
     waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
+    
+    // Start Wi-Fi
+    wirelessTask_.start();
 
     // Start storage handling
     settingsTask_.start();
@@ -145,6 +148,9 @@ void App::onTaskWake_()
     // Wake UI
     uiTask_.wake();
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
+    
+    // Wake Wi-Fi
+    wirelessTask_.wake();
 
     // Wake storage handling
     settingsTask_.wake();
@@ -154,6 +160,9 @@ void App::onTaskSleep_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
 
+    // Sleep Wi-Fi
+    wirelessTask_.sleep();
+    
     // Sleep UI
     uiTask_.sleep();
     waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));

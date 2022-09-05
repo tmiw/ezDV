@@ -14,6 +14,7 @@ set(SOURCES
     "driver/LedMessage.cpp"
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
+    "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
     "task/DVTask.cpp"
@@ -36,6 +37,7 @@ if(${ESP_PLATFORM})
                                 ulp
                                 soc
                                 esp_timer
+                                esp_wifi
                                 driver
                                 nvs_flash)
 

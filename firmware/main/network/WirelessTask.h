@@ -15,51 +15,37 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EZDV_APPLICATION_H
-#define EZDV_APPLICATION_H
+#ifndef WIRELESS_TASK_H
+#define WIRELESS_TASK_H
 
 #include "task/DVTask.h"
-#include "task/DVTimer.h"
-#include "audio/AudioMixer.h"
-#include "audio/BeeperTask.h"
-#include "audio/FreeDVTask.h"
-#include "driver/ButtonArray.h"
-#include "driver/ButtonMessage.h"
-#include "driver/I2CDevice.h"
-#include "driver/LedArray.h"
-#include "driver/TLV320.h"
-#include "network/WirelessTask.h"
-#include "storage/SettingsTask.h"
-#include "ui/UserInterfaceTask.h"
-
-using namespace ezdv::task;
 
 namespace ezdv
 {
 
-class App : public DVTask
+namespace network
+{
+
+using namespace ezdv::task;
+
+/// @brief Handles wireless  Represents a task in the application.
+class WirelessTask : public DVTask
 {
 public:
-    App();
-
+    WirelessTask();
+    virtual ~WirelessTask();
+    
 protected:
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;
     virtual void onTaskSleep_() override;
     
 private:
-    audio::AudioMixer audioMixer_;
-    audio::BeeperTask beeperTask_;
-    audio::FreeDVTask freedvTask_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::LedArray ledArray_;
-    driver::TLV320 tlv320Device_;
-    network::WirelessTask wirelessTask_;
-    storage::SettingsTask settingsTask_;
-    ui::UserInterfaceTask uiTask_;
+    void enableWifi_();
 };
 
 }
 
-#endif // EZDV_APPLICATION_H
+}
+
+#endif // WIRELESS_TASK_H
