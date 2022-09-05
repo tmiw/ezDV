@@ -18,6 +18,8 @@
 #ifndef WIRELESS_TASK_H
 #define WIRELESS_TASK_H
 
+#include "esp_http_server.h"
+
 #include "task/DVTask.h"
 
 namespace ezdv
@@ -41,7 +43,12 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
+    httpd_handle_t configServerHandle_;
+    
     void enableWifi_();
+    void disableWifi_();
+    void enableHttp_();
+    void disableHttp_();
 };
 
 }

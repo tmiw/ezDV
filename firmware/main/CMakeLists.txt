@@ -36,6 +36,7 @@ if(${ESP_PLATFORM})
                                 esp-dsp
                                 ulp
                                 soc
+                                esp_http_server
                                 esp_timer
                                 esp_wifi
                                 driver

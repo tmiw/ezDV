@@ -48,16 +48,19 @@ WirelessTask::~WirelessTask()
 void WirelessTask::onTaskStart_()
 {
     enableWifi_();
+    enableHttp_();
 }
 
 void WirelessTask::onTaskWake_()
 {
     enableWifi_();
+    enableHttp_();
 }
 
 void WirelessTask::onTaskSleep_()
 {
-    
+    disableHttp_();
+    disableWifi_();
 }
 
 void WirelessTask::enableWifi_()
@@ -90,6 +93,42 @@ void WirelessTask::enableWifi_()
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+}
+
+void WirelessTask::disableWifi_()
+{
+    ESP_ERROR_CHECK(esp_wifi_stop());
+}
+
+static esp_err_t HelloWorld(httpd_req_t *req)
+{
+    httpd_resp_send(req, "hello world", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static httpd_uri_t rootPage = 
+{
+    .uri = "/",
+    .method = HTTP_GET,
+    .handler = &HelloWorld,
+    .user_ctx = nullptr
+};
+
+void WirelessTask::enableHttp_()
+{
+    // Generate default configuration
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    
+    // Start HTTP server.
+    ESP_ERROR_CHECK(httpd_start(&configServerHandle_, &config));
+    
+    // Configure URL handlers.
+    httpd_register_uri_handler(configServerHandle_, &rootPage);
+}
+
+void WirelessTask::disableHttp_()
+{
+    ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
 }
 
 }
