@@ -167,7 +167,7 @@ void App::onTaskSleep_()
 
     // Sleep audio processing
     beeperTask_.sleep();
-    waitForSleep(&beeperTask_, pdMS_TO_TICKS(2000));
+    waitForSleep(&beeperTask_, pdMS_TO_TICKS(3000));
 
     freedvTask_.sleep();
     waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));

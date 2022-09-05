@@ -35,10 +35,10 @@ namespace ui
 {
 
 static std::map<audio::SetFreeDVModeMessage::FreeDVMode, std::string> ModeList_ = {
-    { audio::SetFreeDVModeMessage::ANALOG, "ANA" },
-    { audio::SetFreeDVModeMessage::FREEDV_700D, "700D" },
-    { audio::SetFreeDVModeMessage::FREEDV_700E, "700E" },
-    { audio::SetFreeDVModeMessage::FREEDV_1600, "1600" },
+    { audio::SetFreeDVModeMessage::ANALOG, "  ANA" },
+    { audio::SetFreeDVModeMessage::FREEDV_700D, "  700D" },
+    { audio::SetFreeDVModeMessage::FREEDV_700E, "  700E" },
+    { audio::SetFreeDVModeMessage::FREEDV_1600, "  1600" },
 };
 
 UserInterfaceTask::UserInterfaceTask()
@@ -109,7 +109,7 @@ void UserInterfaceTask::onTaskSleep_()
 
     // Send goodbye message to beeper. The extra spaces are to give a bit more timing
     // so the beeper doesn't step on itself.
-    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("  73");
+    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("  73  ");
     publish(beeperMessage);
     delete beeperMessage;
 }
