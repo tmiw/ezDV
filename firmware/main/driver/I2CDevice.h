@@ -42,14 +42,14 @@ public:
     /// @param registerAddress The register on the device to update.
     /// @param val The bytes to write to the register.
     /// @param size The size of the provided buffer in bytes.
-    void writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* val, uint8_t size);
+    bool writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* val, uint8_t size);
 
     /// @brief Reads bytes from a given I2C device's register.
     /// @param i2cAddress The address of the device to manipulate.
     /// @param registerAddress The register on the device to start reading from.
     /// @param buffer The buffer in which to store the bytes read.
     /// @param size The number of bytes to read from the register.
-    void readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* buffer, uint8_t size);
+    bool readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* buffer, uint8_t size);
 
 private:
     SemaphoreHandle_t i2cDeviceSemaphore_;

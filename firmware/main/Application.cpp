@@ -28,6 +28,7 @@ namespace ezdv
 {
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
+    , max17048_(&i2cDevice_)
     , tlv320Device_(&i2cDevice_)
 {
     // Link TLV320 output FIFOs to FreeDVTask
@@ -91,6 +92,7 @@ void App::onTaskStart_()
     waitForStart(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.start();
+    max17048_.start();
     
     // Start audio processing
     freedvTask_.start();
@@ -136,6 +138,7 @@ void App::onTaskWake_()
     waitForAwake(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.wake();
+    max17048_.wake();
 
     // Wake audio processing
     freedvTask_.wake();
@@ -188,6 +191,7 @@ void App::onTaskSleep_()
     tlv320Device_.sleep();
     waitForSleep(&tlv320Device_, pdMS_TO_TICKS(2000));
 
+    max17048_.sleep();
     buttonArray_.sleep();
     ledArray_.sleep();
     waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));

@@ -75,7 +75,7 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange)
 {
     ESP_ERROR_CHECK(gpio_reset_pin(NumGPIO));
     ESP_ERROR_CHECK(gpio_set_direction(NumGPIO, GPIO_MODE_INPUT));
-    ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_FLOATING));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
 
     enableInterrupt(false);
 

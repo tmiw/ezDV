@@ -12,6 +12,7 @@ set(SOURCES
     "driver/I2CDevice.cpp"
     "driver/LedArray.cpp"
     "driver/LedMessage.cpp"
+    "driver/MAX17048.cpp"
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
     "network/WirelessTask.cpp"

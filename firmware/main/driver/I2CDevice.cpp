@@ -53,7 +53,7 @@ I2CDevice::~I2CDevice()
     vSemaphoreDelete(i2cDeviceSemaphore_);
 }
 
-void I2CDevice::writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* val, uint8_t size)
+bool I2CDevice::writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* val, uint8_t size)
 {
     xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(100));
 
@@ -65,20 +65,24 @@ void I2CDevice::writeBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t*
     i2c_master_write(cmd, val, size, I2C_MASTER_ACK);
     i2c_master_stop(cmd);
     
-    ESP_ERROR_CHECK(i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000)));
+    auto rv = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
     i2c_cmd_link_delete(cmd);
 
     xSemaphoreGive(i2cDeviceSemaphore_);
+    
+    return rv == ESP_OK;
 }
 
-void I2CDevice::readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* buffer, uint8_t size)
+bool I2CDevice::readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* buffer, uint8_t size)
 {
     xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(100));
 
     uint8_t regBuf[] = { registerAddress };
-    ESP_ERROR_CHECK(i2c_master_write_read_device(I2C_NUM_0, i2cAddress, regBuf, 1, buffer, size, pdMS_TO_TICKS(1000)));
+    auto rv = i2c_master_write_read_device(I2C_NUM_0, i2cAddress, regBuf, 1, buffer, size, pdMS_TO_TICKS(1000));
 
     xSemaphoreGive(i2cDeviceSemaphore_);
+    
+    return rv == ESP_OK;
 }
 
 } // namespace driver
