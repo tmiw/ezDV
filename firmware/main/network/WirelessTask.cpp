@@ -29,10 +29,10 @@
 #include "esp_http_server.h"
 #include "esp_mac.h"
 #include "esp_wifi.h"
-#include "esp_event.h"
 #include "esp_log.h"
 
 #include "WirelessTask.h"
+#include "NetworkMessage.h"
 
 #define DEFAULT_AP_NAME_PREFIX "ezDV "
 #define DEFAULT_AP_CHANNEL (1)
@@ -48,7 +48,24 @@ namespace ezdv
 
 namespace network
 {
+
+void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    WirelessTask* obj = (WirelessTask*)event_handler_arg;
     
+    switch (event_id)
+    {
+        case WIFI_EVENT_AP_START:
+        case WIFI_EVENT_STA_CONNECTED:
+            obj->onNetworkConnected_();
+            break;
+        case WIFI_EVENT_AP_STOP:
+        case WIFI_EVENT_STA_DISCONNECTED:
+            obj->onNetworkDisconnected_();
+            break;
+    }
+}
+
 WirelessTask::WirelessTask()
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 10)
 {
@@ -100,6 +117,14 @@ void WirelessTask::enableWifi_()
         },
     };
     
+    // Register event handler so we can notify the user on network
+    // status changes.
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &WiFiEventHandler_,
+                                                        this,
+                                                        NULL));
+                                                                
     // Append last two bytes of MAC address to SSID prefix.
     uint8_t mac[6];
     ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_AP, mac));
@@ -296,6 +321,18 @@ void WirelessTask::enableHttp_()
 void WirelessTask::disableHttp_()
 {
     ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
+}
+
+void WirelessTask::onNetworkConnected_()
+{
+    WirelessNetworkStatusMessage message(true);
+    publish(&message);
+}
+
+void WirelessTask::onNetworkDisconnected_()
+{
+    WirelessNetworkStatusMessage message(false);
+    publish(&message);
 }
 
 }

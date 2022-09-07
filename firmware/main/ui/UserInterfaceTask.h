@@ -22,6 +22,7 @@
 #include "task/DVTimer.h"
 #include "audio/FreeDVMessage.h"
 #include "driver/ButtonMessage.h"
+#include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
 
 namespace ezdv
@@ -45,12 +46,14 @@ protected:
 
 private:
     DVTimer volHoldTimer_;
+    DVTimer networkFlashTimer_;
     audio::SetFreeDVModeMessage::FreeDVMode currentMode_;
     bool isTransmitting_;
     bool isActive_;
     int8_t leftVolume_;
     int8_t rightVolume_;
     int8_t volIncrement_;
+    bool netLedStatus_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
@@ -64,6 +67,10 @@ private:
     void onLeftChannelVolumeMessage_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
     void onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message);
 
+    // Network state handling
+    void onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message);
+    void flashNetworkLight_();
+    
     // Timer handling
     void updateVolumeCommon_();
 };

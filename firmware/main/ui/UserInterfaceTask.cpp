@@ -22,6 +22,7 @@
 #include "driver/LedMessage.h"
 
 #define VOL_BUTTON_HOLD_TIMER_TICK_US 100000
+#define NET_LED_FLASH_TIMER_TICK_US 1000000
 
 #define CURRENT_LOG_TAG ("UserInterfaceTask")
 
@@ -44,17 +45,20 @@ static std::map<audio::SetFreeDVModeMessage::FreeDVMode, std::string> ModeList_ 
 UserInterfaceTask::UserInterfaceTask()
     : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
     , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US)
+    , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US)
     , currentMode_(audio::SetFreeDVModeMessage::ANALOG)
     , isTransmitting_(false)
     , isActive_(false)
     , leftVolume_(0)
     , rightVolume_(0)
     , volIncrement_(0)
+    , netLedStatus_(false)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonReleasedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onFreeDVSyncStateMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onNetworkStateChange_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -262,6 +266,34 @@ void UserInterfaceTask::updateVolumeCommon_()
     // Start hold timer
     volHoldTimer_.stop();
     volHoldTimer_.start(true);
+}
+
+void UserInterfaceTask::onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message)
+{
+    // TBD: radio connection should be solid blue; Wi-Fi connections without radio connections
+    // should be blinking blue.
+    if (message->state)
+    {
+        networkFlashTimer_.start();
+    }
+    else
+    {
+        networkFlashTimer_.stop();
+        
+        netLedStatus_ = false;
+        driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
+        publish(ledMessage);
+        delete ledMessage;
+    }
+}
+
+void UserInterfaceTask::flashNetworkLight_()
+{
+    netLedStatus_ = !netLedStatus_;
+    
+    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
+    publish(ledMessage);
+    delete ledMessage;
 }
 
 }

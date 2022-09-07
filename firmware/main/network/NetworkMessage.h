@@ -15,13 +15,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WIRELESS_TASK_H
-#define WIRELESS_TASK_H
+#ifndef NETWORK_MESSAGE_H
+#define NETWORK_MESSAGE_H
 
-#include "esp_event.h"
-#include "esp_http_server.h"
+#include "task/DVTaskMessage.h"
 
-#include "task/DVTask.h"
+extern "C"
+{
+    DV_EVENT_DECLARE_BASE(NETWORK_MESSAGE);
+}
 
 namespace ezdv
 {
@@ -31,34 +33,30 @@ namespace network
 
 using namespace ezdv::task;
 
-/// @brief Handles wireless  Represents a task in the application.
-class WirelessTask : public DVTask
+enum NetworkMessageTypes
 {
-public:
-    WirelessTask();
-    virtual ~WirelessTask();
-    
-protected:
-    virtual void onTaskStart_() override;
-    virtual void onTaskWake_() override;
-    virtual void onTaskSleep_() override;
-    
-private:
-    httpd_handle_t configServerHandle_;
-    
-    void enableWifi_();
-    void disableWifi_();
-    void enableHttp_();
-    void disableHttp_();
-    
-    void onNetworkConnected_();
-    void onNetworkDisconnected_();
-    
-    static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    WIRELESS_NETWORK_STATUS = 1,
+    RADIO_CONNECTION_STATUS = 2,
 };
 
-}
+template<uint32_t MSG_ID>
+class NetworkMessageCommon : public DVTaskMessageBase<MSG_ID, NetworkMessageCommon<MSG_ID>>
+{
+public:
+    NetworkMessageCommon(bool stateProvided = false)
+        : DVTaskMessageBase<MSG_ID, NetworkMessageCommon<MSG_ID>>(NETWORK_MESSAGE)
+        , state(stateProvided)
+        {}
+    virtual ~NetworkMessageCommon() = default;
+
+    bool state;
+};
+
+using WirelessNetworkStatusMessage = NetworkMessageCommon<WIRELESS_NETWORK_STATUS>;
+using RadioConnectionStatusMessage = NetworkMessageCommon<RADIO_CONNECTION_STATUS>;
 
 }
 
-#endif // WIRELESS_TASK_H
+}
+
+#endif // LED_MESSAGE_H

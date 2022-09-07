@@ -15,6 +15,7 @@ set(SOURCES
     "driver/MAX17048.cpp"
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
+    "network/NetworkMessage.cpp"
     "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
