@@ -151,6 +151,8 @@ void TLV320::onTaskTick_()
     if (codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL || 
         codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL)
     {
+        memset(tempData, 0, sizeof(tempData));
+        
         for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
         {
             codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
