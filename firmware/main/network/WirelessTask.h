@@ -31,7 +31,7 @@ namespace network
 
 using namespace ezdv::task;
 
-/// @brief Handles wireless  Represents a task in the application.
+/// @brief Handles wireless setup in the application.
 class WirelessTask : public DVTask
 {
 public:
