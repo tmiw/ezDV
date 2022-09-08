@@ -22,8 +22,8 @@
 // 5% battery SOC alert threshold (0b00000 = 32%, 0b11111 = 1%)
 #define EMPTY_ALERT_THRESHOLD (0x1B)
 
-// VRESET = 2.5V
-#define VRESET_VAL (0x7D)
+// VRESET = 3V
+#define VRESET_VAL (0x4B)
 
 // I2C address of the 17048.
 #define I2C_ADDRESS (0b0110110)
@@ -71,11 +71,20 @@ void MAX17048::onTaskStart_()
     if (deviceExists_())
     {
         enabled_ = true;
-        if (needsConfiguration_())
+        
+        //if (needsConfiguration_())
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Device reset, configuration required.");
             configureDevice_();
         }
+        
+        // Clear status register to indicate that we're
+        // done configuring ourselves/reset interrupt.
+        auto val = 0;
+        auto rv = writeInt16Reg_(REG_STATUS, val);
+        assert(rv == true);
+        
+        batAlertGpio_.enableInterrupt(true);
     }
     else
     {
@@ -102,12 +111,16 @@ void MAX17048::onTaskTick_()
         uint16_t voltage = 0;
         uint16_t soc = 0;
         uint16_t socChangeRate = 0;
+        uint16_t status = 0;
+        uint16_t config = 0;
         bool success = readInt16Reg_(REG_VCELL, &voltage);
         success &= readInt16Reg_(REG_SOC, &soc);
         success &= readInt16Reg_(REG_CRAT, &socChangeRate);
+        success &= readInt16Reg_(REG_STATUS, &status);
+        success &= readInt16Reg_(REG_CONFIG, &config);
         assert(success);
         
-        ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: V = %x, SOC = %x, CRATE = %x", voltage, soc, socChangeRate);
+        ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, voltage * 0.000078125, soc / 256.0, (int16_t)socChangeRate * 0.208);
     }
 }
 
@@ -116,8 +129,8 @@ bool MAX17048::writeInt16Reg_(uint8_t reg, uint16_t val)
     // Data is MSB first.
     uint8_t data[] = 
     {
-        (val & 0xF0) >> 8,
-        (uint8_t)(val & 0x0F)
+        (uint8_t)((val & 0xFF00) >> 8),
+        (uint8_t)(val & 0x00FF)
     };
     
     return i2cDevice_->writeBytes(I2C_ADDRESS, reg, data, sizeof(uint16_t));
@@ -164,19 +177,14 @@ void MAX17048::configureDevice_()
     //    Default RCOMP = 0x97 per datasheet
     //    Enable SOC change alert
     //    Low battery threshold
-    uint16_t val = (0x97 << 8) | (1 << 6) | EMPTY_ALERT_THRESHOLD;
+    uint16_t val = 0x9700 | (1 << 6) | EMPTY_ALERT_THRESHOLD;
+    ESP_LOGI(CURRENT_LOG_TAG, "setting REG_CONFIG to %x", val);
     auto rv = writeInt16Reg_(REG_CONFIG, val);
     assert(rv == true);
     
     // Set VRESET threshold.
     val = (EMPTY_ALERT_THRESHOLD << 8);
     rv = writeInt16Reg_(REG_VRESET, val);
-    assert(rv == true);
-    
-    // Clear status register to indicate that we're
-    // done configuring ourselves.
-    val = 0;
-    rv = writeInt16Reg_(REG_STATUS, val);
     assert(rv == true);
     
     ESP_LOGI(CURRENT_LOG_TAG, "Device configured.");
@@ -196,7 +204,7 @@ void MAX17048::onInterrupt_(bool val)
         bool voltageLow = (val & (1 << 10)) != 0;
         bool voltageReset = (val & (1 << 11)) != 0;
         bool socLow = (val & (1 << 12)) != 0;
-        bool socChange = (val & (1 << 12)) != 0;
+        bool socChange = (val & (1 << 13)) != 0;
         
         ESP_LOGI(
             CURRENT_LOG_TAG, 

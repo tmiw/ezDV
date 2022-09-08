@@ -92,6 +92,8 @@ void App::onTaskStart_()
     waitForStart(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.start();
+    waitForStart(&buttonArray_, pdMS_TO_TICKS(1000));
+    
     max17048_.start();
     
     // Start audio processing
@@ -138,6 +140,8 @@ void App::onTaskWake_()
     waitForAwake(&tlv320Device_, pdMS_TO_TICKS(10000));
 
     buttonArray_.wake();
+    waitForAwake(&buttonArray_, pdMS_TO_TICKS(1000));
+    
     max17048_.wake();
 
     // Wake audio processing
