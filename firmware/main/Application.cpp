@@ -253,7 +253,8 @@ extern "C" void app_main()
     esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
 
     /* not a wakeup from ULP, load the firmware */
-    if (cause != ESP_SLEEP_WAKEUP_ULP) {
+    ESP_LOGI(CURRENT_LOG_TAG, "Wakeup reason: %d", cause);
+    /*if (cause != ESP_SLEEP_WAKEUP_ULP) {
         // Perform initial startup actions because we may not be fully ready yet
         app->start();
 
@@ -262,7 +263,7 @@ extern "C" void app_main()
         ESP_LOGI(CURRENT_LOG_TAG, "Starting power off application");
         app->sleep();
     }
-    else
+    else*/
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Woken up via ULP, booting...");
         app->wake();
