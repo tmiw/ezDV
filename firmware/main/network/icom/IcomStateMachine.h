@@ -48,6 +48,9 @@ public:
 
     void sendUntracked(IcomPacket& packet);
 
+    std::string getUsername();
+    std::string getPassword();
+
 protected:
     virtual std::string getName_() = 0;
 

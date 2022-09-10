@@ -40,6 +40,16 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     // empty
 }
 
+std::string IcomStateMachine::getUsername()
+{
+    return username_;
+}
+
+std::string IcomStateMachine::getPassword()
+{
+    return password_;
+}
+
 uint32_t IcomStateMachine::getOurIdentifier()
 {
     return ourIdentifier_;
