@@ -31,7 +31,7 @@ namespace icom
 
 using namespace ezdv::task;
 
-class StateMachine;
+class IcomStateMachine;
 
 class IcomSocketTask : public DVTask
 {
@@ -55,8 +55,7 @@ protected:
     
 private:
     SocketType socketType_;
-    int socket_;
-    StateMachine* stateMachine_;
+    IcomStateMachine* stateMachine_;
 };
 
 }

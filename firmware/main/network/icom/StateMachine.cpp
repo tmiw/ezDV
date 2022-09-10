@@ -40,6 +40,11 @@ StateMachine::StateMachine(DVTask* owner)
     // empty
 }
 
+DVTask* StateMachine::getTask()
+{
+    return owner_;
+}
+
 std::string StateMachine::getName()
 {
     std::string retVal = getName_() + "/";

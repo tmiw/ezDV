@@ -15,11 +15,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ICOM_PROTOCOL_STATE_H
-#define ICOM_PROTOCOL_STATE_H
+#ifndef ICOM_STATE_MACHINE_H
+#define ICOM_STATE_MACHINE_H
 
-#include "StateMachineState.h"
+#include "StateMachine.h"
 #include "IcomPacket.h"
+
+using namespace ezdv::task;
 
 namespace ezdv
 {
@@ -30,26 +32,33 @@ namespace network
 namespace icom
 {
 
-class IcomStateMachine;
-
-class IcomProtocolState : public StateMachineState
+class IcomStateMachine : public StateMachine
 {
 public:
-    enum StateIdentifier
-    {
-        ARE_YOU_THERE,
-        ARE_YOU_READY,
-    };
+    IcomStateMachine(DVTask* owner);
+    virtual ~IcomStateMachine() = default;
 
-    IcomProtocolState(IcomStateMachine* parent);
-    virtual ~IcomProtocolState() = default;
+    uint32_t getOurIdentifier();
+    uint32_t getTheirIdentifier();
+    void setTheirIdentifier(uint32_t id);
 
-    virtual std::string getName() = 0;
+    void start(std::string ip, uint16_t port, std::string username, std::string password);
 
-    virtual void onReceivePacket(IcomPacket& packet);
+    void sendUntracked(IcomPacket& packet);
 
 protected:
-    IcomStateMachine* parent_;
+    virtual std::string getName_() = 0;
+
+private:
+    int socket_;
+
+    uint32_t ourIdentifier_;
+    uint32_t theirIdentifier_;
+
+    std::string ip_;
+    uint16_t port_;
+    std::string username_;
+    std::string password_;
 };
 
 }
@@ -58,4 +67,4 @@ protected:
 
 }
 
-#endif // ICOM_PROTOCOL_STATE_H
+#endif // ICOM_STATE_MACHINE_H

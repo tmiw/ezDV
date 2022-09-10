@@ -51,7 +51,8 @@ public:
     void transitionState(int newState);
 
     std::string getName();
-
+    DVTask* getTask();
+    
 protected:
     virtual std::string getName_() = 0;
 

@@ -15,6 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef ARE_YOU_THERE_STATE_H
+#define ARE_YOU_THERE_STATE_H
+
+#include "task/DVTimer.h"
 #include "IcomProtocolState.h"
 
 namespace ezdv
@@ -26,19 +30,31 @@ namespace network
 namespace icom
 {
 
-IcomProtocolState::IcomProtocolState(IcomStateMachine* parent)
-    : parent_(parent)
+using namespace ezdv::task;
+
+class AreYouThereState : public IcomProtocolState
 {
-    // empty
+public:
+    AreYouThereState(IcomStateMachine* parent);
+    virtual ~AreYouThereState() = default;
+
+    virtual void onEnterState() override;
+    virtual void onExitState() override;
+    
+    virtual std::string getName() override;
+
+    virtual void onReceivePacket(IcomPacket& packet) override;
+
+private:
+    DVTimer resendTimer_;
+
+    void retrySend_();
+};
+
 }
 
-void IcomProtocolState::onReceivePacket(IcomPacket& packet)
-{
-    // empty
 }
 
 }
 
-}
-
-}
+#endif // STATE_MACHINE_STATE_H

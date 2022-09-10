@@ -28,6 +28,8 @@
 #define MAX_PACKET_SIZE 1388
 
 // Various settings used by both client and server
+#define MS_TO_US(ms) (ms * 1000)
+
 #define PURGE_SECONDS 10
 #define TOKEN_RENEWAL 60000
 #define PING_PERIOD 500
