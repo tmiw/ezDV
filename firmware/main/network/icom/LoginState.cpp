@@ -21,6 +21,7 @@
 #include "LoginState.h"
 #include "IcomStateMachine.h"
 #include "RadioPacketDefinitions.h"
+#include "IcomMessage.h"
 
 namespace ezdv
 {
@@ -37,6 +38,10 @@ LoginState::LoginState(IcomStateMachine* parent)
     , ourTokenRequest_(0)
     , theirToken_(0)
     , authSequenceNumber_(0)
+    , civSocket_(0)
+    , audioSocket_(0)
+    , civPort_(0)
+    , audioPort_(0)
 {
     // empty
 }
@@ -49,6 +54,10 @@ void LoginState::onEnterState()
     ourTokenRequest_ = 0;
     theirToken_ = 0;
     authSequenceNumber_ = 0;
+    civSocket_ = 0;
+    audioSocket_ = 0;
+    civPort_ = 0;
+    audioPort_ = 0;
 
     // Login packet is only necessary on the control state machine.
     sendLoginPacket_();
@@ -80,8 +89,8 @@ void LoginState::onReceivePacket(IcomPacket& packet)
     bool isBusy;
     bool connSuccess;
     bool connDisconnected;
-    uint16_t civPort;
-    uint16_t audioPort;
+    uint16_t remoteCivPort;
+    uint16_t remoteAudioPort;
 
     if (packet.isLoginResponse(connType, isPasswordIncorrect, tokenRequest, radioToken))
     {
@@ -137,18 +146,18 @@ void LoginState::onReceivePacket(IcomPacket& packet)
         sendUseRadioPacket_(0);
         packetSent = true;
     }
-    else if (packet.isStatusPacket(connSuccess, connDisconnected, civPort, audioPort))
+    else if (packet.isStatusPacket(connSuccess, connDisconnected, remoteCivPort, remoteAudioPort))
     {
         if (connSuccess)
         {
             ESP_LOGI(
                 parent_->getName().c_str(), 
                 "Starting audio and CIV state machines using remote ports %d and %d",
-                audioPort,
-                civPort);
+                remoteAudioPort,
+                remoteCivPort);
             
-            // TBD: kick off audio/CIV tasks
-            //sm_.startCivAndAudioStateMachines(audioPort, civPort);
+            IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, civSocket_, audioPort_, remoteAudioPort, audioSocket_);
+            parent_->getTask()->publish(&message);
         }
         else if (connDisconnected)
         {
@@ -240,9 +249,9 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     
     socklen_t addressLength = sizeof(sin);
     getsockname(civSocket_, (struct sockaddr*)&sin, &addressLength);
-    int civPort = ntohs(sin.sin_port);
+    civPort_ = ntohs(sin.sin_port);
     
-    ESP_LOGI(parent_->getName().c_str(), "Local UDP port for CIV comms will be %d", civPort);
+    ESP_LOGI(parent_->getName().c_str(), "Local UDP port for CIV comms will be %d", civPort_);
     
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -252,9 +261,9 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     
     addressLength = sizeof(sin);
     getsockname(audioSocket_, (struct sockaddr*)&sin, &addressLength);
-    int audioPort = ntohs(sin.sin_port);
+    audioPort_ = ntohs(sin.sin_port);
     
-    ESP_LOGI(parent_->getName().c_str(), "Local UDP port for audio comms will be %d", audioPort);
+    ESP_LOGI(parent_->getName().c_str(), "Local UDP port for audio comms will be %d", audioPort_);
 
     IcomPacket packet(sizeof(conninfo_packet));
     auto typedPacket = packet.getTypedPacket<conninfo_packet>();
@@ -293,8 +302,8 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     typedPacket->txsample = ToBigEndian((uint32_t)8000);
     
     // CIV/audio local port numbers and latency
-    typedPacket->civport = ToBigEndian((uint32_t)civPort);
-    typedPacket->audioport = ToBigEndian((uint32_t)audioPort);
+    typedPacket->civport = ToBigEndian((uint32_t)civPort_);
+    typedPacket->audioport = ToBigEndian((uint32_t)audioPort_);
     typedPacket->txbuffer = ToBigEndian((uint32_t)150);
     typedPacket->convert = 1;
     

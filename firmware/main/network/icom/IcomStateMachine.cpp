@@ -77,7 +77,7 @@ void IcomStateMachine::sendUntracked(IcomPacket& packet)
     }
 }
 
-void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password)
+void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localSocket, int localPort)
 {
     ip_ = ip;
     port_ = port;
@@ -89,6 +89,32 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     radioAddress.sin_family = AF_INET;
     radioAddress.sin_port = htons(port_);
 
+    // Create and bind UDP socket to force the specified local port number.
+    if (localSocket != 0)
+    {
+        socket_ = localSocket;
+    }
+    else
+    {
+        if (localPort == 0)
+        {
+            localPort = port_;
+        }
+        
+        socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        assert(socket_ != -1);
+
+        struct sockaddr_in ourSocketAddress;
+        memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
+
+        ourSocketAddress.sin_family = AF_INET;
+        ourSocketAddress.sin_port = htons(localPort);
+        ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+            
+        auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
+        assert(rv != -1);
+    }
+
     // Generate our identifier by concatenating the last two octets of our IP
     // with the port we're using to connect. We bind to this port ourselves prior
     // to connection.
@@ -96,24 +122,10 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     ourIdentifier_ = 
         (((localIp >> 8) & 0xFF) << 24) | 
         ((localIp & 0xFF) << 16) |
-        (port & 0xFFFF);
-
-    // Create and bind UDP socket to force the specified local port number.
-    socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    assert(socket_ != -1);
-
-    struct sockaddr_in ourSocketAddress;
-    memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
-
-    ourSocketAddress.sin_family = AF_INET;
-    ourSocketAddress.sin_port = htons(port_);
-    ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-        
-    auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
-    assert(rv != -1);
+        (localPort & 0xFFFF);
 
     // Connect to the radio.
-    rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
+    auto rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
     assert(rv != -1);
 
     // We're now connected, start running the state machine.

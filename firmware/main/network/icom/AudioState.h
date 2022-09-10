@@ -15,9 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGIN_STATE_H
-#define LOGIN_STATE_H
+#ifndef AUDIO_STATE_H
+#define AUDIO_STATE_H
 
+#include "task/DVTimer.h"
 #include "TrackedPacketState.h"
 
 namespace ezdv
@@ -31,11 +32,11 @@ namespace icom
 
 using namespace ezdv::task;
 
-class LoginState : public TrackedPacketState
+class AudioState : public TrackedPacketState
 {
 public:
-    LoginState(IcomStateMachine* parent);
-    virtual ~LoginState() = default;
+    AudioState(IcomStateMachine* parent);
+    virtual ~AudioState() = default;
 
     virtual void onEnterState() override;
     virtual void onExitState() override;
@@ -45,25 +46,10 @@ public:
     virtual void onReceivePacket(IcomPacket& packet) override;
 
 private:
-    DVTimer tokenRenewTimer_;
-    std::vector<IcomPacket> radioCapabilities_;
-    uint32_t ourTokenRequest_;
-    uint32_t theirToken_;
-    uint16_t authSequenceNumber_;
-    int civSocket_;
-    int audioSocket_;
-    int civPort_;
-    int audioPort_;
+    DVTimer audioOutTimer_;
+    uint16_t audioSequenceNumber_;
 
-    void sendLoginPacket_();
-    void sendTokenAckPacket_(uint32_t theirToken);
-    void sendTokenRenewPacket_();
-    void sendUseRadioPacket_(int radioIndex);
-
-    void insertCapability_(radio_cap_packet_t radio);
-    void clearRadioCapabilities_();
-
-    void onTokenRenewTimer_();
+    void onAudioOutTimer_();
 };
 
 }
@@ -72,4 +58,4 @@ private:
 
 }
 
-#endif // LOGIN_STATE_H
+#endif // AUDIO_STATE_H
