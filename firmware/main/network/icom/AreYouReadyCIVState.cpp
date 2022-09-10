@@ -15,11 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ICOM_PROTOCOL_STATE_H
-#define ICOM_PROTOCOL_STATE_H
-
-#include "StateMachineState.h"
-#include "IcomPacket.h"
+#include "AreYouReadyCIVState.h"
+#include "IcomStateMachine.h"
 
 namespace ezdv
 {
@@ -30,35 +27,23 @@ namespace network
 namespace icom
 {
 
-class IcomStateMachine;
-
-class IcomProtocolState : public StateMachineState
+AreYouReadyCIVState::AreYouReadyCIVState(IcomStateMachine* parent)
+    : AreYouReadyState(parent)
 {
-public:
-    enum StateIdentifier
-    {
-        ARE_YOU_THERE,
-        ARE_YOU_READY,
-        LOGIN,
-        CIV,
-        AUDIO
-    };
+    // empty
+}
 
-    IcomProtocolState(IcomStateMachine* parent);
-    virtual ~IcomProtocolState() = default;
+void AreYouReadyCIVState::onReceivePacketImpl_(IcomPacket& packet)
+{
+    // Weirdly, we need to get the remote ID again here for CIV.
+    auto typedPacket = packet.getTypedPacket<control_packet>();
+    parent_->setTheirIdentifier(typedPacket->sentid);
 
-    virtual std::string getName() = 0;
-
-    virtual void onReceivePacket(IcomPacket& packet);
-
-protected:
-    IcomStateMachine* parent_;
-};
-
+    parent_->transitionState(IcomProtocolState::CIV);
 }
 
 }
 
 }
 
-#endif // ICOM_PROTOCOL_STATE_H
+}

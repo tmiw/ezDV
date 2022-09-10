@@ -53,6 +53,8 @@ public:
     std::string getName();
     DVTask* getTask();
     
+    StateMachineState* getCurrentState();
+
 protected:
     virtual std::string getName_() = 0;
 

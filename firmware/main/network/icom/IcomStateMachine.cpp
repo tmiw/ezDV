@@ -110,6 +110,11 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
+IcomProtocolState* IcomStateMachine::getProtocolState_()
+{
+    return static_cast<IcomProtocolState*>(getCurrentState());
+}
+
 }
 
 }

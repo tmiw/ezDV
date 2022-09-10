@@ -32,6 +32,8 @@ namespace network
 namespace icom
 {
 
+class IcomProtocolState;
+
 class IcomStateMachine : public StateMachine
 {
 public:
@@ -59,6 +61,8 @@ private:
     uint16_t port_;
     std::string username_;
     std::string password_;
+
+    IcomProtocolState* getProtocolState_();
 };
 
 }

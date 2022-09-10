@@ -15,11 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ICOM_PROTOCOL_STATE_H
-#define ICOM_PROTOCOL_STATE_H
+#ifndef ARE_YOU_READY_STATE_H
+#define ARE_YOU_READY_STATE_H
 
-#include "StateMachineState.h"
-#include "IcomPacket.h"
+#include "IcomProtocolState.h"
 
 namespace ezdv
 {
@@ -30,29 +29,21 @@ namespace network
 namespace icom
 {
 
-class IcomStateMachine;
-
-class IcomProtocolState : public StateMachineState
+class AreYouReadyState : public IcomProtocolState
 {
 public:
-    enum StateIdentifier
-    {
-        ARE_YOU_THERE,
-        ARE_YOU_READY,
-        LOGIN,
-        CIV,
-        AUDIO
-    };
+    AreYouReadyState(IcomStateMachine* parent);
+    virtual ~AreYouReadyState() = default;
 
-    IcomProtocolState(IcomStateMachine* parent);
-    virtual ~IcomProtocolState() = default;
+    virtual void onEnterState() override;
+    virtual void onExitState() override;
+    
+    virtual std::string getName() override;
 
-    virtual std::string getName() = 0;
-
-    virtual void onReceivePacket(IcomPacket& packet);
+    virtual void onReceivePacket(IcomPacket& packet) override;
 
 protected:
-    IcomStateMachine* parent_;
+    virtual void onReceivePacketImpl_(IcomPacket& packet) = 0;
 };
 
 }
@@ -61,4 +52,4 @@ protected:
 
 }
 
-#endif // ICOM_PROTOCOL_STATE_H
+#endif // STATE_MACHINE_STATE_H

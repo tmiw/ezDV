@@ -45,6 +45,11 @@ DVTask* StateMachine::getTask()
     return owner_;
 }
 
+StateMachineState* StateMachine::getCurrentState()
+{
+    return currentState_;
+}
+
 std::string StateMachine::getName()
 {
     std::string retVal = getName_() + "/";

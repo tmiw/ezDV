@@ -15,11 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ICOM_PROTOCOL_STATE_H
-#define ICOM_PROTOCOL_STATE_H
-
-#include "StateMachineState.h"
-#include "IcomPacket.h"
+#include "AreYouReadyAudioState.h"
+#include "IcomStateMachine.h"
 
 namespace ezdv
 {
@@ -30,35 +27,28 @@ namespace network
 namespace icom
 {
 
-class IcomStateMachine;
-
-class IcomProtocolState : public StateMachineState
+AreYouReadyAudioState::AreYouReadyAudioState(IcomStateMachine* parent)
+    : AreYouReadyState(parent)
 {
-public:
-    enum StateIdentifier
-    {
-        ARE_YOU_THERE,
-        ARE_YOU_READY,
-        LOGIN,
-        CIV,
-        AUDIO
-    };
+    // empty
+}
 
-    IcomProtocolState(IcomStateMachine* parent);
-    virtual ~IcomProtocolState() = default;
+void AreYouReadyAudioState::onEnterState()
+{
+    AreYouReadyState::onEnterState();
 
-    virtual std::string getName() = 0;
+    // If we're an audio state machine, we're already getting audio at this point.
+    // We can go straight to the main state and handle the I Am Ready response there.
+    parent_->transitionState(IcomProtocolState::AUDIO);
+}
 
-    virtual void onReceivePacket(IcomPacket& packet);
-
-protected:
-    IcomStateMachine* parent_;
-};
-
+void AreYouReadyAudioState::onReceivePacketImpl_(IcomPacket& packet)
+{
+    // empty
 }
 
 }
 
 }
 
-#endif // ICOM_PROTOCOL_STATE_H
+}
