@@ -72,6 +72,11 @@ void StateMachine::transitionState(int newState)
     owner_->post(&message);
 }
 
+void StateMachine::addState_(int stateId, StateMachineState* state)
+{
+    stateIdToStateMap_[stateId] = state;
+}
+
 void StateMachine::onStateMachineTransition_(DVTask* origin, StateMachineTransitionMessage* message)
 {
     StateMachineState* newState = stateIdToStateMap_[message->newState];

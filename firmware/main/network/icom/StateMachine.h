@@ -58,6 +58,8 @@ public:
 protected:
     virtual std::string getName_() = 0;
 
+    void addState_(int stateId, StateMachineState* state);
+    
 private:
     class StateMachineTransitionMessage : public DVTaskMessageBase<1, StateMachineTransitionMessage>
     {
