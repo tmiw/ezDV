@@ -20,6 +20,7 @@
 
 #include <string>
 #include "task/DVTask.h"
+#include "IcomMessage.h"
 
 namespace ezdv
 {
@@ -57,6 +58,10 @@ protected:
 private:
     SocketType socketType_;
     IcomStateMachine* stateMachine_;
+    std::string ip_;
+    
+    void onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message);
+    void onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioConnectionInfo* message);
     
     static std::string GetTaskName_(SocketType socketType);
 };

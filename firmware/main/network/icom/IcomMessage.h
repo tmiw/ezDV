@@ -78,13 +78,30 @@ public:
     
     IcomConnectRadioMessage(
         char* ipProvided = nullptr,
+        int portProvided = 0,
         char* usernameProvided = nullptr,
         char* passwordProvided = nullptr)
         : DVTaskMessageBase<CONNECT_RADIO, IcomConnectRadioMessage>(ICOM_MESSAGE)
+        , port(portProvided)
     {
-        strncpy(ip, ipProvided, STR_SIZE - 1);
-        strncpy(username, usernameProvided, STR_SIZE - 1);
-        strncpy(password, passwordProvided, STR_SIZE - 1);
+        memset(ip, 0, STR_SIZE);
+        memset(username, 0, STR_SIZE);
+        memset(password, 0, STR_SIZE);
+        
+        if (ipProvided != nullptr)
+        {
+            strncpy(ip, ipProvided, STR_SIZE - 1);
+        }
+        
+        if (usernameProvided != nullptr)
+        {
+            strncpy(username, usernameProvided, STR_SIZE - 1);
+        }
+        
+        if (passwordProvided != nullptr)
+        {
+            strncpy(password, passwordProvided, STR_SIZE - 1);
+        }
         
         ip[STR_SIZE - 1] = 0;
         username[STR_SIZE - 1] = 0;
@@ -93,6 +110,7 @@ public:
     virtual ~IcomConnectRadioMessage() = default;
 
     char ip[STR_SIZE];
+    int port;
     char username[STR_SIZE];
     char password[STR_SIZE];
 };

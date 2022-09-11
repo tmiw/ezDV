@@ -22,6 +22,7 @@
 #include "esp_http_server.h"
 
 #include "task/DVTask.h"
+#include "icom/IcomSocketTask.h"
 
 namespace ezdv
 {
@@ -45,6 +46,9 @@ protected:
     
 private:
     httpd_handle_t configServerHandle_;
+    icom::IcomSocketTask icomControlTask_;
+    icom::IcomSocketTask icomAudioTask_;
+    icom::IcomSocketTask icomCIVTask_;
     
     void enableWifi_();
     void disableWifi_();

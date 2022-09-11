@@ -49,6 +49,9 @@ IcomSocketTask::IcomSocketTask(SocketType socketType)
     }
     
     assert(stateMachine_ != nullptr);
+    
+    registerMessageHandler(this, &IcomSocketTask::onIcomConnectRadioMessage_);
+    registerMessageHandler(this, &IcomSocketTask::onIcomCIVAudioConnectionInfo_);
 }
 
 IcomSocketTask::~IcomSocketTask()
@@ -75,7 +78,32 @@ void IcomSocketTask::onTaskTick_()
 {
     stateMachine_->readPendingPackets();
 }
-    
+
+void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message)
+{
+    if (socketType_ == CONTROL_SOCKET)
+    {
+        stateMachine_->start(message->ip, message->port, message->username, message->password);
+    }
+    else
+    {
+        // Save IP For later.
+        ip_ = message->ip;
+    }
+}
+
+void IcomSocketTask::onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioConnectionInfo* message)
+{
+    if (socketType_ == AUDIO_SOCKET)
+    {
+        stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort, message->audioSocket);
+    }
+    else if (socketType_ == CIV_SOCKET)
+    {
+        stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort, message->civSocket);
+    }
+}
+
 std::string IcomSocketTask::GetTaskName_(SocketType socketType)
 {
     std::string prefix = "IcomSocketTask/";
