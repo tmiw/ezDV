@@ -21,6 +21,7 @@ set(SOURCES
     "network/icom/AreYouReadyControlState.cpp"
     "network/icom/AreYouReadyState.cpp"
     "network/icom/AreYouThereState.cpp"
+    "network/icom/CIVState.cpp"
     "network/icom/IcomMessage.cpp"
     "network/icom/IcomPacket.cpp"
     "network/icom/IcomProtocolState.cpp"

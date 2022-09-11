@@ -166,21 +166,6 @@ void TrackedPacketState::sendPing_()
     parent_->sendUntracked(packet);
 }
 
-/*void TrackedPacketState::sendCIVOpenPacket_()
-{
-    ESP_LOGI(parent_->getName().c_str(), "Sending CIV open packet");
-    auto packet = IcomPacket::CreateCIVOpenClosePacket(civSequenceNumber_++, ourIdentifier_, theirIdentifier_, false);
-    sendTracked(packet);
-}
-
-void TrackedPacketState::sendCIVPacket_(uint8_t* civPacket, uint16_t civLength)
-{
-    ESP_LOGI(parent_->getName().c_str(), "Sending CIV data packet");
-    
-    auto packet = IcomPacket::CreateCIVPacket(ourIdentifier_, theirIdentifier_, civSequenceNumber_++, civPacket, civLength);
-    sendTracked(packet);
-}*/
-
 void TrackedPacketState::onPingTimer_()
 {
     // Ping timer fired. Send ping request.

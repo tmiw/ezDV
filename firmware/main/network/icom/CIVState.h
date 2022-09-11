@@ -15,11 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TRACKED_PACKET_STATE_H
-#define TRACKED_PACKET_STATE_H
+#ifndef CIV_STATE_H
+#define CIV_STATE_H
 
-#include "task/DVTimer.h"
-#include "IcomProtocolState.h"
+#include "TrackedPacketState.h"
 
 namespace ezdv
 {
@@ -32,39 +31,25 @@ namespace icom
 
 using namespace ezdv::task;
 
-class TrackedPacketState : public IcomProtocolState
+class CIVState : public TrackedPacketState
 {
 public:
-    TrackedPacketState(IcomStateMachine* parent);
-    virtual ~TrackedPacketState() = default;
+    CIVState(IcomStateMachine* parent);
+    virtual ~CIVState() = default;
 
     virtual void onEnterState() override;
     virtual void onExitState() override;
 
+    virtual std::string getName() override;
+
     virtual void onReceivePacket(IcomPacket& packet) override;
 
-protected:
-    DVTimer pingTimer_;
-    DVTimer idleTimer_;
-
-    void sendTracked_(IcomPacket& packet);
-
 private:
-    uint16_t pingSequenceNumber_;
-    uint16_t sendSequenceNumber_;
-
-    uint32_t numSavedBytesInPacketQueue_;
-
-    std::map<uint16_t, std::pair<uint64_t, IcomPacket> > sentPackets_;
-
-    void sendPing_();
-    void retransmitPacket_(uint16_t packet);
-
-    void onPingTimer_();
-    void onIdleTimer_();
-
-    void incrementPingSequence_(uint16_t pingSeq);
-
+    uint16_t civSequenceNumber_;
+    uint8_t civId_;
+    
+    void sendCIVOpenPacket_();
+    void sendCIVPacket_(uint8_t* packet, uint16_t size);
 };
 
 }
@@ -73,4 +58,4 @@ private:
 
 }
 
-#endif // TRACKED_PACKET_STATE_H
+#endif // LOGIN_STATE_H
