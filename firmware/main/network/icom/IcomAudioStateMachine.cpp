@@ -36,6 +36,11 @@ IcomAudioStateMachine::IcomAudioStateMachine(DVTask* owner)
     addState_(IcomProtocolState::ARE_YOU_READY, &areYouReadyState_);
     addState_(IcomProtocolState::AUDIO, &audioState_);
 }
+
+std::string IcomAudioStateMachine::getName_()
+{
+    return "IcomAudio";
+}
     
 }
 

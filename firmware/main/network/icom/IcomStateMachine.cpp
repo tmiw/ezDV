@@ -136,6 +136,14 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
 
 void IcomStateMachine::readPendingPackets()
 {
+    auto state = getProtocolState_();
+    
+    // Skip processing if we're not connected yet.
+    if (state == nullptr)
+    {
+        return;
+    }
+    
     fd_set readSet;
     struct timeval tv = {0, 0};
     
@@ -151,7 +159,7 @@ void IcomStateMachine::readPendingPackets()
         if (rv > 0)
         {
             // Forward packet to current state for processing.
-            getProtocolState_()->onReceivePacket(packet);
+            state->onReceivePacket(packet);
         }
         
         // Reinitialize the read set for the next pass.

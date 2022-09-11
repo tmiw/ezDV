@@ -18,6 +18,7 @@
 #ifndef ICOM_MESSAGE_H
 #define ICOM_MESSAGE_H
 
+#include <cstring>
 #include "task/DVTaskMessage.h"
 
 extern "C"
@@ -39,6 +40,7 @@ using namespace ezdv::task;
 enum IcomMessageTypes
 {
     CIV_AUDIO_CONN_INFO = 1,
+    CONNECT_RADIO = 2,
 };
 
 class IcomCIVAudioConnectionInfo : public DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>
@@ -65,8 +67,34 @@ public:
     int remoteCivPort;
     int civSocket;
     int localAudioPort;
-    int remoteAudioPort;
+    int remoteAudioPort; 
     int audioSocket;
+};
+
+class IcomConnectRadioMessage : public DVTaskMessageBase<CONNECT_RADIO, IcomConnectRadioMessage>
+{
+public:
+    static const int STR_SIZE = 32;
+    
+    IcomConnectRadioMessage(
+        char* ipProvided = nullptr,
+        char* usernameProvided = nullptr,
+        char* passwordProvided = nullptr)
+        : DVTaskMessageBase<CONNECT_RADIO, IcomConnectRadioMessage>(ICOM_MESSAGE)
+    {
+        strncpy(ip, ipProvided, STR_SIZE - 1);
+        strncpy(username, usernameProvided, STR_SIZE - 1);
+        strncpy(password, passwordProvided, STR_SIZE - 1);
+        
+        ip[STR_SIZE - 1] = 0;
+        username[STR_SIZE - 1] = 0;
+        password[STR_SIZE - 1] = 0;
+    }
+    virtual ~IcomConnectRadioMessage() = default;
+
+    char ip[STR_SIZE];
+    char username[STR_SIZE];
+    char password[STR_SIZE];
 };
 
 }

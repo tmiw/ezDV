@@ -28,6 +28,7 @@ set(SOURCES
     "network/icom/IcomMessage.cpp"
     "network/icom/IcomPacket.cpp"
     "network/icom/IcomProtocolState.cpp"
+    "network/icom/IcomSocketTask.cpp"
     "network/icom/IcomStateMachine.cpp"
     "network/icom/LoginState.cpp"
     "network/icom/StateMachine.cpp"

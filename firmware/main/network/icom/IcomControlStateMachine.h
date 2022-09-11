@@ -38,6 +38,9 @@ class IcomControlStateMachine : public IcomStateMachine
 public:
     IcomControlStateMachine(DVTask* owner);
     virtual ~IcomControlStateMachine() = default;
+
+protected:
+    virtual std::string getName_() override;
     
 private:
     AreYouThereState areYouThereState_;

@@ -39,6 +39,9 @@ public:
     IcomAudioStateMachine(DVTask* owner);
     virtual ~IcomAudioStateMachine() = default;
     
+protected:
+    virtual std::string getName_() override;
+    
 private:
     AreYouThereState areYouThereState_;
     AreYouReadyAudioState areYouReadyState_;

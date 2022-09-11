@@ -18,6 +18,7 @@
 #ifndef ICOM_SOCKET_TASK_H
 #define ICOM_SOCKET_TASK_H
 
+#include <string>
 #include "task/DVTask.h"
 
 namespace ezdv
@@ -44,7 +45,7 @@ public:
     };
 
     IcomSocketTask(SocketType socketType);
-    virtual ~IcomSocketTask() = default;
+    virtual ~IcomSocketTask();
 
 protected:
     virtual void onTaskStart_() override;
@@ -56,6 +57,8 @@ protected:
 private:
     SocketType socketType_;
     IcomStateMachine* stateMachine_;
+    
+    static std::string GetTaskName_(SocketType socketType);
 };
 
 }

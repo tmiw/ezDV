@@ -36,6 +36,11 @@ IcomControlStateMachine::IcomControlStateMachine(DVTask* owner)
     addState_(IcomProtocolState::ARE_YOU_READY, &areYouReadyState_);
     addState_(IcomProtocolState::LOGIN, &loginState_);
 }
+
+std::string IcomControlStateMachine::getName_()
+{
+    return "IcomControl";
+}
     
 }
 
