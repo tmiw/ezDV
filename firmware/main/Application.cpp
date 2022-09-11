@@ -30,6 +30,7 @@ App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
     , max17048_(&i2cDevice_)
     , tlv320Device_(&i2cDevice_)
+    , wirelessTask_(&freedvTask_, &tlv320Device_)
 {
     // Link TLV320 output FIFOs to FreeDVTask
     tlv320Device_.setAudioOutput(

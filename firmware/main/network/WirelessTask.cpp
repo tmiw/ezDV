@@ -66,13 +66,15 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     }
 }
 
-WirelessTask::WirelessTask()
+WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 10)
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
+    , freedvHandler_(freedvHandler)
+    , tlv320Handler_(tlv320Handler)
 {
-    // empty
+    registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
 }
 
 WirelessTask::~WirelessTask()
@@ -348,6 +350,29 @@ void WirelessTask::onNetworkDisconnected_()
 {
     WirelessNetworkStatusMessage message(false);
     publish(&message);
+}
+
+void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message)
+{
+    if (message->state)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "rerouting audio pipes to network");
+        
+        tlv320Handler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::RIGHT_CHANNEL,
+            nullptr
+        );
+        
+        icomAudioTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+            freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+        );
+        
+        freedvHandler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+            icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+        );
+    }
 }
 
 }

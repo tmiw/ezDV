@@ -111,9 +111,6 @@ void TLV320::onTaskWake_()
 
 void TLV320::onTaskSleep_()
 {
-    struct FIFO* leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
-    struct FIFO* rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
-
     // Stop reading from I2S.
     i2s_channel_disable(i2sRxDevice_);
     i2s_channel_disable(i2sTxDevice_);
@@ -148,15 +145,15 @@ void TLV320::onTaskTick_()
 
     leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
     rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
-    if (codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL || 
-        codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL)
+    if ((leftChannelFifo && codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL) || 
+        (rightChannelFifo && codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL))
     {
         memset(tempData, 0, sizeof(tempData));
         
         for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
         {
-            codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
-            codec2_fifo_read(rightChannelFifo, &tempData[2*index + 1], 1);
+            if (leftChannelFifo) codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
+            if (rightChannelFifo) codec2_fifo_read(rightChannelFifo, &tempData[2*index + 1], 1);
         }
         
         size_t bytesWritten = 0;

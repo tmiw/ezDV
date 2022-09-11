@@ -24,6 +24,10 @@
 #include "task/DVTask.h"
 #include "icom/IcomSocketTask.h"
 
+#include "audio/AudioInput.h"
+
+#include "NetworkMessage.h"
+
 namespace ezdv
 {
 
@@ -36,7 +40,7 @@ using namespace ezdv::task;
 class WirelessTask : public DVTask
 {
 public:
-    WirelessTask();
+    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler);
     virtual ~WirelessTask();
     
 protected:
@@ -50,6 +54,10 @@ private:
     icom::IcomSocketTask icomAudioTask_;
     icom::IcomSocketTask icomCIVTask_;
     
+    // for rerouting audio after connection
+    ezdv::audio::AudioInput* freedvHandler_;
+    ezdv::audio::AudioInput* tlv320Handler_; 
+        
     void enableWifi_();
     void disableWifi_();
     void enableHttp_();
@@ -57,6 +65,8 @@ private:
     
     void onNetworkConnected_();
     void onNetworkDisconnected_();
+    
+    void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
     
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 };

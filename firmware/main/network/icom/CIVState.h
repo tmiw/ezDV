@@ -19,6 +19,7 @@
 #define CIV_STATE_H
 
 #include "TrackedPacketState.h"
+#include "audio/FreeDVMessage.h" // so we can listen for PTT requests
 
 namespace ezdv
 {
@@ -50,6 +51,8 @@ private:
     
     void sendCIVOpenPacket_();
     void sendCIVPacket_(uint8_t* packet, uint16_t size);
+    
+    void onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message);
 };
 
 }

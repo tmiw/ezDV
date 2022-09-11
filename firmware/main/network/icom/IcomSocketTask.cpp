@@ -19,6 +19,7 @@
 #include "IcomAudioStateMachine.h"
 #include "IcomControlStateMachine.h"
 #include "IcomCIVStateMachine.h"
+#include "network/NetworkMessage.h"
 
 namespace ezdv
 {
@@ -31,6 +32,7 @@ namespace icom
 
 IcomSocketTask::IcomSocketTask(SocketType socketType)
     : DVTask(GetTaskName_(socketType), 10 /* TBD */, 12000, tskNO_AFFINITY, 100, pdMS_TO_TICKS(20))
+    , ezdv::audio::AudioInput(1, 1)
     , socketType_(socketType)
 {
     switch(socketType)
@@ -96,12 +98,14 @@ void IcomSocketTask::onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioC
 {
     if (socketType_ == AUDIO_SOCKET)
     {
-        ESP_LOGI("XXX", "starting audio socket");
+        // Report successful connection
+        ezdv::network::RadioConnectionStatusMessage response(true);
+        publish(&response);
+        
         stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort);
     }
     else if (socketType_ == CIV_SOCKET)
     {
-        ESP_LOGI("XXX", "starting CIV socket");
         stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort);
     }
 }

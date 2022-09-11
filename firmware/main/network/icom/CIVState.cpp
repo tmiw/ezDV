@@ -32,7 +32,7 @@ CIVState::CIVState(IcomStateMachine* parent)
     , civSequenceNumber_(0)
     , civId_(0)
 {
-    // empty
+    parent_->getTask()->registerMessageHandler(this, &CIVState::onFreeDVSetPTTStateMessage_);
 }
 
 void CIVState::onEnterState()
@@ -102,6 +102,27 @@ void CIVState::sendCIVPacket_(uint8_t* civPacket, uint16_t civLength)
     ESP_LOGI(parent_->getName().c_str(), "Sending CIV data packet");
     auto packet = IcomPacket::CreateCIVPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier(), civSequenceNumber_++, civPacket, civLength);
     sendTracked_(packet);
+}
+
+void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message)
+{
+    if (civId_ > 0)
+    {
+        ESP_LOGI(parent_->getName().c_str(), "Sending PTT CIV message (PTT = %d)", message->pttState);
+        
+        uint8_t civPacket[] = {
+            0xFE,
+            0xFE,
+            civId_,
+            0xE0,
+            0x1C, // PTT on/off command/subcommand
+            0x00,
+            message->pttState ? (uint8_t)0x01 : (uint8_t)0x00,
+            0xFD
+        };
+        
+        sendCIVPacket_(civPacket, sizeof(civPacket));
+    }
 }
 
 }

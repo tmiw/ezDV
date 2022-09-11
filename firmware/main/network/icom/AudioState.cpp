@@ -16,7 +16,7 @@
  */
 
 #include <cstring>
-#include "audio/AudioInput.h"
+#include "IcomSocketTask.h"
 #include "AudioState.h"
 #include "IcomStateMachine.h"
 
@@ -31,7 +31,7 @@ namespace icom
 
 AudioState::AudioState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20000))
+    , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20))
     , audioSequenceNumber_(0)
 {
     // empty
@@ -108,9 +108,10 @@ void AudioState::onReceivePacket(IcomPacket& packet)
         
         auto reqPacket = IcomPacket::CreateRetransmitRequest(sm_.getOurIdentifier(), sm_.getTheirIdentifier(), packetIdsToRetransmit);
         sm_.sendUntracked(reqPacket);*/
+        
         int totalSize = (packet.getSendLength() - 0x18) / sizeof(short);
 
-        auto task = (ezdv::audio::AudioInput*)(parent_->getTask());
+        auto task = (IcomSocketTask*)(parent_->getTask());
         auto outputFifo = task->getAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL);
         if (outputFifo != nullptr)
         {
@@ -125,16 +126,21 @@ void AudioState::onReceivePacket(IcomPacket& packet)
 
 void AudioState::onAudioOutTimer_()
 {
-    auto task = (ezdv::audio::AudioInput*)(parent_->getTask());
+    auto task = (IcomSocketTask*)(parent_->getTask());
     auto inputFifo = task->getAudioInput(ezdv::audio::AudioInput::LEFT_CHANNEL);
-
+    if (inputFifo == nullptr)
+    {
+        ESP_LOGE(parent_->getName().c_str(), "input fifo is null for some reason!");
+        return;
+    }
+    
     // Get input audio and write to socket
     short tempAudioOut[MAX_PACKET_SIZE];
     memset(tempAudioOut, 0, MAX_PACKET_SIZE * sizeof(short));
 
     uint16_t samplesToRead = 160; // 320 bytes
-    if (codec2_fifo_used(inputFifo) >= samplesToRead)
-    {
+    while (codec2_fifo_used(inputFifo) >= samplesToRead)
+    {    
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
         auto packet = IcomPacket::CreateAudioPacket(
             audioSequenceNumber_++,

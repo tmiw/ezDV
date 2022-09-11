@@ -20,6 +20,7 @@
 
 #include <string>
 #include "task/DVTask.h"
+#include "audio/AudioInput.h"
 #include "IcomMessage.h"
 
 namespace ezdv
@@ -35,7 +36,7 @@ using namespace ezdv::task;
 
 class IcomStateMachine;
 
-class IcomSocketTask : public DVTask
+class IcomSocketTask : public DVTask, public ezdv::audio::AudioInput
 {
 public:
     enum SocketType

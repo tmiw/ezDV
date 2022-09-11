@@ -69,14 +69,27 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
-    auto rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
-    if (rv == -1)
+    do
     {
-        auto err = errno;
-        ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while sending", err, strerror(err));
+        auto rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
+        if (rv == -1)
+        {
+            auto err = errno;
+            ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while sending", err, strerror(err));
 
-        // TBD: close and reopen
-    }
+            if (err == ENOMEM)
+            {
+                // wait 1 tick to allow buffers to clear, then try again
+                vTaskDelay(1);
+                continue;
+            }
+            else
+            {
+                // TBD: close and reopen
+            }
+        }
+        break;
+    } while(true);
 }
 
 void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)

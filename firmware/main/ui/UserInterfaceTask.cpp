@@ -53,12 +53,14 @@ UserInterfaceTask::UserInterfaceTask()
     , rightVolume_(0)
     , volIncrement_(0)
     , netLedStatus_(false)
+    , radioStatus_(false)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonReleasedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onFreeDVSyncStateMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onNetworkStateChange_);
+    registerMessageHandler(this, &UserInterfaceTask::onRadioStateChange_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -270,8 +272,6 @@ void UserInterfaceTask::updateVolumeCommon_()
 
 void UserInterfaceTask::onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message)
 {
-    // TBD: radio connection should be solid blue; Wi-Fi connections without radio connections
-    // should be blinking blue.
     if (message->state)
     {
         networkFlashTimer_.start();
@@ -287,9 +287,14 @@ void UserInterfaceTask::onNetworkStateChange_(DVTask* origin, network::WirelessN
     }
 }
 
+void UserInterfaceTask::onRadioStateChange_(DVTask* origin, network::RadioConnectionStatusMessage* message)
+{
+    radioStatus_ = message->state;
+}
+
 void UserInterfaceTask::flashNetworkLight_()
 {
-    netLedStatus_ = !netLedStatus_;
+    netLedStatus_ = radioStatus_ || !netLedStatus_;
     
     driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
     publish(ledMessage);

@@ -54,6 +54,7 @@ private:
     int8_t rightVolume_;
     int8_t volIncrement_;
     bool netLedStatus_;
+    bool radioStatus_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
@@ -69,6 +70,7 @@ private:
 
     // Network state handling
     void onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message);
+    void onRadioStateChange_(DVTask* origin, network::RadioConnectionStatusMessage* message);
     void flashNetworkLight_();
     
     // Timer handling
