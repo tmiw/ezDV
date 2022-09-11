@@ -38,8 +38,6 @@ LoginState::LoginState(IcomStateMachine* parent)
     , ourTokenRequest_(0)
     , theirToken_(0)
     , authSequenceNumber_(0)
-    , civSocket_(0)
-    , audioSocket_(0)
     , civPort_(0)
     , audioPort_(0)
 {
@@ -54,8 +52,6 @@ void LoginState::onEnterState()
     ourTokenRequest_ = 0;
     theirToken_ = 0;
     authSequenceNumber_ = 0;
-    civSocket_ = 0;
-    audioSocket_ = 0;
     civPort_ = 0;
     audioPort_ = 0;
 
@@ -156,7 +152,7 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 remoteAudioPort,
                 remoteCivPort);
             
-            IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, civSocket_, audioPort_, remoteAudioPort, audioSocket_);
+            IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, audioPort_, remoteAudioPort);
             parent_->getTask()->publish(&message);
         }
         else if (connDisconnected)
@@ -234,21 +230,27 @@ void LoginState::insertCapability_(radio_cap_packet_t radio)
 
 void LoginState::sendUseRadioPacket_(int radioIndex)
 {
+    if (civPort_ > 0 || audioPort_ > 0)
+    {
+        // we've already connected, no need to try again
+        return;
+    }
+    
     // We need to create CIV and audio sockets and get their local port numbers.
     // The protocol seems to require it, which is weird but ok.
-    civSocket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    audioSocket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    assert(civSocket_ > 0 && audioSocket_ > 0); // TBD -- should just force a disconnect of the main SM instead.
+    auto civSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    auto audioSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    assert(civSocket > 0 && audioSocket > 0); // TBD -- should just force a disconnect of the main SM instead.
     
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_ANY);
     sin.sin_port = 0;
-    auto rv = bind(civSocket_, (struct sockaddr *) &sin, sizeof sin);
+    auto rv = bind(civSocket, (struct sockaddr *) &sin, sizeof sin);
     assert(rv >= 0);
     
     socklen_t addressLength = sizeof(sin);
-    getsockname(civSocket_, (struct sockaddr*)&sin, &addressLength);
+    getsockname(civSocket, (struct sockaddr*)&sin, &addressLength);
     civPort_ = ntohs(sin.sin_port);
     
     ESP_LOGI(parent_->getName().c_str(), "Local UDP port for CIV comms will be %d", civPort_);
@@ -256,14 +258,17 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_ANY);
     sin.sin_port = 0;
-    rv = bind(audioSocket_, (struct sockaddr *) &sin, sizeof sin);
+    rv = bind(audioSocket, (struct sockaddr *) &sin, sizeof sin);
     assert(rv >= 0);
     
     addressLength = sizeof(sin);
-    getsockname(audioSocket_, (struct sockaddr*)&sin, &addressLength);
+    getsockname(audioSocket, (struct sockaddr*)&sin, &addressLength);
     audioPort_ = ntohs(sin.sin_port);
     
     ESP_LOGI(parent_->getName().c_str(), "Local UDP port for audio comms will be %d", audioPort_);
+    
+    close(civSocket);
+    close(audioSocket);
 
     IcomPacket packet(sizeof(conninfo_packet));
     auto typedPacket = packet.getTypedPacket<conninfo_packet>();

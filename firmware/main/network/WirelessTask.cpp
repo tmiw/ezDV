@@ -84,16 +84,28 @@ void WirelessTask::onTaskStart_()
 {
     enableWifi_();
     enableHttp_();
+    
+    icomControlTask_.start();
+    icomAudioTask_.start();
+    icomCIVTask_.start();
 }
 
 void WirelessTask::onTaskWake_()
 {
     enableWifi_();
     enableHttp_();
+    
+    icomControlTask_.wake();
+    icomAudioTask_.wake();
+    icomCIVTask_.wake();
 }
 
 void WirelessTask::onTaskSleep_()
 {
+    icomControlTask_.sleep();
+    icomAudioTask_.sleep();
+    icomCIVTask_.sleep();
+    
     disableHttp_();
     disableWifi_();
 }

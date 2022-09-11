@@ -44,7 +44,7 @@ public:
     uint32_t getTheirIdentifier();
     void setTheirIdentifier(uint32_t id);
 
-    void start(std::string ip, uint16_t port, std::string username, std::string password, int localSocket = 0, int localPort = 0);
+    void start(std::string ip, uint16_t port, std::string username, std::string password, int localPort = 0);
 
     void sendUntracked(IcomPacket& packet);
 

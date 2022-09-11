@@ -79,7 +79,7 @@ void IcomStateMachine::sendUntracked(IcomPacket& packet)
     }
 }
 
-void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localSocket, int localPort)
+void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)
 {
     ip_ = ip;
     port_ = port;
@@ -92,30 +92,33 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     radioAddress.sin_port = htons(port_);
 
     // Create and bind UDP socket to force the specified local port number.
-    if (localSocket != 0)
+    if (localPort == 0)
     {
-        socket_ = localSocket;
+        localPort = port_;
     }
-    else
+    
+    socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (socket_ == -1)
     {
-        if (localPort == 0)
-        {
-            localPort = port_;
-        }
+        auto err = errno;
+        ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while creating socket", err, strerror(err));
+    }
+    assert(socket_ != -1);
+
+    struct sockaddr_in ourSocketAddress;
+    memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
+
+    ourSocketAddress.sin_family = AF_INET;
+    ourSocketAddress.sin_port = htons(localPort);
+    ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
         
-        socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        assert(socket_ != -1);
-
-        struct sockaddr_in ourSocketAddress;
-        memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
-
-        ourSocketAddress.sin_family = AF_INET;
-        ourSocketAddress.sin_port = htons(localPort);
-        ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-            
-        auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
-        assert(rv != -1);
+    auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
+    if (rv == -1)
+    {
+        auto err = errno;
+        ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while binding", err, strerror(err));
     }
+    assert(rv != -1);
 
     // Generate our identifier by concatenating the last two octets of our IP
     // with the port we're using to connect. We bind to this port ourselves prior
@@ -127,7 +130,12 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
         (localPort & 0xFFFF);
 
     // Connect to the radio.
-    auto rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
+    rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
+    if (rv == -1)
+    {
+        auto err = errno;
+        ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while connecting", err, strerror(err));
+    }
     assert(rv != -1);
 
     // We're now connected, start running the state machine.
@@ -153,12 +161,13 @@ void IcomStateMachine::readPendingPackets()
     // Loop while there are pending datagrams in the buffer
     while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
     {
-        IcomPacket packet;
+        char buffer[MAX_PACKET_SIZE];
         
-        auto rv = recv(socket_, (void*)packet.getData(), packet.getSendLength(), 0);
+        auto rv = recv(socket_, buffer, MAX_PACKET_SIZE, 0);
         if (rv > 0)
         {
             // Forward packet to current state for processing.
+            IcomPacket packet(buffer, rv);
             state->onReceivePacket(packet);
         }
         

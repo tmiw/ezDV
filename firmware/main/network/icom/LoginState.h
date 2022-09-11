@@ -50,8 +50,6 @@ private:
     uint32_t ourTokenRequest_;
     uint32_t theirToken_;
     uint16_t authSequenceNumber_;
-    int civSocket_;
-    int audioSocket_;
     int civPort_;
     int audioPort_;
 

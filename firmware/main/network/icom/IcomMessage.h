@@ -49,26 +49,20 @@ public:
     IcomCIVAudioConnectionInfo(
         int localCivPortProvided = 0, 
         int remoteCivPortProvided = 0, 
-        int civSocketProvided = 0,
         int localAudioPortProvided = 0, 
-        int remoteAudioPortProvided = 0,
-        int audioSocketProvided = 0)
+        int remoteAudioPortProvided = 0)
         : DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>(ICOM_MESSAGE)
         , localCivPort(localCivPortProvided)
         , remoteCivPort(remoteCivPortProvided)
-        , civSocket(civSocketProvided)
         , localAudioPort(localAudioPortProvided)
         , remoteAudioPort(remoteAudioPortProvided)
-        , audioSocket(audioSocketProvided)
         {}
     virtual ~IcomCIVAudioConnectionInfo() = default;
 
     int localCivPort;
     int remoteCivPort;
-    int civSocket;
     int localAudioPort;
     int remoteAudioPort; 
-    int audioSocket;
 };
 
 class IcomConnectRadioMessage : public DVTaskMessageBase<CONNECT_RADIO, IcomConnectRadioMessage>

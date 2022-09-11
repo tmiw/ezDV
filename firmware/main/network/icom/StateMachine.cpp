@@ -37,7 +37,7 @@ StateMachine::StateMachine(DVTask* owner)
     : owner_(owner)
     , currentState_(nullptr)
 {
-    // empty
+    owner_->registerMessageHandler(this, &StateMachine::onStateMachineTransition_);
 }
 
 DVTask* StateMachine::getTask()

@@ -96,11 +96,13 @@ void IcomSocketTask::onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioC
 {
     if (socketType_ == AUDIO_SOCKET)
     {
-        stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort, message->audioSocket);
+        ESP_LOGI("XXX", "starting audio socket");
+        stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort);
     }
     else if (socketType_ == CIV_SOCKET)
     {
-        stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort, message->civSocket);
+        ESP_LOGI("XXX", "starting CIV socket");
+        stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort);
     }
 }
 

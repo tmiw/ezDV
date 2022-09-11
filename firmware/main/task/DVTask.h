@@ -180,15 +180,16 @@ void DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> h
 
     // Register task specific handler.
     MessageType tmpMessage;
-    eventRegistrationMap_.emplace(
-        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()),
-        std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, fnPtr)
+    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, fnPtr);
+    eventRegistrationMap_.insert(
+        std::make_pair(key, val)        
     );
 
     // Register for use by publish.
     xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    SubscriberTasksByMessageType_.emplace(
-        std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType()), this
+    SubscriberTasksByMessageType_.insert(
+        std::make_pair(key, this)
     );
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
@@ -244,7 +245,7 @@ ResultMessageType* DVTask::waitFor(TickType_t ticksToWait, DVTask** origin)
 
     if (!found)
     {
-        publishIter = SubscriberTasksByMessageType_.emplace(key, this);
+        publishIter = SubscriberTasksByMessageType_.insert(std::make_pair(key, this));
     }
 
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
