@@ -17,9 +17,11 @@
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
 
 #include "IcomStateMachine.h"
 #include "IcomProtocolState.h"
+#include "IcomPacket.h"
 
 namespace ezdv
 {
@@ -130,6 +132,32 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
 
     // We're now connected, start running the state machine.
     transitionState(IcomProtocolState::ARE_YOU_THERE);
+}
+
+void IcomStateMachine::readPendingPackets()
+{
+    fd_set readSet;
+    struct timeval tv = {0, 0};
+    
+    FD_ZERO(&readSet);
+    FD_SET(socket_, &readSet);
+    
+    // Loop while there are pending datagrams in the buffer
+    while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    {
+        IcomPacket packet;
+        
+        auto rv = recv(socket_, (void*)packet.getData(), packet.getSendLength(), 0);
+        if (rv > 0)
+        {
+            // Forward packet to current state for processing.
+            getProtocolState_()->onReceivePacket(packet);
+        }
+        
+        // Reinitialize the read set for the next pass.
+        FD_ZERO(&readSet);
+        FD_SET(socket_, &readSet);
+    }
 }
 
 IcomProtocolState* IcomStateMachine::getProtocolState_()

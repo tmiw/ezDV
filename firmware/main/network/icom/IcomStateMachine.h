@@ -50,6 +50,8 @@ public:
 
     std::string getUsername();
     std::string getPassword();
+    
+    void readPendingPackets();
 
 protected:
     virtual std::string getName_() = 0;
