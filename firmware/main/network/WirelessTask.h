@@ -69,6 +69,7 @@ private:
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
     
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 };
 
 }
