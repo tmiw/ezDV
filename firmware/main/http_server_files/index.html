@@ -1,15 +1,152 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>ezDV Hello World</title>
+    <title>ezDV Setup</title>
     <link rel="stylesheet" href="bootstrap.min.css" />
+    <link rel="stylesheet" href="localstyle.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
     <div class="container-fluid">
+        <div class="row page-toolbar">
+            <div class="col-xs-5 col-md-9">
+               &nbsp;
+            </div>
+            <div class="col-xs-2 col-md-1">
+                <div class="wifi"></div>
+            </div>
+            <div class="col-xs-5 col-md-2">
+                 <div class="battery">
+                     <div class="battery-level" style="height:75%;"></div>
+                 </div>
+                 <div class="time-remaining">(1h until full)</div>
+             </div>
+        </div>
         <div class="row">
             <div class="col-xs-12 col-md-12">
-                <h1>ezDV Hello World</h1>
+                 <h1>ezDV Setup</h1>
+                 <div>
+                     Use the following page to configure ezDV for your radio and personal operating style. 
+                     Note that changes here require a power cycle to take effect (hold down the Mode button 
+                     until lights turn on, wait until lights turn off, then hold down the Mode button again 
+                     for one second).
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12 col-md-12">
+                <h2>Wi-Fi Configuration</h2>
+            </div>
+        </div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-xs-12 col-md-12">
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" id="wifiEnable"> Enable Wi-Fi
+                      </label>
+                      <div><em>(Note: you can always return here even if disabled by holding down TBD while turning on ezDV.)</em></div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="wifiMode" class="col-xs-4 col-md-2 control-label">Wireless Mode</label>
+                <div class="col-xs-8 col-md-10">
+                  <select id="wifiMode">
+                      <option>Access Point</option>
+                      <option>Client</option>
+                  </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="wifiSSID" class="col-xs-4 col-md-2 control-label">SSID</label>
+                <div class="col-xs-8 col-md-10">
+                  <input id="wifiSSID" value="ezDV XXXX" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="wifiSecurityType" class="col-xs-4 col-md-2 control-label">Security Type</label>
+                <div class="col-xs-8 col-md-10">
+                  <select id="wifiSecurityType">
+                      <option>Open</option>
+                      <option>WPA2-PSK</option>
+                      <option>WPA3-SAE</option>
+                  </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="wifiPassword" class="col-xs-4 col-md-2 control-label">Password</label>
+                <div class="col-xs-8 col-md-10">
+                  <input id="wifiPassword" type="password" value="this is a test" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-xs-3 col-md-1">&nbsp</div>
+                <div class="col-xs-2 col-md-1">
+                  <button type="submit" class="btn btn-default">Save</button>
+                </div>
+                <div class="col-xs-2 col-md-1">
+                  <button type="reset" class="btn btn-default">Reset</button>
+                </div>
+                <div class="col-xs-5 col-md-9">&nbsp;</div>
+              </div>
+        </form>
+        <div class="row">
+            <div class="col-xs-12 col-md-12">
+                <h2>Radio Configuration</h2>
+            </div>
+        </div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-xs-12 col-md-12">
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" id="radioEnable"> Use Wi-Fi Network for Radio RX/TX
+                      </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="radioType" class="col-xs-4 col-md-2 control-label">Radio Type</label>
+                <div class="col-xs-8 col-md-10">
+                  <select id="radioType">
+                      <option>Icom (e.g. IC-705)</option>
+                      <option>Xiegu X6100</option>
+                  </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="radioIP" class="col-xs-4 col-md-2 control-label">IP Address</label>
+                <div class="col-xs-8 col-md-10">
+                  <input id="radioIP" value="192.168.1.2" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="radioUsername" class="col-xs-4 col-md-2 control-label">Username</label>
+                <div class="col-xs-8 col-md-10">
+                  <input id="radioUsername" value="KA6ABC" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="radioPassword" class="col-xs-4 col-md-2 control-label">Password</label>
+                <div class="col-xs-8 col-md-10">
+                  <input id="radioPassword" type="password" value="this is a test" />
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-xs-3 col-md-1">&nbsp</div>
+                <div class="col-xs-2 col-md-1">
+                  <button type="submit" class="btn btn-default">Save</button>
+                </div>
+                <div class="col-xs-2 col-md-1">
+                  <button type="reset" class="btn btn-default">Reset</button>
+                </div>
+                <div class="col-xs-5 col-md-9">&nbsp;</div>
+              </div>
+        </form>
+        <div class="row page-footer">
+            <div class="col-xs-12 col-md-12">
+                Copyright &copy; 2022 Mooneer Salem. <a href="https://github.com/tmiw/ezDV" target="_blank">Source code</a>
             </div>
         </div>
     </div>
