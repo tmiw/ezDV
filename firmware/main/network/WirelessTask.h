@@ -37,6 +37,8 @@ namespace network
 
 using namespace ezdv::task;
 
+class HttpServerTask;
+
 /// @brief Handles wireless setup in the application.
 class WirelessTask : public DVTask
 {
@@ -52,7 +54,7 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
-    httpd_handle_t configServerHandle_;
+    HttpServerTask* httpServerTask_;
     icom::IcomSocketTask icomControlTask_;
     icom::IcomSocketTask icomAudioTask_;
     icom::IcomSocketTask icomCIVTask_;

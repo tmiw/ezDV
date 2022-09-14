@@ -33,6 +33,7 @@ set(SOURCES
     "network/icom/LoginState.cpp"
     "network/icom/StateMachine.cpp"
     "network/icom/TrackedPacketState.cpp"
+    "network/HttpServerTask.cpp"
     "network/NetworkMessage.cpp"
     "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
