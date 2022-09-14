@@ -314,6 +314,18 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filena
     {
         return httpd_resp_set_type(req, "application/javascript");
     }
+    else if (IS_FILE_EXT(filename, ".js.gz")) 
+    {
+        // Special case for compressed JavaScript
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        return httpd_resp_set_type(req, "application/javascript");
+    }
+    else if (IS_FILE_EXT(filename, ".css.gz")) 
+    {
+        // Special case for compressed CSS
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        return httpd_resp_set_type(req, "text/css");
+    }
     /* This is a limited set only */
     /* For any other type always set as plain text */
     return httpd_resp_set_type(req, "text/plain");
@@ -514,17 +526,17 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
 
 void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
 {
-    if (overrideWifiSettings_)
+    //if (overrideWifiSettings_)
     {
         // Setup is *just* different enough that we have to have a separate function for it
         // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
         // with enableWifi_()).
         enableDefaultWifi_();
     }
-    else if (message->enabled)
+    /*else if (message->enabled)
     {
         enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
-    }
+    }*/
 }
 
 }
