@@ -17,6 +17,8 @@
 
 #define CURRENT_LOG_TAG ("app")
 
+#define BOOTUP_VOL_DOWN_GPIO (GPIO_NUM_7)
+
 extern "C"
 {
     // Power off handler application
@@ -67,6 +69,21 @@ App::App()
         audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
         tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
     );
+        
+    // Check to see if Vol Down is being held on startup. 
+    // If so, force use of default Wi-Fi setup. Note that 
+    // we have to duplicate the initial pin setup here 
+    // since waiting until the UI is fully up may be too
+    // late for Wi-Fi.
+    ESP_ERROR_CHECK(gpio_reset_pin(BOOTUP_VOL_DOWN_GPIO));
+    ESP_ERROR_CHECK(gpio_set_direction(BOOTUP_VOL_DOWN_GPIO, GPIO_MODE_INPUT));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(BOOTUP_VOL_DOWN_GPIO, GPIO_PULLUP_ONLY));
+    ESP_ERROR_CHECK(gpio_pullup_en(BOOTUP_VOL_DOWN_GPIO));
+
+    if (gpio_get_level(BOOTUP_VOL_DOWN_GPIO) == 0)
+    {
+        wirelessTask_.setWiFiOverride(true);
+    }
 }
 
 void App::onTaskStart_()

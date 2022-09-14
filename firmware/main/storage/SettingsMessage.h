@@ -18,6 +18,8 @@
 #ifndef SETTINGS_MESSAGE_H
 #define SETTINGS_MESSAGE_H
 
+#include <cstring>
+
 #include "task/DVTaskMessage.h"
 
 extern "C"
@@ -38,7 +40,9 @@ enum SettingsMessageTypes
     LEFT_CHANNEL_VOLUME = 1,
     RIGHT_CHANNEL_VOLUME = 2,
     SET_LEFT_CHANNEL_VOLUME = 3,
-    SET_RIGHT_CHANNEL_VOLUME = 4
+    SET_RIGHT_CHANNEL_VOLUME = 4,
+    WIFI_SETTINGS = 5,
+    SET_WIFI_SETTINGS = 6,
 };
 
 template<uint32_t TYPE_ID>
@@ -53,10 +57,47 @@ public:
     int8_t volume;
 };
 
+template<uint32_t TYPE_ID>
+class WifiSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>
+{
+public:
+    enum { MAX_STR_SIZE = 32 };
+    
+    enum WifiMode { ACCESS_POINT, CLIENT };
+    
+    enum WifiSecurityMode { NONE, WEP, WPA, WPA2, WPA_AND_WPA2, WPA3, WPA2_AND_WPA3 };
+    
+    WifiSettingsMessageCommon(bool enabledProvided = false, WifiMode modeProvided = ACCESS_POINT, WifiSecurityMode securityProvided = NONE, int channelProvided = 0, char* ssidProvided = "", char* passwordProvided = "")
+        : DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , enabled(enabledProvided)
+        , mode(modeProvided)
+        , security(securityProvided)
+        , channel(channelProvided)
+    { 
+        memset(ssid, 0, MAX_STR_SIZE);
+        memset(password, 0, MAX_STR_SIZE);
+        
+        strncpy(ssid, ssidProvided, MAX_STR_SIZE - 1);
+        strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+    }
+    
+    virtual ~WifiSettingsMessageCommon() = default;
+
+    bool enabled;
+    WifiMode mode;
+    WifiSecurityMode security; // ignored if not access point
+    int channel; // ignored if not access point
+    char ssid[MAX_STR_SIZE];
+    char password[MAX_STR_SIZE];
+};
+
 using LeftChannelVolumeMessage = VolumeMessageCommon<LEFT_CHANNEL_VOLUME>;
 using RightChannelVolumeMessage = VolumeMessageCommon<RIGHT_CHANNEL_VOLUME>;
 using SetLeftChannelVolumeMessage = VolumeMessageCommon<SET_LEFT_CHANNEL_VOLUME>;
 using SetRightChannelVolumeMessage = VolumeMessageCommon<SET_RIGHT_CHANNEL_VOLUME>;
+
+using WifiSettingsMessage = WifiSettingsMessageCommon<WIFI_SETTINGS>;
+using SetWifiSettingsMessage = WifiSettingsMessageCommon<SET_WIFI_SETTINGS>;
 
 }
 

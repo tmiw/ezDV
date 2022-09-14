@@ -23,6 +23,20 @@
 #define LEFT_CHAN_VOL_ID ("lfChanVol")
 #define RIGHT_CHAN_VOL_ID ("rtChanVol")
 
+#define WIFI_ENABLED_ID ("wifiEn")
+#define WIFI_MODE_ID ("wifiMode")
+#define WIFI_SECURITY_ID ("wifiSec")
+#define WIFI_CHANNEL_ID ("wifiChan")
+#define WIFI_SSID_ID ("wifiSsid")
+#define WIFI_PASSWORD_ID ("wifiPass")
+
+#define DEFAULT_WIFI_ENABLED (false)
+#define DEFAULT_WIFI_MODE (WifiSettingsMessage::ACCESS_POINT)
+#define DEFAULT_WIFI_SECURITY (WifiSettingsMessage::NONE)
+#define DEFAULT_WIFI_CHANNEL (1)
+#define DEFAULT_WIFI_SSID ("")
+#define DEFAULT_WIFI_PASSWORD ("")
+
 namespace ezdv
 {
 
@@ -33,8 +47,14 @@ SettingsTask::SettingsTask()
     : DVTask("SettingsTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
     , leftChannelVolume_(0)
     , rightChannelVolume_(0)
+    , wifiEnabled_(false)
+    , wifiMode_(WifiSettingsMessage::ACCESS_POINT)
+    , wifiSecurity_(WifiSettingsMessage::NONE)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
+    memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    
     // Subscribe to messages
     registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
@@ -92,53 +112,142 @@ void SettingsTask::onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolum
 void SettingsTask::loadAllSettings_()
 {
     if (storageHandle_)
-    {            
-        esp_err_t result = storageHandle_->get_item(LEFT_CHAN_VOL_ID, leftChannelVolume_);
-        if (result == ESP_ERR_NVS_NOT_FOUND)
-        {
-            ESP_LOGW(CURRENT_LOG_TAG, "leftChannelVolume not found, will set to defaults");
-            setLeftChannelVolume_(0);
-        }
-        else if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error retrieving leftChannelVolume: %s", esp_err_to_name(result));
-        }
-        else
-        {
-            ESP_LOGI(CURRENT_LOG_TAG, "leftChannelVolume: %d", leftChannelVolume_);
-
-            // Broadcast volume so that other components can initialize themselves with it.
-            LeftChannelVolumeMessage* message = new LeftChannelVolumeMessage();
-            assert(message != nullptr);
-
-            message->volume = leftChannelVolume_;
-            publish(message);
-            delete message;
-        }
-        
-        result = storageHandle_->get_item(RIGHT_CHAN_VOL_ID, rightChannelVolume_);
-        if (result == ESP_ERR_NVS_NOT_FOUND)
-        {
-            ESP_LOGW(CURRENT_LOG_TAG, "rightChannelVolume not found, will set to defaults");
-            setRightChannelVolume_(0);
-        }
-        else if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error retrieving rightChannelVolume: %s", esp_err_to_name(result));
-        }
-        else
-        {
-            ESP_LOGI(CURRENT_LOG_TAG, "rightChannelVolume: %d", rightChannelVolume_);
-
-            // Broadcast volume so that other components can initialize themselves with it.
-            RightChannelVolumeMessage* message = new RightChannelVolumeMessage();
-            assert(message != nullptr);
-
-            message->volume = rightChannelVolume_;
-            publish(message);
-            delete message;
-        }
+    {
+        initializeVolumes_();
+        initializeWifi_();
     }
+}
+
+void SettingsTask::initializeVolumes_()
+{
+    esp_err_t result = storageHandle_->get_item(LEFT_CHAN_VOL_ID, leftChannelVolume_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "leftChannelVolume not found, will set to defaults");
+        setLeftChannelVolume_(0);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving leftChannelVolume: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "leftChannelVolume: %d", leftChannelVolume_);
+
+        // Broadcast volume so that other components can initialize themselves with it.
+        LeftChannelVolumeMessage* message = new LeftChannelVolumeMessage();
+        assert(message != nullptr);
+
+        message->volume = leftChannelVolume_;
+        publish(message);
+        delete message;
+    }
+    
+    result = storageHandle_->get_item(RIGHT_CHAN_VOL_ID, rightChannelVolume_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "rightChannelVolume not found, will set to defaults");
+        setRightChannelVolume_(0);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving rightChannelVolume: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "rightChannelVolume: %d", rightChannelVolume_);
+
+        // Broadcast volume so that other components can initialize themselves with it.
+        RightChannelVolumeMessage* message = new RightChannelVolumeMessage();
+        assert(message != nullptr);
+
+        message->volume = rightChannelVolume_;
+        publish(message);
+        delete message;
+    }
+}
+
+void SettingsTask::initializeWifi_()
+{
+    esp_err_t result = storageHandle_->get_item(WIFI_ENABLED_ID, wifiEnabled_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Wi-Fi settings not found, will set to defaults");
+        setWifiSettings_(
+            DEFAULT_WIFI_ENABLED, DEFAULT_WIFI_MODE, DEFAULT_WIFI_SECURITY, 
+            DEFAULT_WIFI_CHANNEL, DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiEnabled: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiEnabled: %d", wifiEnabled_);
+    }
+    
+    result = storageHandle_->get_item(WIFI_MODE_ID, wifiMode_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiMode: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiMode: %d", wifiMode_);
+    }
+    
+    result = storageHandle_->get_item(WIFI_SECURITY_ID, wifiSecurity_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiSecurity: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiSecurity: %d", wifiSecurity_);
+    }
+    
+    result = storageHandle_->get_item(WIFI_CHANNEL_ID, wifiChannel_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiChannel: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiChannel: %d", wifiChannel_);
+    }
+    
+    result = storageHandle_->get_string(WIFI_SSID_ID, wifiSsid_, WifiSettingsMessage::MAX_STR_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiSsid: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiSsid: %s", wifiSsid_);
+    }
+    
+    result = storageHandle_->get_string(WIFI_PASSWORD_ID, wifiPassword_, WifiSettingsMessage::MAX_STR_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiPassword: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiPassword: %s", wifiPassword_);
+    }
+    
+    // Publish current Wi-Fi settings to everyone who may care.
+    WifiSettingsMessage* message = new WifiSettingsMessage(
+        wifiEnabled_,
+        wifiMode_,
+        wifiSecurity_,
+        wifiChannel_,
+        wifiSsid_,
+        wifiPassword_
+    );
+    assert(message != nullptr);
+    publish(message);
+    delete message;
 }
 
 void SettingsTask::commit_()
@@ -196,6 +305,70 @@ void SettingsTask::setRightChannelVolume_(int8_t vol)
         assert(message != nullptr);
 
         message->volume = vol;
+        publish(message);
+        delete message;
+    }
+}
+
+void SettingsTask::setWifiSettings_(bool enabled, WifiSettingsMessage::WifiMode mode, WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password)
+{
+    wifiEnabled_ = enabled;
+    wifiMode_ = mode;
+    wifiSecurity_ = security;
+    wifiChannel_ = channel;
+    
+    memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    
+    strncpy(wifiSsid_, ssid, WifiSettingsMessage::MAX_STR_SIZE - 1);
+    strncpy(wifiPassword_, password, WifiSettingsMessage::MAX_STR_SIZE - 1);
+    
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_item(WIFI_ENABLED_ID, wifiEnabled_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiEnabled: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(WIFI_MODE_ID, wifiMode_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiMode: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(WIFI_SECURITY_ID, wifiSecurity_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSecurity: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(WIFI_CHANNEL_ID, wifiChannel_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiChannel: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_string(WIFI_SSID_ID, wifiSsid_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSsid: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_string(WIFI_PASSWORD_ID, wifiPassword_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifPassword: %s", esp_err_to_name(result));
+        }
+               
+        commitTimer_.stop();
+        commitTimer_.start(true);
+
+        // Publish new Wi-Fi settings to everyone who may care.
+        WifiSettingsMessage* message = new WifiSettingsMessage(
+            wifiEnabled_,
+            wifiMode_,
+            wifiSecurity_,
+            wifiChannel_,
+            wifiSsid_,
+            wifiPassword_
+        );
+        assert(message != nullptr);
         publish(message);
         delete message;
     }

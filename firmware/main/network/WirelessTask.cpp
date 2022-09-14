@@ -57,12 +57,6 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
     {
         case IP_EVENT_STA_GOT_IP:
             obj->onNetworkConnected_();
-        
-            // XX -- just for testing
-            {
-                icom::IcomConnectRadioMessage message("192.168.4.2", 50001, "RADIO USERNAME", "RADIO PASSWORD");
-                obj->publish(&message);
-            }
             break;
     }
 }
@@ -78,13 +72,6 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
         case WIFI_EVENT_AP_START:
             obj->onNetworkConnected_();
             break;
-        case WIFI_EVENT_AP_STACONNECTED:
-            // XX -- just for testing
-            {
-                icom::IcomConnectRadioMessage message("192.168.4.2", 50001, "RADIO USERNAME", "RADIO PASSWORD");
-                obj->publish(&message);
-            }
-            break;
         case WIFI_EVENT_AP_STOP:
         case WIFI_EVENT_STA_DISCONNECTED:
             obj->onNetworkDisconnected_();
@@ -99,8 +86,10 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
+    , overrideWifiSettings_(false)
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
+    registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
 }
 
 WirelessTask::~WirelessTask()
@@ -108,11 +97,13 @@ WirelessTask::~WirelessTask()
     // empty
 }
 
+void WirelessTask::setWiFiOverride(bool wifiOverride)
+{
+    overrideWifiSettings_ = wifiOverride;
+}
+
 void WirelessTask::onTaskStart_()
 {
-    enableWifi_();
-    enableHttp_();
-    
     icomControlTask_.start();
     icomAudioTask_.start();
     icomCIVTask_.start();
@@ -120,9 +111,6 @@ void WirelessTask::onTaskStart_()
 
 void WirelessTask::onTaskWake_()
 {
-    enableWifi_();
-    enableHttp_();
-    
     icomControlTask_.wake();
     icomAudioTask_.wake();
     icomCIVTask_.wake();
@@ -138,48 +126,11 @@ void WirelessTask::onTaskSleep_()
     disableWifi_();
 }
 
-void WirelessTask::enableWifi_()
+void WirelessTask::enableDefaultWifi_()
 {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-#if 1
     esp_netif_create_default_wifi_ap();
-#else
-    esp_netif_create_default_wifi_sta();
-#endif
-    
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    wifi_config_t wifi_config = {
-#if 1
-        .ap = {
-            .password = "",
-            .ssid_len = 0, // Will auto-determine length on start.
-            .channel = DEFAULT_AP_CHANNEL,
-            .authmode = WIFI_AUTH_OPEN,
-            .max_connection = MAX_AP_CONNECTIONS,
-            .pmf_cfg = {
-                    .required = false,
-            },
-        },
-#else
-        .sta = {
-            //.ssid = "RADIO SSID",
-            //.password = "RADIO PASSWORD",
-            .scan_method = WIFI_FAST_SCAN,
-            .bssid_set = false,
-            .bssid = "",
-            .channel = 0,
-            .listen_interval = 0,
-            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-            /*.threshold = {
-                .authmode = WIFI_AUTH_WPA2_PSK,
-            },
-            .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,*/
-        }
-#endif
-    };
     
     // Register event handler so we can notify the user on network
     // status changes.
@@ -193,24 +144,139 @@ void WirelessTask::enableWifi_()
                                                         &IPEventHandler_,
                                                         this,
                                                         NULL));
-#if 1
-    // Append last two bytes of MAC address to SSID prefix.
+                                                        
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid_len = 0, // Will auto-determine length on start.
+            .channel = DEFAULT_AP_CHANNEL,
+            .authmode = WIFI_AUTH_OPEN,
+            .max_connection = MAX_AP_CONNECTIONS,
+            .pmf_cfg = {
+                    .required = false,
+            },
+        }
+    };
+    
+    // Append last two bytes of MAC address to default SSID.
     uint8_t mac[6];
     ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_AP, mac));
     sprintf((char*)wifi_config.ap.ssid, "%s%02x%02x", DEFAULT_AP_NAME_PREFIX, mac[4], mac[5]);
     
+    sprintf((char*)wifi_config.ap.password, "%s", "");
+    
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
-#else
-    sprintf((char*)wifi_config.sta.ssid, "SSID");
-    sprintf((char*)wifi_config.sta.password, "PASSWORD");
+}
+
+void WirelessTask::enableWifi_(storage::WifiSettingsMessage::WifiMode mode, storage::WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password)
+{
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
     
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_connect());
-#endif
+    if (mode == storage::WifiSettingsMessage::ACCESS_POINT)
+    {
+        esp_netif_create_default_wifi_ap();
+    }
+    else if (mode == storage::WifiSettingsMessage::CLIENT)
+    {
+         esp_netif_create_default_wifi_sta();
+    }
+    else
+    {
+        assert(0);
+    }
+    
+    // Register event handler so we can notify the user on network
+    // status changes.
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &WiFiEventHandler_,
+                                                        this,
+                                                        NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &IPEventHandler_,
+                                                        this,
+                                                        NULL));
+                                                        
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    if (mode == storage::WifiSettingsMessage::ACCESS_POINT)
+    {
+        wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
+        
+        switch(security)
+        {
+            case storage::WifiSettingsMessage::NONE:
+                auth_mode = WIFI_AUTH_OPEN;
+                break;
+            case storage::WifiSettingsMessage::WEP:
+                auth_mode = WIFI_AUTH_WEP;
+                break;
+            case storage::WifiSettingsMessage::WPA:
+                auth_mode = WIFI_AUTH_WPA_PSK;
+                break;
+            case storage::WifiSettingsMessage::WPA2:
+                auth_mode = WIFI_AUTH_WPA2_PSK;
+                break;
+            case storage::WifiSettingsMessage::WPA_AND_WPA2:
+                auth_mode = WIFI_AUTH_WPA_WPA2_PSK;
+                break;
+            case storage::WifiSettingsMessage::WPA3:
+                auth_mode = WIFI_AUTH_WPA3_PSK;
+                break;
+            case storage::WifiSettingsMessage::WPA2_AND_WPA3:
+                auth_mode = WIFI_AUTH_WPA2_WPA3_PSK;
+                break;
+            default:
+                assert(0);
+                break;
+        }
+        wifi_config_t wifi_config = {
+            .ap = {
+                .ssid_len = 0, // Will auto-determine length on start.
+                .channel = (uint8_t)channel,
+                .authmode = auth_mode,
+                .max_connection = MAX_AP_CONNECTIONS,
+                .pmf_cfg = {
+                        .required = false,
+                },
+            }
+        };
+        
+        sprintf((char*)wifi_config.ap.ssid, "%s", ssid);
+        sprintf((char*)wifi_config.ap.password, "%s", password);
+        
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+        ESP_ERROR_CHECK(esp_wifi_start());
+    }
+    else
+    {
+        wifi_config_t wifi_config = {
+            .sta = {
+                .scan_method = WIFI_FAST_SCAN,
+                .bssid_set = false,
+                .bssid = "",
+                .channel = 0,
+                .listen_interval = 0,
+                .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
+            }
+        };
+        
+        sprintf((char*)wifi_config.sta.ssid, "%s", ssid);
+        sprintf((char*)wifi_config.sta.password, "%s", password);
+        
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+        ESP_ERROR_CHECK(esp_wifi_start());
+        ESP_ERROR_CHECK(esp_wifi_connect());
+    };
 }
 
 void WirelessTask::disableWifi_()
@@ -405,6 +471,16 @@ void WirelessTask::onNetworkConnected_()
 {
     WirelessNetworkStatusMessage message(true);
     publish(&message);
+    
+    enableHttp_();
+    
+#if 0
+    // XX -- just for testing
+    {
+        icom::IcomConnectRadioMessage message("192.168.4.2", 50001, "RADIO USERNAME", "RADIO PASSWORD");
+        obj->publish(&message);
+    }
+#endif
 }
 
 void WirelessTask::onNetworkDisconnected_()
@@ -433,6 +509,21 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
             icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
         );
+    }
+}
+
+void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
+{
+    if (overrideWifiSettings_)
+    {
+        // Setup is *just* different enough that we have to have a separate function for it
+        // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
+        // with enableWifi_()).
+        enableDefaultWifi_();
+    }
+    else if (message->enabled)
+    {
+        enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
     }
 }
 

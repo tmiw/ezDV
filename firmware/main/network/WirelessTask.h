@@ -27,6 +27,7 @@
 #include "audio/AudioInput.h"
 
 #include "NetworkMessage.h"
+#include "storage/SettingsMessage.h"
 
 namespace ezdv
 {
@@ -43,6 +44,8 @@ public:
     WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler);
     virtual ~WirelessTask();
     
+    void setWiFiOverride(bool wifiOverride);
+    
 protected:
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;
@@ -57,8 +60,12 @@ private:
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;
     ezdv::audio::AudioInput* tlv320Handler_; 
+    
+    bool overrideWifiSettings_;
         
-    void enableWifi_();
+    void enableWifi_(storage::WifiSettingsMessage::WifiMode mode, storage::WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password);
+    void enableDefaultWifi_();
+    
     void disableWifi_();
     void enableHttp_();
     void disableHttp_();
@@ -67,6 +74,7 @@ private:
     void onNetworkDisconnected_();
     
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
+    void onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message);
     
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
