@@ -235,6 +235,7 @@ void DVTask::threadEntry_()
         MessageEntry* entry = nullptr;
         while (xQueueReceive(taskQueue_, &entry, taskTick_) == pdTRUE)
         {
+            //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
             auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
             EventMap::iterator iter = iterPair.first;
             while (iter != iterPair.second)
