@@ -59,23 +59,35 @@ private:
     char wifiSsid_[WifiSettingsMessage::MAX_STR_SIZE];
     char wifiPassword_[WifiSettingsMessage::MAX_STR_SIZE];
     
+    bool radioEnabled_;
+    char radioHostname_[RadioSettingsMessage::MAX_STR_SIZE];
+    int radioPort_;
+    char radioUsername_[RadioSettingsMessage::MAX_STR_SIZE];
+    char radioPassword_[RadioSettingsMessage::MAX_STR_SIZE];
+    
     DVTimer commitTimer_;
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
     
     void onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSettingsMessage* message);
     void onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMessage* message);
     
+    void onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSettingsMessage* message);
+    void onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMessage* message);
+    
     void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
     void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);
     
     void loadAllSettings_();
     void commit_();
+    
     void setLeftChannelVolume_(int8_t vol);
     void setRightChannelVolume_(int8_t vol);
     void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password);
+    void setRadioSettings_(bool enabled, char* host, int port, char* username, char* password);
     
     void initializeVolumes_();
     void initializeWifi_();
+    void initializeRadio_();
 };
 
 } // namespace storage

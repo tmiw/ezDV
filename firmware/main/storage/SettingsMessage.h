@@ -41,10 +41,16 @@ enum SettingsMessageTypes
     RIGHT_CHANNEL_VOLUME = 2,
     SET_LEFT_CHANNEL_VOLUME = 3,
     SET_RIGHT_CHANNEL_VOLUME = 4,
+    
     WIFI_SETTINGS = 5,
     SET_WIFI_SETTINGS = 6,
     REQUEST_WIFI_SETTINGS = 7,
     WIFI_SETTINGS_SAVED = 8,
+    
+    RADIO_SETTINGS = 9,
+    SET_RADIO_SETTINGS = 10,
+    REQUEST_RADIO_SETTINGS = 11,
+    RADIO_SETTINGS_SAVED = 12,
 };
 
 template<uint32_t TYPE_ID>
@@ -92,6 +98,35 @@ public:
     char password[MAX_STR_SIZE];
 };
 
+template<uint32_t TYPE_ID>
+class RadioSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RadioSettingsMessageCommon<TYPE_ID>>
+{
+public:
+    enum { MAX_STR_SIZE = 32 };
+    
+    RadioSettingsMessageCommon(bool enabledProvided = false, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
+        : DVTaskMessageBase<TYPE_ID, RadioSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , enabled(enabledProvided)
+        , port(portProvided)
+    { 
+        memset(host, 0, MAX_STR_SIZE);
+        memset(username, 0, MAX_STR_SIZE);
+        memset(password, 0, MAX_STR_SIZE);
+        
+        strncpy(host, hostProvided, MAX_STR_SIZE - 1);
+        strncpy(username, usernameProvided, MAX_STR_SIZE - 1);
+        strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+    }
+    
+    virtual ~RadioSettingsMessageCommon() = default;
+
+    bool enabled;
+    int port;
+    char host[MAX_STR_SIZE];
+    char username[MAX_STR_SIZE];
+    char password[MAX_STR_SIZE];
+};
+
 using LeftChannelVolumeMessage = VolumeMessageCommon<LEFT_CHANNEL_VOLUME>;
 using RightChannelVolumeMessage = VolumeMessageCommon<RIGHT_CHANNEL_VOLUME>;
 using SetLeftChannelVolumeMessage = VolumeMessageCommon<SET_LEFT_CHANNEL_VOLUME>;
@@ -99,6 +134,9 @@ using SetRightChannelVolumeMessage = VolumeMessageCommon<SET_RIGHT_CHANNEL_VOLUM
 
 using WifiSettingsMessage = WifiSettingsMessageCommon<WIFI_SETTINGS>;
 using SetWifiSettingsMessage = WifiSettingsMessageCommon<SET_WIFI_SETTINGS>;
+
+using RadioSettingsMessage = RadioSettingsMessageCommon<RADIO_SETTINGS>;
+using SetRadioSettingsMessage = RadioSettingsMessageCommon<SET_RADIO_SETTINGS>;
 
 template<uint32_t TYPE_ID>
 class RequesSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>
@@ -112,6 +150,9 @@ public:
 
 using RequestWifiSettingsMessage = RequesSettingsMessageCommon<REQUEST_WIFI_SETTINGS>;
 using WifiSettingsSavedMessage = RequesSettingsMessageCommon<WIFI_SETTINGS_SAVED>;
+
+using RequestRadioSettingsMessage = RequesSettingsMessageCommon<REQUEST_RADIO_SETTINGS>;
+using RadioSettingsSavedMessage = RequesSettingsMessageCommon<RADIO_SETTINGS_SAVED>;
 
 }
 

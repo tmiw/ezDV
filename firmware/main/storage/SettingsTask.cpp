@@ -30,6 +30,12 @@
 #define WIFI_SSID_ID ("wifiSsid")
 #define WIFI_PASSWORD_ID ("wifiPass")
 
+#define RADIO_ENABLED_ID ("radioEn")
+#define RADIO_HOSTNAME_ID ("radioHost")
+#define RADIO_PORT_ID ("radioPort")
+#define RADIO_USERNAME_ID ("radioUser")
+#define RADIO_PASSWORD_ID ("radioPass")
+
 #define DEFAULT_WIFI_ENABLED (false)
 #define DEFAULT_WIFI_MODE (WifiMode::ACCESS_POINT)
 #define DEFAULT_WIFI_SECURITY (WifiSecurityMode::NONE)
@@ -50,16 +56,24 @@ SettingsTask::SettingsTask()
     , wifiEnabled_(false)
     , wifiMode_(WifiMode::ACCESS_POINT)
     , wifiSecurity_(WifiSecurityMode::NONE)
+    , radioEnabled_(false)
+    , radioPort_(0)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    
+    memset(radioHostname_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+    memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+    memset(radioPassword_, 0, RadioSettingsMessage::MAX_STR_SIZE);
     
     // Subscribe to messages
     registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onRequestWifiSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onSetWifiSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onRequestRadioSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onSetRadioSettingsMessage_);
     
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
@@ -120,6 +134,24 @@ void SettingsTask::onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSett
     delete response;
 }
 
+void SettingsTask::onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSettingsMessage* message)
+{
+    // Publish current radio settings to everyone who may care.
+    RadioSettingsMessage* response = new RadioSettingsMessage(
+        radioEnabled_,
+        radioHostname_,
+        radioPort_,
+        radioUsername_,
+        radioPassword_
+    );
+    assert(response != nullptr);
+    if (origin != nullptr)
+    {
+        origin->post(response);
+    }
+    delete response;
+}
+
 void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)
 {
     setLeftChannelVolume_(message->volume);
@@ -136,6 +168,7 @@ void SettingsTask::loadAllSettings_()
     {
         initializeVolumes_();
         initializeWifi_();
+        initializeRadio_();
     }
 }
 
@@ -271,6 +304,76 @@ void SettingsTask::initializeWifi_()
     delete message;
 }
 
+void SettingsTask::initializeRadio_()
+{
+    esp_err_t result = storageHandle_->get_item(RADIO_ENABLED_ID, radioEnabled_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
+        setRadioSettings_(false, "", 0, "", "");
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioEnabled: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioEnabled: %d", radioEnabled_);
+    }
+    
+    result = storageHandle_->get_string(RADIO_HOSTNAME_ID, radioHostname_, RadioSettingsMessage::MAX_STR_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioHostname: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioHostname: %s", radioHostname_);
+    }
+    
+    result = storageHandle_->get_item(RADIO_PORT_ID, radioPort_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioPort: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioPort: %d", radioPort_);
+    }
+    
+    result = storageHandle_->get_string(RADIO_USERNAME_ID, radioUsername_, RadioSettingsMessage::MAX_STR_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioUsername: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioUsername: %s", radioUsername_);
+    }
+    
+    result = storageHandle_->get_string(RADIO_PASSWORD_ID, radioPassword_, RadioSettingsMessage::MAX_STR_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioPassword: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioPassword: %s", radioPassword_);
+    }
+    
+    // Publish current Wi-Fi settings to everyone who may care.
+    RadioSettingsMessage* message = new RadioSettingsMessage(
+        radioEnabled_,
+        radioHostname_,
+        radioPort_,
+        radioUsername_,
+        radioPassword_
+    );
+    assert(message != nullptr);
+    publish(message);
+    delete message;
+}
+
 void SettingsTask::commit_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Committing pending settings to flash.");
@@ -399,6 +502,72 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
         delete message;
         
         WifiSettingsSavedMessage response;
+        publish(&response);
+    }
+}
+
+void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMessage* message)
+{
+    setRadioSettings_(message->enabled, message->host, message->port, message->username, message->password);
+}
+
+void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* username, char* password)
+{
+    radioEnabled_ = enabled;
+    radioPort_ = port;
+    
+    memset(radioHostname_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+    memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+    memset(radioPassword_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+    
+    strncpy(radioHostname_, host, RadioSettingsMessage::MAX_STR_SIZE - 1);
+    strncpy(radioUsername_, username, RadioSettingsMessage::MAX_STR_SIZE - 1);
+    strncpy(radioPassword_, password, RadioSettingsMessage::MAX_STR_SIZE - 1);
+    
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioEnabled: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_string(RADIO_HOSTNAME_ID, radioHostname_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioHostname: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(RADIO_PORT_ID, radioPort_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPort: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_string(RADIO_USERNAME_ID, radioUsername_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioUsername: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_string(RADIO_PASSWORD_ID, radioPassword_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPassword: %s", esp_err_to_name(result));
+        }
+               
+        commitTimer_.stop();
+        commitTimer_.start(true);
+
+        // Publish new Wi-Fi settings to everyone who may care.
+        RadioSettingsMessage* message = new RadioSettingsMessage(
+            radioEnabled_,
+            radioHostname_,
+            radioPort_,
+            radioUsername_,
+            radioPassword_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+        
+        RadioSettingsSavedMessage response;
         publish(&response);
     }
 }
