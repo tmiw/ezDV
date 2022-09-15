@@ -309,13 +309,25 @@ void WirelessTask::onNetworkConnected_()
     
     enableHttp_();
     
-#if 0
-    // XX -- just for testing
+    // Get the current Icom radio settings
+    storage::RequestRadioSettingsMessage request;
+    publish(&request);
+
+    auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(1000), nullptr);
+    if (response != nullptr)
     {
-        icom::IcomConnectRadioMessage message("192.168.4.2", 50001, "RADIO USERNAME", "RADIO PASSWORD");
-        obj->publish(&message);
+        if (response->enabled)
+        {
+            icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
+            publish(&message);
+        }
+        
+        delete response;
     }
-#endif
+    else
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for radio connection settings!");
+    }
 }
 
 void WirelessTask::onNetworkDisconnected_()
@@ -353,17 +365,17 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     if (!wifiRunning_)
     {
         wifiRunning_ = true;
-        //if (overrideWifiSettings_)
+        if (overrideWifiSettings_)
         {
             // Setup is *just* different enough that we have to have a separate function for it
             // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
             // with enableWifi_()).
             enableDefaultWifi_();
         }
-        /*else if (message->enabled)
+        else if (message->enabled)
         {
             enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
-        }*/
+        }
     }
 }
 
