@@ -89,6 +89,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
     , overrideWifiSettings_(false)
+    , wifiRunning_(false)
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
@@ -174,16 +175,16 @@ void WirelessTask::enableDefaultWifi_()
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
-void WirelessTask::enableWifi_(storage::WifiSettingsMessage::WifiMode mode, storage::WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password)
+void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password)
 {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     
-    if (mode == storage::WifiSettingsMessage::ACCESS_POINT)
+    if (mode == storage::WifiMode::ACCESS_POINT)
     {
         esp_netif_create_default_wifi_ap();
     }
-    else if (mode == storage::WifiSettingsMessage::CLIENT)
+    else if (mode == storage::WifiMode::CLIENT)
     {
          esp_netif_create_default_wifi_sta();
     }
@@ -208,31 +209,31 @@ void WirelessTask::enableWifi_(storage::WifiSettingsMessage::WifiMode mode, stor
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    if (mode == storage::WifiSettingsMessage::ACCESS_POINT)
+    if (mode == storage::WifiMode::ACCESS_POINT)
     {
         wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
         
         switch(security)
         {
-            case storage::WifiSettingsMessage::NONE:
+            case storage::WifiSecurityMode::NONE:
                 auth_mode = WIFI_AUTH_OPEN;
                 break;
-            case storage::WifiSettingsMessage::WEP:
+            case storage::WifiSecurityMode::WEP:
                 auth_mode = WIFI_AUTH_WEP;
                 break;
-            case storage::WifiSettingsMessage::WPA:
+            case storage::WifiSecurityMode::WPA:
                 auth_mode = WIFI_AUTH_WPA_PSK;
                 break;
-            case storage::WifiSettingsMessage::WPA2:
+            case storage::WifiSecurityMode::WPA2:
                 auth_mode = WIFI_AUTH_WPA2_PSK;
                 break;
-            case storage::WifiSettingsMessage::WPA_AND_WPA2:
+            case storage::WifiSecurityMode::WPA_AND_WPA2:
                 auth_mode = WIFI_AUTH_WPA_WPA2_PSK;
                 break;
-            case storage::WifiSettingsMessage::WPA3:
+            case storage::WifiSecurityMode::WPA3:
                 auth_mode = WIFI_AUTH_WPA3_PSK;
                 break;
-            case storage::WifiSettingsMessage::WPA2_AND_WPA3:
+            case storage::WifiSecurityMode::WPA2_AND_WPA3:
                 auth_mode = WIFI_AUTH_WPA2_WPA3_PSK;
                 break;
             default:
@@ -348,17 +349,22 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
 
 void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
 {
-    //if (overrideWifiSettings_)
+    // Avoid accidentally trying to re-initialize Wi-Fi.
+    if (!wifiRunning_)
     {
-        // Setup is *just* different enough that we have to have a separate function for it
-        // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
-        // with enableWifi_()).
-        enableDefaultWifi_();
+        wifiRunning_ = true;
+        //if (overrideWifiSettings_)
+        {
+            // Setup is *just* different enough that we have to have a separate function for it
+            // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
+            // with enableWifi_()).
+            enableDefaultWifi_();
+        }
+        /*else if (message->enabled)
+        {
+            enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
+        }*/
     }
-    /*else if (message->enabled)
-    {
-        enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
-    }*/
 }
 
 }

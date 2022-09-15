@@ -276,16 +276,18 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     }
     
     if (ws_pkt.type == HTTPD_WS_TYPE_TEXT)
-    {
+    {    
         cJSON* jsonMessage = cJSON_Parse((char*)buf);
         free(buf);
         
         // Ignore messages that we can't parse.
         if (jsonMessage != nullptr)
-        {
+        {            
             if (cJSON_GetObjectItem(jsonMessage, "type")) 
-            {
-                char *type = cJSON_GetObjectItem(jsonMessage,"type")->valuestring;
+            {                
+                char *type = cJSON_GetStringValue(cJSON_GetObjectItem(jsonMessage,"type"));
+                
+                ESP_LOGI(CURRENT_LOG_TAG, "Received message of type %s", type);
                 
                 if (!strcmp(type, "saveWifiInfo"))
                 {
@@ -457,72 +459,110 @@ void HttpServerTask::sendJSONMessage_(cJSON* message, WebSocketList& socketList)
 
 void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating Wi-Fi settings");
+    
     bool enabled = false;
-    storage::SetWifiSettingsMessage::WifiMode mode = storage::SetWifiSettingsMessage::ACCESS_POINT;
-    storage::SetWifiSettingsMessage::WifiSecurityMode security = storage::SetWifiSettingsMessage::NONE;
+    storage::WifiMode mode = storage::WifiMode::ACCESS_POINT;
+    storage::WifiSecurityMode security = storage::WifiSecurityMode::NONE;
     int channel = 1;
     char *ssid = nullptr;
     char *password = nullptr;
-        
-    enabled = cJSON_IsTrue(cJSON_GetObjectItem(message->request, "enabled"));
-    if (enabled)
-    {
-        auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
-        if (modeJSON != nullptr)
-        {
-            mode = (storage::SetWifiSettingsMessage::WifiMode)(int)cJSON_GetNumberValue(modeJSON);
-        }
-        
-        auto securityJSON = cJSON_GetObjectItem(message->request, "security");
-        if (securityJSON != nullptr)
-        {
-            security = (storage::SetWifiSettingsMessage::WifiSecurityMode)(int)cJSON_GetNumberValue(securityJSON);
-        }
-        
-        auto channelJSON = cJSON_GetObjectItem(message->request, "channel");
-        if (channelJSON != nullptr)
-        {
-            channel = (int)cJSON_GetNumberValue(channelJSON);
-        }
-        
-        auto ssidJSON = cJSON_GetObjectItem(message->request, "ssid");
-        if (ssidJSON != nullptr)
-        {
-            ssid = cJSON_GetStringValue(ssidJSON);
-        }
-        
-        auto passwordJSON = cJSON_GetObjectItem(message->request, "password");
-        if (passwordJSON != nullptr)
-        {
-            password = cJSON_GetStringValue(passwordJSON);
-        }
-    }
     
-    storage::SetWifiSettingsMessage request(enabled, mode, security, channel, ssid, password);
-    publish(&request);
+    bool settingsValid = true;
     
-    auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
-    if (response)
+    auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
+    if (enabledJSON != nullptr)
     {
-        cJSON *root = cJSON_CreateObject();
-        if (root != nullptr)
+        enabled = cJSON_IsTrue(enabledJSON);
+        if (enabled)
         {
-            cJSON_AddStringToObject(root, "type", JSON_WIFI_SAVED_TYPE);
-            cJSON_AddBoolToObject(root, "success", true);
+            auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
+            if (modeJSON != nullptr)
+            {
+                mode = (storage::WifiMode)(int)cJSON_GetNumberValue(modeJSON);
+                settingsValid &= mode == storage::WifiMode::ACCESS_POINT || mode == storage::WifiMode::CLIENT;
+            }
+            else
+            {
+                settingsValid = false;
+            }
         
-            // Note: below is responsible for cleanup.
-            sendJSONMessage_(root, activeWebSockets_);
-        }
-        else
-        {
-            // HTTP isn't 100% critical but we really should see what's leaking memory.
-            ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for Wi-Fi settings");
+            auto securityJSON = cJSON_GetObjectItem(message->request, "security");
+            if (securityJSON != nullptr)
+            {
+                security = (storage::WifiSecurityMode)(int)cJSON_GetNumberValue(securityJSON);
+                settingsValid &= mode == storage::WifiMode::CLIENT || (security >= storage::WifiSecurityMode::NONE && security <= storage::WifiSecurityMode::WPA2_AND_WPA3);
+            }
+            else
+            {
+                settingsValid = true;
+            }
+        
+            auto channelJSON = cJSON_GetObjectItem(message->request, "channel");
+            if (channelJSON != nullptr)
+            {
+                channel = (int)cJSON_GetNumberValue(channelJSON);
+                settingsValid &= channel >= 1 && channel <= 11;
+            }
+        
+            auto ssidJSON = cJSON_GetObjectItem(message->request, "ssid");
+            if (ssidJSON != nullptr)
+            {
+                ssid = cJSON_GetStringValue(ssidJSON);
+                settingsValid &= strlen(ssid) > 0;
+            }
+            
+            auto passwordJSON = cJSON_GetObjectItem(message->request, "password");
+            if (passwordJSON != nullptr)
+            {
+                password = cJSON_GetStringValue(passwordJSON);
+                settingsValid &= 
+                    mode == storage::WifiMode::CLIENT || 
+                    (security == storage::WifiSecurityMode::NONE && strlen(password) == 0) ||
+                    strlen(password) > 0;
+            }
         }
     }
     else
     {
-        ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for Wi-Fi settings to be saved");
+        settingsValid = false;
     }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetWifiSettingsMessage request(enabled, mode, security, channel, ssid, password);
+        publish(&request);
+    
+        auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for Wi-Fi settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_WIFI_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for Wi-Fi settings");
+    }
+    
+    cJSON_free(message->request);
 }
 
 void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message)

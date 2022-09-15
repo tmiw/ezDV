@@ -53,8 +53,8 @@ private:
     int8_t rightChannelVolume_;
     
     bool wifiEnabled_;
-    WifiSettingsMessage::WifiMode wifiMode_;
-    WifiSettingsMessage::WifiSecurityMode wifiSecurity_;
+    WifiMode wifiMode_;
+    WifiSecurityMode wifiSecurity_;
     int wifiChannel_;
     char wifiSsid_[WifiSettingsMessage::MAX_STR_SIZE];
     char wifiPassword_[WifiSettingsMessage::MAX_STR_SIZE];
@@ -63,15 +63,16 @@ private:
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
     
     void onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSettingsMessage* message);
-
+    void onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMessage* message);
+    
     void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
     void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);
-
+    
     void loadAllSettings_();
     void commit_();
     void setLeftChannelVolume_(int8_t vol);
     void setRightChannelVolume_(int8_t vol);
-    void setWifiSettings_(bool enabled, WifiSettingsMessage::WifiMode mode, WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password);
+    void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password);
     
     void initializeVolumes_();
     void initializeWifi_();

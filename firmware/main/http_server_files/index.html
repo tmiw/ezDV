@@ -39,6 +39,20 @@
             </div>
         </div>
         <form class="form-horizontal">
+            <div class="form-group" id="wifiSuccessAlertRow">
+                <div class="col-xs-12 col-md-12">
+                    <div class="alert alert-success" role="alert">
+                      Your Wi-Fi configuration has been saved. Please restart ezDV for the changes to take effect.
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" id="wifiFailAlertRow">
+                <div class="col-xs-12 col-md-12">
+                    <div class="alert alert-danger" role="alert">
+                      Could not save Wi-Fi configuration. Please verify your settings below and try again.
+                    </div>
+                </div>
+            </div>
             <div class="form-group">
                 <div class="col-xs-12 col-md-12">
                     <div class="checkbox">
@@ -49,44 +63,66 @@
                     </div>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group wifi-enable-row">
                 <label for="wifiMode" class="col-xs-4 col-md-2 control-label">Wireless Mode</label>
                 <div class="col-xs-8 col-md-10">
                   <select id="wifiMode">
-                      <option>Access Point</option>
-                      <option>Client</option>
+                      <option value="0">Access Point</option>
+                      <option value="1">Client</option>
                   </select>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group wifi-enable-row">
                 <label for="wifiSSID" class="col-xs-4 col-md-2 control-label">SSID</label>
                 <div class="col-xs-8 col-md-10">
-                  <input id="wifiSSID" value="ezDV XXXX" />
+                  <input id="wifiSSID" value="" />
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group wifi-enable-row">
                 <label for="wifiSecurityType" class="col-xs-4 col-md-2 control-label">Security Type</label>
                 <div class="col-xs-8 col-md-10">
                   <select id="wifiSecurityType">
-                      <option>Open</option>
-                      <option>WPA2-PSK</option>
-                      <option>WPA3-SAE</option>
+                      <option value="0">Open</option>
+                      <option value="1">WEP</option>
+                      <option value="2">WPA</option>
+                      <option value="3">WPA2</option>
+                      <option value="4">WPA/WPA2</option>
+                      <option value="5">WPA3</option>
+                      <option value="6">WPA2/WPA3</option>
                   </select>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group wifi-enable-row">
+                <label for="wifiChannel" class="col-xs-4 col-md-2 control-label">Channel</label>
+                <div class="col-xs-8 col-md-10">
+                  <select id="wifiChannel">
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4</option>
+                      <option>5</option>
+                      <option>6</option>
+                      <option>7</option>
+                      <option>8</option>
+                      <option>9</option>
+                      <option>10</option>
+                      <option>11</option>
+                  </select>
+                </div>
+            </div>
+            <div class="form-group wifi-enable-row">
                 <label for="wifiPassword" class="col-xs-4 col-md-2 control-label">Password</label>
                 <div class="col-xs-8 col-md-10">
-                  <input id="wifiPassword" type="password" value="this is a test" />
+                  <input id="wifiPassword" type="password" value="" />
                 </div>
             </div>
             <div class="form-group">
                 <div class="col-xs-3 col-md-1">&nbsp</div>
                 <div class="col-xs-2 col-md-1">
-                  <button type="submit" class="btn btn-default">Save</button>
+                  <button type="button" class="btn btn-success" id="wifiSave">Save</button>
                 </div>
                 <div class="col-xs-2 col-md-1">
-                  <button type="reset" class="btn btn-default">Reset</button>
+                  <button type="reset" class="btn btn-danger" id="wifiReset">Reset</button>
                 </div>
                 <div class="col-xs-5 col-md-9">&nbsp;</div>
               </div>
@@ -151,11 +187,6 @@
         </div>
     </div>
     <script src="/jquery-3.6.1.min.js.gz"></script>
-    <script>
-        socket = new WebSocket("ws://" + location.hostname + "/ws");
-        socket.onmessage = function(event) {
-            console.log(event);
-        };
-    </script>
+    <script src="/localscript.js"></script>
 </body>
 </html>

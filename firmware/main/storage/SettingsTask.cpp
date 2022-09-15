@@ -31,8 +31,8 @@
 #define WIFI_PASSWORD_ID ("wifiPass")
 
 #define DEFAULT_WIFI_ENABLED (false)
-#define DEFAULT_WIFI_MODE (WifiSettingsMessage::ACCESS_POINT)
-#define DEFAULT_WIFI_SECURITY (WifiSettingsMessage::NONE)
+#define DEFAULT_WIFI_MODE (WifiMode::ACCESS_POINT)
+#define DEFAULT_WIFI_SECURITY (WifiSecurityMode::NONE)
 #define DEFAULT_WIFI_CHANNEL (1)
 #define DEFAULT_WIFI_SSID ("")
 #define DEFAULT_WIFI_PASSWORD ("")
@@ -48,8 +48,8 @@ SettingsTask::SettingsTask()
     , leftChannelVolume_(0)
     , rightChannelVolume_(0)
     , wifiEnabled_(false)
-    , wifiMode_(WifiSettingsMessage::ACCESS_POINT)
-    , wifiSecurity_(WifiSettingsMessage::NONE)
+    , wifiMode_(WifiMode::ACCESS_POINT)
+    , wifiSecurity_(WifiSecurityMode::NONE)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
@@ -59,6 +59,7 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onRequestWifiSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onSetWifiSettingsMessage_);
     
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
@@ -330,7 +331,12 @@ void SettingsTask::setRightChannelVolume_(int8_t vol)
     }
 }
 
-void SettingsTask::setWifiSettings_(bool enabled, WifiSettingsMessage::WifiMode mode, WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password)
+void SettingsTask::onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMessage* message)
+{
+    setWifiSettings_(message->enabled, message->mode, message->security, message->channel, message->ssid, message->password);
+}
+
+void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password)
 {
     wifiEnabled_ = enabled;
     wifiMode_ = mode;

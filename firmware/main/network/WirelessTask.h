@@ -64,8 +64,9 @@ private:
     ezdv::audio::AudioInput* tlv320Handler_; 
     
     bool overrideWifiSettings_;
+    bool wifiRunning_;
         
-    void enableWifi_(storage::WifiSettingsMessage::WifiMode mode, storage::WifiSettingsMessage::WifiSecurityMode security, int channel, char* ssid, char* password);
+    void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password);
     void enableDefaultWifi_();
     
     void disableWifi_();

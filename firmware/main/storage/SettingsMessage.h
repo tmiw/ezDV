@@ -59,15 +59,14 @@ public:
     int8_t volume;
 };
 
+enum WifiMode { ACCESS_POINT, CLIENT };
+enum WifiSecurityMode { NONE, WEP, WPA, WPA2, WPA_AND_WPA2, WPA3, WPA2_AND_WPA3 };
+
 template<uint32_t TYPE_ID>
 class WifiSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>
 {
 public:
     enum { MAX_STR_SIZE = 32 };
-    
-    enum WifiMode { ACCESS_POINT, CLIENT };
-    
-    enum WifiSecurityMode { NONE, WEP, WPA, WPA2, WPA_AND_WPA2, WPA3, WPA2_AND_WPA3 };
     
     WifiSettingsMessageCommon(bool enabledProvided = false, WifiMode modeProvided = ACCESS_POINT, WifiSecurityMode securityProvided = NONE, int channelProvided = 0, char* ssidProvided = "", char* passwordProvided = "")
         : DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
