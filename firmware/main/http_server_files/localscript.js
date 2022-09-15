@@ -1,4 +1,55 @@
 //==========================================================================================
+// Form state change
+//==========================================================================================
+var updateWifiFormState = function() 
+{
+    if ($("#wifiEnable").is(':checked'))
+    {
+        $(".wifi-enable-row").show(); 
+    }
+    else
+    {
+        $(".wifi-enable-row").hide();
+    }
+    
+    if ($("#wifiMode").val() == 0)
+    {
+        // AP mode
+        $("#wifiSecurityType").prop("disabled", false);
+        $("#wifiChannel").prop("disabled", false);
+    }
+    else
+    {
+        // client mode
+        $("#wifiSecurityType").prop("disabled", true);
+        $("#wifiChannel").prop("disabled", true);
+    }
+    
+    if ($("#wifiMode").val() == 0 && $("#wifiSecurityType").val() == 0)
+    {
+        // Open / client mode
+        $("#wifiPassword").prop("disabled", true);
+    }
+    else
+    {
+        // Mode that requires encryption
+        $("#wifiPassword").prop("disabled", false);
+    }
+};
+
+var updateRadioFormState = function()
+{
+    if ($("#radioEnable").is(':checked'))
+    {
+        $(".radio-enable-row").show(); 
+    }
+    else
+    {
+        $(".radio-enable-row").hide();
+    }
+};
+
+//==========================================================================================
 // WebSocket handling
 //==========================================================================================
 var ws = null;
@@ -21,7 +72,9 @@ function wsConnect()
           $("#wifiSecurityType").val(json.security);
           $("#wifiChannel").val(json.channel);
           $("#wifiSSID").val(json.ssid);
-          $("#wifiPassword").val(json.password);          
+          $("#wifiPassword").val(json.password);      
+          
+          updateWifiFormState();    
       }
       else if (json.type == "wifiSaved")
       {
@@ -32,6 +85,31 @@ function wsConnect()
           else
           {
               $("#wifiFailAlertRow").show();
+          }
+      }
+      else if (json.type == "radioInfo")
+      {
+          // Display current Wi-Fi settings
+          $("#radioEnable").prop("disabled", false);
+          $("#radioReset").prop("disabled", false);
+          $("#radioEnable").prop("checked", json.enabled);
+          
+          $("#radioIP").val(json.host);
+          $("#radioPort").val(json.port);
+          $("#radioUsername").val(json.username);
+          $("#radioPassword").val(json.password);
+          
+          updateRadioFormState();
+      }
+      else if (json.type == "radioSaved")
+      {
+          if (json.success)
+          {
+              $("#radioSuccessAlertRow").show();
+          }
+          else
+          {
+              $("#radioFailAlertRow").show();
           }
       }
   };
@@ -51,46 +129,24 @@ function wsConnect()
   };
 }
 
+$("#radioEnable").change(function()
+{
+    updateRadioFormState();
+});
+
 $("#wifiEnable").change(function()
 {
-    if ($(this).is(':checked'))
-    {
-        $(".wifi-enable-row").show(); 
-    }
-    else
-    {
-        $(".wifi-enable-row").hide();
-    }
+    updateWifiFormState();
 });
 
 $("#wifiMode").change(function()
 {
-    if ($(this).val() == 0)
-    {
-        // AP mode
-        $("#wifiSecurityType").prop("disabled", false);
-        $("#wifiChannel").prop("disabled", false);
-    }
-    else
-    {
-        // client mode
-        $("#wifiSecurityType").prop("disabled", true);
-        $("#wifiChannel").prop("disabled", true);
-    }
+    updateWifiFormState();
 });
 
 $("#wifiSecurityType").change(function()
 {
-    if ($(this).val() == 0)
-    {
-        // Open mode
-        $("#wifiPassword").prop("disabled", true);
-    }
-    else
-    {
-        // Mode that requires encryption
-        $("#wifiPassword").prop("disabled", false);
-    }
+    updateWifiFormState();
 });
 
 $("#wifiSave").click(function()
@@ -113,6 +169,25 @@ $("#wifiSave").click(function()
     ws.send(JSON.stringify(obj));
 });
 
+$("#radioSave").click(function()
+{
+    var obj = 
+    {
+        "type": "saveRadioInfo",
+        "enabled": $("#radioEnable").is(':checked'),
+        "host": $("#radioIP").val(),
+        "port": parseInt($("#radioPort").val()),
+        "username": $("#radioUsername").val(),
+        "password": $("#radioPassword").val()
+    };
+    
+    $("#radioSuccessAlertRow").hide();
+    $("#radioFailAlertRow").hide();
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+});
+
 //==========================================================================================
 // Disable all form elements on page load. Connect to WebSocket and wait for initial messages.
 // These messages will trigger prefilling and reenabling of the form.
@@ -125,6 +200,13 @@ $( document ).ready(function()
     
     $("#wifiSuccessAlertRow").hide();
     $("#wifiFailAlertRow").hide();
+    
+    $(".radio-enable-row").hide();
+    $("#radioEnable").prop("disabled", true);
+    $("#radioReset").prop("disabled", true);
+    
+    $("#radioSuccessAlertRow").hide();
+    $("#radioFailAlertRow").hide();
     
     wsConnect();
 });

@@ -29,6 +29,8 @@
 #include "NetworkMessage.h"
 #include "storage/SettingsMessage.h"
 
+#include "HttpServerTask.h"
+
 namespace ezdv
 {
 
@@ -54,7 +56,7 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
-    HttpServerTask* httpServerTask_;
+    HttpServerTask httpServerTask_;
     icom::IcomSocketTask icomControlTask_;
     icom::IcomSocketTask icomAudioTask_;
     icom::IcomSocketTask icomCIVTask_;

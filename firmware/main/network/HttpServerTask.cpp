@@ -58,7 +58,7 @@ namespace network
 {
 
 HttpServerTask::HttpServerTask()
-    : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, 10)
+    : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, 1000)
 {
     registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
     

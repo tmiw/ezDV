@@ -82,7 +82,6 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 10)
-    , httpServerTask_(nullptr)
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
@@ -289,16 +288,14 @@ void WirelessTask::disableWifi_()
 
 void WirelessTask::enableHttp_()
 {
-    httpServerTask_ = new HttpServerTask();
-    assert(httpServerTask_ != nullptr);
-    httpServerTask_->start();
+    httpServerTask_.start();
 }
 
 void WirelessTask::disableHttp_()
 {
-    if (httpServerTask_ != nullptr)
+    if (wifiRunning_)
     {
-        httpServerTask_->sleep();
+        httpServerTask_.sleep();
     }
 }
 
@@ -313,13 +310,18 @@ void WirelessTask::onNetworkConnected_()
     storage::RequestRadioSettingsMessage request;
     publish(&request);
 
-    auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(1000), nullptr);
+    auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(2000), nullptr);
     if (response != nullptr)
     {
         if (response->enabled)
         {
+            ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
             icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-            publish(&message);
+            icomControlTask_.post(&message);
+        }
+        else
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Icom radio connectivity disabled");
         }
         
         delete response;
