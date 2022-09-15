@@ -59,15 +59,15 @@
 .wifi {
 	padding: 3px;
     position: relative;
-    top: 0.4em;
+    top: 0.3em;
     left: 1em;
 }
 
-@media (min-width: 768px) {
+/*@media (min-width: 768px) {
     .wifi {
         left: 4em;
     }
-}
+}*/
 
 .wifi, .wifi:before {
 	display: inline-block;
