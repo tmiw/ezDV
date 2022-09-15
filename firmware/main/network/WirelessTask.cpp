@@ -81,7 +81,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 }
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler)
-    : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 10)
+    : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)

@@ -43,7 +43,7 @@ static std::map<audio::SetFreeDVModeMessage::FreeDVMode, std::string> ModeList_ 
 };
 
 UserInterfaceTask::UserInterfaceTask()
-    : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
+    : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
     , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US)
     , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US)
     , currentMode_(audio::SetFreeDVModeMessage::ANALOG)

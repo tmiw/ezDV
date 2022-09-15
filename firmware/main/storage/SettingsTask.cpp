@@ -50,7 +50,7 @@ namespace storage
 {
 
 SettingsTask::SettingsTask()
-    : DVTask("SettingsTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
+    : DVTask("SettingsTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
     , leftChannelVolume_(0)
     , rightChannelVolume_(0)
     , wifiEnabled_(false)
