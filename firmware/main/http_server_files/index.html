@@ -151,5 +151,11 @@
         </div>
     </div>
     <script src="/jquery-3.6.1.min.js.gz"></script>
+    <script>
+        socket = new WebSocket("ws://" + location.hostname + "/ws");
+        socket.onmessage = function(event) {
+            console.log(event);
+        };
+    </script>
 </body>
 </html>

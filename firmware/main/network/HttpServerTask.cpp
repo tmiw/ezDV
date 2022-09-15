@@ -32,11 +32,21 @@
 
 #include "HttpServerTask.h"
 #include "NetworkMessage.h"
+#include "storage/SettingsMessage.h"
+
+extern "C"
+{
+    DV_EVENT_DEFINE_BASE(HTTP_SERVER_MESSAGE);
+}
 
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 #define SCRATCH_BUFSIZE 256
 #define CURRENT_LOG_TAG "HttpServerTask"
+
+#define JSON_BATTERY_STATUS_TYPE "batteryStatus"
+#define JSON_WIFI_STATUS_TYPE "wifiInfo"
+
 
 namespace ezdv
 {
@@ -47,7 +57,13 @@ namespace network
 HttpServerTask::HttpServerTask()
     : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, 10)
 {
-    // empty
+    registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
+    
+    // HTTP handlers called from web socket
+    registerMessageHandler(this, &HttpServerTask::onHttpWebsocketConnectedMessage_);
+    registerMessageHandler(this, &HttpServerTask::onHttpWebsocketDisconnectedMessage_);
+    registerMessageHandler(this, &HttpServerTask::onUpdateWifiMessage_);
+    registerMessageHandler(this, &HttpServerTask::onUpdateRadioMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -209,7 +225,85 @@ static esp_err_t ServeStaticPage(httpd_req_t *req)
     return ESP_OK;
 }
 
-static httpd_uri_t rootPage = 
+esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
+{
+    int fd = httpd_req_to_sockfd(req);
+    auto thisObj = (HttpServerTask*)req->user_ctx;
+    
+    if (req->method == HTTP_GET) 
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Websocket connection opened");
+        
+        HttpWebsocketConnectedMessage message(fd);
+        thisObj->post(&message);
+        
+        return ESP_OK;
+    }
+    
+    httpd_ws_frame_t ws_pkt;
+    uint8_t *buf = NULL;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+
+    /* Set max_len = 0 to get the frame len */
+    esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
+    if (ret != ESP_OK) 
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
+        return ret;
+    }
+
+    if (ws_pkt.len) 
+    {
+        /* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
+        buf = (uint8_t*)calloc(1, ws_pkt.len + 1);
+        if (buf == NULL) 
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Failed to calloc memory for buf");
+            return ESP_ERR_NO_MEM;
+        }
+        ws_pkt.payload = buf;
+        
+        /* Set max_len = ws_pkt.len to get the frame payload */
+        ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+        if (ret != ESP_OK) 
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "httpd_ws_recv_frame failed with %d", ret);
+            free(buf);
+            return ret;
+        }
+    }
+    
+    if (ws_pkt.type == HTTPD_WS_TYPE_TEXT)
+    {
+        cJSON* jsonMessage = cJSON_Parse((char*)buf);
+        free(buf);
+        
+        // Ignore messages that we can't parse.
+        if (jsonMessage != nullptr)
+        {
+            if (cJSON_GetObjectItem(jsonMessage, "type")) 
+            {
+                char *type = cJSON_GetObjectItem(jsonMessage,"type")->valuestring;
+                
+                if (!strcmp(type, "saveWifiInfo"))
+                {
+                    UpdateWifiMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "saveRadioInfo"))
+                {
+                    UpdateRadioMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+            }
+        }
+    }
+    
+    return ESP_OK;
+}
+
+static const httpd_uri_t rootPage = 
 {
     .uri = "/*",
     .method = HTTP_GET,
@@ -243,6 +337,14 @@ void HttpServerTask::onTaskStart_()
     ESP_ERROR_CHECK(httpd_start(&configServerHandle_, &config));
     
     // Configure URL handlers.
+    httpd_uri_t webSocketPage = {
+            .uri        = "/ws",
+            .method     = HTTP_GET,
+            .handler    = &ServeWebsocketPage_,
+            .user_ctx   = this,
+            .is_websocket = true
+    };
+    httpd_register_uri_handler(configServerHandle_, &webSocketPage);
     httpd_register_uri_handler(configServerHandle_, &rootPage);
 }
 
@@ -254,6 +356,112 @@ void HttpServerTask::onTaskWake_()
 void HttpServerTask::onTaskSleep_()
 {
     ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
+}
+
+void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message)
+{
+    activeWebSockets_.push_back(message->fd);
+
+    // Request current Wi-Fi/radio settings.
+    {
+        storage::RequestWifiSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::WifiSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_WIFI_STATUS_TYPE);
+                cJSON_AddBoolToObject(root, "enabled", response->enabled);
+                cJSON_AddNumberToObject(root, "mode", response->mode);
+                cJSON_AddNumberToObject(root, "security", response->security);
+                cJSON_AddNumberToObject(root, "channel", response->channel);
+                cJSON_AddStringToObject(root, "ssid", response->ssid);
+                cJSON_AddStringToObject(root, "password", response->password);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for Wi-Fi info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current Wi-Fi settings");
+        }
+    }
+}
+
+void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message)
+{
+    auto iter = std::find(activeWebSockets_.begin(), activeWebSockets_.end(), message->fd);
+    if (iter != activeWebSockets_.end())
+    {
+        activeWebSockets_.erase(iter);
+    }
+}
+
+void HttpServerTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message)
+{
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_BATTERY_STATUS_TYPE);
+        cJSON_AddNumberToObject(root, "voltage", message->voltage);
+        cJSON_AddNumberToObject(root, "stateOfCharge", message->soc);
+        cJSON_AddNumberToObject(root, "stateOfChargeChange", message->socChangeRate);
+        
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for battery status!");
+    }
+}
+
+void HttpServerTask::sendJSONMessage_(cJSON* message, WebSocketList& socketList)
+{
+    // Send to all sockets in list
+    for (auto& fd : socketList)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Sending JSON message to socket %d", fd);
+        
+        httpd_ws_frame_t wsPkt;
+        memset(&wsPkt, 0, sizeof(httpd_ws_frame_t));
+        wsPkt.payload = (uint8_t*)cJSON_Print(message);
+        wsPkt.len = strlen((char*)wsPkt.payload);
+        wsPkt.type = HTTPD_WS_TYPE_TEXT;
+            
+        if (httpd_ws_send_data(configServerHandle_, fd, &wsPkt) != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Websocket %d disconnected!", fd);
+            
+            // Queue up removal from the socket list.
+            HttpWebsocketDisconnectedMessage message(fd);
+            post(&message);
+        }
+    }
+    
+    cJSON_Delete(message);
+}
+
+void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* message)
+{
+    // empty
+}
+
+void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message)
+{
+    // empty
 }
 
 }

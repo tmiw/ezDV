@@ -18,6 +18,7 @@
 #include "esp_log.h"
 
 #include "MAX17048.h"
+#include "BatteryMessage.h"
 
 // 5% battery SOC alert threshold (0b00000 = 32%, 0b11111 = 1%)
 #define EMPTY_ALERT_THRESHOLD (0x1B)
@@ -120,7 +121,11 @@ void MAX17048::onTaskTick_()
         success &= readInt16Reg_(REG_CONFIG, &config);
         assert(success);
         
-        ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, voltage * 0.000078125, soc / 256.0, (int16_t)socChangeRate * 0.208);
+        // Publish battery status to all interested parties
+        BatteryStateMessage message(voltage * 0.000078125, soc / 256.0, (int16_t)socChangeRate * 0.208);
+        publish(&message);
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
     }
 }
 

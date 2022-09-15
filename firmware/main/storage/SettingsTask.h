@@ -61,6 +61,8 @@ private:
     
     DVTimer commitTimer_;
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
+    
+    void onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSettingsMessage* message);
 
     void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
     void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);

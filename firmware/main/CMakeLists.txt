@@ -6,6 +6,7 @@ set(SOURCES
     "audio/BeeperTask.cpp"
     "audio/FreeDVMessage.cpp"
     "audio/FreeDVTask.cpp"
+    "driver/BatteryMessage.cpp"
     "driver/ButtonArray.cpp"
     "driver/ButtonMessage.cpp"
     "driver/InputGPIO.cpp"
@@ -63,7 +64,8 @@ if(${ESP_PLATFORM})
                                 esp_timer
                                 esp_wifi
                                 driver
-                                nvs_flash)
+                                nvs_flash
+                                json)
 
 endif()
 

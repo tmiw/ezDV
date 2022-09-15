@@ -58,7 +58,8 @@ SettingsTask::SettingsTask()
     // Subscribe to messages
     registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
-
+    registerMessageHandler(this, &SettingsTask::onRequestWifiSettingsMessage_);
+    
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
     esp_err_t err = nvs_flash_init();
@@ -97,6 +98,25 @@ void SettingsTask::onTaskWake_()
 void SettingsTask::onTaskSleep_()
 {
     // none
+}
+
+void SettingsTask::onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSettingsMessage* message)
+{
+    // Publish current Wi-Fi settings to everyone who may care.
+    WifiSettingsMessage* response = new WifiSettingsMessage(
+        wifiEnabled_,
+        wifiMode_,
+        wifiSecurity_,
+        wifiChannel_,
+        wifiSsid_,
+        wifiPassword_
+    );
+    assert(response != nullptr);
+    if (origin != nullptr)
+    {
+        origin->post(response);
+    }
+    delete response;
 }
 
 void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)

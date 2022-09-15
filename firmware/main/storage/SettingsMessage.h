@@ -43,6 +43,7 @@ enum SettingsMessageTypes
     SET_RIGHT_CHANNEL_VOLUME = 4,
     WIFI_SETTINGS = 5,
     SET_WIFI_SETTINGS = 6,
+    REQUEST_WIFI_SETTINGS = 7,
 };
 
 template<uint32_t TYPE_ID>
@@ -98,6 +99,18 @@ using SetRightChannelVolumeMessage = VolumeMessageCommon<SET_RIGHT_CHANNEL_VOLUM
 
 using WifiSettingsMessage = WifiSettingsMessageCommon<WIFI_SETTINGS>;
 using SetWifiSettingsMessage = WifiSettingsMessageCommon<SET_WIFI_SETTINGS>;
+
+template<uint32_t TYPE_ID>
+class RequesSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>
+{
+public:
+    RequesSettingsMessageCommon()
+        : DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+    { }
+    virtual ~RequesSettingsMessageCommon() = default;
+};
+
+using RequestWifiSettingsMessage = RequesSettingsMessageCommon<REQUEST_WIFI_SETTINGS>;
 
 }
 
