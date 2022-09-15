@@ -44,6 +44,7 @@ enum SettingsMessageTypes
     WIFI_SETTINGS = 5,
     SET_WIFI_SETTINGS = 6,
     REQUEST_WIFI_SETTINGS = 7,
+    WIFI_SETTINGS_SAVED = 8,
 };
 
 template<uint32_t TYPE_ID>
@@ -111,6 +112,7 @@ public:
 };
 
 using RequestWifiSettingsMessage = RequesSettingsMessageCommon<REQUEST_WIFI_SETTINGS>;
+using WifiSettingsSavedMessage = RequesSettingsMessageCommon<WIFI_SETTINGS_SAVED>;
 
 }
 

@@ -391,6 +391,9 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiSettingsMessage::WifiMode 
         assert(message != nullptr);
         publish(message);
         delete message;
+        
+        WifiSettingsSavedMessage response;
+        publish(&response);
     }
 }
 
