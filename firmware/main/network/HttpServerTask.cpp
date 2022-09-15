@@ -47,6 +47,8 @@ extern "C"
 #define JSON_BATTERY_STATUS_TYPE "batteryStatus"
 #define JSON_WIFI_STATUS_TYPE "wifiInfo"
 #define JSON_WIFI_SAVED_TYPE "wifiSaved"
+#define JSON_RADIO_STATUS_TYPE "radioInfo"
+#define JSON_RADIO_SAVED_TYPE "radioSaved"
 
 
 namespace ezdv
@@ -400,6 +402,40 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current Wi-Fi settings");
         }
     }
+    
+    {
+        storage::RequestRadioSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_RADIO_STATUS_TYPE);
+                cJSON_AddBoolToObject(root, "enabled", response->enabled);
+                cJSON_AddStringToObject(root, "host", response->host);
+                cJSON_AddNumberToObject(root, "port", response->port);
+                cJSON_AddStringToObject(root, "username", response->username);
+                cJSON_AddStringToObject(root, "password", response->password);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for radio info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current radio settings");
+        }
+    }
 }
 
 void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message)
@@ -567,7 +603,95 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
 
 void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message)
 {
-    // empty
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating radio settings");
+    
+    bool enabled = false;
+    char* hostname = nullptr;
+    int port = 0;
+    char* username = nullptr;
+    char* password = nullptr;
+    
+    bool settingsValid = true;
+    
+    auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
+    if (enabledJSON != nullptr)
+    {
+        enabled = cJSON_IsTrue(enabledJSON);
+        if (enabled)
+        {
+            auto hostJSON = cJSON_GetObjectItem(message->request, "host");
+            if (hostJSON != nullptr)
+            {
+                hostname = cJSON_GetStringValue(hostJSON);
+                settingsValid &= strlen(hostname) > 0;
+            }
+            
+            auto portJSON = cJSON_GetObjectItem(message->request, "port");
+            if (portJSON != nullptr)
+            {
+                port = (int)cJSON_GetNumberValue(portJSON);
+                settingsValid &= port > 0 && port <= 65535;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+        
+            auto usernameJSON = cJSON_GetObjectItem(message->request, "username");
+            if (usernameJSON != nullptr)
+            {
+                username = cJSON_GetStringValue(usernameJSON);
+                settingsValid &= strlen(username) > 0;
+            }
+            
+            auto passwordJSON = cJSON_GetObjectItem(message->request, "password");
+            if (passwordJSON != nullptr)
+            {
+                password = cJSON_GetStringValue(passwordJSON);
+                settingsValid &= strlen(password) > 0;
+            }
+        }
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetRadioSettingsMessage request(enabled, hostname, port, username, password);
+        publish(&request);
+    
+        auto response = waitFor<storage::RadioSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for radio settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_RADIO_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for radio settings");
+    }
+    
+    cJSON_free(message->request);
 }
 
 }
