@@ -83,8 +83,6 @@ void IcomSocketTask::onTaskTick_()
 
 void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message)
 {
-    ESP_LOGI("XXX", "Starting connect");
-    
     if (socketType_ == CONTROL_SOCKET)
     {
         stateMachine_->start(message->ip, message->port, message->username, message->password);

@@ -68,60 +68,17 @@ void AudioState::onReceivePacket(IcomPacket& packet)
 
     if (packet.isAudioPacket(audioSeqId, &audioData))
     {
-        /*
-        if (audioSeqId == 0)
-        {
-            // Clear RX buffer
-            sm_.rxAudioPackets_.clear();
-        }
-        
-        // The audio packet has to one we haven't already received to go in the map.
-        if (audioSeqId > sm_.lastAudioPacketSeqId_ && sm_.rxAudioPackets_.find(audioSeqId) == sm_.rxAudioPackets_.end())
-        {
-            sm_.lastAudioPacketSeqId_ = audioSeqId;
-            sm_.rxAudioPackets_[audioSeqId] = packet;
-        }
-        
-        // Iterate through map and look for gaps in the stream. We'll need to rerequest those missing
-        // packets.
-        int first = -1, second = -1;
-        std::vector<uint16_t> packetIdsToRetransmit;
-        for (auto& iter : sm_.rxAudioPackets_)
-        {
-            first = second;
-            second = iter.first;
-            
-            if (first != -1 && second != -1)
-            {
-                for (int seq = first; seq < second; seq++)
-                {
-                    // gap found, request packets
-                    packetIdsToRetransmit.push_back(seq);
-                    
-                    ESP_LOGI(
-                        sm_.get_name().c_str(), 
-                        "Requesting retransmit of packet %d",
-                        seq);
-                }
-            }
-        }
-        
-        auto reqPacket = IcomPacket::CreateRetransmitRequest(sm_.getOurIdentifier(), sm_.getTheirIdentifier(), packetIdsToRetransmit);
-        sm_.sendUntracked(reqPacket);*/
-        
-        int totalSize = (packet.getSendLength() - 0x18) / sizeof(short);
-
         auto task = (IcomSocketTask*)(parent_->getTask());
         auto outputFifo = task->getAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL);
         if (outputFifo != nullptr)
         {
+            int totalSize = (packet.getSendLength() - 0x18) / sizeof(short);
             codec2_fifo_write(outputFifo, audioData, totalSize); 
         }
     }
-    else
-    {
-        TrackedPacketState::onReceivePacket(packet);
-    }
+
+    // Call into parent to perform missing packet handling.
+    TrackedPacketState::onReceivePacket(packet);
 }
 
 void AudioState::onAudioOutTimer_()
@@ -139,18 +96,19 @@ void AudioState::onAudioOutTimer_()
     memset(tempAudioOut, 0, MAX_PACKET_SIZE * sizeof(short));
 
     uint16_t samplesToRead = 160; // 320 bytes
-    while (codec2_fifo_used(inputFifo) >= samplesToRead)
-    {    
+    if (codec2_fifo_used(inputFifo) >= samplesToRead)
+    {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
-        auto packet = IcomPacket::CreateAudioPacket(
-            audioSequenceNumber_++,
-            parent_->getOurIdentifier(), 
-            parent_->getTheirIdentifier(), 
-            tempAudioOut, 
-            samplesToRead);
-
-        sendTracked_(packet);
     }
+    
+    auto packet = IcomPacket::CreateAudioPacket(
+        audioSequenceNumber_++,
+        parent_->getOurIdentifier(), 
+        parent_->getTheirIdentifier(), 
+        tempAudioOut, 
+        samplesToRead);
+
+    sendTracked_(packet);
 }
 
 }

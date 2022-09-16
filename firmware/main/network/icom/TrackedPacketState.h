@@ -46,6 +46,7 @@ public:
 protected:
     DVTimer pingTimer_;
     DVTimer idleTimer_;
+    DVTimer retransmitRequestTimer_;
 
     void sendTracked_(IcomPacket& packet);
 
@@ -56,12 +57,15 @@ private:
     uint32_t numSavedBytesInPacketQueue_;
 
     std::map<uint16_t, std::pair<uint64_t, IcomPacket> > sentPackets_;
-
+    std::map<uint16_t, int> rxPacketIds_;
+    std::map<uint16_t, int> rxMissingPacketIds_;
+    
     void sendPing_();
     void retransmitPacket_(uint16_t packet);
 
     void onPingTimer_();
     void onIdleTimer_();
+    void onRetransmitTimer_();
 
     void incrementPingSequence_(uint16_t pingSeq);
 

@@ -174,10 +174,9 @@ void LoginState::onReceivePacket(IcomPacket& packet)
             // TBD -- reset state machines
         }
     }
-    else
-    {
-        TrackedPacketState::onReceivePacket(packet);
-    }
+    
+    // Call into parent to perform missing packet handling.
+    TrackedPacketState::onReceivePacket(packet);
 
     if (packetSent)
     {

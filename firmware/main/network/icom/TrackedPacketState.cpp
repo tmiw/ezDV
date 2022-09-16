@@ -32,6 +32,7 @@ TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
     , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD))
     , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD))
+    , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
     //, civSequenceNumber_(0)
@@ -53,15 +54,23 @@ void TrackedPacketState::onEnterState()
     sentPackets_.clear();
     numSavedBytesInPacketQueue_ = 0;
 
-    // Start ping and idle timers at this point. Idle will be stopped/started
+    // Reset received packets
+    rxPacketIds_.clear();
+    rxMissingPacketIds_.clear();
+    
+    // Start ping, retransmit and idle timers at this point. Idle will be stopped/started
     // whenever we send something.
     pingTimer_.start();
     idleTimer_.start();
+    retransmitRequestTimer_.start();
 }
 
 void TrackedPacketState::onExitState()
 {
     // TBD: cleanup
+    pingTimer_.stop();
+    idleTimer_.stop();
+    retransmitRequestTimer_.stop();
 }
 
 void TrackedPacketState::onReceivePacket(IcomPacket& packet)
@@ -69,6 +78,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
     uint16_t pingSequence;
     bool packetSent;
     std::vector<uint16_t> retryPackets;
+    bool addReceivedPacket = false;
 
     if (packet.isPingRequest(pingSequence))
     {
@@ -93,12 +103,73 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
             retransmitPacket_(packetId);
         }
     }
+    else
+    {
+        addReceivedPacket = true;
+    }
 
     if (packetSent)
     {
         // Recycle idle timer as we sent something non-idle.
         idleTimer_.stop();
         idleTimer_.start();
+    }
+    
+    // Missing packet list processing    
+    if (addReceivedPacket)
+    {
+        auto controlPacket = packet.getConstTypedPacket<control_packet>();
+        auto rxSeq = controlPacket->seq;
+        
+        if (rxPacketIds_.size() == 0)
+        {
+            // Add packet to received list if we just started
+            rxPacketIds_[rxSeq] = 1;
+        }
+        else
+        {
+            auto firstSeqInBuffer = rxPacketIds_.begin()->first;
+            auto lastSeqInBuffer = rxPacketIds_.rbegin()->first;
+            if (rxSeq < firstSeqInBuffer || (rxSeq - lastSeqInBuffer) > MAX_MISSING)
+            {
+                // Too many missing packets, clear buffer and add.
+                ESP_LOGE(parent_->getName().c_str(), "Too many missing packets, resetting!");
+                rxPacketIds_.clear();
+                rxMissingPacketIds_.clear();
+                rxPacketIds_[rxSeq] = 1;
+            }
+            else
+            {
+                auto iter = rxPacketIds_.find(rxSeq);
+                if (iter == rxPacketIds_.end())
+                {
+                    rxPacketIds_[rxSeq] = 1;
+                    if (rxPacketIds_.size() > BUFSIZE)
+                    {
+                        // Make sure RX packet list is no bigger than BUFSIZE
+                        rxPacketIds_.erase(rxPacketIds_.begin());
+                    }
+                    
+                    auto missingIter = rxMissingPacketIds_.find(rxSeq);
+                    if (missingIter != rxMissingPacketIds_.end())
+                    {
+                        rxMissingPacketIds_.erase(missingIter);
+                    }
+                    else
+                    {
+                        if (rxSeq > (lastSeqInBuffer + 1))
+                        {
+                            // Detected missing packets! Insert into missing list for later request.
+                            ESP_LOGW(parent_->getName().c_str(), "Detected missing packets from seq = %d to %d", lastSeqInBuffer + 1, rxSeq);
+                            for (int id = lastSeqInBuffer + 1; id < rxSeq; id++)
+                            {
+                                rxMissingPacketIds_[id] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -180,6 +251,19 @@ void TrackedPacketState::onIdleTimer_()
 {
     // Idle timer fired. Send control packet with seq = 0
     auto packet = IcomPacket::CreateIdlePacket(0, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+    parent_->sendUntracked(packet);
+}
+
+void TrackedPacketState::onRetransmitTimer_()
+{
+    std::vector<uint16_t> retransmitList;
+    for (auto& packet : rxMissingPacketIds_)
+    {
+        retransmitList.push_back(packet.first);
+    }
+    
+    // Send retransmit request
+    auto packet = IcomPacket::CreateRetransmitRequest(parent_->getOurIdentifier(), parent_->getTheirIdentifier(), retransmitList);
     parent_->sendUntracked(packet);
 }
 

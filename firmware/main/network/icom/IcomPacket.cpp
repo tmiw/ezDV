@@ -265,7 +265,7 @@ IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId,
         uint16_t* pos = (uint16_t*)((uint8_t*)result.getData() + sizeof(control_packet));
         for (auto& id : packetIdsToRetransmit)
         {
-            *pos++ = ToBigEndian(id);
+            *(pos++) = ToBigEndian(id);
         }
     }
     
@@ -503,14 +503,14 @@ bool IcomPacket::isRetransmitPacket(std::vector<uint16_t>& retryPackets)
             if (size_ == CONTROL_SIZE)
             {
                 // only one packet to resend
-                retryPackets.push_back(ToLittleEndian(typedPacket->seq));
+                retryPackets.push_back(typedPacket->seq);
             }
             else
             {
                 uint16_t* ids = (uint16_t*)(getData() + CONTROL_SIZE);
                 for (int sz = CONTROL_SIZE; sz < size_; sz += sizeof(uint16_t))
                 {
-                    retryPackets.push_back(ToLittleEndian(*ids++));
+                    retryPackets.push_back(*(ids++));
                 }
             }
         }

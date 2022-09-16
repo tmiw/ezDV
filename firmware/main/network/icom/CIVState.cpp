@@ -84,10 +84,9 @@ void CIVState::onReceivePacket(IcomPacket& packet)
             civId_ = civPacket[3];
         }
     }
-    else
-    {
-        TrackedPacketState::onReceivePacket(packet);
-    }
+
+    // Call into parent to perform missing packet handling.
+    TrackedPacketState::onReceivePacket(packet);
 }
 
 void CIVState::sendCIVOpenPacket_()

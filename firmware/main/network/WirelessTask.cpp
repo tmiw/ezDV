@@ -317,7 +317,7 @@ void WirelessTask::onNetworkConnected_()
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
             icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-            icomControlTask_.post(&connectMessage);
+            publish(&connectMessage);
         }
         else
         {
