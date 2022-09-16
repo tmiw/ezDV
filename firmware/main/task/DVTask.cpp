@@ -228,6 +228,8 @@ void DVTask::postHelper_(MessageEntry* entry)
 
 void DVTask::threadEntry_()
 {
+    UBaseType_t stackWaterMark = INT_MAX;
+    
     // Run in an infinite loop, continually waiting for messages
     // and processing them.
     for (;;)
@@ -249,6 +251,13 @@ void DVTask::threadEntry_()
         }
 
         onTaskTick_();
+        
+        UBaseType_t newStackWaterMark = uxTaskGetStackHighWaterMark(nullptr);
+        if (newStackWaterMark < stackWaterMark)
+        {
+            stackWaterMark = newStackWaterMark;
+            ESP_LOGI(taskName_.c_str(), "New stack high water mark of %d", newStackWaterMark);
+        }
     }
 }
 
