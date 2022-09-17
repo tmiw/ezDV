@@ -61,6 +61,7 @@ private:
     DVTask* owner_;
     GPIOChangeFn onStateChange_;
     bool interruptEnabled_;
+    bool currentState_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
 
@@ -72,6 +73,7 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange)
     : owner_(owner)
     , onStateChange_(onChange)
     , interruptEnabled_(false)
+    , currentState_(false)
 {
     ESP_ERROR_CHECK(gpio_reset_pin(NumGPIO));
     ESP_ERROR_CHECK(gpio_set_direction(NumGPIO, GPIO_MODE_INPUT));
@@ -79,6 +81,8 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange)
     ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
     ESP_ERROR_CHECK(gpio_pullup_en(NumGPIO));
     enableInterrupt(false);
+    
+    currentState_ = gpio_get_level(NumGPIO) == 1;
 
     owner_->registerMessageHandler(this, &InputGPIO<NumGPIO>::onGPIOStateChange_);
 }
@@ -119,7 +123,13 @@ bool InputGPIO<NumGPIO>::getCurrentValue()
 template<gpio_num_t NumGPIO>
 void InputGPIO<NumGPIO>::onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message)
 {
-    onStateChange_(this, getCurrentValue());
+    auto pendingCurrent = getCurrentValue();
+    if (pendingCurrent != currentState_)
+    {
+        // Suppress callbacks if there hasn't actually been a change in value.
+        currentState_ = pendingCurrent;
+        onStateChange_(this, currentState_);
+    }
 }
 
 template<gpio_num_t NumGPIO>
