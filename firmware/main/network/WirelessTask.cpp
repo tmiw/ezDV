@@ -76,6 +76,15 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
         case WIFI_EVENT_AP_STOP:
         case WIFI_EVENT_STA_DISCONNECTED:
             obj->onNetworkDisconnected_();
+
+            if (event_id == WIFI_EVENT_STA_DISCONNECTED && !obj->wifiRunning_)
+            {
+                // Reattempt connection to access point if we couldn't find
+                // it the first time around.
+                esp_wifi_disconnect();
+                ESP_ERROR_CHECK(esp_wifi_connect());
+            }
+
             break;
     }
 }
@@ -310,6 +319,8 @@ void WirelessTask::onNetworkConnected_()
 {
     WirelessNetworkStatusMessage message(true);
     publish(&message);
+
+    wifiRunning_ = true;
     
     enableHttp_();
     
@@ -373,7 +384,6 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     // Avoid accidentally trying to re-initialize Wi-Fi.
     if (!wifiRunning_)
     {
-        wifiRunning_ = true;
         if (overrideWifiSettings_)
         {
             // Setup is *just* different enough that we have to have a separate function for it
