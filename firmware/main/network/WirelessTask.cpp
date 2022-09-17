@@ -212,6 +212,9 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+    // Disable power save.
+    esp_wifi_set_ps(WIFI_PS_NONE);
+
     if (mode == storage::WifiMode::ACCESS_POINT)
     {
         wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
