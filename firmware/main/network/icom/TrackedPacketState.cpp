@@ -118,6 +118,8 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
     if (addReceivedPacket)
     {
         auto controlPacket = packet.getConstTypedPacket<control_packet>();
+        assert(controlPacket != nullptr);
+        
         auto rxSeq = controlPacket->seq;
         
         if (rxPacketIds_.size() == 0)
