@@ -61,6 +61,9 @@ void CIVState::onEnterState()
 
 void CIVState::onExitState()
 {
+    // Send CIV close packet before performing general close processing.
+    sendCIVClosePacket_();
+    
     TrackedPacketState::onExitState();
 }
 
@@ -93,6 +96,13 @@ void CIVState::sendCIVOpenPacket_()
 {
     ESP_LOGI(parent_->getName().c_str(), "Sending CIV open packet");
     auto packet = IcomPacket::CreateCIVOpenClosePacket(civSequenceNumber_++, parent_->getOurIdentifier(), parent_->getTheirIdentifier(), false);
+    sendTracked_(packet);
+}
+
+void CIVState::sendCIVClosePacket_()
+{
+    ESP_LOGI(parent_->getName().c_str(), "Sending CIV close packet");
+    auto packet = IcomPacket::CreateCIVOpenClosePacket(civSequenceNumber_++, parent_->getOurIdentifier(), parent_->getTheirIdentifier(), true);
     sendTracked_(packet);
 }
 

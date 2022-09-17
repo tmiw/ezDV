@@ -54,6 +54,7 @@ IcomSocketTask::IcomSocketTask(SocketType socketType)
     
     registerMessageHandler(this, &IcomSocketTask::onIcomConnectRadioMessage_);
     registerMessageHandler(this, &IcomSocketTask::onIcomCIVAudioConnectionInfo_);
+    registerMessageHandler(this, &IcomSocketTask::onRadioDisconnectedMessage_);
 }
 
 IcomSocketTask::~IcomSocketTask()
@@ -68,7 +69,7 @@ void IcomSocketTask::onTaskStart_()
 
 void IcomSocketTask::onTaskWake_()
 {
-    // empty, must wait for outside to tell us to connect
+    // empty
 }
 
 void IcomSocketTask::onTaskSleep_()
@@ -108,6 +109,18 @@ void IcomSocketTask::onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioC
     {
         stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort);
     }
+}
+
+void IcomSocketTask::onRadioDisconnectedMessage_(DVTask* origin, DisconnectedRadioMessage* message)
+{
+    // Call task sleep actions to trigger reporting of task finishing sleep.
+    DVTask::onTaskSleep_(nullptr, nullptr);
+}
+
+void IcomSocketTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
+    // Transition to the null state. This should trigger state-specific cleanup.
+    stateMachine_->reset();
 }
 
 std::string IcomSocketTask::GetTaskName_(SocketType socketType)

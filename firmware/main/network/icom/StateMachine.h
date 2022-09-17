@@ -49,7 +49,8 @@ public:
     virtual ~StateMachine() = default;
 
     void transitionState(int newState);
-
+    void reset();
+    
     std::string getName();
     DVTask* getTask();
     

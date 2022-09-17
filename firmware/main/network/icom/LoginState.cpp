@@ -62,9 +62,11 @@ void LoginState::onEnterState()
 
 void LoginState::onExitState()
 {
-    TrackedPacketState::onExitState();
+    // Send token removal packet to cause radio to disconnect.
+    sendTokenRemovePacket_();
 
-    // TBD cleanup actions
+    // Perform base class cleanup actions.
+    TrackedPacketState::onExitState();
 }
 
 std::string LoginState::getName()
@@ -161,8 +163,8 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 parent_->getName().c_str(), 
                 "Disconnected from the radio"
             );
-                
-            // TBD -- reset state machines
+            
+            parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
         }
         else
         {
@@ -171,7 +173,7 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 "Connection failed"
             );
                 
-            // TBD -- reset state machines
+            parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
         }
     }
     
@@ -205,6 +207,12 @@ void LoginState::sendTokenAckPacket_(uint32_t theirToken)
 void LoginState::sendTokenRenewPacket_()
 {
     auto packet = IcomPacket::CreateTokenRenewPacket(authSequenceNumber_++, ourTokenRequest_, theirToken_, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+    sendTracked_(packet);
+}
+
+void LoginState::sendTokenRemovePacket_()
+{
+    auto packet = IcomPacket::CreateTokenRemovePacket(authSequenceNumber_++, ourTokenRequest_, theirToken_, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
     sendTracked_(packet);
 }
 

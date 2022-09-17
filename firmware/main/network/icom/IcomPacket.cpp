@@ -246,7 +246,7 @@ IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId,
     static_assert(CONTROL_SIZE == sizeof(control_packet));
     constexpr uint16_t packetType = 0x01;
     
-    size_t numBytesAtEnd = sizeof(uint16_t) * (packetIdsToRetransmit.size() - 1);
+    size_t numBytesAtEnd = sizeof(uint16_t) * (packetIdsToRetransmit.size());
     IcomPacket result(sizeof(control_packet) + numBytesAtEnd);
     auto packet = result.getTypedPacket<control_packet>();
     packet->len = sizeof(control_packet) + numBytesAtEnd;

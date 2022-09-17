@@ -50,6 +50,7 @@ private:
     uint8_t civId_;
     
     void sendCIVOpenPacket_();
+    void sendCIVClosePacket_();
     void sendCIVPacket_(uint8_t* packet, uint16_t size);
     
     void onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message);

@@ -41,6 +41,7 @@ enum IcomMessageTypes
 {
     CIV_AUDIO_CONN_INFO = 1,
     CONNECT_RADIO = 2,
+    DISCONNECTED_RADIO = 3,
 };
 
 class IcomCIVAudioConnectionInfo : public DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>
@@ -107,6 +108,15 @@ public:
     int port;
     char username[STR_SIZE];
     char password[STR_SIZE];
+};
+
+class DisconnectedRadioMessage : public DVTaskMessageBase<DISCONNECTED_RADIO, DisconnectedRadioMessage>
+{
+public:
+    DisconnectedRadioMessage()
+        : DVTaskMessageBase<DISCONNECTED_RADIO, DisconnectedRadioMessage>(ICOM_MESSAGE)
+        {}
+    virtual ~DisconnectedRadioMessage() = default;
 };
 
 }

@@ -18,6 +18,7 @@
 #include "esp_log.h"
 #include "TrackedPacketState.h"
 #include "IcomStateMachine.h"
+#include "IcomMessage.h"
 
 namespace ezdv
 {
@@ -66,10 +67,22 @@ void TrackedPacketState::onEnterState()
 
 void TrackedPacketState::onExitState()
 {
-    // TBD: cleanup
+    ESP_LOGI(parent_->getName().c_str(), "Leaving state");
+    
+    // Send disconnect packet
+    auto packet = IcomPacket::CreateDisconnectPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+    parent_->sendUntracked(packet);
+    
+    // Stop timers
     pingTimer_.stop();
     idleTimer_.stop();
     retransmitRequestTimer_.stop();
+    
+    // Give Wi-Fi layer a few hundred ms to send the message, then send disconnected 
+    // message to upper level task.
+    vTaskDelay(pdMS_TO_TICKS(200));
+    DisconnectedRadioMessage message;
+    parent_->getTask()->post(&message);
 }
 
 void TrackedPacketState::onReceivePacket(IcomPacket& packet)
@@ -257,6 +270,19 @@ void TrackedPacketState::onIdleTimer_()
 
 void TrackedPacketState::onRetransmitTimer_()
 {
+    if (rxMissingPacketIds_.size() == 0)
+    {
+        // Skip processing if there are no missing packets.
+        return;
+    }
+    else if (rxMissingPacketIds_.size() > MAX_MISSING)
+    {
+        ESP_LOGE(parent_->getName().c_str(), "Too many missing packets while processing retransmit, resetting!");
+        rxPacketIds_.clear();
+        rxMissingPacketIds_.clear();
+        return;
+    }
+    
     std::vector<uint16_t> retransmitList;
     for (auto& packet : rxMissingPacketIds_)
     {

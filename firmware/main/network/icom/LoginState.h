@@ -56,6 +56,7 @@ private:
     void sendLoginPacket_();
     void sendTokenAckPacket_(uint32_t theirToken);
     void sendTokenRenewPacket_();
+    void sendTokenRemovePacket_();
     void sendUseRadioPacket_(int radioIndex);
 
     void insertCapability_(radio_cap_packet_t radio);

@@ -56,6 +56,8 @@ protected:
 
     virtual void onTaskTick_() override;
     
+    virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message);
+    
 private:
     SocketType socketType_;
     IcomStateMachine* stateMachine_;
@@ -63,6 +65,7 @@ private:
     
     void onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message);
     void onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioConnectionInfo* message);
+    void onRadioDisconnectedMessage_(DVTask* origin, DisconnectedRadioMessage* message);
     
     static std::string GetTaskName_(SocketType socketType);
 };
