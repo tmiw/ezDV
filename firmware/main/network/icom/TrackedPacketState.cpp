@@ -191,8 +191,8 @@ void TrackedPacketState::sendTracked_(IcomPacket& packet)
 {
     uint8_t* rawPacket = const_cast<uint8_t*>(packet.getData());
     
-    // If sequence number is now 0, we've probably rolled over.
-    if (sendSequenceNumber_ == 0)
+    // If sequence number rolled over, clear the sent packets list.
+    if (sentPackets_.size() == 0 || sendSequenceNumber_ < sentPackets_.begin().first)
     {
         sentPackets_.clear();
         numSavedBytesInPacketQueue_ = 0;
