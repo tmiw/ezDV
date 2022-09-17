@@ -138,7 +138,14 @@ void IcomSocketTask::onRadioDisconnectedMessage_(DVTask* origin, DisconnectedRad
 void IcomSocketTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     // Transition to the null state. This should trigger state-specific cleanup.
-    stateMachine_->reset();
+    if (stateMachine_->getCurrentState() == nullptr)
+    {
+        DVTask::onTaskSleep_(nullptr, nullptr);
+    }
+    else
+    {
+        stateMachine_->reset();
+    }
 }
 
 std::string IcomSocketTask::GetTaskName_(SocketType socketType)

@@ -99,6 +99,7 @@ private:
     
     httpd_handle_t configServerHandle_;
     WebSocketList activeWebSockets_;
+    bool isRunning_;
     
     void onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message);
     void onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message);

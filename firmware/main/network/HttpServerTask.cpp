@@ -59,6 +59,7 @@ namespace network
 
 HttpServerTask::HttpServerTask()
     : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
+    , isRunning_(false)
 {
     registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
     
@@ -319,38 +320,43 @@ static const httpd_uri_t rootPage =
 
 void HttpServerTask::onTaskStart_()
 {
-    esp_vfs_spiffs_conf_t conf = {
-      .base_path = "/http",
-      .partition_label = "http",
-      .max_files = 5,
-      .format_if_mount_failed = false
-    };
+    if (!isRunning_)
+    {
+        esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/http",
+        .partition_label = "http",
+        .max_files = 5,
+        .format_if_mount_failed = false
+        };
 
-    // Use settings defined above to initialize and mount SPIFFS filesystem.
-    // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
-    ESP_ERROR_CHECK(esp_vfs_spiffs_register(&conf));
-    
-    // Generate default configuration
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    
-    /* Use the URI wildcard matching function in order to
-     * allow the same handler to respond to multiple different
-     * target URIs which match the wildcard scheme */
-    config.uri_match_fn = httpd_uri_match_wildcard;
-    
-    // Start HTTP server.
-    ESP_ERROR_CHECK(httpd_start(&configServerHandle_, &config));
-    
-    // Configure URL handlers.
-    httpd_uri_t webSocketPage = {
-            .uri        = "/ws",
-            .method     = HTTP_GET,
-            .handler    = &ServeWebsocketPage_,
-            .user_ctx   = this,
-            .is_websocket = true
-    };
-    httpd_register_uri_handler(configServerHandle_, &webSocketPage);
-    httpd_register_uri_handler(configServerHandle_, &rootPage);
+        // Use settings defined above to initialize and mount SPIFFS filesystem.
+        // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
+        ESP_ERROR_CHECK(esp_vfs_spiffs_register(&conf));
+        
+        // Generate default configuration
+        httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+        
+        /* Use the URI wildcard matching function in order to
+        * allow the same handler to respond to multiple different
+        * target URIs which match the wildcard scheme */
+        config.uri_match_fn = httpd_uri_match_wildcard;
+        
+        // Start HTTP server.
+        ESP_ERROR_CHECK(httpd_start(&configServerHandle_, &config));
+        
+        // Configure URL handlers.
+        httpd_uri_t webSocketPage = {
+                .uri        = "/ws",
+                .method     = HTTP_GET,
+                .handler    = &ServeWebsocketPage_,
+                .user_ctx   = this,
+                .is_websocket = true
+        };
+        httpd_register_uri_handler(configServerHandle_, &webSocketPage);
+        httpd_register_uri_handler(configServerHandle_, &rootPage);
+
+        isRunning_ = true;
+    }
 }
 
 void HttpServerTask::onTaskWake_()
@@ -360,8 +366,13 @@ void HttpServerTask::onTaskWake_()
 
 void HttpServerTask::onTaskSleep_()
 {
-    ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
-    esp_vfs_spiffs_unregister("http");
+    if (isRunning_)
+    {
+        ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
+        esp_vfs_spiffs_unregister("http");
+
+        isRunning_ = false;
+    }
 }
 
 void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message)

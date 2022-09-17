@@ -156,12 +156,12 @@ void WirelessTask::enableDefaultWifi_()
                                                         ESP_EVENT_ANY_ID,
                                                         &WiFiEventHandler_,
                                                         this,
-                                                        NULL));
+                                                        &wifiEventHandle_));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
                                                         ESP_EVENT_ANY_ID,
                                                         &IPEventHandler_,
                                                         this,
-                                                        NULL));
+                                                        &ipEventHandle_));
                                                         
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -302,7 +302,17 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
 
 void WirelessTask::disableWifi_()
 {
-    ESP_ERROR_CHECK(esp_wifi_stop());
+    ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
+
+    esp_event_handler_instance_unregister(WIFI_EVENT,
+                                            ESP_EVENT_ANY_ID,
+                                            &wifiEventHandle_);
+    esp_event_handler_instance_unregister(IP_EVENT,
+                                            ESP_EVENT_ANY_ID,
+                                            &ipEventHandle_);
+
+    esp_wifi_disconnect();
+    esp_wifi_stop();
 }
 
 void WirelessTask::enableHttp_()

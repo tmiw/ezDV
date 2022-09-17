@@ -67,6 +67,8 @@ private:
     
     bool overrideWifiSettings_;
     bool wifiRunning_;
+    esp_event_handler_instance_t wifiEventHandle_;
+    esp_event_handler_instance_t  ipEventHandle_;
         
     void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password);
     void enableDefaultWifi_();
