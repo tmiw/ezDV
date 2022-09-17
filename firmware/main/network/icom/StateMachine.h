@@ -58,6 +58,9 @@ public:
 
 protected:
     virtual std::string getName_() = 0;
+    
+    // Optional; default is no-op.
+    virtual void onTransitionComplete_();
 
     void addState_(int stateId, StateMachineState* state);
     

@@ -79,6 +79,11 @@ void StateMachine::reset()
     owner_->post(&message);
 }
 
+void StateMachine::onTransitionComplete_()
+{
+    // empty
+}
+
 void StateMachine::addState_(int stateId, StateMachineState* state)
 {
     stateIdToStateMap_[stateId] = state;
@@ -104,6 +109,8 @@ void StateMachine::onStateMachineTransition_(DVTask* origin, StateMachineTransit
     {
         currentState_->onEnterState();
     }
+
+    onTransitionComplete_();
 }
 
 }

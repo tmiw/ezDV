@@ -62,6 +62,9 @@ void LoginState::onEnterState()
 
 void LoginState::onExitState()
 {
+    // Disable token renew timer.
+    tokenRenewTimer_.stop();
+    
     // Send token removal packet to cause radio to disconnect.
     sendTokenRemovePacket_();
 
@@ -148,14 +151,27 @@ void LoginState::onReceivePacket(IcomPacket& packet)
     {
         if (connSuccess)
         {
-            ESP_LOGI(
-                parent_->getName().c_str(), 
-                "Starting audio and CIV state machines using remote ports %d and %d",
-                remoteAudioPort,
-                remoteCivPort);
-            
-            IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, audioPort_, remoteAudioPort);
-            parent_->getTask()->publish(&message);
+            if (remoteAudioPort == 0 && remoteCivPort == 0)
+            {
+                // Radio is shutting down, transition back to login state.
+                ESP_LOGI(parent_->getName().c_str(), "Radio is shutting down!");
+
+                IcomCIVAudioConnectionInfo message(0, 0, 0, 0);
+                parent_->getTask()->publish(&message);
+
+                parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
+            }
+            else
+            {
+                ESP_LOGI(
+                    parent_->getName().c_str(), 
+                    "Starting audio and CIV state machines using remote ports %d and %d",
+                    remoteAudioPort,
+                    remoteCivPort);
+                
+                IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, audioPort_, remoteAudioPort);
+                parent_->getTask()->publish(&message);
+            }
         }
         else if (connDisconnected)
         {

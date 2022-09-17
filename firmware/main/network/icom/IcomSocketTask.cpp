@@ -97,17 +97,35 @@ void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadio
 
 void IcomSocketTask::onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioConnectionInfo* message)
 {
-    if (socketType_ == AUDIO_SOCKET)
+    if (message->remoteCivPort == 0 && message->remoteAudioPort == 0)
     {
-        // Report successful connection
-        ezdv::network::RadioConnectionStatusMessage response(true);
-        publish(&response);
-        
-        stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort);
+        if (socketType_ == AUDIO_SOCKET)
+        {
+            // Report connection termination
+            ezdv::network::RadioConnectionStatusMessage response(false);
+            publish(&response);
+        }
+
+        // Transition to idle state
+        if (socketType_ == AUDIO_SOCKET || socketType_ == CIV_SOCKET)
+        {
+            stateMachine_->reset();
+        }
     }
-    else if (socketType_ == CIV_SOCKET)
+    else
     {
-        stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort);
+        if (socketType_ == AUDIO_SOCKET)
+        {
+            // Report successful connection
+            ezdv::network::RadioConnectionStatusMessage response(true);
+            publish(&response);
+            
+            stateMachine_->start(ip_, message->remoteAudioPort, "", "", message->localAudioPort);
+        }
+        else if (socketType_ == CIV_SOCKET)
+        {
+            stateMachine_->start(ip_, message->remoteCivPort, "", "", message->localCivPort);
+        }
     }
 }
 

@@ -155,6 +155,18 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
+void IcomStateMachine::onTransitionComplete_()
+{
+    if (getCurrentState() == nullptr && socket_ != 0)
+    {
+        ESP_LOGI(getName().c_str(), "Closing UDP socket");
+
+        // We're fully shut down now, so close the socket.
+        close(socket_);
+        socket_ = 0;
+    }
+}
+
 void IcomStateMachine::readPendingPackets()
 {
     auto state = getProtocolState_();

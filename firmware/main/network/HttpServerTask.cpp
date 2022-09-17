@@ -361,6 +361,7 @@ void HttpServerTask::onTaskWake_()
 void HttpServerTask::onTaskSleep_()
 {
     ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
+    esp_vfs_spiffs_unregister("http");
 }
 
 void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message)

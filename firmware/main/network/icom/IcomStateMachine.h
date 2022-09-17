@@ -56,6 +56,8 @@ public:
 protected:
     virtual std::string getName_() = 0;
 
+    virtual void onTransitionComplete_();
+
 private:
     int socket_;
 
