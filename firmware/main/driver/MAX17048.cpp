@@ -56,7 +56,7 @@ namespace driver
 {
 
 MAX17048::MAX17048(I2CDevice* i2cDevice)
-    : DVTask("MAX17048", 10 /* TBD */, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10000))
+    : DVTask("MAX17048", 10 /* TBD */, 2870, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10000))
     , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , enabled_(false)

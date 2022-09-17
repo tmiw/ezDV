@@ -227,8 +227,8 @@ void TLV320::initializeI2S_()
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
 
     // Update DMA info for the channel to prevent overflows.
-    chan_cfg.dma_desc_num = 16;
-    chan_cfg.dma_frame_num = I2S_NUM_SAMPLES_PER_INTERVAL;
+    //chan_cfg.dma_desc_num = 16;
+    //chan_cfg.dma_frame_num = I2S_NUM_SAMPLES_PER_INTERVAL;
     chan_cfg.auto_clear = true;
     
     // Allocate a new full duplex channel and get the handles of the channels

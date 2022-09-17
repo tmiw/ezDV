@@ -48,7 +48,6 @@ void TrackedPacketState::onEnterState()
     // Reset sequence numbers.
     pingSequenceNumber_ = 0;
     sendSequenceNumber_ = 1; // Start sequence at 1.
-    //civSequenceNumber_ = 0;
 
     // Reset sent packets list
     sentPackets_.clear();
