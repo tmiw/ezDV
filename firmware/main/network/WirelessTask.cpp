@@ -388,6 +388,25 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
         );
     }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "rerouting audio pipes internally");
+
+        tlv320Handler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
+            freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+        );
+        
+        icomAudioTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+            nullptr
+        );
+
+        freedvHandler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+            tlv320Handler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+        );
+    }
 }
 
 void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
