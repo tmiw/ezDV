@@ -110,6 +110,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
     }
     else if (packet.isRetransmitPacket(retryPackets))
     {
+        ESP_LOGI(parent_->getName().c_str(), "Received retransmit packet");
         for (auto packetId : retryPackets)
         {
             retransmitPacket_(packetId);
@@ -157,12 +158,13 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
                 auto iter = rxPacketIds_.find(rxSeq);
                 if (iter == rxPacketIds_.end())
                 {
-                    rxPacketIds_[rxSeq] = 1;
-                    if (rxPacketIds_.size() > BUFSIZE)
+                    if ((rxPacketIds_.size() + 1) > BUFSIZE)
                     {
                         // Make sure RX packet list is no bigger than BUFSIZE
                         rxPacketIds_.erase(rxPacketIds_.begin());
                     }
+                    
+                    rxPacketIds_[rxSeq] = 1;
                     
                     auto missingIter = rxMissingPacketIds_.find(rxSeq);
                     if (missingIter != rxMissingPacketIds_.end())
@@ -301,18 +303,18 @@ void TrackedPacketState::incrementPingSequence_(uint16_t pingSeq)
 }
 
 void TrackedPacketState::retransmitPacket_(uint16_t packet)
-{
-    ESP_LOGI(parent_->getName().c_str(), "Retransmitting packet %d", packet);
-    
+{    
     if (sentPackets_.find(packet) != sentPackets_.end())
     {
         // No need to track as we've sent it before.
+        ESP_LOGI(parent_->getName().c_str(), "Retransmitting packet %d", packet);
         parent_->sendUntracked(sentPackets_[packet].second);
     }
     else
     {
         // Send idle packet with the same seq# if we can't find the original packet.
         IcomPacket tmpPacket = IcomPacket::CreateIdlePacket(packet, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+        ESP_LOGI(parent_->getName().c_str(), "Packet %d not found, transmitting idle packet instead", packet);
         parent_->sendUntracked(tmpPacket);
     }
 }
