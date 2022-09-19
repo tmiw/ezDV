@@ -48,8 +48,8 @@ lidPlaneThickness   = 2.0;
 // Total height of box = basePlaneThickness + lidPlaneThickness 
 //                     + baseWallHeight + lidWallHeight
 
-baseWallHeight      = 13;
-lidWallHeight       = 7.5;
+baseWallHeight      = 12.5;
+lidWallHeight       = 9;
 
 pcbLength           = 69.85;
 pcbWidth            = 64.70;
@@ -85,7 +85,7 @@ cutoutsFront = [
     [16.51, 3.5, 8, 8, 0, yappCircle, yappCenter ],
     [45.72, 3.5, 8, 8, 0, yappCircle, yappCenter ],
     [22.75, -2.5, 12.5, 7, 0, yappRectangle ],
-    [34.56, -2.5, 6, 1, 0, yappRectangle ]
+    //[34.56, -2.5, 6, 1, 0, yappRectangle ]
 ];
 
 snapJoins = [
@@ -123,8 +123,8 @@ module addButton(x, y)
             };
             translate([0,0,-lidWallHeight+pcbThickness+4.5]) cube([2,2,(baseWallHeight-standoffHeight)+lidWallHeight], center=true);
             translate([0,0,3.5]) color("green") cube([3.3,3.3,1], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness+1]) cube([3,3,2], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness-1]) cube([5.5,5.5,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness]) cube([3,3,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness-2]) cube([5.5,5.5,2], center=true);
         }
     }
 }
