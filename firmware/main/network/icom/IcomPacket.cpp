@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "esp_heap_caps.h"
+
 #include <random>
 #include <cstring>
 #include "IcomPacket.h"
@@ -28,6 +30,16 @@ namespace network
 namespace icom
 {
 
+void* IcomPacket::operator new(std::size_t count)
+{
+    return heap_caps_malloc(count, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+}
+
+void IcomPacket::operator delete(void* ptr)
+{
+    heap_caps_free(ptr);
+}
+
 IcomPacket::IcomPacket()
     : rawPacket_(nullptr)
     , size_(0)
@@ -36,31 +48,31 @@ IcomPacket::IcomPacket()
 }
 
 IcomPacket::IcomPacket(char* existingPacket, int size)
-    : rawPacket_(new char[size])
+    : rawPacket_((char*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT))
     , size_(size)
 {
-    //assert(rawPacket_ != nullptr);
+    assert(rawPacket_ != nullptr);
     memcpy(rawPacket_, existingPacket, size_);
 }
 
 IcomPacket::IcomPacket(int size)
-    : rawPacket_(new char[size])
+    : rawPacket_((char*)heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT))
     , size_(size)
 {
-    //assert(rawPacket_ != nullptr);
+    assert(rawPacket_ != nullptr);
     memset(rawPacket_, 0, size);
 }
     
 IcomPacket::IcomPacket(const IcomPacket& packet)
-    : rawPacket_(new char[packet.size_])
+    : rawPacket_((char*)heap_caps_malloc(packet.size_, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT))
     , size_(packet.size_)
 {
-    //assert(rawPacket_ != nullptr);
+    assert(rawPacket_ != nullptr);
     memcpy(rawPacket_, packet.rawPacket_, size_);
 }
 
 IcomPacket::IcomPacket(IcomPacket&& packet)
-    : rawPacket_(std::move(packet.rawPacket_))
+    : rawPacket_(packet.rawPacket_)
     , size_(packet.size_)
 {
     packet.rawPacket_ = nullptr;
@@ -69,7 +81,7 @@ IcomPacket::IcomPacket(IcomPacket&& packet)
 
 IcomPacket::~IcomPacket()
 {
-    delete[] rawPacket_;
+    heap_caps_free(rawPacket_);
 }
 
 int IcomPacket::getSendLength()
@@ -85,9 +97,9 @@ const uint8_t* IcomPacket::getData()
 
 IcomPacket& IcomPacket::operator=(const IcomPacket& packet)
 {
-    delete[] rawPacket_;
+    heap_caps_free(rawPacket_);
     
-    rawPacket_ = new char[packet.size_];
+    rawPacket_ = (char*)heap_caps_malloc(packet.size_, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(rawPacket_ != nullptr);
     memcpy(rawPacket_, packet.rawPacket_, packet.size_);
     size_ = packet.size_;
@@ -97,9 +109,9 @@ IcomPacket& IcomPacket::operator=(const IcomPacket& packet)
 
 IcomPacket& IcomPacket::operator=(IcomPacket&& packet)
 {
-    delete[] rawPacket_;
+    heap_caps_free(rawPacket_);
     
-    rawPacket_ = std::move(packet.rawPacket_);
+    rawPacket_ = packet.rawPacket_;
     size_ = packet.size_;
     packet.rawPacket_ = nullptr;
     packet.size_ = 0;

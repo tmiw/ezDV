@@ -19,6 +19,7 @@
 #define ICOM_STATE_MACHINE_H
 
 #include "StateMachine.h"
+#include "IcomMessage.h"
 #include "IcomPacket.h"
 
 using namespace ezdv::task;
@@ -70,6 +71,8 @@ private:
     std::string password_;
 
     IcomProtocolState* getProtocolState_();
+
+    void onResendPacket_(DVTask* owner, ResendPacketMessage* message);
 };
 
 }

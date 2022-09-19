@@ -37,11 +37,14 @@ namespace icom
 
 using namespace ezdv::task;
 
+class IcomPacket;
+
 enum IcomMessageTypes
 {
     CIV_AUDIO_CONN_INFO = 1,
     CONNECT_RADIO = 2,
     DISCONNECTED_RADIO = 3,
+    RESEND_PACKET = 4,
 };
 
 class IcomCIVAudioConnectionInfo : public DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>
@@ -117,6 +120,18 @@ public:
         : DVTaskMessageBase<DISCONNECTED_RADIO, DisconnectedRadioMessage>(ICOM_MESSAGE)
         {}
     virtual ~DisconnectedRadioMessage() = default;
+};
+
+class ResendPacketMessage : public DVTaskMessageBase<RESEND_PACKET, ResendPacketMessage>
+{
+public:
+    ResendPacketMessage(IcomPacket* packetProvided = nullptr)
+        : DVTaskMessageBase<RESEND_PACKET, ResendPacketMessage>(ICOM_MESSAGE)
+        , packet(packetProvided)
+        {}
+    virtual ~ResendPacketMessage() = default;
+
+    IcomPacket* packet;
 };
 
 }

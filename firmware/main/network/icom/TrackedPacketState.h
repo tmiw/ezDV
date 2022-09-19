@@ -20,6 +20,7 @@
 
 #include "task/DVTimer.h"
 #include "IcomProtocolState.h"
+#include "IcomPacket.h"
 
 namespace ezdv
 {
@@ -56,9 +57,18 @@ private:
 
     uint32_t numSavedBytesInPacketQueue_;
 
-    std::map<uint16_t, std::pair<uint64_t, IcomPacket> > sentPackets_;
-    std::map<uint16_t, int> rxPacketIds_;
-    std::map<uint16_t, int> rxMissingPacketIds_;
+    std::map<
+        uint16_t, 
+        std::pair<uint64_t, IcomPacket>, 
+        std::less<uint16_t>, 
+        IcomAllocator<
+            std::pair<
+                const uint16_t, 
+                std::pair<uint64_t, IcomPacket>
+            >
+        > > sentPackets_;
+    std::map<uint16_t, int, std::less<uint16_t>, IcomAllocator<std::pair<const uint16_t, int>>> rxPacketIds_;
+    std::map<uint16_t, int, std::less<uint16_t>, IcomAllocator<std::pair<const uint16_t, int>>> rxMissingPacketIds_;
     
     void sendPing_();
     void retransmitPacket_(uint16_t packet);

@@ -39,7 +39,7 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , theirIdentifier_(0)
     , port_(0)
 {
-    // empty
+    owner->registerMessageHandler(this, &IcomStateMachine::onResendPacket_);
 }
 
 std::string IcomStateMachine::getUsername()
@@ -69,18 +69,32 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
+    int currSleepMs = 10;
+    int tries = 1;
     do
     {
         auto rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
         if (rv == -1)
         {
             auto err = errno;
-            ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while sending", err, strerror(err));
+            ESP_LOGE(
+                getName().c_str(),
+                "Try %d: Got socket error %d (%s) while sending, will sleep %d ms before next attempt", 
+                tries, err, strerror(err), currSleepMs);
 
             if (err == ENOMEM)
             {
-                // wait 1 tick to allow buffers to clear, then try again
-                vTaskDelay(1);
+                if (currSleepMs > 100)
+                {
+                    // We're probably not going to be able to send this one in a
+                    // reasonable timeframe.
+                    break;
+                }
+
+                // Wait a bit before reattempting send.
+                vTaskDelay(pdMS_TO_TICKS(currSleepMs));
+                currSleepMs <<= 2;
+                tries++;
                 continue;
             }
             else
@@ -205,6 +219,13 @@ void IcomStateMachine::readPendingPackets()
 IcomProtocolState* IcomStateMachine::getProtocolState_()
 {
     return static_cast<IcomProtocolState*>(getCurrentState());
+}
+
+void IcomStateMachine::onResendPacket_(DVTask* owner, ResendPacketMessage* message)
+{
+    assert(message->packet != nullptr);
+    sendUntracked(*message->packet);
+    delete message->packet;
 }
 
 }

@@ -18,8 +18,11 @@
 #ifndef ICOM_PACKET_H
 #define ICOM_PACKET_H
 
+#include "esp_heap_caps.h"
+
 #include <string>
 #include <vector>
+#include <memory>
 #include "RadioPacketDefinitions.h"
 
 namespace ezdv
@@ -31,9 +34,27 @@ namespace network
 namespace icom
 {
 
+template<typename T>
+struct IcomAllocator : public std::allocator<T>
+{
+    typename std::allocator<T>::pointer allocate( typename std::allocator<T>::size_type n, const void * hint = 0 )
+    {
+        return (typename std::allocator<T>::pointer)heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    }
+
+    void deallocate( T* p, std::size_t n )
+    {
+        heap_caps_free(p);
+    }
+};
+
 class IcomPacket
 {
 public:
+    // To force allocation inside SPI RAM.
+    static void* operator new(std::size_t count);
+    static void operator delete(void* ptr);
+
     IcomPacket();
     IcomPacket(char* existingPacket, int size);
     IcomPacket(int size);
