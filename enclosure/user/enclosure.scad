@@ -117,7 +117,7 @@ module addButton(x, y)
             {
                 color("red") cube([5,5,2]);
                 //color("black") translate([0.25,0.25,0.25]) cube([4.5,4.5,/*3.25,3.25,*/1]);
-                translate([0.75,0.75,-1]) color("blue") cube([3.5,3.5,13]);
+                translate([1.25,1.25,-1]) color("blue") cube([2.5,2.5,13]);
                 //translate([0,0,4]) cube([3.5,3.5,1]);
                 //translate([0.3,0.3,2]) cube([3,3,2]);
             };
