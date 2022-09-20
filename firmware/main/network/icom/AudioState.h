@@ -47,9 +47,11 @@ public:
 
 private:
     DVTimer audioOutTimer_;
+    DVTimer audioWatchdogTimer_;
     uint16_t audioSequenceNumber_;
 
     void onAudioOutTimer_();
+    void onAudioWatchdog_();
 };
 
 }

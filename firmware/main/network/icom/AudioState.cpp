@@ -32,6 +32,7 @@ namespace icom
 AudioState::AudioState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
     , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20))
+    , audioWatchdogTimer_(parent_->getTask(), std::bind(&AudioState::onAudioWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , audioSequenceNumber_(0)
 {
     // empty
@@ -46,12 +47,15 @@ void AudioState::onEnterState()
 
     // Start audio output timer
     audioOutTimer_.start();
+    
+    // Start watchdog
+    audioWatchdogTimer_.start();
 }
 
 void AudioState::onExitState()
 {
-    // TBD: cleanup
     audioOutTimer_.stop();
+    audioWatchdogTimer_.stop();
 
     TrackedPacketState::onExitState();
 }
@@ -68,6 +72,10 @@ void AudioState::onReceivePacket(IcomPacket& packet)
 
     if (packet.isAudioPacket(audioSeqId, &audioData))
     {
+        // Restart watchdog
+        audioWatchdogTimer_.stop();
+        audioWatchdogTimer_.start();
+        
         auto task = (IcomSocketTask*)(parent_->getTask());
         auto outputFifo = task->getAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL);
         if (outputFifo != nullptr)
@@ -79,6 +87,12 @@ void AudioState::onReceivePacket(IcomPacket& packet)
 
     // Call into parent to perform missing packet handling.
     TrackedPacketState::onReceivePacket(packet);
+}
+
+void AudioState::onAudioWatchdog_()
+{
+    ESP_LOGW(parent_->getName().c_str(), "No audio data received recently, reconnecting channel");
+    parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
 void AudioState::onAudioOutTimer_()

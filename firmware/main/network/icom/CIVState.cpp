@@ -30,7 +30,7 @@ namespace icom
 
 CIVState::CIVState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , civIdTimer_(parent_->getTask(), std::bind(&CIVState::sendCIVIdRequest_, this), MS_TO_US(2000))
+    , civWatchdogTimer_(parent_->getTask(), std::bind(&CIVState::onCIVWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , civSequenceNumber_(0)
     , civId_(0)
 {
@@ -46,11 +46,7 @@ void CIVState::onEnterState()
     civId_ = 0;
     
     sendCIVOpenPacket_();
-    sendCIVIdRequest_();
-}
-
-void CIVState::sendCIVIdRequest_()
-{
+    
     // Send request to get the radio ID on the other side.
     uint8_t civPacket[] = {
         0xFE,
@@ -63,14 +59,11 @@ void CIVState::sendCIVIdRequest_()
     };
 
     sendCIVPacket_(civPacket, sizeof(civPacket));
-
-    civIdTimer_.stop();
-    civIdTimer_.start();
 }
 
 void CIVState::onExitState()
 {
-    civIdTimer_.stop();
+    civWatchdogTimer_.stop();
 
     // Send CIV close packet before performing general close processing.
     sendCIVClosePacket_();
@@ -90,18 +83,25 @@ void CIVState::onReceivePacket(IcomPacket& packet)
     
     if (packet.isCivPacket(&civPacket, &civLength))
     {
+        civWatchdogTimer_.stop();
+        
         // ignore for now except to get the CI-V ID of the 705. TBD
         ESP_LOGI(parent_->getName().c_str(), "Received CIV packet (from %02x, to %02x, type %02x)", civPacket[3], civPacket[2], civPacket[4]);
         
         if (civPacket[2] == 0xE0)
         {
             civId_ = civPacket[3];
-            civIdTimer_.stop();
         }
     }
 
     // Call into parent to perform missing packet handling.
     TrackedPacketState::onReceivePacket(packet);
+}
+
+void CIVState::onCIVWatchdog_()
+{
+    ESP_LOGW(parent_->getName().c_str(), "No CIV data received recently, reconnecting channel");
+    parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
 void CIVState::sendCIVOpenPacket_()
@@ -123,6 +123,9 @@ void CIVState::sendCIVPacket_(uint8_t* civPacket, uint16_t civLength)
     ESP_LOGI(parent_->getName().c_str(), "Sending CIV data packet");
     auto packet = IcomPacket::CreateCIVPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier(), civSequenceNumber_++, civPacket, civLength);
     sendTracked_(packet);
+    
+    civWatchdogTimer_.stop();
+    civWatchdogTimer_.start();
 }
 
 void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message)
