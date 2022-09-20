@@ -46,13 +46,15 @@ public:
     virtual void onReceivePacket(IcomPacket& packet) override;
 
 private:
+    DVTimer civIdTimer_;
     uint16_t civSequenceNumber_;
     uint8_t civId_;
     
     void sendCIVOpenPacket_();
     void sendCIVClosePacket_();
+    void sendCIVIdRequest_();
     void sendCIVPacket_(uint8_t* packet, uint16_t size);
-    
+
     void onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message);
 };
 

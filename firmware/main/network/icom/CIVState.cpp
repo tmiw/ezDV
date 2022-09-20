@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <functional>
 #include "CIVState.h"
 #include "IcomStateMachine.h"
 
@@ -29,6 +30,7 @@ namespace icom
 
 CIVState::CIVState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
+    , civIdTimer_(parent_->getTask(), std::bind(&CIVState::sendCIVIdRequest_, this), MS_TO_US(2000))
     , civSequenceNumber_(0)
     , civId_(0)
 {
@@ -44,7 +46,11 @@ void CIVState::onEnterState()
     civId_ = 0;
     
     sendCIVOpenPacket_();
-        
+    sendCIVIdRequest_();
+}
+
+void CIVState::sendCIVIdRequest_()
+{
     // Send request to get the radio ID on the other side.
     uint8_t civPacket[] = {
         0xFE,
@@ -57,10 +63,15 @@ void CIVState::onEnterState()
     };
 
     sendCIVPacket_(civPacket, sizeof(civPacket));
+
+    civIdTimer_.stop();
+    civIdTimer_.start();
 }
 
 void CIVState::onExitState()
 {
+    civIdTimer_.stop();
+
     // Send CIV close packet before performing general close processing.
     sendCIVClosePacket_();
     
@@ -85,6 +96,7 @@ void CIVState::onReceivePacket(IcomPacket& packet)
         if (civPacket[2] == 0xE0)
         {
             civId_ = civPacket[3];
+            civIdTimer_.stop();
         }
     }
 
