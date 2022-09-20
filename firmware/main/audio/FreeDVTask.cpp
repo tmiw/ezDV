@@ -273,3 +273,23 @@ void codec2_complex_dot_product_f32(float* left, float* right, size_t len, float
     *resultReal = realTimesRealResult - imagTimesImagResult;
     *resultImag = realTimesImag1Result + realTimesImag2Result;
 }
+
+/* Required memory allocation wrapper for embedded platforms. For ezDV, we want to allocate as much as possible
+   on external RAM. */
+extern "C"
+{
+    void* codec2_malloc(size_t size)
+    {
+        return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    }
+
+    void* codec2_calloc(size_t nmemb, size_t size)
+    {
+        return heap_caps_calloc(nmemb, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    }
+
+    void codec2_free(void* ptr)
+    {
+        heap_caps_free(ptr);
+    }
+}
