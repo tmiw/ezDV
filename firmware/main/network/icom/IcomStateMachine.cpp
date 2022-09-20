@@ -38,6 +38,7 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , ourIdentifier_(0)
     , theirIdentifier_(0)
     , port_(0)
+    , localPort_(0)
 {
     owner->registerMessageHandler(this, &IcomStateMachine::onResendPacket_);
 }
@@ -69,41 +70,7 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
-    int currSleepMs = 10;
-    int tries = 1;
-    do
-    {
-        auto rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
-        if (rv == -1)
-        {
-            auto err = errno;
-            ESP_LOGE(
-                getName().c_str(),
-                "Try %d: Got socket error %d (%s) while sending, will sleep %d ms before next attempt", 
-                tries, err, strerror(err), currSleepMs);
-
-            if (err == ENOMEM)
-            {
-                if (currSleepMs > 100)
-                {
-                    // We're probably not going to be able to send this one in a
-                    // reasonable timeframe.
-                    break;
-                }
-
-                // Wait a bit before reattempting send.
-                vTaskDelay(pdMS_TO_TICKS(currSleepMs));
-                currSleepMs <<= 2;
-                tries++;
-                continue;
-            }
-            else
-            {
-                // TBD: close and reopen
-            }
-        }
-        break;
-    } while(true);
+    queuedPackets_.push_back(packet);
 }
 
 void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)
@@ -113,16 +80,33 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     username_ = username;
     password_ = password;
 
+    // Create and bind UDP socket to force the specified local port number.
+    if (localPort == 0)
+    {
+        localPort_ = port_;
+    }
+    else
+    {
+        localPort_ = localPort;
+    }
+
+    openSocket_();
+
+    // We're now connected, start running the state machine.
+    transitionState(IcomProtocolState::ARE_YOU_THERE);
+}
+
+void IcomStateMachine::openSocket_()
+{
+    if (socket_ > 0)
+    {
+        close(socket_);
+    }
+
     struct sockaddr_in radioAddress;
     radioAddress.sin_addr.s_addr = inet_addr(ip_.c_str());
     radioAddress.sin_family = AF_INET;
     radioAddress.sin_port = htons(port_);
-
-    // Create and bind UDP socket to force the specified local port number.
-    if (localPort == 0)
-    {
-        localPort = port_;
-    }
     
     socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_ == -1)
@@ -136,7 +120,7 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
 
     ourSocketAddress.sin_family = AF_INET;
-    ourSocketAddress.sin_port = htons(localPort);
+    ourSocketAddress.sin_port = htons(localPort_);
     ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
         
     auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
@@ -154,7 +138,7 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
     ourIdentifier_ = 
         (((localIp >> 8) & 0xFF) << 24) | 
         ((localIp & 0xFF) << 16) |
-        (localPort & 0xFFFF);
+        (localPort_ & 0xFFFF);
 
     // Connect to the radio.
     rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
@@ -164,9 +148,6 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
         ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while connecting", err, strerror(err));
     }
     assert(rv != -1);
-
-    // We're now connected, start running the state machine.
-    transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
 void IcomStateMachine::onTransitionComplete_()
@@ -179,6 +160,39 @@ void IcomStateMachine::onTransitionComplete_()
         close(socket_);
         socket_ = 0;
     }
+}
+
+void IcomStateMachine::writePendingPackets()
+{
+    if (socket_ > 0)
+    {
+        for (auto& packet : queuedPackets_)
+        {
+            int rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
+            while (rv == -1)
+            {
+                auto err = errno;
+                ESP_LOGE(
+                    getName().c_str(),
+                    "Got socket error %d (%s) while sending", 
+                    err, strerror(err));
+
+                if (err == ENOMEM)
+                {
+                    // Close and reopen socket, try again on next go-around.
+                    openSocket_();
+                    break;
+                }
+                else
+                {
+                    // TBD: close/reopen connection
+                    break;
+                }
+            }
+        }
+    }
+
+    queuedPackets_.clear();
 }
 
 void IcomStateMachine::readPendingPackets()

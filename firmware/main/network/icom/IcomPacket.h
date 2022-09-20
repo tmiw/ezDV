@@ -39,7 +39,7 @@ struct IcomAllocator : public std::allocator<T>
 {
     typename std::allocator<T>::pointer allocate( typename std::allocator<T>::size_type n, const void * hint = 0 )
     {
-        return (typename std::allocator<T>::pointer)heap_caps_malloc(n, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+        return (typename std::allocator<T>::pointer)heap_caps_malloc(n*sizeof(T), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     }
 
     void deallocate( T* p, std::size_t n )

@@ -80,6 +80,7 @@ void IcomSocketTask::onTaskSleep_()
 void IcomSocketTask::onTaskTick_()
 {
     stateMachine_->readPendingPackets();
+    stateMachine_->writePendingPackets();
 }
 
 void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message)

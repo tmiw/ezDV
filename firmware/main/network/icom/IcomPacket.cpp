@@ -32,7 +32,7 @@ namespace icom
 
 void* IcomPacket::operator new(std::size_t count)
 {
-    return heap_caps_malloc(count, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    return heap_caps_malloc(sizeof(IcomPacket)*count, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
 }
 
 void IcomPacket::operator delete(void* ptr)

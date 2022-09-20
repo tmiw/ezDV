@@ -287,7 +287,7 @@ extern "C" void app_main()
         app->wake();
     }
     
-#if 0
+#if 1
     // infinite loop to track heap use
     for(;;)
     {
