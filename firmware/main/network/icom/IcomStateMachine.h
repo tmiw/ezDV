@@ -72,7 +72,7 @@ private:
     std::string password_;
     uint16_t localPort_;
 
-    std::vector<IcomPacket> queuedPackets_;
+    std::vector<IcomPacket, IcomAllocator<IcomPacket> > queuedPackets_;
 
     IcomProtocolState* getProtocolState_();
 

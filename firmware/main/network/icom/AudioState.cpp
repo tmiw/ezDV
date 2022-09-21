@@ -113,7 +113,6 @@ void AudioState::onAudioOutTimer_()
     if (codec2_fifo_used(inputFifo) >= samplesToRead)
     {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
-    }
     
     auto packet = IcomPacket::CreateAudioPacket(
         audioSequenceNumber_++,
@@ -123,6 +122,7 @@ void AudioState::onAudioOutTimer_()
         samplesToRead);
 
     sendTracked_(packet);
+    }
 }
 
 }

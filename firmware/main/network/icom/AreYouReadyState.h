@@ -18,6 +18,7 @@
 #ifndef ARE_YOU_READY_STATE_H
 #define ARE_YOU_READY_STATE_H
 
+#include "task/DVTimer.h"
 #include "IcomProtocolState.h"
 
 namespace ezdv
@@ -28,6 +29,8 @@ namespace network
 
 namespace icom
 {
+
+using namespace ezdv::task;
 
 class AreYouReadyState : public IcomProtocolState
 {
@@ -44,6 +47,11 @@ public:
 
 protected:
     virtual void onReceivePacketImpl_(IcomPacket& packet) = 0;
+
+private:
+    DVTimer areYouReadyTimer_;
+
+    void onAreYouReadyTimer_();
 };
 
 }

@@ -30,6 +30,7 @@ namespace icom
 
 AreYouReadyState::AreYouReadyState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
+    , areYouReadyTimer_(parent->getTask(), std::bind(&AreYouReadyState::onAreYouReadyTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
 {
     // empty
 }
@@ -40,11 +41,15 @@ void AreYouReadyState::onEnterState()
 
     auto packet = IcomPacket::CreateAreYouReadyPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier());
     parent_->sendUntracked(packet);
+
+    areYouReadyTimer_.start();
 }
 
 void AreYouReadyState::onExitState()
 {
     ESP_LOGI(parent_->getName().c_str(), "Leaving state");
+
+    areYouReadyTimer_.stop();
 }
 
 std::string AreYouReadyState::getName()
@@ -58,7 +63,17 @@ void AreYouReadyState::onReceivePacket(IcomPacket& packet)
     {
         ESP_LOGI(parent_->getName().c_str(), "Received I Am Ready");
         onReceivePacketImpl_(packet);
+
+        areYouReadyTimer_.stop();
     }
+}
+
+void AreYouReadyState::onAreYouReadyTimer_()
+{
+    ESP_LOGI(parent_->getName().c_str(), "Retrying send");
+
+    auto packet = IcomPacket::CreateAreYouReadyPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+    parent_->sendUntracked(packet);
 }
 
 }

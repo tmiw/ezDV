@@ -172,20 +172,21 @@ void IcomStateMachine::writePendingPackets()
             while (rv == -1)
             {
                 auto err = errno;
-                ESP_LOGE(
-                    getName().c_str(),
-                    "Got socket error %d (%s) while sending", 
-                    err, strerror(err));
-
                 if (err == ENOMEM)
                 {
                     // Close and reopen socket, try again on next go-around.
-                    openSocket_();
-                    break;
+                    ESP_LOGW(getName().c_str(), "Wi-Fi subsystem not ready for packet yet");
+                    vTaskDelay(pdMS_TO_TICKS(1));
+                    rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
+                    continue;
                 }
                 else
                 {
                     // TBD: close/reopen connection
+                    ESP_LOGE(
+                        getName().c_str(),
+                        "Got socket error %d (%s) while sending", 
+                        err, strerror(err));
                     break;
                 }
             }
