@@ -16,6 +16,7 @@
  */
 
 #include <cstring>
+#include <cmath>
 #include "IcomSocketTask.h"
 #include "AudioState.h"
 #include "IcomStateMachine.h"
@@ -34,8 +35,9 @@ AudioState::AudioState(IcomStateMachine* parent)
     , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20))
     , audioWatchdogTimer_(parent_->getTask(), std::bind(&AudioState::onAudioWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , audioSequenceNumber_(0)
+    , audioMultiplier_(1)
 {
-    // empty
+    parent->getTask()->registerMessageHandler(this, &AudioState::onRightChannelVolumeMessage_);
 }
 
 void AudioState::onEnterState()
@@ -114,6 +116,12 @@ void AudioState::onAudioOutTimer_()
     {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
     
+        // Adjust output based on configured volume
+        for (int index = 0; index < samplesToRead; index++)
+        {
+            tempAudioOut[index] *= audioMultiplier_;
+        }
+        
         auto packet = IcomPacket::CreateAudioPacket(
             audioSequenceNumber_++,
             parent_->getOurIdentifier(), 
@@ -123,6 +131,12 @@ void AudioState::onAudioOutTimer_()
 
         sendTracked_(packet);
     }
+}
+
+void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message)
+{
+    float volInDb = 0.5 * message->volume;
+    audioMultiplier_ = exp(volInDb/20.0 * log(10.0));
 }
 
 }

@@ -163,11 +163,7 @@ void TLV320::onTaskTick_()
 
 void TLV320::setVolumeCommon_(uint8_t reg, int8_t vol)
 {
-    ESP_LOGI(CURRENT_LOG_TAG, "Volume control: setting volume on register %d to %d", (int)reg, vol);
-        
-    if (vol <= -127) vol = -127;
-    else if (vol >= 48) vol = 48;
-    
+    ESP_LOGI(CURRENT_LOG_TAG, "Volume control: setting volume on register %d to %d", (int)reg, vol);    
     setConfigurationOption_(0, reg, vol);
 }
 

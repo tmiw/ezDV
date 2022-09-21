@@ -387,6 +387,9 @@ void SettingsTask::commit_()
 
 void SettingsTask::setLeftChannelVolume_(int8_t vol)
 {
+    if (vol <= -127) vol = -127;
+    else if (vol >= 48) vol = 48;
+    
     leftChannelVolume_ = vol;
     
     if (storageHandle_)
@@ -411,7 +414,10 @@ void SettingsTask::setLeftChannelVolume_(int8_t vol)
 }
 
 void SettingsTask::setRightChannelVolume_(int8_t vol)
-{    
+{
+    if (vol <= -127) vol = -127;
+    else if (vol >= 48) vol = 48;
+    
     rightChannelVolume_ = vol;
     
     if (storageHandle_)
