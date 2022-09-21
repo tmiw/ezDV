@@ -35,14 +35,27 @@ namespace icom
 {
 
 template<typename T>
-struct IcomAllocator : public std::allocator<T>
+struct IcomAllocator
 {
-    typename std::allocator<T>::pointer allocate( typename std::allocator<T>::size_type n, const void * hint = 0 )
+    typedef T value_type;
+    IcomAllocator() noexcept { }
+    
+    template<class U> IcomAllocator(const IcomAllocator<U>&) noexcept {}
+    template<class U> bool operator==(const IcomAllocator<U>&) const noexcept
     {
-        return (typename std::allocator<T>::pointer)heap_caps_malloc(n*sizeof(T), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+        return true;
     }
-
-    void deallocate( T* p, std::size_t n )
+    template<class U> bool operator!=(const IcomAllocator<U>&) const noexcept
+    {
+        return false;
+    }
+    
+    T* allocate(const size_t n) const noexcept
+    {
+        return (T*)heap_caps_malloc(n*sizeof(T), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    }
+    
+    void deallocate(T* const p, size_t) const noexcept
     {
         heap_caps_free(p);
     }
