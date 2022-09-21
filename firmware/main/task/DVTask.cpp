@@ -65,17 +65,20 @@ DVTask::~DVTask()
 
 void DVTask::start()
 {
-    post(new TaskStartMessage());
+    TaskStartMessage message;
+    post(&message);
 }
 
 void DVTask::wake()
 {
-    post(new TaskWakeMessage());
+    TaskWakeMessage message;
+    post(&message);
 }
 
 void DVTask::sleep()
 {
-    post(new TaskSleepMessage());
+    TaskSleepMessage message;
+    post(&message);
 }
 
 void DVTask::onTaskTick_()
@@ -247,7 +250,8 @@ void DVTask::threadEntry_()
             }
 
             // Deallocate message now that we're done with it.
-            delete entry;
+            char* entryPtr = (char*)entry;
+            delete[] entryPtr;
         }
 
         onTaskTick_();

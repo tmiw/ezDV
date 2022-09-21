@@ -104,12 +104,8 @@ void DVTimer::OnESPTimerFire_(void* ptr)
         obj->running_ = false;
     }
 
-    auto message = new TimerFireMessage();
-    assert(message != nullptr);
-
-    message->timer = obj;
-    obj->owner_->post(message);
-    delete message;
+    TimerFireMessage message(obj);
+    obj->owner_->post(&message);
 }
 
 }
