@@ -50,7 +50,7 @@ private:
     DVTimer audioOutTimer_;
     DVTimer audioWatchdogTimer_;
     uint16_t audioSequenceNumber_;
-    float audioMultiplier_;
+    float audioMultiplier_[160];
 
     void onAudioOutTimer_();
     void onAudioWatchdog_();

@@ -275,6 +275,10 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+
+        // Force to HT20 mode to better handle congested airspace
+        ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20));
+
         ESP_ERROR_CHECK(esp_wifi_start());
     }
     else
@@ -295,6 +299,10 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+
+        // Force to HT20 mode to better handle congested airspace
+        ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20));
+
         ESP_ERROR_CHECK(esp_wifi_start());
         ESP_ERROR_CHECK(esp_wifi_connect());
     }
