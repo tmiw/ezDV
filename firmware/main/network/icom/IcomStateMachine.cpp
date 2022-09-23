@@ -169,13 +169,14 @@ void IcomStateMachine::writePendingPackets()
         for (auto& packet : queuedPackets_)
         {
             int rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
-            while (rv == -1)
+            int tries = 0;
+            while (rv == -1 && tries < 5)
             {
                 auto err = errno;
                 if (err == ENOMEM)
                 {
                     // Close and reopen socket, try again on next go-around.
-                    ESP_LOGW(getName().c_str(), "Wi-Fi subsystem not ready for packet yet");
+                    ESP_LOGW(getName().c_str(), "[try %d] Wi-Fi subsystem not ready for packet yet", tries++);
                     vTaskDelay(pdMS_TO_TICKS(1));
                     rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
                     continue;
