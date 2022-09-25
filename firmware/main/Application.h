@@ -35,6 +35,10 @@
 
 using namespace ezdv::task;
 
+// Uncomment below to enable automated TX/RX test
+// (5s TX, 5s RX, repeat indefinitely)
+//#define ENABLE_AUTOMATED_TX_RX_TEST
+
 namespace ezdv
 {
 
@@ -42,6 +46,11 @@ class App : public DVTask
 {
 public:
     App();
+
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+    audio::FreeDVTask& getFreeDVTask() { return freedvTask_; }
+    ui::UserInterfaceTask& getUITask() { return uiTask_; }
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
 
 protected:
     virtual void onTaskStart_() override;
@@ -60,6 +69,7 @@ private:
     network::WirelessTask wirelessTask_;
     storage::SettingsTask settingsTask_;
     ui::UserInterfaceTask uiTask_;
+    
 };
 
 }

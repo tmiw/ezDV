@@ -1,19 +1,16 @@
 #include "Application.h"
 
-/*
-#include "audio/TLV320.h"
-#include "codec/FreeDVTask.h"
-#include "radio/icom/IcomRadioTask.h"
-#include "audio/AudioMixer.h"
-#include "storage/SettingsManager.h"
-*/
-
 #include "driver/rtc_io.h"
 #include "driver/gpio.h"
 #include "ulp_riscv.h"
 #include "ulp_main.h"
 #include "esp_sleep.h"
 #include "esp_log.h"
+
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#include "driver/ButtonMessage.h"
+#include "audio/FreeDVMessage.h"
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
 
 #define CURRENT_LOG_TAG ("app")
 
@@ -289,6 +286,11 @@ extern "C" void app_main()
     
 #if 1
     // infinite loop to track heap use
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+    bool ptt = false;
+    bool hasChangedModes = false;
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
+
     for(;;)
     {
         vTaskDelay(pdMS_TO_TICKS(5000));
@@ -299,6 +301,29 @@ extern "C" void app_main()
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+        ptt = !ptt;
+
+        // Trigger PTT
+        if (!hasChangedModes)
+        {
+            ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::FREEDV_700D);
+            app->getFreeDVTask().post(&modeSetMessage);
+            hasChangedModes = true;
+        }
+
+        if (ptt)
+        {
+            ezdv::driver::ButtonShortPressedMessage pressedMessage(ezdv::driver::PTT);
+            app->getUITask().post(&pressedMessage);
+        }
+        else
+        {
+            ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
+            app->getUITask().post(&releasedMessage);
+        }
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
     }
 #endif
 }
