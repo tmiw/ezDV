@@ -61,6 +61,22 @@ var updateRadioFormState = function()
     }
 };
 
+var saveVoiceKeyerSettings = function() {
+    var obj = 
+    {
+        "type": "saveVoiceKeyerInfo",
+        "enabled": $("#voiceKeyerEnable").is(':checked'),
+        "secondsToWait": parseInt($("#voiceKeyerSecondsToWait").val()),
+        "timesToTransmit": parseInt($("#voiceKeyerTimesToTransmit").val())
+    };
+    
+    $("#voiceKeyerSuccessAlertRow").hide();
+    $("#voiceKeyerFailAlertRow").hide();
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+};
+
 //==========================================================================================
 // WebSocket handling
 //==========================================================================================
@@ -68,6 +84,7 @@ var ws = null;
 function wsConnect() 
 {
   ws = new WebSocket("ws://" + location.hostname + "/ws");
+  ws.binaryType = "arraybuffer";
   ws.onopen = function() { };
   ws.onmessage = function(e) 
   {
@@ -130,8 +147,8 @@ function wsConnect()
           $("#voiceKeyerReset").prop("disabled", false);
           $("#voiceKeyerEnable").prop("checked", json.enabled);
 
-          $("#voiceKeyerTimesToTransmit").val(json.timeToTransmit);
-          $("#voiceKeyerSecondstoWait").val(json.secondsToWait);
+          $("#voiceKeyerTimesToTransmit").val(json.timesToTransmit);
+          $("#voiceKeyerSecondsToWait").val(json.secondsToWait);
 
           updateVoiceKeyerState();
       }
@@ -145,6 +162,11 @@ function wsConnect()
           {
               $("#voiceKeyerFailAlertRow").show();
           }
+      }
+      else if (json.type == "voiceKeyerUploadComplete")
+      {
+          // TBD: handle errors
+          saveVoiceKeyerSettings();
       }
   };
 
@@ -175,7 +197,7 @@ $("#wifiEnable").change(function()
 
 $("#voiceKeyerEnable").change(function()
 {
-    updateVoiceKeyerFormState();
+    updateVoiceKeyerState();
 });
 
 $("#wifiMode").change(function()
@@ -227,21 +249,36 @@ $("#radioSave").click(function()
     ws.send(JSON.stringify(obj));
 });
 
+
 $("#voiceKeyerSave").click(function()
 {
-    var obj = 
+    if ($('#voiceKeyerFile').get(0).files.length === 0) 
     {
-        "type": "saveVoiceKeyerInfo",
-        "enabled": $("#voiceKeyerEnable").is(':checked'),
-        "secondsToWait": parseInt($("#voiceKeyerSecondsToWait").val()),
-        "timesToTransmit": parseInt($("#voiceKeyerTimesToTransmit").val())
-    };
-    
-    $("#voiceKeyerSuccessAlertRow").hide();
-    $("#voiceKeyerFailAlertRow").hide();
-    
-    // Async send request and wait for response.
-    ws.send(JSON.stringify(obj));
+        // Skip directly to saving settings if we didn't select
+        // a file.
+        saveVoiceKeyerSettings();
+    }
+    else
+    {
+        var reader = new FileReader();
+        reader.onload = function() 
+        {
+            // read successful, send to server
+            var startMessage = {
+                type: "uploadVoiceKeyerFile",
+                size: reader.result.byteLength
+            };
+            ws.send(JSON.stringify(startMessage));
+            ws.send(reader.result);
+        };
+        reader.onerror = function()
+        {
+            alert("Could not open file for upload!");
+        };
+
+        reader.readAsArrayBuffer($('#voiceKeyerFile').get(0).files[0]);
+    }
+
 });
 
 //==========================================================================================

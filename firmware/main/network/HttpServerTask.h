@@ -25,6 +25,7 @@
 #include "cJSON.h"
 
 #include "task/DVTask.h"
+#include "audio/VoiceKeyerMessage.h"
 #include "driver/BatteryMessage.h"
 
 extern "C"
@@ -59,6 +60,7 @@ private:
         UPDATE_WIFI = 3,
         UPDATE_RADIO = 4,
         UPDATE_VOICE_KEYER = 5,
+        BEGIN_UPLOAD_VOICE_KEYER_FILE = 6,
     };
     
     template<uint32_t MSG_ID>
@@ -96,6 +98,7 @@ private:
     using UpdateWifiMessage = HttpRequestMessageCommon<UPDATE_WIFI>;
     using UpdateRadioMessage = HttpRequestMessageCommon<UPDATE_RADIO>;
     using UpdateVoiceKeyerMessage = HttpRequestMessageCommon<UPDATE_VOICE_KEYER>;
+    using BeginUploadVoiceKeyerFileMessage = HttpRequestMessageCommon<BEGIN_UPLOAD_VOICE_KEYER_FILE>;
 
     using WebSocketList = std::vector<int>;
     
@@ -110,6 +113,8 @@ private:
     void onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* message);
     void onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message);
     void onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyerMessage* message);
+    void onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message);
+    void onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message);
 
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

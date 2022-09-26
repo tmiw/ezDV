@@ -23,6 +23,7 @@
 #include "AudioInput.h"
 #include "VoiceKeyerMessage.h"
 #include "WAVFileReader.h"
+#include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
@@ -57,6 +58,7 @@ private:
     int numSecondsToWait_;
     int timesToTransmit_;
     int timesTransmitted_;
+    int bytesToUpload_;
 
     // These are so we can shut off mic audio from the codec
     // chip during TX and restore audio routing once voice keying
@@ -72,6 +74,10 @@ private:
     void onStartVoiceKeyerMessage_(DVTask* origin, StartVoiceKeyerMessage* message);
     void onStopVoiceKeyerMessage_(DVTask* origin, StopVoiceKeyerMessage* message);
     void onVoiceKeyerSettingsMessage_(DVTask* origin, storage::VoiceKeyerSettingsMessage* message);
+
+    // Voice keyer file upload handlers
+    void onStartFileUploadMessage_(DVTask* origin, network::StartFileUploadMessage* message);
+    void onFileUploadDataMessage_(DVTask* origin, network::FileUploadDataMessage* message);
 };
 
 }

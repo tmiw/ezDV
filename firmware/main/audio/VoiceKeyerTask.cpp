@@ -36,12 +36,16 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     , numSecondsToWait_(0)
     , timesToTransmit_(0)
     , timesTransmitted_(0)
+    , bytesToUpload_(0)
     , micDeviceTask_(micDeviceTask)
     , fdvTask_(fdvTask)
 {
     registerMessageHandler(this, &VoiceKeyerTask::onStartVoiceKeyerMessage_);
     registerMessageHandler(this, &VoiceKeyerTask::onStopVoiceKeyerMessage_);
     registerMessageHandler(this, &VoiceKeyerTask::onVoiceKeyerSettingsMessage_);
+
+    registerMessageHandler(this, &VoiceKeyerTask::onFileUploadDataMessage_);
+    registerMessageHandler(this, &VoiceKeyerTask::onStartFileUploadMessage_);
 }
 
 VoiceKeyerTask::~VoiceKeyerTask()
@@ -211,6 +215,38 @@ void VoiceKeyerTask::onVoiceKeyerSettingsMessage_(DVTask* origin, storage::Voice
 {
     numSecondsToWait_ = message->secondsToWait;
     timesToTransmit_ = message->timesToTransmit;
+}
+
+void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFileUploadMessage* message)
+{
+    bytesToUpload_ = message->length;
+
+    if (voiceKeyerFile_ != nullptr)
+    {
+        stopKeyer_();
+    }
+
+    unlink(VOICE_KEYER_FILE);
+    voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "wb");
+    assert(voiceKeyerFile_ != nullptr);
+}
+
+void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploadDataMessage* message)
+{
+    assert(voiceKeyerFile_ != nullptr);
+
+    fwrite(message->buf, 1, message->length, voiceKeyerFile_);
+    bytesToUpload_ -= message->length;
+    free(message->buf);
+
+    if (bytesToUpload_ <= 0)
+    {
+        fclose(voiceKeyerFile_);
+        voiceKeyerFile_ = nullptr;
+
+        FileUploadCompleteMessage response;
+        publish(&response);
+    }
 }
 
 }
