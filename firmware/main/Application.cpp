@@ -1,19 +1,16 @@
 #include "Application.h"
 
-/*
-#include "audio/TLV320.h"
-#include "codec/FreeDVTask.h"
-#include "radio/icom/IcomRadioTask.h"
-#include "audio/AudioMixer.h"
-#include "storage/SettingsManager.h"
-*/
-
 #include "driver/rtc_io.h"
 #include "driver/gpio.h"
 #include "ulp_riscv.h"
 #include "ulp_main.h"
 #include "esp_sleep.h"
 #include "esp_log.h"
+
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#include "driver/ButtonMessage.h"
+#include "audio/FreeDVMessage.h"
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
 
 #define CURRENT_LOG_TAG ("app")
 
@@ -33,6 +30,7 @@ App::App()
     , max17048_(&i2cDevice_)
     , tlv320Device_(&i2cDevice_)
     , wirelessTask_(&freedvTask_, &tlv320Device_)
+    , voiceKeyerTask_(&tlv320Device_, &freedvTask_)
 {
     // Link TLV320 output FIFOs to FreeDVTask
     tlv320Device_.setAudioOutput(
@@ -124,6 +122,7 @@ void App::onTaskStart_()
     waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Start UI
+    voiceKeyerTask_.start();
     uiTask_.start();
     waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
     
@@ -171,6 +170,7 @@ void App::onTaskWake_()
     waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Wake UI
+    voiceKeyerTask_.wake();
     uiTask_.wake();
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
     
@@ -190,6 +190,7 @@ void App::onTaskSleep_()
     
     // Sleep UI
     uiTask_.sleep();
+    voiceKeyerTask_.sleep();
     waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
 
     // Sleep storage handling
@@ -289,6 +290,11 @@ extern "C" void app_main()
     
 #if 1
     // infinite loop to track heap use
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+    bool ptt = false;
+    bool hasChangedModes = false;
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
+
     for(;;)
     {
         vTaskDelay(pdMS_TO_TICKS(5000));
@@ -299,6 +305,29 @@ extern "C" void app_main()
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+        ptt = !ptt;
+
+        // Trigger PTT
+        if (!hasChangedModes)
+        {
+            ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::FREEDV_700D);
+            app->getFreeDVTask().post(&modeSetMessage);
+            hasChangedModes = true;
+        }
+
+        if (ptt)
+        {
+            ezdv::driver::ButtonShortPressedMessage pressedMessage(ezdv::driver::PTT);
+            app->getUITask().post(&pressedMessage);
+        }
+        else
+        {
+            ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
+            app->getUITask().post(&releasedMessage);
+        }
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
     }
 #endif
 }

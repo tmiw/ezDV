@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "esp_dsp.h"
+
 #include <cstring>
 #include <cmath>
 #include "IcomSocketTask.h"
@@ -35,9 +37,13 @@ AudioState::AudioState(IcomStateMachine* parent)
     , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20))
     , audioWatchdogTimer_(parent_->getTask(), std::bind(&AudioState::onAudioWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , audioSequenceNumber_(0)
-    , audioMultiplier_(1)
 {
     parent->getTask()->registerMessageHandler(this, &AudioState::onRightChannelVolumeMessage_);
+
+    for (int index = 0; index < 160; index++)
+    {
+        audioMultiplier_[index] = 1;
+    }
 }
 
 void AudioState::onEnterState()
@@ -108,18 +114,28 @@ void AudioState::onAudioOutTimer_()
     }
     
     // Get input audio and write to socket
-    short tempAudioOut[MAX_PACKET_SIZE];
-    memset(tempAudioOut, 0, MAX_PACKET_SIZE * sizeof(short));
-
     uint16_t samplesToRead = 160; // 320 bytes
+    short tempAudioOut[samplesToRead];
+    float tempAudioInFloat[samplesToRead];
+    float tempAudioOutFloat[samplesToRead];
+    memset(tempAudioOut, 0, samplesToRead * sizeof(short));
+
     if (codec2_fifo_used(inputFifo) >= samplesToRead)
     {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
-    
-        // Adjust output based on configured volume
+    }
+
         for (int index = 0; index < samplesToRead; index++)
         {
-            tempAudioOut[index] *= audioMultiplier_;
+            tempAudioInFloat[index] = tempAudioOut[index];
+        }
+
+        // Adjust output based on configured volume
+        dsps_mul_f32(tempAudioInFloat, audioMultiplier_, tempAudioOutFloat, 160, 1, 1, 1);
+
+        for (int index = 0; index < samplesToRead; index++)
+        {
+            tempAudioOut[index] = tempAudioOutFloat[index];
         }
         
         auto packet = IcomPacket::CreateAudioPacket(
@@ -130,13 +146,18 @@ void AudioState::onAudioOutTimer_()
             samplesToRead);
 
         sendTracked_(packet);
-    }
+    //}
 }
 
 void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message)
 {
     float volInDb = 0.5 * message->volume;
-    audioMultiplier_ = exp(volInDb/20.0 * log(10.0));
+
+    float multiplier = exp(volInDb/20.0 * log(10.0));
+    for (int index = 0; index < 160; index++)
+    {
+        audioMultiplier_[index] = multiplier;
+    }
 }
 
 }

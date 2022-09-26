@@ -35,6 +35,65 @@
         </div>
         <div class="row">
             <div class="col-xs-12 col-md-12">
+                <h2>Voice Keyer Configuration</h2>
+            </div>
+        </div>
+        <form>
+            <div class="row mb-3" id="voiceKeyerSuccessAlertRow">
+                <div class="col-xs-12 col-md-6">
+                    <div class="alert alert-success" role="alert">
+                      Your voice keyer configuration has been saved.
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3" id="voiceKeyerFailAlertRow">
+                <div class="col-xs-12 col-md-6">
+                    <div class="alert alert-danger" role="alert">
+                      Could not save voice keyer configuration. Please verify your settings below and try again.
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-xs-12 col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox" id="voiceKeyerEnable" class="form-check-input" />
+                        <label class="form-check-label">
+                            Enable voice keyer
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3 vk-enable-row">
+                <label for="voiceKeyerFile" class="col-xs-4 col-md-2 col-form-labell">Voice keyer file</label>
+                <div class="col-xs-8 col-md-4">
+                  <input id="voiceKeyerFile" type="file" class="form-control" />
+                </div>
+            </div>
+            <div class="row mb-3 vk-enable-row">
+                <label for="voiceKeyerTimesToTransmit" class="col-xs-4 col-md-2 col-form-labell">Number of times to transmit</label>
+                <div class="col-xs-8 col-md-4">
+                  <input id="voiceKeyerTimesToTransmit" value="" class="form-control" />
+                </div>
+            </div>
+            <div class="row mb-3 vk-enable-row">
+                <label for="voiceKeyerSecondsToWait" class="col-xs-4 col-md-2 col-form-labell">Number of seconds to wait after transmit</label>
+                <div class="col-xs-8 col-md-4">
+                  <input id="voiceKeyerSecondsToWait" value="" class="form-control" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-2">&nbsp</div>
+                <div class="col">
+                  <button type="button" class="btn btn-success" id="voiceKeyerSave">Save</button>
+                </div>
+                <div class="col">
+                  <button type="reset" class="btn btn-danger" id="voiceKeyerReset">Reset</button>
+                </div>
+                <div class="col-8">&nbsp;</div>
+              </div>
+        </form>
+        <div class="row">
+            <div class="col-xs-12 col-md-12">
                 <h2>Wi-Fi Configuration</h2>
             </div>
         </div>

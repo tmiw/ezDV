@@ -50,6 +50,9 @@ extern "C"
 #define JSON_RADIO_STATUS_TYPE "radioInfo"
 #define JSON_RADIO_SAVED_TYPE "radioSaved"
 
+#define JSON_VOICE_KEYER_STATUS_TYPE "voiceKeyerInfo"
+#define JSON_VOICE_KEYER_SAVED_TYPE "voiceKeyerSaved"
+#define JSON_VOICE_KEYER_UPLOAD_COMPLETE "voiceKeyerUploadComplete"
 
 namespace ezdv
 {
@@ -68,6 +71,10 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onHttpWebsocketDisconnectedMessage_);
     registerMessageHandler(this, &HttpServerTask::onUpdateWifiMessage_);
     registerMessageHandler(this, &HttpServerTask::onUpdateRadioMessage_);
+    registerMessageHandler(this, &HttpServerTask::onUpdateVoiceKeyerMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onBeginUploadVoiceKeyerFileMessage_);
+    registerMessageHandler(this, &HttpServerTask::onFileUploadCompleteMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -302,8 +309,24 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     UpdateRadioMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
+                else if (!strcmp(type, "saveVoiceKeyerInfo"))
+                {
+                    UpdateVoiceKeyerMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "uploadVoiceKeyerFile"))
+                {
+                    BeginUploadVoiceKeyerFileMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
             }
         }
+    }
+    else if (ws_pkt.type == HTTPD_WS_TYPE_BINARY)
+    {
+        // Binary packet, used for sending over the new voice keyer file
+        FileUploadDataMessage message((char*)buf, ws_pkt.len);
+        thisObj->publish(&message); // note: buf will be freed by voice keyer task.
     }
     
     return ESP_OK;
@@ -379,7 +402,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
 {
     activeWebSockets_.push_back(message->fd);
 
-    // Request current Wi-Fi/radio settings.
+    // Request current settings.
     {
         storage::RequestWifiSettingsMessage request;
         publish(&request);
@@ -446,6 +469,38 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current radio settings");
+        }
+    }
+
+    {
+        storage::RequestVoiceKeyerSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::VoiceKeyerSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_STATUS_TYPE);
+                cJSON_AddBoolToObject(root, "enabled", response->enabled);
+                cJSON_AddNumberToObject(root, "secondsToWait", response->secondsToWait);
+                cJSON_AddNumberToObject(root, "timesToTransmit", response->timesToTransmit);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current voice keyer settings");
         }
     }
 }
@@ -704,6 +759,123 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     }
     
     cJSON_free(message->request);
+}
+
+void HttpServerTask::onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Configuring voice keyer file upload");
+
+    int sizeToUpload = 0;
+    auto sizeJSON = cJSON_GetObjectItem(message->request, "size");
+    if (sizeJSON != nullptr)
+    {
+        sizeToUpload = (int)cJSON_GetNumberValue(sizeJSON);
+
+        StartFileUploadMessage message(sizeToUpload);
+        publish(&message);
+    }
+}
+
+void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyerMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating voice keyer settings");
+    
+    bool enabled = false;
+    int secondsToWait = 0;
+    int timesToTransmit = 0;
+    
+    bool settingsValid = true;
+    
+    auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
+    if (enabledJSON != nullptr)
+    {
+        enabled = cJSON_IsTrue(enabledJSON);
+        if (enabled)
+        {            
+            auto secondsJSON = cJSON_GetObjectItem(message->request, "secondsToWait");
+            if (secondsJSON != nullptr)
+            {
+                secondsToWait = (int)cJSON_GetNumberValue(secondsJSON);
+                settingsValid &= secondsToWait > 0;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+
+            auto waitJSON = cJSON_GetObjectItem(message->request, "timesToTransmit");
+            if (waitJSON != nullptr)
+            {
+                timesToTransmit = (int)cJSON_GetNumberValue(waitJSON);
+                settingsValid &= timesToTransmit > 0;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+        }
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetVoiceKeyerSettingsMessage request(enabled, timesToTransmit, secondsToWait);
+        publish(&request);
+    
+        auto response = waitFor<storage::VoiceKeyerSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for voice keyer settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer settings");
+    }
+    
+    cJSON_free(message->request);
+}
+
+void HttpServerTask::onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "File upload complete");
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_UPLOAD_COMPLETE);
+        cJSON_AddBoolToObject(root, "success", true); // TBD: handle errors
+
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for VK file upload");
+    }
 }
 
 }

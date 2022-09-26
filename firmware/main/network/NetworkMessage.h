@@ -37,6 +37,8 @@ enum NetworkMessageTypes
 {
     WIRELESS_NETWORK_STATUS = 1,
     RADIO_CONNECTION_STATUS = 2,
+    START_FILE_UPLOAD = 3,
+    FILE_UPLOAD_DATA = 4,
 };
 
 template<uint32_t MSG_ID>
@@ -54,6 +56,32 @@ public:
 
 using WirelessNetworkStatusMessage = NetworkMessageCommon<WIRELESS_NETWORK_STATUS>;
 using RadioConnectionStatusMessage = NetworkMessageCommon<RADIO_CONNECTION_STATUS>;
+
+class StartFileUploadMessage : public DVTaskMessageBase<START_FILE_UPLOAD, StartFileUploadMessage>
+{
+public:
+    StartFileUploadMessage(int lengthProvided = 0)
+        : DVTaskMessageBase<START_FILE_UPLOAD, StartFileUploadMessage>(NETWORK_MESSAGE)
+        , length(lengthProvided)
+        {}
+    virtual ~StartFileUploadMessage() = default;
+
+    int length;
+};
+
+class FileUploadDataMessage : public DVTaskMessageBase<FILE_UPLOAD_DATA, FileUploadDataMessage>
+{
+public:
+    FileUploadDataMessage(char* bufProvided = nullptr, int lengthProvided = 0)
+        : DVTaskMessageBase<FILE_UPLOAD_DATA, FileUploadDataMessage>(NETWORK_MESSAGE)
+        , buf(bufProvided)
+        , length(lengthProvided)
+        {}
+    virtual ~FileUploadDataMessage() = default;
+
+    char *buf;
+    int length;
+};
 
 }
 

@@ -21,6 +21,7 @@
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 #include "audio/FreeDVMessage.h"
+#include "audio/VoiceKeyerMessage.h"
 #include "driver/ButtonMessage.h"
 #include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
@@ -55,6 +56,8 @@ private:
     int8_t volIncrement_;
     bool netLedStatus_;
     bool radioStatus_;
+    bool voiceKeyerRunning_;
+    bool voiceKeyerEnabled_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
@@ -72,7 +75,15 @@ private:
     void onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message);
     void onRadioStateChange_(DVTask* origin, network::RadioConnectionStatusMessage* message);
     void flashNetworkLight_();
-    
+
+    // Voice keyer handling
+    void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
+    void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
+    void onVoiceKeyerSettingsMessage_(DVTask* origin, storage::VoiceKeyerSettingsMessage* message);
+    void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
+    void startTx_();
+    void stopTx_();
+
     // Timer handling
     void updateVolumeCommon_();
 };

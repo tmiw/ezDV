@@ -194,7 +194,7 @@ void TrackedPacketState::sendTracked_(IcomPacket& packet)
     uint8_t* rawPacket = const_cast<uint8_t*>(packet.getData());
     
     // If sequence number rolled over, clear the sent packets list.
-    if (sentPackets_.size() == 0 || sendSequenceNumber_ < sentPackets_.begin()->first)
+    if (sentPackets_.size() == 0)
     {
         ESP_LOGI(parent_->getName().c_str(), "Resetting sent packet list");
         sentPackets_.clear();
