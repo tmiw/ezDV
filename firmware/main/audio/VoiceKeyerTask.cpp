@@ -111,6 +111,8 @@ void VoiceKeyerTask::onTaskTick_()
             if (numRead < 160)
             {
                 delete wavReader_;
+                wavReader_ = nullptr;
+
                 fclose(voiceKeyerFile_);
                 voiceKeyerFile_ = nullptr;
 
@@ -196,6 +198,8 @@ void VoiceKeyerTask::stopKeyer_()
     if (wavReader_ != nullptr)
     {
         delete wavReader_;
+        wavReader_ = nullptr;
+        
         fclose(voiceKeyerFile_);
         voiceKeyerFile_ = nullptr;
     }
