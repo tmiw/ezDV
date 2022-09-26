@@ -82,9 +82,9 @@ pcbStands = [
 ];
      
 cutoutsFront = [
-    [16.51, 3.5, 8, 8, 0, yappCircle, yappCenter ],
-    [45.72, 3.5, 8, 8, 0, yappCircle, yappCenter ],
-    [22.75, -2.5, 12.5, 7, 0, yappRectangle ],
+    [16.51, 2.5, 8, 8, 0, yappCircle, yappCenter ],
+    [45.72, 2.5, 8, 8, 0, yappCircle, yappCenter ],
+    [21.75, -1.5, 12.5, 7, 0, yappRectangle ],
     //[34.56, -2.5, 6, 1, 0, yappRectangle ]
 ];
 
