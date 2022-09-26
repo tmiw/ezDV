@@ -66,6 +66,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onRequestTxMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRequestRxMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerSettingsMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerCompleteMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -211,7 +212,12 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
         {
             case driver::ButtonLabel::PTT:
             {
-                stopTx_();
+                if (!voiceKeyerRunning_)
+                {
+                    // Only disable TX if the keyer is not currently running.
+                    // Otherwise, the keyer is responsible for triggering TX.
+                    stopTx_();
+                }
                 break;
             }
             case driver::ButtonLabel::MODE:
@@ -314,6 +320,11 @@ void UserInterfaceTask::onVoiceKeyerSettingsMessage_(
     DVTask* origin, storage::VoiceKeyerSettingsMessage* message)
 {
     voiceKeyerEnabled_ = message->enabled;
+}
+
+void UserInterfaceTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message)
+{
+    voiceKeyerRunning_ = false;
 }
 
 void UserInterfaceTask::stopTx_()

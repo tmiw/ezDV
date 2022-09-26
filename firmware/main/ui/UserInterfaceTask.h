@@ -80,6 +80,7 @@ private:
     void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
     void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
     void onVoiceKeyerSettingsMessage_(DVTask* origin, storage::VoiceKeyerSettingsMessage* message);
+    void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
     void startTx_();
     void stopTx_();
 

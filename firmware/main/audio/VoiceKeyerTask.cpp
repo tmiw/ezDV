@@ -140,7 +140,12 @@ void VoiceKeyerTask::onTaskTick_()
                 }
                 else
                 {
+                    ESP_LOGI(CURRENT_LOG_TAG, "Keyed %d times, stopping voice keyer", timesTransmitted_);
                     stopKeyer_();
+
+                    // Indicate that we're done.
+                    VoiceKeyerCompleteMessage completeMessage;
+                    publish(&completeMessage);
                 }
             }
             break;
@@ -150,6 +155,8 @@ void VoiceKeyerTask::onTaskTick_()
 
 void VoiceKeyerTask::startKeyer_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Starting voice keyer");
+
     // Open keyer file
     voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "rb");
     if (voiceKeyerFile_ != nullptr)

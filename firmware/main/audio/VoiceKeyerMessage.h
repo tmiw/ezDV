@@ -44,6 +44,9 @@ enum VoiceKeyerMessageTypes
 
     // Sent to indicate upload finished
     FILE_UPLOAD_COMPLETE = 5,
+
+    // Sent to indicate keyer has iterated the configured number of times
+    VOICE_KEYER_COMPLETE = 6,
 };
 
 template<uint32_t MSG_ID>
@@ -69,6 +72,8 @@ using StartVoiceKeyerMessage = StartStopCommon<START_KEYER>;
 using StopVoiceKeyerMessage = StartStopCommon<STOP_KEYER>;
 using RequestTxMessage = StartStopCommon<REQUEST_TX>;
 using RequestRxMessage = StartStopCommon<REQUEST_RX>;
+
+using VoiceKeyerCompleteMessage = StartStopCommon<VOICE_KEYER_COMPLETE>;
 
 }
 
