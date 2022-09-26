@@ -30,6 +30,7 @@ App::App()
     , max17048_(&i2cDevice_)
     , tlv320Device_(&i2cDevice_)
     , wirelessTask_(&freedvTask_, &tlv320Device_)
+    , voiceKeyerTask_(&tlv320Device_, &freedvTask_)
 {
     // Link TLV320 output FIFOs to FreeDVTask
     tlv320Device_.setAudioOutput(
@@ -121,6 +122,7 @@ void App::onTaskStart_()
     waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Start UI
+    voiceKeyerTask_.start();
     uiTask_.start();
     waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
     
@@ -168,6 +170,7 @@ void App::onTaskWake_()
     waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Wake UI
+    voiceKeyerTask_.wake();
     uiTask_.wake();
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
     
@@ -187,6 +190,7 @@ void App::onTaskSleep_()
     
     // Sleep UI
     uiTask_.sleep();
+    voiceKeyerTask_.sleep();
     waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
 
     // Sleep storage handling

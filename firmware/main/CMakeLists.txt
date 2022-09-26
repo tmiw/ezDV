@@ -6,6 +6,9 @@ set(SOURCES
     "audio/BeeperTask.cpp"
     "audio/FreeDVMessage.cpp"
     "audio/FreeDVTask.cpp"
+    "audio/VoiceKeyerMessage.cpp"
+    "audio/VoiceKeyerTask.cpp"
+    "audio/WAVFileReader.cpp"
     "driver/BatteryMessage.cpp"
     "driver/ButtonArray.cpp"
     "driver/ButtonMessage.cpp"
@@ -43,9 +46,6 @@ set(SOURCES
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp"
     "ui/UserInterfaceTask.cpp")
-    #"radio/icom/IcomRadioTask.cpp"
-    #"radio/icom/PacketTypes.cpp"
-    #"radio/icom/ProtocolStateMachine.cpp"
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}
@@ -60,6 +60,8 @@ if(${ESP_PLATFORM})
                                 soc
                                 vfs
                                 spiffs
+                                fatfs
+                                wear_levelling
                                 esp_http_server
                                 esp_timer
                                 esp_wifi

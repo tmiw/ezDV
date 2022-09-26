@@ -23,6 +23,7 @@
 #include "audio/AudioMixer.h"
 #include "audio/BeeperTask.h"
 #include "audio/FreeDVTask.h"
+#include "audio/VoiceKeyerTask.h"
 #include "driver/ButtonArray.h"
 #include "driver/ButtonMessage.h"
 #include "driver/I2CDevice.h"
@@ -69,6 +70,7 @@ private:
     network::WirelessTask wirelessTask_;
     storage::SettingsTask settingsTask_;
     ui::UserInterfaceTask uiTask_;
+    audio::VoiceKeyerTask voiceKeyerTask_;
     
 };
 

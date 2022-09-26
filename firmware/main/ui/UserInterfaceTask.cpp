@@ -54,6 +54,8 @@ UserInterfaceTask::UserInterfaceTask()
     , volIncrement_(0)
     , netLedStatus_(false)
     , radioStatus_(false)
+    , voiceKeyerRunning_(false)
+    , voiceKeyerEnabled_(false)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
@@ -61,6 +63,9 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onFreeDVSyncStateMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onNetworkStateChange_);
     registerMessageHandler(this, &UserInterfaceTask::onRadioStateChange_);
+    registerMessageHandler(this, &UserInterfaceTask::onRequestTxMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onRequestRxMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerSettingsMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -125,43 +130,50 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
 {
     if (isActive_)
     {
+        if (voiceKeyerRunning_)
+        {
+            // Pushing any key stops the voice keyer
+            audio::StopVoiceKeyerMessage vkStopMessage;
+            publish(&vkStopMessage);
+
+            voiceKeyerRunning_ = false;
+        }
+
         switch(message->button)
         {
             case driver::ButtonLabel::PTT:
             {
-                isTransmitting_ = true;
-
-                // Switch FreeDV to TX mode
-                audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(true);
-                publish(pttStateMessage);
-                delete pttStateMessage;
-
-                // Enable LED and LED NPN so the radio itself starts transmitting
-                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, true);
-                publish(ledMessage);
-                ledMessage->led = driver::SetLedStateMessage::PTT;
-                publish(ledMessage);
-                delete ledMessage;
-
+                startTx_();
                 break;
             }
             case driver::ButtonLabel::MODE:
             {
-                int tmpMode = (int)currentMode_ + 1;
-                currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)tmpMode;
-                if (currentMode_ == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
+                if (isTransmitting_ && voiceKeyerEnabled_)
                 {
-                    currentMode_ = audio::SetFreeDVModeMessage::ANALOG;
+                    // PTT + Mode = enable voice keyer
+                    audio::StartVoiceKeyerMessage vkStartMessage;
+                    publish(&vkStartMessage);
+
+                    voiceKeyerRunning_ = true;
                 }
+                else
+                {
+                    int tmpMode = (int)currentMode_ + 1;
+                    currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)tmpMode;
+                    if (currentMode_ == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
+                    {
+                        currentMode_ = audio::SetFreeDVModeMessage::ANALOG;
+                    }
 
-                audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
-                publish(setModeMessage);
-                delete setModeMessage;
+                    audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
+                    publish(setModeMessage);
+                    delete setModeMessage;
 
-                // Send new mode to beeper
-                audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
-                publish(beeperMessage);
-                delete beeperMessage;
+                    // Send new mode to beeper
+                    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
+                    publish(beeperMessage);
+                    delete beeperMessage;
+                }
 
                 break;
             }
@@ -199,20 +211,7 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
         {
             case driver::ButtonLabel::PTT:
             {
-                isTransmitting_ = false;
-
-                // Disable LED and LED NPN so the radio itself stops transmitting
-                driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, false);
-                publish(ledMessage);
-                ledMessage->led = driver::SetLedStateMessage::PTT;
-                publish(ledMessage);
-                delete ledMessage;
-
-                // Switch FreeDV to RX mode
-                audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(false);
-                publish(pttStateMessage);
-                delete pttStateMessage;
-
+                stopTx_();
                 break;
             }
             case driver::ButtonLabel::MODE:
@@ -297,6 +296,56 @@ void UserInterfaceTask::flashNetworkLight_()
     netLedStatus_ = radioStatus_ || !netLedStatus_;
     
     driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
+    publish(ledMessage);
+    delete ledMessage;
+}
+
+void UserInterfaceTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
+{
+    startTx_();
+}
+
+void UserInterfaceTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
+{
+    stopTx_();
+}
+
+void UserInterfaceTask::onVoiceKeyerSettingsMessage_(
+    DVTask* origin, storage::VoiceKeyerSettingsMessage* message)
+{
+    voiceKeyerEnabled_ = message->enabled;
+}
+
+void UserInterfaceTask::stopTx_()
+{
+    isTransmitting_ = false;
+
+    // Disable LED and LED NPN so the radio itself stops transmitting
+    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, false);
+    publish(ledMessage);
+    ledMessage->led = driver::SetLedStateMessage::PTT;
+    publish(ledMessage);
+    delete ledMessage;
+
+    // Switch FreeDV to RX mode
+    audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(false);
+    publish(pttStateMessage);
+    delete pttStateMessage;
+}
+
+void UserInterfaceTask::startTx_()
+{
+    isTransmitting_ = true;
+
+    // Switch FreeDV to TX mode
+    audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(true);
+    publish(pttStateMessage);
+    delete pttStateMessage;
+
+    // Enable LED and LED NPN so the radio itself starts transmitting
+    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, true);
+    publish(ledMessage);
+    ledMessage->led = driver::SetLedStateMessage::PTT;
     publish(ledMessage);
     delete ledMessage;
 }

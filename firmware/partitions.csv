@@ -3,4 +3,9 @@
 nvs,      data, nvs,     ,        0x6000,
 phy_init, data, phy,     ,        0x1000,
 factory,  app,  factory, ,        1500K,
+
+# Static HTTP files for web config (1MB)
 http,     data, spiffs,  ,        1000K,
+
+# R/W partition to store voice keyer .wav file (1MB, TBD)
+vk,       data, fat,   ,        1000K,
