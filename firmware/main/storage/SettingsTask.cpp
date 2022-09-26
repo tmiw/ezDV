@@ -36,12 +36,19 @@
 #define RADIO_USERNAME_ID ("radioUser")
 #define RADIO_PASSWORD_ID ("radioPass")
 
+#define VOICE_KEYER_ENABLED_ID ("vkEnable")
+#define VOICE_KEYER_TIMES_TO_TRANSMIT ("vkTimesTX")
+#define VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT ("vkSecWait")
+
 #define DEFAULT_WIFI_ENABLED (false)
 #define DEFAULT_WIFI_MODE (WifiMode::ACCESS_POINT)
 #define DEFAULT_WIFI_SECURITY (WifiSecurityMode::NONE)
 #define DEFAULT_WIFI_CHANNEL (1)
 #define DEFAULT_WIFI_SSID ("")
 #define DEFAULT_WIFI_PASSWORD ("")
+
+#define DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT (10)
+#define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
 
 namespace ezdv
 {
@@ -58,6 +65,9 @@ SettingsTask::SettingsTask()
     , wifiSecurity_(WifiSecurityMode::NONE)
     , radioEnabled_(false)
     , radioPort_(0)
+    , enableVoiceKeyer_(false)
+    , voiceKeyerNumberTimesToTransmit_(0)
+    , voiceKeyerSecondsToWaitAfterTransmit_(0)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
@@ -74,6 +84,8 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetWifiSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onRequestRadioSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onSetRadioSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onRequestVoiceKeyerSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onSetVoiceKeyerSettingsMessage_);
     
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
@@ -152,6 +164,22 @@ void SettingsTask::onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSe
     delete response;
 }
 
+void SettingsTask::onRequestVoiceKeyerSettingsMessage_(DVTask* origin, RequestVoiceKeyerSettingsMessage* message)
+{
+    // Publish current voice keyer settings to everyone who may care.
+    VoiceKeyerSettingsMessage* response = new VoiceKeyerSettingsMessage(
+        enableVoiceKeyer_,
+        voiceKeyerNumberTimesToTransmit_,
+        voiceKeyerSecondsToWaitAfterTransmit_
+    );
+    assert(response != nullptr);
+    if (origin != nullptr)
+    {
+        origin->post(response);
+    }
+    delete response;
+}
+
 void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)
 {
     setLeftChannelVolume_(message->volume);
@@ -169,6 +197,7 @@ void SettingsTask::loadAllSettings_()
         initializeVolumes_();
         initializeWifi_();
         initializeRadio_();
+        initialzeVoiceKeyer_();
     }
 }
 
@@ -374,6 +403,57 @@ void SettingsTask::initializeRadio_()
     delete message;
 }
 
+void SettingsTask::initialzeVoiceKeyer_()
+{
+    esp_err_t result = storageHandle_->get_item(VOICE_KEYER_ENABLED_ID, enableVoiceKeyer_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Voice keyer settings not found, will set to defaults");
+        setVoiceKeyerSettings_(
+            false, DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT, 
+            DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving enableVoiceKeyer: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "enableVoiceKeyer: %d", enableVoiceKeyer_);
+    }
+    
+    result = storageHandle_->get_item(VOICE_KEYER_TIMES_TO_TRANSMIT, voiceKeyerNumberTimesToTransmit_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving voiceKeyerNumberTimesToTransmit: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "voiceKeyerNumberTimesToTransmit: %d", voiceKeyerNumberTimesToTransmit_);
+    }
+
+    result = storageHandle_->get_item(VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT, voiceKeyerSecondsToWaitAfterTransmit_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving voiceKeyerSecondsToWaitAfterTransmit: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "voiceKeyerSecondsToWaitAfterTransmit: %d", voiceKeyerSecondsToWaitAfterTransmit_);
+    }
+    
+    // Publish current voice keyer settings to everyone who may care.
+    VoiceKeyerSettingsMessage* message = new VoiceKeyerSettingsMessage(
+        enableVoiceKeyer_,
+        voiceKeyerNumberTimesToTransmit_,
+        voiceKeyerSecondsToWaitAfterTransmit_
+    );
+    assert(message != nullptr);
+    publish(message);
+    delete message;
+}
+
+
 void SettingsTask::commit_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Committing pending settings to flash.");
@@ -574,6 +654,53 @@ void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* u
         delete message;
         
         RadioSettingsSavedMessage response;
+        publish(&response);
+    }
+}
+
+void SettingsTask::onSetVoiceKeyerSettingsMessage_(DVTask* origin, SetVoiceKeyerSettingsMessage* message)
+{
+    setVoiceKeyerSettings_(message->enabled, message->timesToTransmit, message->secondsToWait);
+}
+
+void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait)
+{
+    enableVoiceKeyer_ = enabled;
+    voiceKeyerNumberTimesToTransmit_ = timesToTransmit;
+    voiceKeyerSecondsToWaitAfterTransmit_ = secondsToWait;
+    
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_item(VOICE_KEYER_ENABLED_ID, enableVoiceKeyer_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting enableVoiceKeyer: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(VOICE_KEYER_TIMES_TO_TRANSMIT, voiceKeyerNumberTimesToTransmit_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerNumberTimesToTransmit: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT, voiceKeyerSecondsToWaitAfterTransmit_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerSecondsToWaitAfterTransmit: %s", esp_err_to_name(result));
+        }
+
+        commitTimer_.stop();
+        commitTimer_.start(true);
+
+        // Publish new voice keyer settings to everyone who may care.
+        VoiceKeyerSettingsMessage* message = new VoiceKeyerSettingsMessage(
+            enableVoiceKeyer_,
+            voiceKeyerNumberTimesToTransmit_,
+            voiceKeyerSecondsToWaitAfterTransmit_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+        
+        VoiceKeyerSettingsSavedMessage response;
         publish(&response);
     }
 }

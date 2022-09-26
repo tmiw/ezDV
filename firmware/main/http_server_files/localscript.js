@@ -1,6 +1,18 @@
 //==========================================================================================
 // Form state change
 //==========================================================================================
+var updateVoiceKeyerState = function()
+{
+    if ($("#voiceKeyerEnable").is(':checked'))
+    {
+        $(".vk-enable-row").show(); 
+    }
+    else
+    {
+        $(".vk-enable-row").hide();
+    }
+};
+
 var updateWifiFormState = function() 
 {
     if ($("#wifiEnable").is(':checked'))
@@ -112,6 +124,28 @@ function wsConnect()
               $("#radioFailAlertRow").show();
           }
       }
+      else if (json.type == "voiceKeyerInfo")
+      {
+          $("#voiceKeyerEnable").prop("disabled", false);
+          $("#voiceKeyerReset").prop("disabled", false);
+          $("#voiceKeyerEnable").prop("checked", json.enabled);
+
+          $("#voiceKeyerTimesToTransmit").val(json.timeToTransmit);
+          $("#voiceKeyerSecondstoWait").val(json.secondsToWait);
+
+          updateVoiceKeyerState();
+      }
+      else if (json.type == "voiceKeyerSaved")
+      {
+          if (json.success)
+          {
+              $("#voiceKeyerSuccessAlertRow").show();
+          }
+          else
+          {
+              $("#voiceKeyerFailAlertRow").show();
+          }
+      }
   };
 
   ws.onclose = function(e) 
@@ -137,6 +171,11 @@ $("#radioEnable").change(function()
 $("#wifiEnable").change(function()
 {
     updateWifiFormState();
+});
+
+$("#voiceKeyerEnable").change(function()
+{
+    updateVoiceKeyerFormState();
 });
 
 $("#wifiMode").change(function()
@@ -188,6 +227,23 @@ $("#radioSave").click(function()
     ws.send(JSON.stringify(obj));
 });
 
+$("#voiceKeyerSave").click(function()
+{
+    var obj = 
+    {
+        "type": "saveVoiceKeyerInfo",
+        "enabled": $("#voiceKeyerEnable").is(':checked'),
+        "secondsToWait": parseInt($("#voiceKeyerSecondsToWait").val()),
+        "timesToTransmit": parseInt($("#voiceKeyerTimesToTransmit").val())
+    };
+    
+    $("#voiceKeyerSuccessAlertRow").hide();
+    $("#voiceKeyerFailAlertRow").hide();
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+});
+
 //==========================================================================================
 // Disable all form elements on page load. Connect to WebSocket and wait for initial messages.
 // These messages will trigger prefilling and reenabling of the form.
@@ -208,5 +264,12 @@ $( document ).ready(function()
     $("#radioSuccessAlertRow").hide();
     $("#radioFailAlertRow").hide();
     
+    $(".vk-enable-row").hide();
+    $("#voiceKeyerEnable").prop("disabled", true);
+    $("#voiceKeyerReset").prop("disabled", true);
+    
+    $("#voiceKeyerSuccessAlertRow").hide();
+    $("#voiceKeyerFailAlertRow").hide();
+
     wsConnect();
 });

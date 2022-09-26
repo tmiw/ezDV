@@ -58,6 +58,7 @@ private:
         WEBSOCKET_DISCONNECTED = 2,
         UPDATE_WIFI = 3,
         UPDATE_RADIO = 4,
+        UPDATE_VOICE_KEYER = 5,
     };
     
     template<uint32_t MSG_ID>
@@ -94,7 +95,8 @@ private:
     // Internal messages for handling requests
     using UpdateWifiMessage = HttpRequestMessageCommon<UPDATE_WIFI>;
     using UpdateRadioMessage = HttpRequestMessageCommon<UPDATE_RADIO>;
-    
+    using UpdateVoiceKeyerMessage = HttpRequestMessageCommon<UPDATE_VOICE_KEYER>;
+
     using WebSocketList = std::vector<int>;
     
     httpd_handle_t configServerHandle_;
@@ -107,7 +109,8 @@ private:
     void onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message);
     void onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* message);
     void onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message);
-    
+    void onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyerMessage* message);
+
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     
     static esp_err_t ServeWebsocketPage_(httpd_req_t *req);

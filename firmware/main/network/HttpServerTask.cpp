@@ -50,6 +50,8 @@ extern "C"
 #define JSON_RADIO_STATUS_TYPE "radioInfo"
 #define JSON_RADIO_SAVED_TYPE "radioSaved"
 
+#define JSON_VOICE_KEYER_STATUS_TYPE "voiceKeyerInfo"
+#define JSON_VOICE_KEYER_SAVED_TYPE "voiceKeyerSaved"
 
 namespace ezdv
 {
@@ -68,6 +70,7 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onHttpWebsocketDisconnectedMessage_);
     registerMessageHandler(this, &HttpServerTask::onUpdateWifiMessage_);
     registerMessageHandler(this, &HttpServerTask::onUpdateRadioMessage_);
+    registerMessageHandler(this, &HttpServerTask::onUpdateVoiceKeyerMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -302,6 +305,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     UpdateRadioMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
+                else if (!strcmp(type, "saveVoiceKeyerInfo"))
+                {
+                    UpdateVoiceKeyerMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
             }
         }
     }
@@ -379,7 +387,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
 {
     activeWebSockets_.push_back(message->fd);
 
-    // Request current Wi-Fi/radio settings.
+    // Request current settings.
     {
         storage::RequestWifiSettingsMessage request;
         publish(&request);
@@ -446,6 +454,38 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current radio settings");
+        }
+    }
+
+    {
+        storage::RequestVoiceKeyerSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::VoiceKeyerSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_STATUS_TYPE);
+                cJSON_AddBoolToObject(root, "enabled", response->enabled);
+                cJSON_AddNumberToObject(root, "secondsToWait", response->secondsToWait);
+                cJSON_AddNumberToObject(root, "timesToTransmit", response->timesToTransmit);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current voice keyer settings");
         }
     }
 }
@@ -701,6 +741,87 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     {
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for radio settings");
+    }
+    
+    cJSON_free(message->request);
+}
+
+void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyerMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating voice keyer settings");
+    
+    bool enabled = false;
+    int secondsToWait = 0;
+    int timesToTransmit = 0;
+    
+    bool settingsValid = true;
+    
+    auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
+    if (enabledJSON != nullptr)
+    {
+        enabled = cJSON_IsTrue(enabledJSON);
+        if (enabled)
+        {            
+            auto secondsJSON = cJSON_GetObjectItem(message->request, "secondsToWait");
+            if (secondsJSON != nullptr)
+            {
+                secondsToWait = (int)cJSON_GetNumberValue(secondsJSON);
+                settingsValid &= secondsToWait > 0;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+
+            auto waitJSON = cJSON_GetObjectItem(message->request, "timesToTransmit");
+            if (waitJSON != nullptr)
+            {
+                timesToTransmit = (int)cJSON_GetNumberValue(waitJSON);
+                settingsValid &= timesToTransmit > 0;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+        }
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetVoiceKeyerSettingsMessage request(enabled, timesToTransmit, secondsToWait);
+        publish(&request);
+    
+        auto response = waitFor<storage::VoiceKeyerSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for voice keyer settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer settings");
     }
     
     cJSON_free(message->request);

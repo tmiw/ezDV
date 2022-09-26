@@ -51,6 +51,11 @@ enum SettingsMessageTypes
     SET_RADIO_SETTINGS = 10,
     REQUEST_RADIO_SETTINGS = 11,
     RADIO_SETTINGS_SAVED = 12,
+
+    VOICE_KEYER_SETTINGS = 13,
+    SET_VOICE_KEYER_SETTINGS = 14,
+    REQUEST_VOICE_KEYER_SETTINGS = 15,
+    VOICE_KEYER_SETTINGS_SAVED = 16,
 };
 
 template<uint32_t TYPE_ID>
@@ -139,6 +144,29 @@ using RadioSettingsMessage = RadioSettingsMessageCommon<RADIO_SETTINGS>;
 using SetRadioSettingsMessage = RadioSettingsMessageCommon<SET_RADIO_SETTINGS>;
 
 template<uint32_t TYPE_ID>
+class VoiceKeyerSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, VoiceKeyerSettingsMessageCommon<TYPE_ID>>
+{
+public:
+    VoiceKeyerSettingsMessageCommon(bool enabledProvided = false, int timesToTransmitProvided = 0, int secondsToWaitProvided = 0)
+        : DVTaskMessageBase<TYPE_ID, VoiceKeyerSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , enabled(enabledProvided)
+        , timesToTransmit(timesToTransmitProvided)
+        , secondsToWait(secondsToWaitProvided)
+    { 
+        // empty
+    }
+    
+    virtual ~VoiceKeyerSettingsMessageCommon() = default;
+
+    bool enabled;
+    int timesToTransmit;
+    int secondsToWait;
+};
+
+using VoiceKeyerSettingsMessage = VoiceKeyerSettingsMessageCommon<VOICE_KEYER_SETTINGS>;
+using SetVoiceKeyerSettingsMessage = VoiceKeyerSettingsMessageCommon<SET_VOICE_KEYER_SETTINGS>;
+
+template<uint32_t TYPE_ID>
 class RequesSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>
 {
 public:
@@ -153,6 +181,9 @@ using WifiSettingsSavedMessage = RequesSettingsMessageCommon<WIFI_SETTINGS_SAVED
 
 using RequestRadioSettingsMessage = RequesSettingsMessageCommon<REQUEST_RADIO_SETTINGS>;
 using RadioSettingsSavedMessage = RequesSettingsMessageCommon<RADIO_SETTINGS_SAVED>;
+
+using RequestVoiceKeyerSettingsMessage = RequesSettingsMessageCommon<REQUEST_VOICE_KEYER_SETTINGS>;
+using VoiceKeyerSettingsSavedMessage = RequesSettingsMessageCommon<VOICE_KEYER_SETTINGS_SAVED>;
 
 }
 
