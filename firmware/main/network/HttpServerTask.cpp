@@ -61,7 +61,7 @@ namespace network
 {
 
 HttpServerTask::HttpServerTask()
-    : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
+    : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, 100, pdMS_TO_TICKS(1000))
     , isRunning_(false)
 {
     registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
@@ -267,7 +267,7 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     if (ws_pkt.len) 
     {
         /* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
-        buf = (uint8_t*)calloc(1, ws_pkt.len + 1);
+        buf = (uint8_t*)heap_caps_calloc(1, ws_pkt.len + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
         if (buf == NULL) 
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Failed to calloc memory for buf");
@@ -280,7 +280,7 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
         if (ret != ESP_OK) 
         {
             ESP_LOGE(CURRENT_LOG_TAG, "httpd_ws_recv_frame failed with %d", ret);
-            free(buf);
+            heap_caps_free(buf);
             return ret;
         }
     }
@@ -288,7 +288,7 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     if (ws_pkt.type == HTTPD_WS_TYPE_TEXT)
     {    
         cJSON* jsonMessage = cJSON_Parse((char*)buf);
-        free(buf);
+        heap_caps_free(buf);
         
         // Ignore messages that we can't parse.
         if (jsonMessage != nullptr)
@@ -325,6 +325,7 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     else if (ws_pkt.type == HTTPD_WS_TYPE_BINARY)
     {
         // Binary packet, used for sending over the new voice keyer file
+        ESP_LOGI(CURRENT_LOG_TAG, "Received %d bytes of voice keyer data", ws_pkt.len);
         FileUploadDataMessage message((char*)buf, ws_pkt.len);
         thisObj->publish(&message); // note: buf will be freed by voice keyer task.
     }

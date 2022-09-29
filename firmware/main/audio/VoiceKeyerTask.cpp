@@ -27,7 +27,7 @@ namespace audio
 {
 
 VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
-    : DVTask("VoiceKeyerTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(20))
+    : DVTask("VoiceKeyerTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 100, pdMS_TO_TICKS(20))
     , AudioInput(1, 1)
     , currentState_(VoiceKeyerTask::IDLE)
     , voiceKeyerFile_(nullptr)
@@ -199,7 +199,7 @@ void VoiceKeyerTask::stopKeyer_()
     {
         delete wavReader_;
         wavReader_ = nullptr;
-        
+
         fclose(voiceKeyerFile_);
         voiceKeyerFile_ = nullptr;
     }
@@ -230,6 +230,7 @@ void VoiceKeyerTask::onVoiceKeyerSettingsMessage_(DVTask* origin, storage::Voice
 
 void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFileUploadMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Saving %d bytes to %s", message->length, VOICE_KEYER_FILE);
     bytesToUpload_ = message->length;
 
     if (voiceKeyerFile_ != nullptr)
@@ -246,9 +247,11 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
 {
     assert(voiceKeyerFile_ != nullptr);
 
+    ESP_LOGI(CURRENT_LOG_TAG, "Saving %d bytes to %s", message->length, VOICE_KEYER_FILE);
+
     fwrite(message->buf, 1, message->length, voiceKeyerFile_);
     bytesToUpload_ -= message->length;
-    free(message->buf);
+    heap_caps_free(message->buf);
 
     if (bytesToUpload_ <= 0)
     {
