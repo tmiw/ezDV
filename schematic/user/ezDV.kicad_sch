@@ -194,11 +194,11 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/7dcfb679-667c-408e-9f52-012a00689a18"
       (reference "#PWR039") (unit 1) (value "GND") (footprint "")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/579cbb3e-3e24-4bf2-a01f-8d3bc2cf3205"
+      (reference "#PWR040") (unit 1) (value "GND") (footprint "")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
       (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/17ca49db-e3d6-4b54-bf7c-233a60763973"
-      (reference "C1") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/5579038c-331f-4c75-bb03-106d8ef1fd3a"
       (reference "C2") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
@@ -293,9 +293,6 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/050574c6-8905-4aeb-b9f9-cabd1ee0c73b"
       (reference "H4") (unit 1) (value "MountingHole_Pad") (footprint "MountingHole:MountingHole_3.2mm_M3_Pad")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/5ac22ef5-d2c5-4cf4-99c5-3428d45a15b9"
-      (reference "IC1") (unit 1) (value "FS312F-G") (footprint "ezDV_production:SOT23-6")
-    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/b601f983-abc1-4402-a0f7-e9c9b8ed0e3e"
       (reference "J1") (unit 1) (value "TYPE-C-31-M-04") (footprint "ezDV_production:HRO_TYPE-C-31-M-04")
     )
@@ -305,8 +302,8 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/e20062e5-6ad0-46cf-8a99-28fa6f3e235f"
       (reference "J3") (unit 1) (value "User_Jack") (footprint "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/df0d77b7-187c-41bc-8f56-f959ed5f6be3"
-      (reference "Q1") (unit 1) (value "FS8205") (footprint "ezDV_production:SOT95P280X145-6N")
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
+      (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/fe9a47ca-a8c0-4ab4-aec4-054fe38a5dc0"
       (reference "Q2") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
@@ -326,8 +323,11 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/96978d9c-56b5-4852-9327-ab3508c2a84a"
       (reference "Q5") (unit 1) (value "MBT3904DW1T1") (footprint "Package_TO_SOT_SMD:SOT-363_SC-70-6")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/f1f69cb4-d1dc-4eca-b274-fd6b6e628031"
-      (reference "R1") (unit 1) (value "100") (footprint "Resistor_SMD:R_0402_1005Metric")
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/e40b1ac5-61d6-4d30-bea3-a56645d50890"
+      (reference "Q5") (unit 2) (value "MBT3904DW1T1") (footprint "Package_TO_SOT_SMD:SOT-363_SC-70-6")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/83a7fcdb-8e5a-4954-abbb-74c4199b386f"
+      (reference "R1") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af759432-c709-4b3c-8903-5c62bb16e35d"
       (reference "R2") (unit 1) (value "5.1K") (footprint "Resistor_SMD:R_0402_1005Metric")
@@ -338,8 +338,8 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/bda0efee-a2ae-4a5d-a8fe-1d53118fedd5"
       (reference "R4") (unit 1) (value "1.2K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/2ff8c384-4f2f-4345-b7b3-1f56d4757995"
-      (reference "R5") (unit 1) (value "1K") (footprint "Resistor_SMD:R_0402_1005Metric")
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/42ef373e-5a59-4029-8ba6-7cf1a29a4780"
+      (reference "R5") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/6eb339d9-7248-4e6a-a89c-4622b88ffa13"
       (reference "R6") (unit 1) (value "1K") (footprint "Resistor_SMD:R_0402_1005Metric")
@@ -453,7 +453,7 @@
       (reference "U2") (unit 1) (value "MAX17048G+T10") (footprint "ezDV_production:SON50P200X200X80-9N")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/0c757835-abd5-4adc-81fe-0512fe45e87e"
-      (reference "U3") (unit 1) (value "TLV1117-33") (footprint "Package_TO_SOT_SMD:SOT-223")
+      (reference "U3") (unit 1) (value "TLV1117LV-33") (footprint "Package_TO_SOT_SMD:SOT-223")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/1be71790-f137-46b3-b37a-0a441e994164"
       (reference "U4") (unit 1) (value "TLV320AIC3254IRHBR") (footprint "ezDV_production:IC_ADS125H01IRHBT")
