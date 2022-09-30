@@ -118,7 +118,9 @@ void MAX17048::onTaskTick_()
     if (enabled_)
     {
         // Read current temperature sensor value (in degC) and update RCOMP
-        // based on formula from the datasheet.
+        // based on formula from the datasheet. Note that the ESP32 internal
+        // temperature sensor will read higher than ambient a lot of the time,
+        // but it's likely better to underestimate capacity than overestimate. TBD.
         uint16_t config = 0;
         bool success = readInt16Reg_(REG_CONFIG, &config);
         assert(success);
