@@ -174,7 +174,7 @@ function wsConnect()
   {
     console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
     setTimeout(function() {
-      connect();
+        wsConnect();
     }, 1000);
   };
 
