@@ -18,10 +18,18 @@ var updateWifiFormState = function()
     if ($("#wifiEnable").is(':checked'))
     {
         $(".wifi-enable-row").show(); 
+
+        // Enable Radio tab.
+        $("#radioTab").prop("disabled", false);
     }
     else
     {
         $(".wifi-enable-row").hide();
+
+        // Additionally disable Radio tab since there's
+        // no point in setting up anything there if there's
+        // no Wi-Fi.
+        $("#radioTab").prop("disabled", true);
     }
     
     if ($("#wifiMode").val() == 0)
