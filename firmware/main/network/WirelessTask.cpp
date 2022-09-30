@@ -435,17 +435,17 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     // Avoid accidentally trying to re-initialize Wi-Fi.
     if (!wifiRunning_)
     {
-        if (overrideWifiSettings_)
+        //if (overrideWifiSettings_)
         {
             // Setup is *just* different enough that we have to have a separate function for it
             // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
             // with enableWifi_()).
             enableDefaultWifi_();
         }
-        else if (message->enabled)
-        {
-            enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
-        }
+        //else if (message->enabled)
+        //{
+        //    enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
+        //}
     }
 }
 
