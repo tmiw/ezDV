@@ -177,6 +177,53 @@ function wsConnect()
           // TBD: handle errors
           saveVoiceKeyerSettings();
       }
+      else if (json.type == "batteryStatus")
+      {
+          // Update battery percentage and time remaining
+          $(".battery-level").height(json.stateOfCharge.toFixed(0) + "%");
+          if (json.stateOfChargeChange == 0)
+          {
+              $(".time-remaining").hide();
+          }
+          else
+          {
+              $(".time-remaining").show();
+              if (json.stateOfChargeChange < 0)
+              {
+                  var numHoursRemaining = json.stateOfCharge / -json.stateOfChargeChange;
+                  if (numHoursRemaining >= 10)
+                  {
+                    $(".time-remaining").text("(>10h remaining)");
+                  }
+                  else if (numHoursRemaining > 1)
+                  {
+                    $(".time-remaining").text("(" + numHoursRemaining.toFixed(0) + "h remaining)");
+                  }
+                  else
+                  {
+                    var numMinutesRemaining = numHoursRemaining * 60;
+                    $(".time-remaining").text("(" + numMinutesRemaining.toFixed(0) + " min remaining)");
+                  }
+              }
+              else
+              {
+                var numHoursRemaining = (100 - json.stateOfCharge) / json.stateOfChargeChange;
+                  if (numHoursRemaining >= 10)
+                  {
+                    $(".time-remaining").text("(>10h to full)");
+                  }
+                  else if (numHoursRemaining > 1)
+                  {
+                    $(".time-remaining").text("(" + numHoursRemaining.toFixed(0) + "h to full)");
+                  }
+                  else
+                  {
+                    var numMinutesRemaining = numHoursRemaining * 60;
+                    $(".time-remaining").text("(" + numMinutesRemaining.toFixed(0) + " min to full)");
+                  }
+              }
+          }
+      }
   };
 
   ws.onclose = function(e) 
