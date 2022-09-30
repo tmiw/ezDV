@@ -346,28 +346,31 @@ void WirelessTask::onNetworkConnected_()
     enableHttp_();
     
     // Get the current Icom radio settings
-    storage::RequestRadioSettingsMessage request;
-    publish(&request);
-
-    auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(2000), nullptr);
-    if (response != nullptr)
+    if (!overrideWifiSettings_)
     {
-        if (response->enabled)
+        storage::RequestRadioSettingsMessage request;
+        publish(&request);
+
+        auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(2000), nullptr);
+        if (response != nullptr)
         {
-            ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
-            icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-            publish(&connectMessage);
+            if (response->enabled)
+            {
+                ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
+                icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
+                publish(&connectMessage);
+            }
+            else
+            {
+                ESP_LOGI(CURRENT_LOG_TAG, "Icom radio connectivity disabled");
+            }
+            
+            delete response;
         }
         else
         {
-            ESP_LOGI(CURRENT_LOG_TAG, "Icom radio connectivity disabled");
+            ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for radio connection settings!");
         }
-        
-        delete response;
-    }
-    else
-    {
-        ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for radio connection settings!");
     }
 }
 
