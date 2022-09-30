@@ -107,6 +107,9 @@ function wsConnect()
       }
       else if (json.type == "wifiSaved")
       {
+          $("wifiSave").show();
+          $("#wifiSaveProgress").hide();
+
           if (json.success)
           {
               $("#wifiSuccessAlertRow").show();
@@ -132,6 +135,9 @@ function wsConnect()
       }
       else if (json.type == "radioSaved")
       {
+          $("radioSave").show();
+          $("#radioSaveProgress").hide();
+
           if (json.success)
           {
               $("#radioSuccessAlertRow").show();
@@ -215,6 +221,9 @@ $("#wifiSecurityType").change(function()
 
 $("#wifiSave").click(function()
 {
+    $("wifiSave").hide();
+    $("#wifiSaveProgress").show();
+
     var obj = 
     {
         "type": "saveWifiInfo",
@@ -235,6 +244,9 @@ $("#wifiSave").click(function()
 
 $("#radioSave").click(function()
 {
+    $("radioSave").hide();
+    $("#radioSaveProgress").show();
+
     var obj = 
     {
         "type": "saveRadioInfo",
@@ -306,6 +318,9 @@ $( document ).ready(function()
     $("#wifiEnable").prop("disabled", true);
     $("#wifiReset").prop("disabled", true);
     
+    $("wifiSave").show();
+    $("#wifiSaveProgress").hide();
+
     $("#wifiSuccessAlertRow").hide();
     $("#wifiFailAlertRow").hide();
     
@@ -313,6 +328,9 @@ $( document ).ready(function()
     $("#radioEnable").prop("disabled", true);
     $("#radioReset").prop("disabled", true);
     
+    $("radioSave").show();
+    $("#radioSaveProgress").hide();
+
     $("#radioSuccessAlertRow").hide();
     $("#radioFailAlertRow").hide();
     
