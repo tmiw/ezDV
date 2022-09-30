@@ -269,7 +269,13 @@ $("#voiceKeyerSave").click(function()
                 size: reader.result.byteLength
             };
             ws.send(JSON.stringify(startMessage));
-            ws.send(reader.result);
+
+            // Send 4K blocks to ezDV so it can better handle
+            // them (vs. sending 100K+ at once).
+            for (var size = 0; size < reader.result.byteLength; size += 4096)
+            {
+                ws.send(reader.result.slice(size, size + 4096));
+            }
         };
         reader.onerror = function()
         {
