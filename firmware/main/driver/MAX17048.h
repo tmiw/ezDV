@@ -20,6 +20,8 @@
 
 #include <inttypes.h>
 
+#include "driver/temperature_sensor.h"
+
 #include "task/DVTask.h"
 #include "I2CDevice.h"
 #include "InputGPIO.h"
@@ -49,7 +51,8 @@ protected:
 private:
     I2CDevice* i2cDevice_;
     InputGPIO<BAT_ALERT_GPIO> batAlertGpio_;
-    bool enabled_;    
+    bool enabled_;
+    temperature_sensor_handle_t temperatureSensor_;
     
     bool writeInt16Reg_(uint8_t reg, uint16_t val);
     bool readInt16Reg_(uint8_t reg, uint16_t* val);
