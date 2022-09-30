@@ -154,6 +154,9 @@ function wsConnect()
       }
       else if (json.type == "voiceKeyerSaved")
       {
+          $("#voiceKeyerSave").show();
+          $("#voiceKeyerSaveProgress").hide();
+
           if (json.success)
           {
               $("#voiceKeyerSuccessAlertRow").show();
@@ -252,6 +255,9 @@ $("#radioSave").click(function()
 
 $("#voiceKeyerSave").click(function()
 {
+    $("#voiceKeyerSave").hide();
+    $("#voiceKeyerSaveProgress").show();
+
     if ($('#voiceKeyerFile').get(0).files.length === 0) 
     {
         // Skip directly to saving settings if we didn't select
@@ -280,6 +286,9 @@ $("#voiceKeyerSave").click(function()
         reader.onerror = function()
         {
             alert("Could not open file for upload!");
+
+            $("#voiceKeyerSave").show();
+            $("#voiceKeyerSaveProgress").hide();
         };
 
         reader.readAsArrayBuffer($('#voiceKeyerFile').get(0).files[0]);
@@ -310,6 +319,9 @@ $( document ).ready(function()
     $(".vk-enable-row").hide();
     $("#voiceKeyerEnable").prop("disabled", true);
     $("#voiceKeyerReset").prop("disabled", true);
+    
+    $("#voiceKeyerSave").show();
+    $("#voiceKeyerSaveProgress").hide();
     
     $("#voiceKeyerSuccessAlertRow").hide();
     $("#voiceKeyerFailAlertRow").hide();
