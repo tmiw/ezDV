@@ -6589,7 +6589,7 @@
     (pad "8" smd roundrect locked (at 0.985 -0.75 90) (size 0.76 0.27) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.03)
       (net 67 "GPIO47_SDA") (pinfunction "SDA") (pintype "bidirectional") (tstamp 6266b827-8cd2-48b2-84bf-bb1ef06fffdb))
     (pad "9" smd rect locked (at 0 0 90) (size 0.9 1.3) (layers "F.Cu" "F.Mask")
-      (net 3 "GND") (pinfunction "EP") (pintype "power_in") (tstamp 375c1bce-97fb-4644-b170-06b3a1dfbf38))
+      (net 3 "GND") (pinfunction "EP") (pintype "power_in") (clearance 0.155) (tstamp 375c1bce-97fb-4644-b170-06b3a1dfbf38))
   )
 
   (footprint "Capacitor_SMD:C_0603_1608Metric" (layer "F.Cu")
@@ -7681,7 +7681,7 @@
     (pad "41_7" smd rect locked (at -2.9 1.06) (size 0.9 0.9) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 3 "GND") (pinfunction "GND") (pintype "power_in") (tstamp 35dc0c8d-2b30-44cb-90e0-14809b35f391))
     (pad "41_8" smd rect locked (at -1.5 1.06) (size 0.9 0.9) (layers "F.Cu" "F.Paste" "F.Mask")
-      (net 3 "GND") (pinfunction "GND") (pintype "power_in") (tstamp b9e2d40d-3fdc-43a0-b5a6-7e5bfc72dd9e))
+      (net 3 "GND") (pinfunction "GND") (pintype "power_in") (clearance 0.0001) (tstamp b9e2d40d-3fdc-43a0-b5a6-7e5bfc72dd9e))
     (pad "41_9" smd rect locked (at -0.1 1.06) (size 0.9 0.9) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 3 "GND") (pinfunction "GND") (pintype "power_in") (tstamp 97f55d33-b8e2-420e-931f-672d87c62a56))
     (pad "41_10" thru_hole circle locked (at -1.5 1.76) (size 0.4 0.4) (drill 0.2) (layers *.Cu) (tstamp 7b96e725-1ce8-4748-9715-210bbb676653))
