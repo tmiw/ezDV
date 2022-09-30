@@ -401,7 +401,10 @@ void HttpServerTask::onTaskSleep_()
 
 void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message)
 {
-    activeWebSockets_.push_back(message->fd);
+    if (std::find(activeWebSockets_.begin(), activeWebSockets_.end(), message->fd) == activeWebSockets_.end())
+    {
+        activeWebSockets_.push_back(message->fd);
+    }
 
     // Request current settings.
     {
