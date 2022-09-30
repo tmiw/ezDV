@@ -34,248 +34,251 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-xs-12 col-md-12">
-                <h2>Voice Keyer Configuration</h2>
+            <div class="col">
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#voiceKeyerTabForm" aria-current="page">Voice Keyer</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#wifiTabForm">Wi-Fi</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm">Radio</button>
+                    </li>
+                </ul>
             </div>
         </div>
-        <form>
-            <div class="row mb-3" id="voiceKeyerSuccessAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-success" role="alert">
-                      Your voice keyer configuration has been saved.
+        <div class="tab-content" id="nav-tabContent">
+            <form class="tab-pane fade show active" id="voiceKeyerTabForm">
+                <div class="row mb-3" id="voiceKeyerSuccessAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-success" role="alert">
+                        Your voice keyer configuration has been saved.
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3" id="voiceKeyerFailAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-danger" role="alert">
-                      Could not save voice keyer configuration. Please verify your settings below and try again.
+                <div class="row mb-3" id="voiceKeyerFailAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-danger" role="alert">
+                        Could not save voice keyer configuration. Please verify your settings below and try again.
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-xs-12 col-md-6">
-                    <div class="form-check">
-                        <input type="checkbox" id="voiceKeyerEnable" class="form-check-input" />
-                        <label class="form-check-label">
-                            Enable voice keyer
-                        </label>
+                <div class="row mb-3">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" id="voiceKeyerEnable" class="form-check-input" />
+                            <label class="form-check-label">
+                                Enable voice keyer
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3 vk-enable-row">
-                <label for="voiceKeyerFile" class="col-xs-4 col-md-2 col-form-labell">Voice keyer file</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="voiceKeyerFile" type="file" class="form-control" />
+                <div class="row mb-3 vk-enable-row">
+                    <label for="voiceKeyerFile" class="col-xs-4 col-md-2 col-form-labell">Voice keyer file</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="voiceKeyerFile" type="file" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 vk-enable-row">
-                <label for="voiceKeyerTimesToTransmit" class="col-xs-4 col-md-2 col-form-labell">Number of times to transmit</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="voiceKeyerTimesToTransmit" value="" class="form-control" />
+                <div class="row mb-3 vk-enable-row">
+                    <label for="voiceKeyerTimesToTransmit" class="col-xs-4 col-md-2 col-form-labell">Number of times to transmit</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="voiceKeyerTimesToTransmit" value="" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 vk-enable-row">
-                <label for="voiceKeyerSecondsToWait" class="col-xs-4 col-md-2 col-form-labell">Number of seconds to wait after transmit</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="voiceKeyerSecondsToWait" value="" class="form-control" />
+                <div class="row mb-3 vk-enable-row">
+                    <label for="voiceKeyerSecondsToWait" class="col-xs-4 col-md-2 col-form-labell">Number of seconds to wait after transmit</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="voiceKeyerSecondsToWait" value="" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-2">&nbsp</div>
-                <div class="col">
-                    <button type="button" class="btn btn-success" id="voiceKeyerSave">Save</button>
-                    <div class="spinner-border" id="voiceKeyerSaveProgress" role="status">
+                <div class="row mb-3">
+                    <div class="col-2">&nbsp</div>
+                    <div class="col">
+                        <button type="button" class="btn btn-success" id="voiceKeyerSave">Save</button>
+                        <div class="spinner-border" id="voiceKeyerSaveProgress" role="status">
+                            <span class="visually-hidden">Saving...</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                    <button type="reset" class="btn btn-danger" id="voiceKeyerReset">Reset</button>
+                    </div>
+                    <div class="col-8">&nbsp;</div>
+                </div>
+            </form>
+            <form class="tab-pane fade" id="wifiTabForm">
+                <div class="row mb-3" id="wifiSuccessAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-success" role="alert">
+                        Your Wi-Fi configuration has been saved. Please restart ezDV for the changes to take effect.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3" id="wifiFailAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-danger" role="alert">
+                        Could not save Wi-Fi configuration. Please verify your settings below and try again.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" id="wifiEnable" class="form-check-input" />
+                            <label class="form-check-label">
+                                Enable Wi-Fi
+                            </label>
+                        <div><em>(Note: you can always return here even if disabled by holding down Volume Down while turning on ezDV.)</em></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiMode" class="col-xs-4 col-md-2 col-form-label">Wireless Mode</label>
+                    <div class="col-xs-8 col-md-4">
+                    <select id="wifiMode" class="form-control">
+                        <option value="0">Access Point</option>
+                        <option value="1">Client</option>
+                    </select>
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiSSID" class="col-xs-4 col-md-2 col-form-labell">SSID</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="wifiSSID" value="" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiSecurityType" class="col-xs-4 col-md-2 col-form-label">Security Type</label>
+                    <div class="col-xs-8 col-md-4">
+                    <select id="wifiSecurityType" class="form-control">
+                        <option value="0">Open</option>
+                        <option value="1">WEP</option>
+                        <option value="2">WPA</option>
+                        <option value="3">WPA2</option>
+                        <option value="4">WPA/WPA2</option>
+                        <option value="5">WPA3</option>
+                        <option value="6">WPA2/WPA3</option>
+                    </select>
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiChannel" class="col-xs-4 col-md-2 col-form-label">Channel</label>
+                    <div class="col-xs-8 col-md-4">
+                    <select id="wifiChannel" class="form-control">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                        <option>6</option>
+                        <option>7</option>
+                        <option>8</option>
+                        <option>9</option>
+                        <option>10</option>
+                        <option>11</option>
+                    </select>
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiPassword" class="col-xs-4 col-md-2 col-form-label">Password</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="wifiPassword" type="password" value="" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-2">&nbsp</div>
+                    <div class="col">
+                    <button type="button" class="btn btn-success" id="wifiSave">Save</button>
+                    <div class="spinner-border" id="wifiSaveProgress" role="status">
                         <span class="visually-hidden">Saving...</span>
                     </div>
+                    </div>
+                    <div class="col">
+                    <button type="reset" class="btn btn-danger" id="wifiReset">Reset</button>
+                    </div>
+                    <div class="col-8">&nbsp;</div>
                 </div>
-                <div class="col">
-                  <button type="reset" class="btn btn-danger" id="voiceKeyerReset">Reset</button>
-                </div>
-                <div class="col-8">&nbsp;</div>
-              </div>
-        </form>
-        <div class="row">
-            <div class="col-xs-12 col-md-12">
-                <h2>Wi-Fi Configuration</h2>
-            </div>
-        </div>
-        <form>
-            <div class="row mb-3" id="wifiSuccessAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-success" role="alert">
-                      Your Wi-Fi configuration has been saved. Please restart ezDV for the changes to take effect.
+            </form>
+            <form class="tab-pane fade" id="radioTabForm">
+                <div class="row mb-3" id="radioSuccessAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-success" role="alert">
+                        Your radio configuration has been saved. Please restart ezDV for the changes to take effect.
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3" id="wifiFailAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-danger" role="alert">
-                      Could not save Wi-Fi configuration. Please verify your settings below and try again.
+                <div class="row mb-3" id="radioFailAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-danger" role="alert">
+                        Could not save radio configuration. Please verify your settings below and try again.
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-xs-12 col-md-6">
-                    <div class="form-check">
-                        <input type="checkbox" id="wifiEnable" class="form-check-input" />
+                <div class="row mb-3">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="form-check">
+                        <input type="checkbox" id="radioEnable" class="form-check-input" />
                         <label class="form-check-label">
-                            Enable Wi-Fi
+                            Use Wi-Fi Network for Radio RX/TX
                         </label>
-                      <div><em>(Note: you can always return here even if disabled by holding down Volume Down while turning on ezDV.)</em></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-3 wifi-enable-row">
-                <label for="wifiMode" class="col-xs-4 col-md-2 col-form-label">Wireless Mode</label>
-                <div class="col-xs-8 col-md-4">
-                  <select id="wifiMode" class="form-control">
-                      <option value="0">Access Point</option>
-                      <option value="1">Client</option>
-                  </select>
+                <div class="row mb-3 radio-enable-row">
+                    <label for="radioType" class="col-xs-4 col-md-2 col-form-label">Radio Type</label>
+                    <div class="col-xs-8 col-md-4">
+                    <select id="radioType" class="form-control">
+                        <option>Icom (e.g. IC-705)</option>
+                    </select>
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 wifi-enable-row">
-                <label for="wifiSSID" class="col-xs-4 col-md-2 col-form-labell">SSID</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="wifiSSID" value="" class="form-control" />
+                <div class="row mb-3 radio-enable-row">
+                    <label for="radioIP" class="col-xs-4 col-md-2 col-form-label">IP Address</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="radioIP" value="192.168.1.2" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 wifi-enable-row">
-                <label for="wifiSecurityType" class="col-xs-4 col-md-2 col-form-label">Security Type</label>
-                <div class="col-xs-8 col-md-4">
-                  <select id="wifiSecurityType" class="form-control">
-                      <option value="0">Open</option>
-                      <option value="1">WEP</option>
-                      <option value="2">WPA</option>
-                      <option value="3">WPA2</option>
-                      <option value="4">WPA/WPA2</option>
-                      <option value="5">WPA3</option>
-                      <option value="6">WPA2/WPA3</option>
-                  </select>
+                <div class="row mb-3 radio-enable-row">
+                    <label for="radioPort" class="col-xs-4 col-md-2 col-form-label">Port</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="radioPort" value="50001" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 wifi-enable-row">
-                <label for="wifiChannel" class="col-xs-4 col-md-2 col-form-label">Channel</label>
-                <div class="col-xs-8 col-md-4">
-                  <select id="wifiChannel" class="form-control">
-                      <option>1</option>
-                      <option>2</option>
-                      <option>3</option>
-                      <option>4</option>
-                      <option>5</option>
-                      <option>6</option>
-                      <option>7</option>
-                      <option>8</option>
-                      <option>9</option>
-                      <option>10</option>
-                      <option>11</option>
-                  </select>
+                <div class="row mb-3 radio-enable-row">
+                    <label for="radioUsername" class="col-xs-4 col-md-2 col-form-label">Username</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="radioUsername" value="KA6ABC" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3 wifi-enable-row">
-                <label for="wifiPassword" class="col-xs-4 col-md-2 col-form-label">Password</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="wifiPassword" type="password" value="" class="form-control" />
+                <div class="row mb-3 radio-enable-row">
+                    <label for="radioPassword" class="col-xs-4 col-md-2 col-form-label">Password</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="radioPassword" type="password" value="this is a test" class="form-control" />
+                    </div>
                 </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-2">&nbsp</div>
-                <div class="col">
-                  <button type="button" class="btn btn-success" id="wifiSave">Save</button>
-                  <div class="spinner-border" id="wifiSaveProgress" role="status">
-                    <span class="visually-hidden">Saving...</span>
+                <div class="row mb-3">
+                    <div class="col-2">&nbsp</div>
+                    <div class="col">
+                    <button type="button" class="btn btn-success" id="radioSave">Save</button>
+                    <div class="spinner-border" id="radioSaveProgress" role="status">
+                        <span class="visually-hidden">Saving...</span>
+                    </div>
+                    </div>
+                    <div class="col">
+                    <button type="reset" class="btn btn-danger">Reset</button>
+                    </div>
+                    <div class="col-8">&nbsp;</div>
                 </div>
-                </div>
-                <div class="col">
-                  <button type="reset" class="btn btn-danger" id="wifiReset">Reset</button>
-                </div>
-                <div class="col-8">&nbsp;</div>
-              </div>
-        </form>
-        <div class="row">
-            <div class="col-xs-12 col-md-12">
-                <h2>Radio Configuration</h2>
-            </div>
+            </form>
         </div>
-        <form>
-            <div class="row mb-3" id="radioSuccessAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-success" role="alert">
-                      Your radio configuration has been saved. Please restart ezDV for the changes to take effect.
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-3" id="radioFailAlertRow">
-                <div class="col-xs-12 col-md-6">
-                    <div class="alert alert-danger" role="alert">
-                      Could not save radio configuration. Please verify your settings below and try again.
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-xs-12 col-md-6">
-                    <div class="form-check">
-                      <input type="checkbox" id="radioEnable" class="form-check-input" />
-                      <label class="form-check-label">
-                         Use Wi-Fi Network for Radio RX/TX
-                      </label>
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-3 radio-enable-row">
-                <label for="radioType" class="col-xs-4 col-md-2 col-form-label">Radio Type</label>
-                <div class="col-xs-8 col-md-4">
-                  <select id="radioType" class="form-control">
-                      <option>Icom (e.g. IC-705)</option>
-                  </select>
-                </div>
-            </div>
-            <div class="row mb-3 radio-enable-row">
-                <label for="radioIP" class="col-xs-4 col-md-2 col-form-label">IP Address</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="radioIP" value="192.168.1.2" class="form-control" />
-                </div>
-            </div>
-            <div class="row mb-3 radio-enable-row">
-                <label for="radioPort" class="col-xs-4 col-md-2 col-form-label">Port</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="radioPort" value="50001" class="form-control" />
-                </div>
-            </div>
-            <div class="row mb-3 radio-enable-row">
-                <label for="radioUsername" class="col-xs-4 col-md-2 col-form-label">Username</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="radioUsername" value="KA6ABC" class="form-control" />
-                </div>
-            </div>
-            <div class="row mb-3 radio-enable-row">
-                <label for="radioPassword" class="col-xs-4 col-md-2 col-form-label">Password</label>
-                <div class="col-xs-8 col-md-4">
-                  <input id="radioPassword" type="password" value="this is a test" class="form-control" />
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-2">&nbsp</div>
-                <div class="col">
-                  <button type="button" class="btn btn-success" id="radioSave">Save</button>
-                  <div class="spinner-border" id="radioSaveProgress" role="status">
-                    <span class="visually-hidden">Saving...</span>
-                </div>
-                </div>
-                <div class="col">
-                  <button type="reset" class="btn btn-danger">Reset</button>
-                </div>
-                <div class="col-8">&nbsp;</div>
-              </div>
-        </form>
         <div class="row page-footer">
             <div class="col-xs-12 col-md-12">
                 Copyright &copy; 2022 Mooneer Salem. <a href="https://github.com/tmiw/ezDV" target="_blank">Source code</a>
             </div>
         </div>
     </div>
-    <script src="/jquery-3.6.1.min.js.gz"></script>
-    <script src="/localscript.js"></script>
+    <script src="jquery-3.6.1.min.js.gz"></script>
+    <script src="bootstrap.bundle.min.js.gz"></script>
+    <script src="localscript.js"></script>
 </body>
 </html>
