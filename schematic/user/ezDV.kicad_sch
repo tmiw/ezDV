@@ -197,8 +197,23 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/579cbb3e-3e24-4bf2-a01f-8d3bc2cf3205"
       (reference "#PWR040") (unit 1) (value "GND") (footprint "")
     )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/015b3ba1-19de-453e-8ce8-97ad51ce4992"
+      (reference "#PWR041") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/f2bdda97-bf10-484e-8d2b-33db71f82879"
+      (reference "#PWR042") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
+      (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/41db212d-01b4-4b47-8dbd-9ea533fa1c93"
+      (reference "#PWR0102") (unit 1) (value "GND") (footprint "")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
       (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
+    )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/68b4f0be-adfc-404c-a66b-f6ab5906ccb1"
+      (reference "C1") (unit 1) (value "33pF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/5579038c-331f-4c75-bb03-106d8ef1fd3a"
       (reference "C2") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
@@ -259,6 +274,9 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/7a435154-dffa-4536-8fd4-f72a3571fac2"
       (reference "C21") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/a972e736-3279-4017-b66b-e642b7f9a153"
+      (reference "C22") (unit 1) (value "33pF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/753a31a0-3c9a-4329-a070-dd89ce5d28c3"
       (reference "D1") (unit 1) (value "Green") (footprint "Diode_SMD:D_0603_1608Metric")
