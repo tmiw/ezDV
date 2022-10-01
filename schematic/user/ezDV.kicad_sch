@@ -4,6 +4,13 @@
 
   (paper "A4")
 
+  (title_block
+    (title "ezDV")
+    (date "2022-10-01")
+    (rev "v0.4")
+    (company "FreeDV Project")
+  )
+
   (lib_symbols
   )
 
