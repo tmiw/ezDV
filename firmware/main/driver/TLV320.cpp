@@ -103,11 +103,6 @@ void TLV320::onTaskStart_()
     // Note: restoring AGC volumes is delayed until we get the power-on
     // volumes from storage.
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
-
-    // For some reason the TLV320 still needs a few seconds after
-    // sending the I2C commands above to start recording and playing
-    // audio.
-    vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
 void TLV320::onTaskWake_()
@@ -476,36 +471,37 @@ void TLV320::tlv320ConfigureRoutingADC_()
 
 void TLV320::tlv320ConfigureRoutingDAC_()
 {
-    // 6kohm depop, N = 5.0, 50ms soft start (Page 1, register 20)
-    setConfigurationOption_(1, 20, (1 << 6) | (0b1001 << 2) | (1 << 0));
+    // 6kohm depop, N = 6.0, 50ms soft start (Page 1, register 20)
+    setConfigurationOption_(1, 20, (0b01 << 6) | (0b1010 << 2) | (0b01 << 0));
     
     // Set DAC routing: HPL, HPR come from DAC
     // (Page 1, registers 12 and 13)
     setConfigurationOption_(1, 12, 1 << 3);
     setConfigurationOption_(1, 13, 1 << 3);
     
-    // Power up HPL and HPR
-    // (Page 1, register 9)
-    setConfigurationOption_(1, 9, (1 << 5) | (1 << 4));
-    
     // Unmute HPL and HPR, gain = 0dB
     // (Page 1, registers 16 and 17)
     setConfigurationOption_(1, 16, 0);
     setConfigurationOption_(1, 17, 0);
+
+    // Power up HPL and HPR
+    // (Page 1, register 9)
+    setConfigurationOption_(1, 9, (1 << 5) | (1 << 4));
     
-    // Wait until gain fully applied
+    // Wait until gain fully applied. This effectively takes ~2.5s
+    // to complete unless the TLV320 gets back to us sooner.
     // (Page 1, register 63)
     uint8_t gainRegVal = 0;
     int count = 0;
     do
     {
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(10));
         gainRegVal = getConfigurationOption_(1, 63);
-    } while ((count++ < 50) && (gainRegVal & (11 << 6)) == 0);
+    } while ((count++ <= 250) && (gainRegVal & (0b11 << 6)) == 0);
 
-    if (count >= 50)
+    if (count > 250)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for gain to fully apply!");
+        ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for gain to fully apply, assuming it's already taken effect");
     }
     
     // Power on DAC (Page 0, register 63)
@@ -547,17 +543,6 @@ void TLV320::tlv320ConfigureAGC_()
 
 void TLV320::tlv320ConfigureInterrupts_()
 {
-    /*
-    Page 0, Register 67, D(1) Headset Detection Enable or Disable
-Page 0, Register 67, D(4:2) Debounce Programmability for Headset Detection
-Page 0, Register 67, D(1:0) Debounce Programmability for Button Press
-Page 0, Register 44, D(5) Sticky Flag for Button Press Event
-Page 0, Register 44, D(4) Sticky Flag for Headset Insertion or Removal Event
-Page 0, Register 46, D(5) Status Flag for Button Press Event
-Page 0, Register 46, D(4) Status Flag for Headset Insertion and Removal
-Page 0, Register 67, D(6:5) Flags for type of Headset Detected
-*/
-
     // Use INT1 for ADC/DAC overload event
     // (Page 0, Register 48, Bit D2 = 1)
 
