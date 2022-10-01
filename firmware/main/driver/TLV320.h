@@ -20,10 +20,15 @@
 
 #include "driver/i2s_std.h"
 
+#include "InputGPIO.h"
 #include "audio/AudioInput.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+
+// GPIO assignments for TLV320 interrupts
+#define GPIO_TLV320_INT1 GPIO_NUM_12
+#define GPIO_TLV320_INT2 GPIO_NUM_14
 
 namespace ezdv
 {
@@ -53,7 +58,9 @@ private:
     int currentPage_;
     i2s_chan_handle_t i2sTxDevice_;
     i2s_chan_handle_t i2sRxDevice_;
-
+    InputGPIO<GPIO_TLV320_INT1> int1Gpio_;
+    InputGPIO<GPIO_TLV320_INT2> int2Gpio_;
+    
     void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
     void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);
 
@@ -74,6 +81,10 @@ private:
     void tlv320ConfigureRoutingADC_();
     void tlv320ConfigureRoutingDAC_();
     void tlv320ConfigureAGC_();
+    void tlv320ConfigureInterrupts_();
+
+    void onInterrupt1Fire_(bool state);
+    void onInterrupt2Fire_(bool state);
 };
 
 } // namespace driver

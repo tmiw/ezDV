@@ -42,7 +42,7 @@ class InputGPIO
 public:
     using GPIOChangeFn = std::function<void(InputGPIO<NumGPIO>*, bool)>;
 
-    InputGPIO(DVTask* owner, GPIOChangeFn onChange);
+    InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup = true, bool enablePulldown = false);
     virtual ~InputGPIO();
 
     void enableInterrupt(bool enable);
@@ -69,7 +69,7 @@ private:
 };
 
 template<gpio_num_t NumGPIO>
-InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange)
+InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup, bool enablePulldown)
     : owner_(owner)
     , onStateChange_(onChange)
     , interruptEnabled_(false)
@@ -77,9 +77,25 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange)
 {
     ESP_ERROR_CHECK(gpio_reset_pin(NumGPIO));
     ESP_ERROR_CHECK(gpio_set_direction(NumGPIO, GPIO_MODE_INPUT));
-    //ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_FLOATING));
-    ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
-    ESP_ERROR_CHECK(gpio_pullup_en(NumGPIO));
+
+    if (!enablePullup && !enablePulldown)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_FLOATING));
+        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
+    }
+    else if (enablePullup)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
+        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_en(NumGPIO));
+    }
+    else if (enablePulldown)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLDOWN_ONLY));
+        ESP_ERROR_CHECK(gpio_pulldown_en(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
+    }
     enableInterrupt(false);
     
     currentState_ = gpio_get_level(NumGPIO) == 1;

@@ -23,6 +23,7 @@
 #include "audio/FreeDVMessage.h"
 #include "audio/VoiceKeyerMessage.h"
 #include "driver/ButtonMessage.h"
+#include "driver/TLV320Message.h"
 #include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
 
@@ -83,6 +84,9 @@ private:
     void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
     void startTx_();
     void stopTx_();
+
+    // ADC overload handling
+    void onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message);
 
     // Timer handling
     void updateVolumeCommon_();

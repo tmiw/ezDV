@@ -22,6 +22,7 @@
 #include "driver/i2s_std.h"
 
 #include "TLV320.h"
+#include "TLV320Message.h"
 #include "I2CDevice.h"
 
 // TLV320 reset pin GPIO
@@ -49,6 +50,8 @@ namespace ezdv
 namespace driver
 {
 
+using namespace std::placeholders;
+
 TLV320::TLV320(I2CDevice* i2cDevice)
     : DVTask("TLV320Driver", 10 /* TBD */, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
     , audio::AudioInput(2, 2)
@@ -56,6 +59,8 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
     , i2sTxDevice_(nullptr)
     , i2sRxDevice_(nullptr)
+    , int1Gpio_(this, std::bind(&TLV320::onInterrupt1Fire_, this, _2), false, true)
+    , int2Gpio_(this, std::bind(&TLV320::onInterrupt2Fire_, this, _2), false, true)
 {
     // Register message handlers
     registerMessageHandler<storage::LeftChannelVolumeMessage>(this, &TLV320::onLeftChannelVolume_);
@@ -90,6 +95,10 @@ void TLV320::onTaskStart_()
     // Set power and I/O routing (DAC).
     ESP_LOGI(CURRENT_LOG_TAG, "configure routing for DAC");
     tlv320ConfigureRoutingDAC_();
+
+    // Enable interrupts
+    ESP_LOGI(CURRENT_LOG_TAG, "configuring interrupts");
+    tlv320ConfigureInterrupts_();
 
     // Note: restoring AGC volumes is delayed until we get the power-on
     // volumes from storage.
@@ -179,8 +188,8 @@ void TLV320::onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMe
 
 void TLV320::setPage_(uint8_t page)
 {
-    uint8_t buf[2] = { page };
-    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, 0, buf, 1);
+    uint8_t buf[] = { page };
+    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, 0, buf, sizeof(buf));
     currentPage_ = page;
 }
 
@@ -191,8 +200,8 @@ void TLV320::setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val)
         setPage_(page);
     }
     
-    uint8_t buf[2] = { val };
-    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, reg, buf, 1);
+    uint8_t buf[] = { val };
+    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, reg, buf, sizeof(buf));
 }
 
 void TLV320::setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size)
@@ -212,9 +221,13 @@ uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg)
         setPage_(page);
     }
     
-    uint8_t result;
-    i2cDevice_->readBytes(TLV320_I2C_ADDRESS, reg, &result, 1);
-    return result;
+    uint8_t result[] = { 0 };
+    auto rv = i2cDevice_->readBytes(TLV320_I2C_ADDRESS, reg, result, sizeof(result));
+    if (!rv)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not read bytes from I2C!");
+    }
+    return result[0];
 }
 
 void TLV320::initializeI2S_()
@@ -489,6 +502,11 @@ void TLV320::tlv320ConfigureRoutingDAC_()
         vTaskDelay(pdMS_TO_TICKS(1));
         gainRegVal = getConfigurationOption_(1, 63);
     } while ((count++ < 50) && (gainRegVal & (11 << 6)) == 0);
+
+    if (count >= 50)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for gain to fully apply!");
+    }
     
     // Power on DAC (Page 0, register 63)
     setConfigurationOption_(0, 63, (1 << 7) | (1 << 6) | (1 << 4) | (1 << 2) | (1 << 1));
@@ -525,6 +543,87 @@ void TLV320::tlv320ConfigureAGC_()
     // Set AGC configuration for both channels (page 0, register 86 for left, register 94 for right)
     setConfigurationOptionMultiple_(0, 86, agcConfig, sizeof(agcConfig));
     setConfigurationOptionMultiple_(0, 94, agcConfig, sizeof(agcConfig));
+}
+
+void TLV320::tlv320ConfigureInterrupts_()
+{
+    /*
+    Page 0, Register 67, D(1) Headset Detection Enable or Disable
+Page 0, Register 67, D(4:2) Debounce Programmability for Headset Detection
+Page 0, Register 67, D(1:0) Debounce Programmability for Button Press
+Page 0, Register 44, D(5) Sticky Flag for Button Press Event
+Page 0, Register 44, D(4) Sticky Flag for Headset Insertion or Removal Event
+Page 0, Register 46, D(5) Status Flag for Button Press Event
+Page 0, Register 46, D(4) Status Flag for Headset Insertion and Removal
+Page 0, Register 67, D(6:5) Flags for type of Headset Detected
+*/
+
+    // Use INT1 for ADC/DAC overload event
+    // (Page 0, Register 48, Bit D2 = 1)
+
+    // Use INT2 for button press event
+    // (Page 0, Register 49, Bit D6 = 1)
+
+    uint8_t interruptConfig[] = 
+    {
+        1 << 2,
+        1 << 6
+    };
+    setConfigurationOptionMultiple_(0, 48, interruptConfig, sizeof(interruptConfig));
+
+    // Enable headset detection (required for button detection)
+    // (Page 0, Register 67, D7 = 1)
+    setConfigurationOption_(0, 67, 1 << 7);
+
+    // INT1 output on MFP4
+    // (Page 0, Register 55, Bits D4-D1 = 0100)
+    setConfigurationOption_(0, 55, 0b0100 << 1);
+
+    // INT2 output on MFP5
+    // (Page 0, Register 52, Bits D5-D2 = 0110)
+    setConfigurationOption_(0, 52, 0b0110 << 2);
+
+    // Enable interrupts
+    int1Gpio_.enableInterrupt(true);
+    int2Gpio_.enableInterrupt(true);
+}
+
+void TLV320::onInterrupt1Fire_(bool state)
+{
+    // Page 0, register 42, bits D3-D2 contain the ADC channels that
+    // overloaded.
+    auto val = getConfigurationOption_(0, 42);
+    bool leftAdcOverload = val & (1 << 3);
+    bool rightAdcOverload = val & (1 << 2);
+
+    if (state && (leftAdcOverload || rightAdcOverload))
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "ADC overload! (Left/User = %d, Right/Radio = %d)", leftAdcOverload, rightAdcOverload);
+
+        // Broadcast current ADC status to interested parties.
+        OverloadStateMessage message(leftAdcOverload, rightAdcOverload);
+        publish(&message);
+    }
+    else
+    {
+        // Broadcast "clear" ADC message so that any indication (LED, etc.)
+        // doesn't remain.
+        OverloadStateMessage message(false, false);
+        publish(&message);
+    }
+}
+
+void TLV320::onInterrupt2Fire_(bool state)
+{
+    if (state)
+    {
+        // Page 0, register 44, bit D5 contains the status of the headset button
+        auto val = getConfigurationOption_(0, 44);
+        if (val & (1 << 5))
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Headset button pressed");
+        }
+    }
 }
 
 } // namespace driver

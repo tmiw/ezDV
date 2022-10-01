@@ -67,6 +67,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onRequestRxMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerSettingsMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerCompleteMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onADCOverload_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -359,6 +360,18 @@ void UserInterfaceTask::startTx_()
     ledMessage->led = driver::SetLedStateMessage::PTT;
     publish(ledMessage);
     delete ledMessage;
+}
+
+void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message)
+{
+    // We only want to light up the Overload LED if the currently active channel
+    // is overloading (e.g. left channel if transmitting, right on receive)
+    bool overloadLedLit = 
+        (isTransmitting_ && message->leftChannel) || 
+        (!isTransmitting_ && message->rightChannel);
+
+    driver::SetLedStateMessage ledMessage(driver::SetLedStateMessage::OVERLOAD, overloadLedLit);
+    publish(&ledMessage);
 }
 
 }

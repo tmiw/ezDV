@@ -78,7 +78,7 @@ bool I2CDevice::readBytes(uint8_t i2cAddress, uint8_t registerAddress, uint8_t* 
     xSemaphoreTake(i2cDeviceSemaphore_, pdMS_TO_TICKS(100));
 
     uint8_t regBuf[] = { registerAddress };
-    auto rv = i2c_master_write_read_device(I2C_NUM_0, i2cAddress, regBuf, 1, buffer, size, pdMS_TO_TICKS(1000));
+    auto rv = i2c_master_write_read_device(I2C_NUM_0, i2cAddress, regBuf, sizeof(regBuf), buffer, size, pdMS_TO_TICKS(1000));
 
     xSemaphoreGive(i2cDeviceSemaphore_);
     

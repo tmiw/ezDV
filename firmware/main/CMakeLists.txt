@@ -19,6 +19,7 @@ set(SOURCES
     "driver/MAX17048.cpp"
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
+    "driver/TLV320Message.cpp"
     "network/icom/AudioState.cpp"
     "network/icom/AreYouReadyAudioState.cpp"
     "network/icom/AreYouReadyCIVState.cpp"
