@@ -86,7 +86,7 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/94157283-86c5-455d-a54c-cf27e56052e5"
       (reference "#PWR03") (unit 1) (value "GND") (footprint "")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/54f6b908-c512-434b-8214-991a10100ba1"
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/f9b2bdc2-5f9d-47f7-a94e-b6e38cf998cc"
       (reference "#PWR04") (unit 1) (value "GND") (footprint "")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/dc636dae-758a-43d5-b029-fd95d807391f"
@@ -416,8 +416,14 @@
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/846cde09-7f97-4b81-8b1e-53a0f8be3989"
       (reference "R24") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/f6310b3b-6b3c-46d8-9dcd-636e440e3a4f"
+      (reference "R25") (unit 1) (value "80.6K") (footprint "Resistor_SMD:R_0603_1608Metric")
+    )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/18a324be-5cbf-45d5-8af6-ee8316c618b2"
       (reference "R26") (unit 1) (value "50") (footprint "Resistor_SMD:R_0603_1608Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/f90a02a5-9fb5-4baf-bc87-c73232aac0cd"
+      (reference "R27") (unit 1) (value "4.87K") (footprint "Resistor_SMD:R_0805_2012Metric")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/610789aa-c67e-414b-a358-f339402a3d62"
       (reference "R28") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0603_1608Metric")
@@ -440,6 +446,9 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/e94546f4-5c5e-4e53-878f-6c12b78fba75"
       (reference "R34") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/086ede42-eb9a-409c-b7bc-a07cebce49ef"
+      (reference "R35") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/6c4d79e6-0e5c-40f5-8090-0752a8ce7b7c"
       (reference "SW1") (unit 1) (value "ESP32S3 Reset") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
     )
@@ -457,6 +466,12 @@
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/d84cb049-875c-44c2-9ac5-17299942750c"
       (reference "SW6") (unit 1) (value "Vol_Down_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/baead83a-0065-425a-bbcd-4a318eddc019"
+      (reference "TH1") (unit 1) (value "SDNT2012X103F3950FTF") (footprint "Resistor_SMD:R_0805_2012Metric")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/ecf2081f-78de-4351-b6a6-5f5010292e09"
+      (reference "TH2") (unit 1) (value "SDNT2012X103F3950FTF") (footprint "Resistor_SMD:R_0805_2012Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/13eca385-c45f-4746-b031-a3c62ecb39cc"
       (reference "U1") (unit 1) (value "TP4056") (footprint "ezDV_production:SOP127P600X175-9N")
