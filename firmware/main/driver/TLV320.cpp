@@ -551,8 +551,8 @@ void TLV320::tlv320ConfigureInterrupts_()
 
     uint8_t interruptConfig[] = 
     {
-        1 << 2,
-        1 << 6
+        1 << 2 | 1 << 0,
+        1 << 6 | 1 << 0
     };
     setConfigurationOptionMultiple_(0, 48, interruptConfig, sizeof(interruptConfig));
 
@@ -611,6 +611,9 @@ void TLV320::onInterrupt2Fire_(bool state)
         if (val & (1 << 5))
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Headset button pressed");
+
+            HeadsetButtonPressMessage message;
+            publish(&message);
         }
     }
 }

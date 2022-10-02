@@ -88,6 +88,9 @@ private:
     // ADC overload handling
     void onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message);
 
+    // Headset button press handling
+    void onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message);
+
     // Timer handling
     void updateVolumeCommon_();
 };

@@ -68,6 +68,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerSettingsMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerCompleteMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onADCOverload_);
+    registerMessageHandler(this, &UserInterfaceTask::onHeadsetButtonPressed_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -372,6 +373,18 @@ void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMess
 
     driver::SetLedStateMessage ledMessage(driver::SetLedStateMessage::OVERLOAD, overloadLedLit);
     publish(&ledMessage);
+}
+
+void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message)
+{
+    if (!isTransmitting_)
+    {
+        startTx_();
+    }
+    else
+    {
+        stopTx_();
+    }
 }
 
 }

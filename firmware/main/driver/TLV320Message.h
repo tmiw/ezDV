@@ -36,6 +36,7 @@ using namespace ezdv::task;
 enum TLV320MessageTypes
 {
     OVERLOAD_STATE = 1,
+    HEADSET_BUTTON_PRESS = 2,
 };
 
 class OverloadStateMessage : public DVTaskMessageBase<OVERLOAD_STATE, OverloadStateMessage>
@@ -51,6 +52,16 @@ public:
     bool leftChannel;
     bool rightChannel;
 };
+
+class HeadsetButtonPressMessage : public DVTaskMessageBase<HEADSET_BUTTON_PRESS, HeadsetButtonPressMessage>
+{
+public:
+    HeadsetButtonPressMessage()
+        : DVTaskMessageBase<HEADSET_BUTTON_PRESS, HeadsetButtonPressMessage>(TLV320_MESSAGE)
+        {}
+    virtual ~HeadsetButtonPressMessage() = default;
+};
+
 
 }
 
