@@ -556,6 +556,10 @@ void TLV320::tlv320ConfigureInterrupts_()
     };
     setConfigurationOptionMultiple_(0, 48, interruptConfig, sizeof(interruptConfig));
 
+    // Disable SCLK so we can use it for headset detection
+    // (Page 0, Register 56, D2-D1 = 00)
+    setConfigurationOption_(0, 56, 0b00 << 1);
+
     // Enable headset detection (required for button detection)
     // (Page 0, Register 67, D7 = 1)
     setConfigurationOption_(0, 67, 1 << 7);
