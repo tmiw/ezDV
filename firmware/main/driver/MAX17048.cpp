@@ -161,8 +161,20 @@ void MAX17048::onTaskTick_()
         success &= readInt16Reg_(REG_CONFIG, &config);
         assert(success);
         
-        // Publish battery status to all interested parties
-        BatteryStateMessage message(voltage * 0.000078125, soc / 256.0, (int16_t)socChangeRate * 0.208);
+        // Publish battery status to all interested parties.
+        // Also clean up the values as returned by the MAX17048
+        // as it can return SOC > 100 or < 0.
+        auto calcSoc = soc / 256.0;
+        if (calcSoc > 100)
+        {
+            calcSoc = 100;
+            socChangeRate = 0;
+        }
+        else if (calcSoc < 0)
+        {
+            calcSoc = 0;
+        }
+        BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208);
         publish(&message);
         
         ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
