@@ -69,9 +69,15 @@ void TrackedPacketState::onExitState()
 {
     ESP_LOGI(parent_->getName().c_str(), "Leaving state");
     
-    // Send disconnect packet
-    auto packet = IcomPacket::CreateDisconnectPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier());
-    parent_->sendUntracked(packet);
+    // Send disconnect packet a bunch of times to make sure the radio
+    // actually gets the message. This is needed because once we
+    // leave this state we're not going to be able to repeatedly
+    // retransmit it.
+    for (int count = 0; count < 10; count++)
+    {
+        auto packet = IcomPacket::CreateDisconnectPacket(parent_->getOurIdentifier(), parent_->getTheirIdentifier());
+        parent_->sendUntracked(packet);
+    }
     
     // Stop timers
     pingTimer_.stop();

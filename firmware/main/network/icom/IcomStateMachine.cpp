@@ -154,6 +154,10 @@ void IcomStateMachine::onTransitionComplete_()
 {
     if (getCurrentState() == nullptr && socket_ != 0)
     {
+        // Write out any packets we have left before closing
+        // socket.
+        writePendingPackets();
+        
         ESP_LOGI(getName().c_str(), "Closing UDP socket");
 
         // We're fully shut down now, so close the socket.
