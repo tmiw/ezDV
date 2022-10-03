@@ -540,16 +540,16 @@ void HttpServerTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryState
 
 void HttpServerTask::sendJSONMessage_(cJSON* message, WebSocketList& socketList)
 {
+    httpd_ws_frame_t wsPkt;
+    memset(&wsPkt, 0, sizeof(httpd_ws_frame_t));
+    wsPkt.payload = (uint8_t*)cJSON_Print(message);
+    wsPkt.len = strlen((char*)wsPkt.payload);
+    wsPkt.type = HTTPD_WS_TYPE_TEXT;
+    
     // Send to all sockets in list
     for (auto& fd : socketList)
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Sending JSON message to socket %d", fd);
-        
-        httpd_ws_frame_t wsPkt;
-        memset(&wsPkt, 0, sizeof(httpd_ws_frame_t));
-        wsPkt.payload = (uint8_t*)cJSON_Print(message);
-        wsPkt.len = strlen((char*)wsPkt.payload);
-        wsPkt.type = HTTPD_WS_TYPE_TEXT;
             
         if (httpd_ws_send_data(configServerHandle_, fd, &wsPkt) != ESP_OK)
         {
@@ -561,6 +561,10 @@ void HttpServerTask::sendJSONMessage_(cJSON* message, WebSocketList& socketList)
         }
     }
     
+    // Make sure we don't leak memory due to the generated JSON.
+    cJSON_free(wsPkt.payload);
+    
+    // Free the JSON object itself.
     cJSON_Delete(message);
 }
 
