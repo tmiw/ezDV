@@ -174,14 +174,13 @@ void IcomStateMachine::writePendingPackets()
         {
             int rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
             int tries = 0;
-            while (rv == -1 && tries < 5)
+            while (rv == -1 && tries < 100)
             {
                 auto err = errno;
                 if (err == ENOMEM)
                 {
-                    // Close and reopen socket, try again on next go-around.
-                    ESP_LOGW(getName().c_str(), "[try %d] Wi-Fi subsystem not ready for packet yet", tries++);
-                    vTaskDelay(pdMS_TO_TICKS(1));
+                    // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
+                    vTaskDelay(1);
                     rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
                     continue;
                 }
@@ -194,6 +193,15 @@ void IcomStateMachine::writePendingPackets()
                         err, strerror(err));
                     break;
                 }
+            }
+            
+            if (tries >= 100)
+            {
+                ESP_LOGE(getName().c_str(), "Wi-Fi subsystem took too long to become ready, dropping packet");
+            }
+            else if (tries > 0)
+            {
+                ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries++);
             }
         }
     }
