@@ -44,7 +44,9 @@ enum IcomMessageTypes
     CIV_AUDIO_CONN_INFO = 1,
     CONNECT_RADIO = 2,
     DISCONNECTED_RADIO = 3,
-    RESEND_PACKET = 4,
+    SEND_PACKET = 4,
+    RECEIVE_PACKET = 5,
+    CLOSE_SOCKET = 6,
 };
 
 class IcomCIVAudioConnectionInfo : public DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>
@@ -122,16 +124,37 @@ public:
     virtual ~DisconnectedRadioMessage() = default;
 };
 
-class ResendPacketMessage : public DVTaskMessageBase<RESEND_PACKET, ResendPacketMessage>
+class SendPacketMessage : public DVTaskMessageBase<SEND_PACKET, SendPacketMessage>
 {
 public:
-    ResendPacketMessage(IcomPacket* packetProvided = nullptr)
-        : DVTaskMessageBase<RESEND_PACKET, ResendPacketMessage>(ICOM_MESSAGE)
+    SendPacketMessage(IcomPacket* packetProvided = nullptr)
+        : DVTaskMessageBase<SEND_PACKET, SendPacketMessage>(ICOM_MESSAGE)
         , packet(packetProvided)
         {}
-    virtual ~ResendPacketMessage() = default;
+    virtual ~SendPacketMessage() = default;
 
     IcomPacket* packet;
+};
+
+class ReceivePacketMessage : public DVTaskMessageBase<RECEIVE_PACKET, ReceivePacketMessage>
+{
+public:
+    ReceivePacketMessage(IcomPacket* packetProvided = nullptr)
+        : DVTaskMessageBase<RECEIVE_PACKET, ReceivePacketMessage>(ICOM_MESSAGE)
+        , packet(packetProvided)
+        {}
+    virtual ~ReceivePacketMessage() = default;
+
+    IcomPacket* packet;
+};
+
+class CloseSocketMessage : public DVTaskMessageBase<CLOSE_SOCKET, CloseSocketMessage>
+{
+public:
+    CloseSocketMessage()
+        : DVTaskMessageBase<CLOSE_SOCKET, CloseSocketMessage>(ICOM_MESSAGE)
+        {}
+    virtual ~CloseSocketMessage() = default;
 };
 
 }

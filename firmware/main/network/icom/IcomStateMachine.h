@@ -53,7 +53,6 @@ public:
     std::string getPassword();
     
     void readPendingPackets();
-    void writePendingPackets();
 
 protected:
     virtual std::string getName_() = 0;
@@ -72,11 +71,11 @@ private:
     std::string password_;
     uint16_t localPort_;
 
-    std::vector<IcomPacket, IcomAllocator<IcomPacket> > queuedPackets_;
-
     IcomProtocolState* getProtocolState_();
 
-    void onResendPacket_(DVTask* owner, ResendPacketMessage* message);
+    void onSendPacket_(DVTask* owner, SendPacketMessage* message);
+    void onReceivePacket_(DVTask* owner, ReceivePacketMessage* message);
+    void onCloseSocket_(DVTask* owner, CloseSocketMessage* message);
     
     void openSocket_();
 };

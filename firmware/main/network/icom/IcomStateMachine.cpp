@@ -40,7 +40,9 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , port_(0)
     , localPort_(0)
 {
-    owner->registerMessageHandler(this, &IcomStateMachine::onResendPacket_);
+    owner->registerMessageHandler(this, &IcomStateMachine::onSendPacket_);
+    owner->registerMessageHandler(this, &IcomStateMachine::onReceivePacket_);
+    owner->registerMessageHandler(this, &IcomStateMachine::onCloseSocket_);
 }
 
 std::string IcomStateMachine::getUsername()
@@ -70,7 +72,11 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
-    queuedPackets_.push_back(packet);
+    auto allocPacket = new IcomPacket(std::move(packet));
+    assert(allocPacket != nullptr);
+
+    SendPacketMessage message(allocPacket);
+    getTask()->post(&message);
 }
 
 void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)
@@ -154,62 +160,10 @@ void IcomStateMachine::onTransitionComplete_()
 {
     if (getCurrentState() == nullptr && socket_ != 0)
     {
-        // Write out any packets we have left before closing
-        // socket.
-        writePendingPackets();
-        
-        ESP_LOGI(getName().c_str(), "Closing UDP socket");
-
-        // We're fully shut down now, so close the socket.
-        close(socket_);
-        socket_ = 0;
+        // Close the socket after we send out everything pending.
+        CloseSocketMessage message;
+        getTask()->post(&message);
     }
-}
-
-void IcomStateMachine::writePendingPackets()
-{
-    if (socket_ > 0)
-    {
-        for (auto& packet : queuedPackets_)
-        {
-            int rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
-            int tries = 0;
-            while (rv == -1 && tries < 100)
-            {
-                auto err = errno;
-                if (err == ENOMEM)
-                {
-                    // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
-                    vTaskDelay(1);
-                    rv = send(socket_, packet.getData(), packet.getSendLength(), 0);
-                    continue;
-                }
-                else
-                {
-                    // TBD: close/reopen connection
-                    ESP_LOGE(
-                        getName().c_str(),
-                        "Got socket error %d (%s) while sending", 
-                        err, strerror(err));
-                    break;
-                }
-            }
-            
-            if (tries >= 100)
-            {
-                ESP_LOGE(getName().c_str(), "Wi-Fi subsystem took too long to become ready, dropping packet");
-            }
-            else if (tries > 0)
-            {
-                ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries++);
-            }
-        }
-        
-        // Process any pending input packets so we don't lose anything.
-        readPendingPackets();
-    }
-
-    queuedPackets_.clear();
 }
 
 void IcomStateMachine::readPendingPackets()
@@ -236,9 +190,12 @@ void IcomStateMachine::readPendingPackets()
         auto rv = recv(socket_, buffer, MAX_PACKET_SIZE, 0);
         if (rv > 0)
         {
-            // Forward packet to current state for processing.
-            IcomPacket packet(buffer, rv);
-            state->onReceivePacket(packet);
+            auto packet = new IcomPacket(buffer, rv);
+            assert(packet != nullptr);
+
+            // Queue up packet for future processing.
+            ReceivePacketMessage message(packet);
+            getTask()->post(&message);
         }
         
         // Reinitialize the read set for the next pass.
@@ -252,11 +209,72 @@ IcomProtocolState* IcomStateMachine::getProtocolState_()
     return static_cast<IcomProtocolState*>(getCurrentState());
 }
 
-void IcomStateMachine::onResendPacket_(DVTask* owner, ResendPacketMessage* message)
+void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
+{
+    auto packet = message->packet;
+    assert(packet != nullptr);
+
+    if (socket_ > 0)
+    {
+        int rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
+        int tries = 0;
+        while (rv == -1 && tries < 100)
+        {
+            auto err = errno;
+            if (err == ENOMEM)
+            {
+                // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
+                vTaskDelay(1);
+                rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
+                continue;
+            }
+            else
+            {
+                // TBD: close/reopen connection
+                ESP_LOGE(
+                    getName().c_str(),
+                    "Got socket error %d (%s) while sending", 
+                    err, strerror(err));
+                break;
+            }
+        }
+        
+        if (tries >= 100)
+        {
+            ESP_LOGE(getName().c_str(), "Wi-Fi subsystem took too long to become ready, dropping packet");
+        }
+        else if (tries > 0)
+        {
+            ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries++);
+        }
+
+        // Read any packets that are available from the radio
+        readPendingPackets();
+    }
+    
+    delete packet;
+}
+
+void IcomStateMachine::onReceivePacket_(DVTask* origin, ReceivePacketMessage* message)
 {
     assert(message->packet != nullptr);
-    sendUntracked(*message->packet);
+
+    // Forward packet to current state for processing.
+    auto state = static_cast<IcomProtocolState*>(getCurrentState());
+    if (state != nullptr)
+    {
+        state->onReceivePacket(*message->packet);
+    }
     delete message->packet;
+}
+
+void IcomStateMachine::onCloseSocket_(DVTask* owner, CloseSocketMessage* message)
+{
+    ESP_LOGI(getName().c_str(), "Closing UDP socket");
+
+    // We're fully shut down now, so close the socket.
+    close(socket_);
+    socket_ = 0;
 }
 
 }
