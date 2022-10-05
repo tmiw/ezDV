@@ -224,34 +224,17 @@ void TrackedPacketState::sendTracked_(IcomPacket& packet)
                 iter++;
             }
         }
-        
-        // If we're still going to have more than MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT
-        // in the queue after adding this packet, go ahead and delete some more.
-        if ((numSavedBytesInPacketQueue_ + packet.getSendLength()) >= MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT)
-        {
-            auto iter = sentPackets_.begin();
-            while (iter != sentPackets_.end())
-            {
-                numSavedBytesInPacketQueue_ -= iter->second.second.getSendLength();
-                iter = sentPackets_.erase(iter);
-            
-                if (numSavedBytesInPacketQueue_ < MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT)
-                {
-                    break;
-                }
-            }
-        }
     }
     
     // We need to manually force the sequence number into the packet because
     // simply treating it like a control_packet doesn't work.
     rawPacket[6] = sendSequenceNumber_ & 0xFF;
     rawPacket[7] = (sendSequenceNumber_ >> 8) & 0xFF;
-    sendSequenceNumber_++;
     
     numSavedBytesInPacketQueue_ += packet.getSendLength();
     parent_->sendUntracked(packet);
-    sentPackets_[sendSequenceNumber_ - 1] = std::pair(time(NULL), std::move(packet));
+    sentPackets_[sendSequenceNumber_] = std::pair(time(NULL), std::move(packet));
+    sendSequenceNumber_++;
 }
 
 void TrackedPacketState::sendPing_()

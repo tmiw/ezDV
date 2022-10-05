@@ -40,6 +40,7 @@ LoginState::LoginState(IcomStateMachine* parent)
     , authSequenceNumber_(0)
     , civPort_(0)
     , audioPort_(0)
+    , isDisconnecting_(false)
 {
     // empty
 }
@@ -49,6 +50,7 @@ void LoginState::onEnterState()
     TrackedPacketState::onEnterState();
 
     // Reset token/auth info
+    isDisconnecting_ = false;
     ourTokenRequest_ = 0;
     theirToken_ = 0;
     authSequenceNumber_ = 0;
@@ -135,7 +137,7 @@ void LoginState::onReceivePacket(IcomPacket& packet)
             insertCapability_(radio);
         }
     }
-    else if (packet.isConnInfoPacket(radioName, radioIp, isBusy))
+    else if (packet.isConnInfoPacket(radioName, radioIp, isBusy) && !isDisconnecting_)
     {
         ESP_LOGI(
             parent_->getName().c_str(), 
@@ -155,6 +157,7 @@ void LoginState::onReceivePacket(IcomPacket& packet)
             {
                 // Radio is shutting down, transition back to login state.
                 ESP_LOGI(parent_->getName().c_str(), "Radio is shutting down!");
+                isDisconnecting_ = true;
 
                 IcomCIVAudioConnectionInfo message(0, 0, 0, 0);
                 parent_->getTask()->publish(&message);

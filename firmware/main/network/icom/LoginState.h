@@ -52,6 +52,7 @@ private:
     uint16_t authSequenceNumber_;
     int civPort_;
     int audioPort_;
+    bool isDisconnecting_;
 
     void sendLoginPacket_();
     void sendTokenAckPacket_(uint32_t theirToken);

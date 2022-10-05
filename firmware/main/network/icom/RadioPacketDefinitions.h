@@ -44,9 +44,6 @@
 #define AUDIO_PERIOD 20 
 #define GUIDLEN 16
 
-// Save no more than this number of bytes for retransmit.
-#define MAX_NUM_BYTES_AVAILABLE_FOR_RETRANSMIT (MAX_PACKET_SIZE * 4)
-
 // And this number of RX audio packets
 #define MAX_RX_AUDIO_PACKETS 6
 
