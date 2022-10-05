@@ -63,6 +63,8 @@ void CIVState::onEnterState()
 
 void CIVState::onExitState()
 {
+    civId_ = 0;
+    
     civWatchdogTimer_.stop();
 
     // Send CIV close packet before performing general close processing.
