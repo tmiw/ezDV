@@ -204,6 +204,9 @@ void IcomStateMachine::writePendingPackets()
                 ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries++);
             }
         }
+        
+        // Process any pending input packets so we don't lose anything.
+        readPendingPackets();
     }
 
     queuedPackets_.clear();
