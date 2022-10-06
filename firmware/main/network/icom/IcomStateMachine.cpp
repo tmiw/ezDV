@@ -182,8 +182,8 @@ void IcomStateMachine::readPendingPackets()
     FD_ZERO(&readSet);
     FD_SET(socket_, &readSet);
     
-    // Loop while there are pending datagrams in the buffer
-    while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    // Process if there are pending datagrams in the buffer
+    if (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
     {
         char buffer[MAX_PACKET_SIZE];
         

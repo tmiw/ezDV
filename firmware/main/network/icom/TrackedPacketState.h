@@ -67,7 +67,7 @@ private:
                 std::pair<uint64_t, IcomPacket>
             >
         > > sentPackets_;
-    std::map<uint16_t, int, std::less<uint16_t>, IcomAllocator<std::pair<const uint16_t, int>>> rxPacketIds_;
+    std::vector<uint16_t, IcomAllocator<uint16_t>> rxPacketIds_;
     std::map<uint16_t, int, std::less<uint16_t>, IcomAllocator<std::pair<const uint16_t, int>>> rxMissingPacketIds_;
     
     void sendPing_();

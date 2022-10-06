@@ -36,7 +36,6 @@ TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
-    //, civSequenceNumber_(0)
     , numSavedBytesInPacketQueue_(0)
 {
     // empty
@@ -116,7 +115,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
     }
     else if (packet.isRetransmitPacket(retryPackets))
     {
-        ESP_LOGI(parent_->getName().c_str(), "Received retransmit packet");
+        ESP_LOGI(parent_->getName().c_str(), "Received retransmit packet (currSendSeq: %d)", sendSequenceNumber_);
         for (auto packetId : retryPackets)
         {
             retransmitPacket_(packetId);
@@ -145,23 +144,23 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
         if (rxPacketIds_.size() == 0)
         {
             // Add packet to received list if we just started
-            rxPacketIds_[rxSeq] = 1;
+            rxPacketIds_.push_back(rxSeq);
         }
         else
         {
-            auto firstSeqInBuffer = rxPacketIds_.begin()->first;
-            auto lastSeqInBuffer = rxPacketIds_.rbegin()->first;
+            auto firstSeqInBuffer = *rxPacketIds_.begin();
+            auto lastSeqInBuffer = *rxPacketIds_.rbegin();
             if (rxSeq < firstSeqInBuffer || (rxSeq - lastSeqInBuffer) > MAX_MISSING)
             {
                 // Too many missing packets, clear buffer and add.
                 ESP_LOGE(parent_->getName().c_str(), "Too many missing packets, resetting!");
                 rxPacketIds_.clear();
                 rxMissingPacketIds_.clear();
-                rxPacketIds_[rxSeq] = 1;
+                rxPacketIds_.push_back(rxSeq);
             }
             else
             {
-                auto iter = rxPacketIds_.find(rxSeq);
+                auto iter = std::find(rxPacketIds_.begin(), rxPacketIds_.end(), rxSeq);
                 if (iter == rxPacketIds_.end())
                 {
                     if ((rxPacketIds_.size() + 1) > BUFSIZE)
@@ -170,7 +169,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
                         rxPacketIds_.erase(rxPacketIds_.begin());
                     }
                     
-                    rxPacketIds_[rxSeq] = 1;
+                    rxPacketIds_.push_back(rxSeq);
                     
                     auto missingIter = rxMissingPacketIds_.find(rxSeq);
                     if (missingIter != rxMissingPacketIds_.end())
@@ -200,13 +199,17 @@ void TrackedPacketState::sendTracked_(IcomPacket& packet)
     uint8_t* rawPacket = const_cast<uint8_t*>(packet.getData());
     
     // If sequence number rolled over, clear the sent packets list.
-    if (sentPackets_.size() == 0)
+    if (sendSequenceNumber_ == 0)
     {
-        ESP_LOGI(parent_->getName().c_str(), "Resetting sent packet list");
+        ESP_LOGI(parent_->getName().c_str(), "Rollover detected, resetting sent packet list");
         sentPackets_.clear();
         numSavedBytesInPacketQueue_ = 0;
     }
-    else
+    else if (sentPackets_.size() > BUFSIZE)
+    {
+        sentPackets_.erase(sentPackets_.begin());
+    }
+
     {
         // Iterate through the current sent queue and delete packets
         // that are older than PURGE_SECONDS.
