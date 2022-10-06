@@ -34,6 +34,7 @@ TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD))
     , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD))
     , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
+    , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD))
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
     , numSavedBytesInPacketQueue_(0)
@@ -62,6 +63,7 @@ void TrackedPacketState::onEnterState()
     pingTimer_.start();
     idleTimer_.start();
     retransmitRequestTimer_.start();
+    cleanupTimer_.start();
 }
 
 void TrackedPacketState::onExitState()
@@ -82,6 +84,7 @@ void TrackedPacketState::onExitState()
     pingTimer_.stop();
     idleTimer_.stop();
     retransmitRequestTimer_.stop();
+    cleanupTimer_.stop();
     
     // Give Wi-Fi layer a few hundred ms to send the message, then send disconnected 
     // message to upper level task.
@@ -209,25 +212,6 @@ void TrackedPacketState::sendTracked_(IcomPacket& packet)
     {
         sentPackets_.erase(sentPackets_.begin());
     }
-
-    {
-        // Iterate through the current sent queue and delete packets
-        // that are older than PURGE_SECONDS.
-        auto iter = sentPackets_.begin();
-        auto curTime = time(NULL);
-        while (iter != sentPackets_.end())
-        {
-            if (curTime - iter->second.first >= PURGE_SECONDS)
-            {
-                numSavedBytesInPacketQueue_ -= iter->second.second.getSendLength();
-                iter = sentPackets_.erase(iter);
-            }
-            else
-            {
-                iter++;
-            }
-        }
-    }
     
     // We need to manually force the sequence number into the packet because
     // simply treating it like a control_packet doesn't work.
@@ -287,6 +271,26 @@ void TrackedPacketState::onRetransmitTimer_()
     // Send retransmit request
     auto packet = IcomPacket::CreateRetransmitRequest(parent_->getOurIdentifier(), parent_->getTheirIdentifier(), retransmitList);
     parent_->sendUntracked(packet);
+}
+
+void TrackedPacketState::onCleanupTimer_()
+{
+    // Iterate through the current sent queue and delete packets
+    // that are older than PURGE_SECONDS.
+    auto iter = sentPackets_.begin();
+    auto curTime = time(NULL);
+    while (iter != sentPackets_.end())
+    {
+        if (curTime - iter->second.first >= PURGE_SECONDS)
+        {
+            numSavedBytesInPacketQueue_ -= iter->second.second.getSendLength();
+            iter = sentPackets_.erase(iter);
+        }
+        else
+        {
+            iter++;
+        }
+    }
 }
 
 void TrackedPacketState::incrementPingSequence_(uint16_t pingSeq)

@@ -52,9 +52,9 @@ protected:
     void sendTracked_(IcomPacket& packet);
 
 private:
+    DVTimer cleanupTimer_;
     uint16_t pingSequenceNumber_;
     uint16_t sendSequenceNumber_;
-
     uint32_t numSavedBytesInPacketQueue_;
 
     std::map<
@@ -76,6 +76,7 @@ private:
     void onPingTimer_();
     void onIdleTimer_();
     void onRetransmitTimer_();
+    void onCleanupTimer_();
 
     void incrementPingSequence_(uint16_t pingSeq);
 
