@@ -260,6 +260,14 @@ extern "C" void app_main()
     ulp_riscv_timer_stop();
     ulp_riscv_halt();
 
+    // Enable peripheral power (required for v0.4+). This will automatically
+    // power down once we switch to the ULP processor on shutdown, reducing
+    // "off" current considerably.
+    ESP_ERROR_CHECK(gpio_reset_pin(GPIO_NUM_40));
+    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_40, GPIO_MODE_OUTPUT));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(GPIO_NUM_40, GPIO_FLOATING));
+    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_40, true));
+    
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
 
