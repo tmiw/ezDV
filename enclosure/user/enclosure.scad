@@ -37,8 +37,8 @@ difference() {
 
 include <../library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
-printBaseShell      = false;
-printLidShell       = true;
+printBaseShell      = true;
+printLidShell       = false;
 
 // Edit these parameters for your own board dimensions
 wallThickness       = 2.0;
@@ -123,8 +123,9 @@ module addButton(x, y)
             };
             translate([0,0,-lidWallHeight+pcbThickness+4.5]) cube([2,2,(baseWallHeight-standoffHeight)+lidWallHeight], center=true);
             translate([0,0,3.5]) color("green") cube([3.3,3.3,1], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness]) cube([3,3,2], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness-2]) cube([5.5,5.5,2], center=true);
+            //translate([0,0,-lidWallHeight+pcbThickness]) cube([3,3,2], center=true);
+            //translate([0,0,-lidWallHeight+pcbThickness-2]) cube([5.5,5.5,2], center=true);
+            translate([0,0,-lidWallHeight+pcbThickness]) rotate([180,0,0]) linear_extrude(height = 4, center = true, convexity = 10, twist = 0, scale = 2.75) square([2,2], center = true);
         }
     }
 }
