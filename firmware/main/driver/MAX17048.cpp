@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
+
 #include "esp_log.h"
 
 #include "MAX17048.h"
@@ -44,6 +46,8 @@
 
 #define CURRENT_LOG_TAG "MAX17048"
 
+#define ADC_GPIO_NUM GPIO_NUM_18
+
 using namespace std::placeholders;
 
 // Global function to trigger shutdown.
@@ -61,7 +65,8 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , enabled_(false)
     , temperatureSensor_(nullptr)
-        
+    , adcHandle_(nullptr)
+    , adcCalibrationHandle_(nullptr)
 {
     // empty
 }
@@ -98,6 +103,33 @@ void MAX17048::onTaskStart_()
     temperature_sensor_config_t tempSensorConfig = TEMPERAUTRE_SENSOR_CONFIG_DEFAULT(-10, 80);
     ESP_ERROR_CHECK(temperature_sensor_install(&tempSensorConfig, &temperatureSensor_));
     ESP_ERROR_CHECK(temperature_sensor_enable(temperatureSensor_));
+    
+    // Start ADC. This will be the primary sensor for battery calibration unless the value is 
+    // obviously invalid, then we use the internal temp sensor.
+    adc_unit_t adcUnit;
+    adc_channel_t adcChannel;
+    ESP_ERROR_CHECK(adc_oneshot_io_to_channel(ADC_GPIO_NUM, &adcUnit, &adcChannel));
+    
+    adc_oneshot_unit_init_cfg_t adcConfig = {
+        .unit_id = adcUnit, // GPIO 18
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&adcConfig, &adcHandle_));
+    
+    adc_oneshot_chan_cfg_t oneshotConfig = {
+        .atten = ADC_ATTEN_DB_11,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adcHandle_, adcChannel, &oneshotConfig));
+    
+    // Configure ADC calibrator to get voltages
+    adc_cali_curve_fitting_config_t calibrationConfig = {
+        .unit_id = adcUnit,
+        .atten = ADC_ATTEN_DB_11,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&calibrationConfig, &adcCalibrationHandle_));
+    
 }
 
 void MAX17048::onTaskWake_()
@@ -108,6 +140,10 @@ void MAX17048::onTaskWake_()
 
 void MAX17048::onTaskSleep_()
 {
+    // Stop ADC
+    ESP_ERROR_CHECK(adc_cali_delete_scheme_curve_fitting(adcCalibrationHandle_));
+    ESP_ERROR_CHECK(adc_oneshot_del_unit(adcHandle_));
+    
     // Stop temperature sensor
     ESP_ERROR_CHECK(temperature_sensor_disable(temperatureSensor_));
     ESP_ERROR_CHECK(temperature_sensor_uninstall(temperatureSensor_));
@@ -124,6 +160,8 @@ void MAX17048::onTaskTick_()
         uint16_t config = 0;
         bool success = readInt16Reg_(REG_CONFIG, &config);
         assert(success);
+        
+        auto temp = temperatureFromADC_();
         
         float degC = 0;
         ESP_ERROR_CHECK(temperature_sensor_get_celsius(temperatureSensor_, &degC));
@@ -281,6 +319,43 @@ void MAX17048::onInterrupt_(bool val)
         rv = writeInt16Reg_(REG_STATUS, val);
         assert(rv == true);
     }
+}
+
+float MAX17048::temperatureFromADC_()
+{
+    adc_unit_t adcUnit;
+    adc_channel_t adcChannel;
+    ESP_ERROR_CHECK(adc_oneshot_io_to_channel(ADC_GPIO_NUM, &adcUnit, &adcChannel));
+    
+    // Read temperature ADC. 
+    int val = 0;
+    ESP_ERROR_CHECK(adc_oneshot_read(adcHandle_, adcChannel, &val));
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "ADC: %d", val);
+    
+    // Formula 1: raw ADC to voltage:
+    // V = 3.3x/4096 (4096 = 2^12 since 12 bit ADC)
+    //float voltage = (3.3 * val) / 4096;
+    //ESP_LOGI(CURRENT_LOG_TAG, "V: %f", voltage);
+    int millivolts = 0;
+    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adcCalibrationHandle_, val, &millivolts));
+    float voltage = millivolts / 1000.0;
+    ESP_LOGI(CURRENT_LOG_TAG, "V: %f", voltage);
+    
+    // Formula 2: voltage to resistance:
+    // (10000/3.3 * V) / (1 - V/3.3) = R
+    // 10000: bias resistor value
+    float resistance = (3030.3 * voltage) / (1 - voltage / 3.3);
+    ESP_LOGI(CURRENT_LOG_TAG, "R: %f", resistance);
+    
+    // Formula 3: resistance to temperature:
+    // 1/T = 1/TO + (1/β) ⋅ ln (R/RO)
+    // β: 3950
+    float tempInv = (1/298.15) + (1.0/3950.0) * log(resistance / 10000.0);
+    float temp = 1.0 / tempInv - 273.15; // convert from K to C
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Thermistor temp: %f C", temp);
+    return temp;
 }
 
 }

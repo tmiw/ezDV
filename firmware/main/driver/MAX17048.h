@@ -21,6 +21,9 @@
 #include <inttypes.h>
 
 #include "driver/temperature_sensor.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
 #include "task/DVTask.h"
 #include "I2CDevice.h"
@@ -53,6 +56,8 @@ private:
     InputGPIO<BAT_ALERT_GPIO> batAlertGpio_;
     bool enabled_;
     temperature_sensor_handle_t temperatureSensor_;
+    adc_oneshot_unit_handle_t adcHandle_;
+    adc_cali_handle_t adcCalibrationHandle_;
     
     bool writeInt16Reg_(uint8_t reg, uint16_t val);
     bool readInt16Reg_(uint8_t reg, uint16_t* val);
@@ -62,6 +67,8 @@ private:
     void configureDevice_();
     
     void onInterrupt_(bool val);
+    
+    float temperatureFromADC_();
 };
     
 }
