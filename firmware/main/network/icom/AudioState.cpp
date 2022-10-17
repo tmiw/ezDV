@@ -118,12 +118,11 @@ void AudioState::onAudioOutTimer_()
     short tempAudioOut[samplesToRead];
     float tempAudioInFloat[samplesToRead];
     float tempAudioOutFloat[samplesToRead];
-    memset(tempAudioOut, 0, samplesToRead * sizeof(short));
+    //memset(tempAudioOut, 0, samplesToRead * sizeof(short));
 
     if (codec2_fifo_used(inputFifo) >= samplesToRead)
     {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
-    }
 
         for (int index = 0; index < samplesToRead; index++)
         {
@@ -146,7 +145,7 @@ void AudioState::onAudioOutTimer_()
             samplesToRead);
 
         sendTracked_(packet);
-    //}
+    }
 }
 
 void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message)

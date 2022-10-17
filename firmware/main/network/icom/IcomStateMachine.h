@@ -21,6 +21,7 @@
 #include "StateMachine.h"
 #include "IcomMessage.h"
 #include "IcomPacket.h"
+#include "task/DVTimer.h"
 
 using namespace ezdv::task;
 
@@ -70,6 +71,8 @@ private:
     std::string username_;
     std::string password_;
     uint16_t localPort_;
+    
+    DVTimer packetReadTimer_;
 
     IcomProtocolState* getProtocolState_();
 

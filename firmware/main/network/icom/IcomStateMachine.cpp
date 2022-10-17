@@ -39,6 +39,7 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , theirIdentifier_(0)
     , port_(0)
     , localPort_(0)
+    , packetReadTimer_(owner, std::bind(&IcomStateMachine::readPendingPackets, this), MS_TO_US(10))
 {
     owner->registerMessageHandler(this, &IcomStateMachine::onSendPacket_);
     owner->registerMessageHandler(this, &IcomStateMachine::onReceivePacket_);
@@ -100,6 +101,8 @@ void IcomStateMachine::start(std::string ip, uint16_t port, std::string username
 
     // We're now connected, start running the state machine.
     transitionState(IcomProtocolState::ARE_YOU_THERE);
+    
+    packetReadTimer_.start();
 }
 
 void IcomStateMachine::openSocket_()
@@ -275,6 +278,8 @@ void IcomStateMachine::onCloseSocket_(DVTask* owner, CloseSocketMessage* message
     // We're fully shut down now, so close the socket.
     close(socket_);
     socket_ = 0;
+    
+    packetReadTimer_.stop();
 }
 
 }
