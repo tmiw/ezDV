@@ -131,13 +131,13 @@ void AudioState::onAudioOutTimer_()
         }
 
         // Adjust output based on configured volume
-        dsps_mul_f32(tempAudioInFloat, audioMultiplier_, tempAudioOutFloat, 160, 1, 1, 1);
+        dsps_mul_f32(tempAudioInFloat, audioMultiplier_, tempAudioOutFloat, samplesToRead, 1, 1, 1);
 
         for (int index = 0; index < samplesToRead; index++)
         {
             tempAudioOut[index] = tempAudioOutFloat[index];
         }
-        
+    
         auto packet = IcomPacket::CreateAudioPacket(
             audioSequenceNumber_++,
             parent_->getOurIdentifier(), 
