@@ -228,15 +228,15 @@ void App::onTaskSleep_()
     rtc_gpio_hold_en(GPIO_NUM_5);
     
     /* Enable pulldowns for LED GPIOs to prevent power consumption during shutdown. */
-    std::vector<gpio_num_t> gpioList { GPIO_NUM_1, GPIO_NUM_2, GPIO_NUM_21, /*GPIO_NUM_41, GPIO_NUM_42, GPIO_NUM_40*/ };
-    for (auto& gpio : gpioList)
+    //std::vector<gpio_num_t> gpioList { GPIO_NUM_1, GPIO_NUM_2, GPIO_NUM_21, /*GPIO_NUM_41, GPIO_NUM_42, GPIO_NUM_40*/ };
+    /*for (auto& gpio : gpioList)
     {
         rtc_gpio_init(gpio);
         rtc_gpio_set_direction(gpio, RTC_GPIO_MODE_OUTPUT_ONLY);
         rtc_gpio_set_direction_in_sleep(gpio, RTC_GPIO_MODE_OUTPUT_ONLY);
         rtc_gpio_set_level(gpio, false);
         rtc_gpio_hold_en(gpio);
-    }
+    }*/
     
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
