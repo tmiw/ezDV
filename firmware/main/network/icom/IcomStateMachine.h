@@ -52,8 +52,6 @@ public:
 
     std::string getUsername();
     std::string getPassword();
-    
-    void readPendingPackets();
 
 protected:
     virtual std::string getName_() = 0;
@@ -81,6 +79,8 @@ private:
     void onCloseSocket_(DVTask* owner, CloseSocketMessage* message);
     
     void openSocket_();
+    
+    void readPendingPackets_();
 };
 
 }

@@ -77,11 +77,6 @@ void IcomSocketTask::onTaskSleep_()
     // TBD -- disconnect logic
 }
 
-void IcomSocketTask::onTaskTick_()
-{
-    stateMachine_->readPendingPackets();
-}
-
 void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message)
 {
     if (socketType_ == CONTROL_SOCKET)
