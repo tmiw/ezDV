@@ -30,7 +30,7 @@
 #define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
 
 // Found via experimentation
-#define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS*0.9))
+#define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS))
 #define BEEPER_TIMER_TICK_US (BEEPER_TIMER_TICK_MS * 1000)
 
 #define CURRENT_LOG_TAG ("BeeperTask")

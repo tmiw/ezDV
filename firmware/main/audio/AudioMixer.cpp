@@ -17,7 +17,7 @@
 
 #include "AudioMixer.h"
 
-#define AUDIO_MIXER_TIMER_TICK_US 10000
+#define AUDIO_MIXER_TIMER_TICK_US (20000)
 #define AUDIO_MIXER_NUM_SAMPLES_PER_INTERVAL 160
 
 namespace ezdv
