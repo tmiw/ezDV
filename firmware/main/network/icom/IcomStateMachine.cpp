@@ -163,9 +163,15 @@ void IcomStateMachine::onTransitionComplete_()
 {
     if (getCurrentState() == nullptr && socket_ != 0)
     {
+        ESP_LOGI(getName().c_str(), "Disconnecting");
+        
         // Close the socket after we send out everything pending.
         CloseSocketMessage message;
         getTask()->post(&message);
+        
+        // Send disconnected message to indicate that we're done.
+        DisconnectedRadioMessage disconnectedMessage;
+        getTask()->post(&disconnectedMessage);
     }
 }
 

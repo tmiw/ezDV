@@ -155,14 +155,14 @@ void LoginState::onReceivePacket(IcomPacket& packet)
         {
             if (remoteAudioPort == 0 && remoteCivPort == 0)
             {
-                // Radio is shutting down, transition back to login state.
+                // Radio is shutting down.
                 ESP_LOGI(parent_->getName().c_str(), "Radio is shutting down!");
                 isDisconnecting_ = true;
 
                 IcomCIVAudioConnectionInfo message(0, 0, 0, 0);
                 parent_->getTask()->publish(&message);
 
-                parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
+                parent_->reset();
             }
             else
             {

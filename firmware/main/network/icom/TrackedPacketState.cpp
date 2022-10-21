@@ -85,12 +85,6 @@ void TrackedPacketState::onExitState()
     idleTimer_.stop();
     retransmitRequestTimer_.stop();
     cleanupTimer_.stop();
-    
-    // Give Wi-Fi layer a few hundred ms to send the message, then send disconnected 
-    // message to upper level task.
-    vTaskDelay(pdMS_TO_TICKS(200));
-    DisconnectedRadioMessage message;
-    parent_->getTask()->post(&message);
 }
 
 void TrackedPacketState::onReceivePacket(IcomPacket& packet)

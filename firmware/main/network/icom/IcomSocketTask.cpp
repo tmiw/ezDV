@@ -74,7 +74,7 @@ void IcomSocketTask::onTaskWake_()
 
 void IcomSocketTask::onTaskSleep_()
 {
-    // TBD -- disconnect logic
+    // empty
 }
 
 void IcomSocketTask::onIcomConnectRadioMessage_(DVTask* origin, IcomConnectRadioMessage* message)
