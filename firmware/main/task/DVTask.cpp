@@ -238,20 +238,29 @@ void DVTask::threadEntry_()
     for (;;)
     {
         MessageEntry* entry = nullptr;
-        while (xQueueReceive(taskQueue_, &entry, taskTick_) == pdTRUE)
+        
+        int64_t ticksRemaining = taskTick_;
+        while (ticksRemaining > 0)
         {
-            //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
-            auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
-            EventMap::iterator iter = iterPair.first;
-            while (iter != iterPair.second)
+            auto tasksBegin = xTaskGetTickCount();
+            
+            if (xQueueReceive(taskQueue_, &entry, ticksRemaining) == pdTRUE)
             {
-                (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
-                iter++;
-            }
+                //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
+                auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
+                EventMap::iterator iter = iterPair.first;
+                while (iter != iterPair.second)
+                {
+                    (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
+                    iter++;
+                }
 
-            // Deallocate message now that we're done with it.
-            char* entryPtr = (char*)entry;
-            delete[] entryPtr;
+                // Deallocate message now that we're done with it.
+                char* entryPtr = (char*)entry;
+                delete[] entryPtr;
+            }
+            
+            ticksRemaining -= xTaskGetTickCount() - tasksBegin;
         }
 
         onTaskTick_();
