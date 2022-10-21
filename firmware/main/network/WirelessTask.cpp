@@ -56,8 +56,17 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
     
     switch(event_id)
     {
+        case IP_EVENT_AP_STAIPASSIGNED:
+        {
+            ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
+            char buf[32];
+            sprintf(buf, IPSTR, IP2STR(&ipData->ip));
+            obj->onNetworkConnected_(true, buf);
+            break;
+        }
         case IP_EVENT_STA_GOT_IP:
-            obj->onNetworkConnected_();
+            obj->onNetworkUp_();
+            obj->onNetworkConnected_(false, "");
             break;
     }
 }
@@ -71,7 +80,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     switch (event_id)
     {
         case WIFI_EVENT_AP_START:
-            obj->onNetworkConnected_();
+            obj->onNetworkUp_();
             break;
         case WIFI_EVENT_AP_STOP:
         case WIFI_EVENT_STA_DISCONNECTED:
@@ -336,7 +345,7 @@ void WirelessTask::disableHttp_()
     }
 }
 
-void WirelessTask::onNetworkConnected_()
+void WirelessTask::onNetworkUp_()
 {
     WirelessNetworkStatusMessage message(true);
     publish(&message);
@@ -344,7 +353,10 @@ void WirelessTask::onNetworkConnected_()
     wifiRunning_ = true;
     
     enableHttp_();
-    
+}
+
+void WirelessTask::onNetworkConnected_(bool client, char* ip)
+{    
     // Get the current Icom radio settings
     if (!overrideWifiSettings_)
     {
@@ -356,9 +368,12 @@ void WirelessTask::onNetworkConnected_()
         {
             if (response->enabled)
             {
-                ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
-                icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-                publish(&connectMessage);
+                if (!client || !strcmp(response->host, ip))
+                {
+                    ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
+                    icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
+                    publish(&connectMessage);
+                }
             }
             else
             {

@@ -77,7 +77,8 @@ private:
     void enableHttp_();
     void disableHttp_();
     
-    void onNetworkConnected_();
+    void onNetworkUp_();
+    void onNetworkConnected_(bool client, char* ip);
     void onNetworkDisconnected_();
     
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
