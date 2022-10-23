@@ -257,12 +257,14 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
             case storage::WifiSecurityMode::WPA_AND_WPA2:
                 auth_mode = WIFI_AUTH_WPA_WPA2_PSK;
                 break;
+#if 0
             case storage::WifiSecurityMode::WPA3:
                 auth_mode = WIFI_AUTH_WPA3_PSK;
                 break;
             case storage::WifiSecurityMode::WPA2_AND_WPA3:
                 auth_mode = WIFI_AUTH_WPA2_WPA3_PSK;
                 break;
+#endif // 0
             default:
                 assert(0);
                 break;

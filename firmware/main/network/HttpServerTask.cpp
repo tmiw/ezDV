@@ -602,7 +602,7 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
             if (securityJSON != nullptr)
             {
                 security = (storage::WifiSecurityMode)(int)cJSON_GetNumberValue(securityJSON);
-                settingsValid &= mode == storage::WifiMode::CLIENT || (security >= storage::WifiSecurityMode::NONE && security <= storage::WifiSecurityMode::WPA2_AND_WPA3);
+                settingsValid &= mode == storage::WifiMode::CLIENT || (security >= storage::WifiSecurityMode::NONE && security <= storage::WifiSecurityMode::WPA_AND_WPA2 /*WPA2_AND_WPA3*/);
             }
             else
             {
