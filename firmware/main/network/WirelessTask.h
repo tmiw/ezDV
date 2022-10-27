@@ -67,6 +67,7 @@ private:
     
     bool overrideWifiSettings_;
     bool wifiRunning_;
+    bool radioRunning_;
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
         

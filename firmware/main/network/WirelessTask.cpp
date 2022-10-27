@@ -93,6 +93,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
                 // Reattempt connection to access point if we couldn't find
                 // it the first time around.
                 obj->wifiRunning_ = false;
+                obj->radioRunning_ = false;
                 esp_wifi_disconnect();
                 ESP_ERROR_CHECK(esp_wifi_connect());
             }
@@ -110,6 +111,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , tlv320Handler_(tlv320Handler)
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
+    , radioRunning_(false)
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
@@ -368,13 +370,15 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
         auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(2000), nullptr);
         if (response != nullptr)
         {
-            if (response->enabled)
+            if (response->enabled && !radioRunning_)
             {
                 if (!client || !strcmp(response->host, ip))
                 {
                     ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
                     icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
                     publish(&connectMessage);
+
+                    radioRunning_ = true;
                 }
             }
             else

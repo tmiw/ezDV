@@ -151,6 +151,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
             {
                 // Too many missing packets, clear buffer and add.
                 ESP_LOGE(parent_->getName().c_str(), "Too many missing packets, resetting!");
+                //ESP_LOGI(parent_->getName().c_str(), "rxSeq = %d, 1st = %d, last = %d", rxSeq, firstSeqInBuffer, lastSeqInBuffer);
                 rxPacketIds_.clear();
                 rxMissingPacketIds_.clear();
                 rxPacketIds_.push_back(rxSeq);
