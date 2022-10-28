@@ -20,8 +20,12 @@
 
 #include "AudioInput.h"
 #include "FreeDVMessage.h"
+#include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+
+#include "freedv_api.h"
+#include "reliable_text.h"
 
 namespace ezdv
 {
@@ -46,11 +50,16 @@ protected:
     
 private:
     struct freedv* dv_;
+    reliable_text_t rText_;
+
     bool isTransmitting_;
     bool isActive_;
 
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
+    void onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message);
+
+    static void OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state);
 };
 
 }

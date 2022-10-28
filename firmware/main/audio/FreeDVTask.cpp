@@ -17,11 +17,10 @@
 
 #include <cstring>
 
+#include "FreeDVTask.h"
+
 #include "esp_dsp.h"
 #include "codec2_math.h"
-#include "freedv_api.h"
-
-#include "FreeDVTask.h"
 
 #define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP 160
 #define CURRENT_LOG_TAG ("FreeDV")
@@ -36,17 +35,26 @@ FreeDVTask::FreeDVTask()
     : DVTask("FreeDVTask", 10 /* TBD */, 64000, 1, 10)
     , AudioInput(2, 2)
     , dv_(nullptr)
+    , rText_(nullptr)
     , isTransmitting_(false)
     , isActive_(false)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
     registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
+    registerMessageHandler(this, &FreeDVTask::onReportingSettingsUpdate_);
 }
 
 FreeDVTask::~FreeDVTask()
 {
     if (dv_ != nullptr)
     {
+        if (rText_ != nullptr)
+        {
+            reliable_text_unlink_from_freedv(rText_);
+            reliable_text_destroy(rText_);
+            rText_ = nullptr;
+        }
+
         freedv_close(dv_);
         dv_ = nullptr;
     }
@@ -68,6 +76,13 @@ void FreeDVTask::onTaskSleep_()
 
     if (dv_ != nullptr)
     {
+        if (rText_ != nullptr)
+        {
+            reliable_text_unlink_from_freedv(rText_);
+            reliable_text_destroy(rText_);
+            rText_ = nullptr;
+        }
+
         freedv_close(dv_);
         dv_ = nullptr;
     }
@@ -160,6 +175,13 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 
     if (dv_ != nullptr)
     {
+        if (rText_ != nullptr)
+        {
+            reliable_text_unlink_from_freedv(rText_);
+            reliable_text_destroy(rText_);
+            rText_ = nullptr;
+        }
+
         freedv_close(dv_);
         dv_ = nullptr;
     }
@@ -212,6 +234,11 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
                 freedv_set_snr_squelch_thresh(dv_, 0.0);  /* squelch at 0.0 dB      */
                 break;
         }
+
+        // Note: reliable_text setup is deferred until we know for sure whether
+        // we have a valid callsign saved.
+        storage::RequestReportingSettingsMessage requestReportingSettings;
+        publish(&requestReportingSettings);
     }
 }
 
@@ -220,6 +247,36 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
     ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV transmit state to %d", (int)message->pttState);
 
     isTransmitting_ = message->pttState;
+}
+
+void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message)
+{
+    if (dv_ != nullptr && message->callsign != nullptr && strlen(message->callsign) > 0)
+    {
+        if (rText_ != nullptr)
+        {
+            reliable_text_unlink_from_freedv(rText_);
+            reliable_text_destroy(rText_);
+            rText_ = nullptr;
+        }
+
+        // Non-null callsign means we should set up reliable_text.
+        rText_ = reliable_text_create();
+        assert(rText_ != nullptr);
+
+        reliable_text_set_string(rText_, message->callsign, strlen(message->callsign));
+        reliable_text_use_with_freedv(rText_, dv_, OnReliableTextRx_, this);
+    }
+}
+
+void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state)
+{
+    // TBD: just output to console for now. Maybe we want to do something with the received
+    // callsign one day.
+    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s", txt_ptr);
+
+    FreeDVTask* task = (FreeDVTask*)state;
+    reliable_text_reset(task->rText_);
 }
 
 }
