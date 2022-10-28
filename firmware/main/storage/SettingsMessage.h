@@ -56,6 +56,11 @@ enum SettingsMessageTypes
     SET_VOICE_KEYER_SETTINGS = 14,
     REQUEST_VOICE_KEYER_SETTINGS = 15,
     VOICE_KEYER_SETTINGS_SAVED = 16,
+
+    REPORTING_SETTINGS = 17,
+    SET_REPORTING_SETTINGS = 18,
+    REQUEST_REPORTING_SETTINGS = 19,
+    REPORTING_SETTINGS_SAVED = 20,
 };
 
 template<uint32_t TYPE_ID>
@@ -167,6 +172,27 @@ using VoiceKeyerSettingsMessage = VoiceKeyerSettingsMessageCommon<VOICE_KEYER_SE
 using SetVoiceKeyerSettingsMessage = VoiceKeyerSettingsMessageCommon<SET_VOICE_KEYER_SETTINGS>;
 
 template<uint32_t TYPE_ID>
+class ReportingSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>
+{
+public:
+    enum { MAX_STR_SIZE = 16 };
+
+    ReportingSettingsMessageCommon(char* callsignProvided = "")
+        : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+    { 
+        memset(callsign, 0, sizeof(callsign));
+        strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
+    }
+    
+    virtual ~ReportingSettingsMessageCommon() = default;
+
+    char callsign[MAX_STR_SIZE];
+};
+
+using ReportingSettingsMessage = ReportingSettingsMessageCommon<REPORTING_SETTINGS>;
+using SetReportingSettingsMessage = ReportingSettingsMessageCommon<SET_REPORTING_SETTINGS>;
+
+template<uint32_t TYPE_ID>
 class RequesSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>
 {
 public:
@@ -184,6 +210,9 @@ using RadioSettingsSavedMessage = RequesSettingsMessageCommon<RADIO_SETTINGS_SAV
 
 using RequestVoiceKeyerSettingsMessage = RequesSettingsMessageCommon<REQUEST_VOICE_KEYER_SETTINGS>;
 using VoiceKeyerSettingsSavedMessage = RequesSettingsMessageCommon<VOICE_KEYER_SETTINGS_SAVED>;
+
+using RequestReportingSettingsMessage = RequesSettingsMessageCommon<REQUEST_REPORTING_SETTINGS>;
+using ReportingSettingsSavedMessage = RequesSettingsMessageCommon<REPORTING_SETTINGS_SAVED>;
 
 }
 

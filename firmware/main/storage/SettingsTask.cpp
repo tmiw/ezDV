@@ -40,6 +40,8 @@
 #define VOICE_KEYER_TIMES_TO_TRANSMIT ("vkTimesTX")
 #define VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT ("vkSecWait")
 
+#define REPORTING_CALLSIGN_ID ("repCall")
+
 #define DEFAULT_WIFI_ENABLED (false)
 #define DEFAULT_WIFI_MODE (WifiMode::ACCESS_POINT)
 #define DEFAULT_WIFI_SECURITY (WifiSecurityMode::NONE)
@@ -49,6 +51,8 @@
 
 #define DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT (10)
 #define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
+
+#define DEFAULT_REPORTING_CALLSIGN ("")
 
 namespace ezdv
 {
@@ -77,6 +81,8 @@ SettingsTask::SettingsTask()
     memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
     memset(radioPassword_, 0, RadioSettingsMessage::MAX_STR_SIZE);
     
+    memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);
+
     // Subscribe to messages
     registerMessageHandler(this, &SettingsTask::onSetLeftChannelVolume_);
     registerMessageHandler(this, &SettingsTask::onSetRightChannelVolume_);
@@ -86,7 +92,9 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetRadioSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onRequestVoiceKeyerSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onSetVoiceKeyerSettingsMessage_);
-    
+    registerMessageHandler(this, &SettingsTask::onRequestReportingSettingsMessage_);
+    registerMessageHandler(this, &SettingsTask::onSetReportingSettingsMessage_);
+
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
     esp_err_t err = nvs_flash_init();
@@ -180,6 +188,21 @@ void SettingsTask::onRequestVoiceKeyerSettingsMessage_(DVTask* origin, RequestVo
     delete response;
 }
 
+void SettingsTask::onRequestReportingSettingsMessage_(DVTask* origin, RequestReportingSettingsMessage* message)
+{
+    // Publish current reporting settings to everyone who may care.
+    ReportingSettingsMessage* response = new ReportingSettingsMessage(
+        callsign_
+    );
+
+    assert(response != nullptr);
+    if (origin != nullptr)
+    {
+        origin->post(response);
+    }
+    delete response;
+}
+
 void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)
 {
     setLeftChannelVolume_(message->volume);
@@ -198,6 +221,7 @@ void SettingsTask::loadAllSettings_()
         initializeWifi_();
         initializeRadio_();
         initialzeVoiceKeyer_();
+        initializeReporting_();
     }
 }
 
@@ -453,6 +477,31 @@ void SettingsTask::initialzeVoiceKeyer_()
     delete message;
 }
 
+void SettingsTask::initializeReporting_()
+{
+    esp_err_t result = storageHandle_->get_string(REPORTING_CALLSIGN_ID, callsign_, ReportingSettingsMessage::MAX_STR_SIZE);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Reporting settings not found, will set to defaults");
+        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving callsign: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "callsign: %s", callsign_);
+    }
+    
+    // Publish current reporting settings to everyone who may care.
+    ReportingSettingsMessage* message = new ReportingSettingsMessage(
+        callsign_
+    );
+    assert(message != nullptr);
+    publish(message);
+    delete message;
+}
 
 void SettingsTask::commit_()
 {
@@ -701,6 +750,40 @@ void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int
         delete message;
         
         VoiceKeyerSettingsSavedMessage response;
+        publish(&response);
+    }
+}
+
+void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSettingsMessage* message)
+{
+    setReportingSettings_(message->callsign);
+}
+
+void SettingsTask::setReportingSettings_(char* callsign)
+{
+    memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
+    strncpy(callsign_, callsign, ReportingSettingsMessage::MAX_STR_SIZE - 1);
+    
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_string(REPORTING_CALLSIGN_ID, callsign_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting callsign: %s", esp_err_to_name(result));
+        }
+               
+        commitTimer_.stop();
+        commitTimer_.start(true);
+
+        // Publish new Wi-Fi settings to everyone who may care.
+        ReportingSettingsMessage* message = new ReportingSettingsMessage(
+            callsign_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+        
+        ReportingSettingsSavedMessage response;
         publish(&response);
     }
 }

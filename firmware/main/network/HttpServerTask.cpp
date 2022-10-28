@@ -54,6 +54,9 @@ extern "C"
 #define JSON_VOICE_KEYER_SAVED_TYPE "voiceKeyerSaved"
 #define JSON_VOICE_KEYER_UPLOAD_COMPLETE "voiceKeyerUploadComplete"
 
+#define JSON_REPORTING_STATUS_TYPE "reportingInfo"
+#define JSON_REPORTING_SAVED_TYPE "reportingSaved"
+
 namespace ezdv
 {
 
@@ -75,6 +78,8 @@ HttpServerTask::HttpServerTask()
 
     registerMessageHandler(this, &HttpServerTask::onBeginUploadVoiceKeyerFileMessage_);
     registerMessageHandler(this, &HttpServerTask::onFileUploadCompleteMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onUpdateReportingMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -314,6 +319,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     UpdateVoiceKeyerMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
+                else if (!strcmp(type, "saveReportingInfo"))
+                {
+                    UpdateReportingMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
                 else if (!strcmp(type, "uploadVoiceKeyerFile"))
                 {
                     BeginUploadVoiceKeyerFileMessage message(fd, jsonMessage);
@@ -505,6 +515,36 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current voice keyer settings");
+        }
+    }
+
+    {
+        storage::RequestReportingSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::ReportingSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_REPORTING_STATUS_TYPE);
+                cJSON_AddStringToObject(root, "callsign", response->callsign);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for reporting info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current reporting settings");
         }
     }
 }
@@ -860,6 +900,61 @@ void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyer
     {
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer settings");
+    }
+    
+    cJSON_free(message->request);
+}
+
+void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating reporting settings");
+    
+    bool enabled = false;
+    int secondsToWait = 0;
+    int timesToTransmit = 0;
+    
+    bool settingsValid = false;
+    char* callsign = "";
+    
+    auto callsignJSON = cJSON_GetObjectItem(message->request, "callsign");
+    if (callsignJSON != nullptr)
+    {
+        callsign = cJSON_GetStringValue(callsignJSON);
+        settingsValid = true; // empty callsign / N0CALL == disable PSK Reporter
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetReportingSettingsMessage request(callsign);
+        publish(&request);
+    
+        auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for reporting settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_REPORTING_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for reporting settings");
     }
     
     cJSON_free(message->request);

@@ -37,7 +37,10 @@
             <div class="col">
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <button id="voiceKeyerTab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#voiceKeyerTabForm" aria-current="page-voice-keyer">Voice Keyer</button>
+                        <button id="reportingTab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#reportingTabForm" aria-current="page-radio">Reporting</button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="voiceKeyerTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#voiceKeyerTabForm" aria-current="page-voice-keyer">Voice Keyer</button>
                     </li>
                     <li class="nav-item">
                         <button id="wifiTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#wifiTabForm" aria-current="page-wifi">Wi-Fi</button>
@@ -49,7 +52,42 @@
             </div>
         </div>
         <div class="tab-content" id="nav-tabContent">
-            <form class="tab-pane fade show active" id="voiceKeyerTabForm">
+            <form class="tab-pane fade show active" id="reportingTabForm">
+                <div class="row mb-3" id="reportingSuccessAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-success" role="alert">
+                        Your reporting configuration has been saved.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3" id="reportingFailAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-danger" role="alert">
+                        Could not save reporting configuration. Please verify your settings below and try again.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 vk-enable-row">
+                    <label for="reportingCallsign" class="col-xs-4 col-md-2 col-form-labell">Your callsign</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="reportingCallsign" value="N0CALL" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-2">&nbsp</div>
+                    <div class="col">
+                        <button type="button" class="btn btn-success" id="reportingSave">Save</button>
+                        <div class="spinner-border" id="reportingSaveProgress" role="status">
+                            <span class="visually-hidden">Saving...</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                    <button type="reset" class="btn btn-danger" id="reportingReset">Reset</button>
+                    </div>
+                    <div class="col-8">&nbsp;</div>
+                </div>
+            </form>
+            <form class="tab-pane fade show" id="voiceKeyerTabForm">
                 <div class="row mb-3" id="voiceKeyerSuccessAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-success" role="alert">

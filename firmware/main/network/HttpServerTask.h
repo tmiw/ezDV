@@ -61,6 +61,7 @@ private:
         UPDATE_RADIO = 4,
         UPDATE_VOICE_KEYER = 5,
         BEGIN_UPLOAD_VOICE_KEYER_FILE = 6,
+        UPDATE_REPORTING = 7,
     };
     
     template<uint32_t MSG_ID>
@@ -99,6 +100,7 @@ private:
     using UpdateRadioMessage = HttpRequestMessageCommon<UPDATE_RADIO>;
     using UpdateVoiceKeyerMessage = HttpRequestMessageCommon<UPDATE_VOICE_KEYER>;
     using BeginUploadVoiceKeyerFileMessage = HttpRequestMessageCommon<BEGIN_UPLOAD_VOICE_KEYER_FILE>;
+    using UpdateReportingMessage = HttpRequestMessageCommon<UPDATE_REPORTING>;
 
     using WebSocketList = std::vector<int>;
     
@@ -113,6 +115,7 @@ private:
     void onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* message);
     void onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* message);
     void onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyerMessage* message);
+    void onUpdateReportingMessage_(DVTask* origin, UpdateReportingMessage* message);
     void onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message);
     void onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message);
 

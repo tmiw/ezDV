@@ -65,6 +65,8 @@ private:
     char radioUsername_[RadioSettingsMessage::MAX_STR_SIZE];
     char radioPassword_[RadioSettingsMessage::MAX_STR_SIZE];
     
+    char callsign_[ReportingSettingsMessage::MAX_STR_SIZE];
+
     bool enableVoiceKeyer_;
     int voiceKeyerNumberTimesToTransmit_;
     int voiceKeyerSecondsToWaitAfterTransmit_;
@@ -81,6 +83,9 @@ private:
     void onRequestVoiceKeyerSettingsMessage_(DVTask* origin, RequestVoiceKeyerSettingsMessage* message);
     void onSetVoiceKeyerSettingsMessage_(DVTask* origin, SetVoiceKeyerSettingsMessage* message);
     
+    void onRequestReportingSettingsMessage_(DVTask* origin, RequestReportingSettingsMessage* message);
+    void onSetReportingSettingsMessage_(DVTask* origin, SetReportingSettingsMessage* message);
+
     void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
     void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);
     
@@ -92,11 +97,13 @@ private:
     void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password);
     void setRadioSettings_(bool enabled, char* host, int port, char* username, char* password);
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
-    
+    void setReportingSettings_(char* callsign);
+
     void initializeVolumes_();
     void initializeWifi_();
     void initializeRadio_();
     void initialzeVoiceKeyer_();
+    void initializeReporting_();
 };
 
 } // namespace storage

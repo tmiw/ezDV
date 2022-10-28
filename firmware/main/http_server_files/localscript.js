@@ -180,6 +180,25 @@ function wsConnect()
               $("#voiceKeyerFailAlertRow").show();
           }
       }
+      else if (json.type == "reportingInfo")
+      {
+          $("#reportingReset").prop("disabled", false);
+          $("#reportingCallsign").val(json.callsign);
+      }
+      else if (json.type == "reportingSaved")
+      {
+          $("#reportingSave").show();
+          $("#reportingSaveProgress").hide();
+
+          if (json.success)
+          {
+              $("#reportingSuccessAlertRow").show();
+          }
+          else
+          {
+              $("#reportingFailAlertRow").show();
+          }
+      }
       else if (json.type == "voiceKeyerUploadComplete")
       {
           // TBD: handle errors
@@ -276,7 +295,7 @@ $("#wifiSecurityType").change(function()
 
 $("#wifiSave").click(function()
 {
-    $("wifiSave").hide();
+    $("#wifiSave").hide();
     $("#wifiSaveProgress").show();
 
     var obj = 
@@ -292,6 +311,24 @@ $("#wifiSave").click(function()
     
     $("#wifiSuccessAlertRow").hide();
     $("#wifiFailAlertRow").hide();
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+});
+
+$("#reportingSave").click(function()
+{
+    $("#reportingSave").hide();
+    $("#reportingSaveProgress").show();
+
+    var obj = 
+    {
+        "type": "saveReportingInfo",
+        "callsign": $("#reportingCallsign").val()
+    };
+    
+    $("#reportingSuccessAlertRow").hide();
+    $("reportingFailAlertRow").hide();
     
     // Async send request and wait for response.
     ws.send(JSON.stringify(obj));
@@ -398,6 +435,12 @@ $( document ).ready(function()
     
     $("#voiceKeyerSuccessAlertRow").hide();
     $("#voiceKeyerFailAlertRow").hide();
+
+    $("#reportingSave").show();
+    $("#reportingSaveProgress").hide();
+
+    $("#reportingSuccessAlertRow").hide();
+    $("#reportingFailAlertRow").hide();
 
     wsConnect();
 });
