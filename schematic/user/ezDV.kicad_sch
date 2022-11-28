@@ -216,6 +216,9 @@
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/41db212d-01b4-4b47-8dbd-9ea533fa1c93"
       (reference "#PWR0102") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/7a9d1b08-a6a6-4e0b-878d-1bde55d12cb2"
+      (reference "#PWR0103") (unit 1) (value "GND") (footprint "")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
       (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
     )
@@ -326,6 +329,9 @@
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/e20062e5-6ad0-46cf-8a99-28fa6f3e235f"
       (reference "J3") (unit 1) (value "User_Jack") (footprint "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/50e2f5d6-2c91-4632-9b97-83a0b2659e62"
+      (reference "J4") (unit 1) (value "I2C Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
