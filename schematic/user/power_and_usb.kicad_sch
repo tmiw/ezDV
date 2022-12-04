@@ -1749,7 +1749,7 @@
       (effects (font (size 1.27 1.27)) (justify right) hide)
     )
   )
-  (global_label "GPIO40_PERIPH_PWR" (shape input) (at 86.36 170.18 180) (fields_autoplaced)
+  (global_label "GPIO17_PERIPH_PWR" (shape input) (at 86.36 170.18 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right))
     (uuid 46a3b6b6-6b39-4bdc-b092-5ad6638a4b56)
     (property "Intersheet References" "${INTERSHEET_REFS}" (id 0) (at 64.2317 170.1006 0)
