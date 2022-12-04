@@ -210,6 +210,9 @@
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/f2bdda97-bf10-484e-8d2b-33db71f82879"
       (reference "#PWR042") (unit 1) (value "GND") (footprint "")
     )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/2d12b1eb-d708-4b6f-8c59-a60576bf388c"
+      (reference "#PWR043") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -332,6 +335,9 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/50e2f5d6-2c91-4632-9b97-83a0b2659e62"
       (reference "J4") (unit 1) (value "I2C Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/7cac633b-b58f-4622-89aa-3e5c2e75bc16"
+      (reference "J5") (unit 1) (value "PTT Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
