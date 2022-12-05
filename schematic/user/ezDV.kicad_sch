@@ -222,6 +222,9 @@
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/7a9d1b08-a6a6-4e0b-878d-1bde55d12cb2"
       (reference "#PWR0103") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/400afef1-22bc-4c07-8336-ae8560f400ff"
+      (reference "#PWR0104") (unit 1) (value "GND") (footprint "")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
       (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
     )

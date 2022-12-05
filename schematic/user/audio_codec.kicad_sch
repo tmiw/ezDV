@@ -1075,7 +1075,7 @@
       (effects (font (size 1.27 1.27)) hide)
     )
   )
-  (global_label "GPIO45_SCL" (shape bidirectional) (at 50.8 99.06 180) (fields_autoplaced)
+  (global_label "GPIO48_SCL" (shape bidirectional) (at 50.8 99.06 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right))
     (uuid 90085d3d-dee2-48d1-8afa-475c557803ef)
     (property "Intersheet References" "${INTERSHEET_REFS}" (id 0) (at 37.0174 98.9806 0)
