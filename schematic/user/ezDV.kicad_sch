@@ -330,11 +330,11 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/b601f983-abc1-4402-a0f7-e9c9b8ed0e3e"
       (reference "J1") (unit 1) (value "TYPE-C-31-M-04") (footprint "ezDV_production:HRO_TYPE-C-31-M-04")
     )
-    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/176525c5-1cb1-4e19-8b31-765bc941526d"
-      (reference "J2") (unit 1) (value "Radio_Jack") (footprint "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal")
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/fb58d1e5-5ba8-431c-b8d8-c5e16bd5c7a5"
+      (reference "J2") (unit 1) (value "Radio_Jack") (footprint "CUI_SJ-43514")
     )
-    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/e20062e5-6ad0-46cf-8a99-28fa6f3e235f"
-      (reference "J3") (unit 1) (value "User_Jack") (footprint "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal")
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/ce294c39-95c9-4cf9-b9ba-cc735cefed26"
+      (reference "J3") (unit 1) (value "User_Jack") (footprint "CUI_SJ-43514")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/50e2f5d6-2c91-4632-9b97-83a0b2659e62"
       (reference "J4") (unit 1) (value "I2C Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
