@@ -478,16 +478,16 @@
       (reference "SW2") (unit 1) (value "ESP32S3 Boot Method") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/ae7410ea-769c-4ccd-b340-a2b4702bc46e"
-      (reference "SW3") (unit 1) (value "PTT_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
+      (reference "SW3") (unit 1) (value "PTT_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3305C")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/f827f7c4-7bf0-44d7-b5a3-6ab8d3a883c1"
-      (reference "SW4") (unit 1) (value "Mode_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
+      (reference "SW4") (unit 1) (value "Mode_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3305C")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/b7a3ea68-cd5e-4bd6-a867-3b4468be634c"
-      (reference "SW5") (unit 1) (value "Vol_Up_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
+      (reference "SW5") (unit 1) (value "Vol_Up_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3305C")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/d84cb049-875c-44c2-9ac5-17299942750c"
-      (reference "SW6") (unit 1) (value "Vol_Down_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
+      (reference "SW6") (unit 1) (value "Vol_Down_Button") (footprint "Button_Switch_SMD:SW_SPST_TL3305C")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/baead83a-0065-425a-bbcd-4a318eddc019"
       (reference "TH1") (unit 1) (value "SDNT2012X103F3950FTF") (footprint "Resistor_SMD:R_0805_2012Metric")
