@@ -100,7 +100,7 @@ void MAX17048::onTaskStart_()
     
     // Start internal temperature sensor for measurement compensation.
     // Using -10 - 80C for now for best accuracy. TBD.
-    temperature_sensor_config_t tempSensorConfig = TEMPERAUTRE_SENSOR_CONFIG_DEFAULT(-10, 80);
+    temperature_sensor_config_t tempSensorConfig = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
     ESP_ERROR_CHECK(temperature_sensor_install(&tempSensorConfig, &temperatureSensor_));
     ESP_ERROR_CHECK(temperature_sensor_enable(temperatureSensor_));
     
