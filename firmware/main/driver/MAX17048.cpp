@@ -145,6 +145,7 @@ void MAX17048::onTaskSleep_()
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adcHandle_));
     
     // Stop temperature sensor
+    enabled_ = false;
     ESP_ERROR_CHECK(temperature_sensor_disable(temperatureSensor_));
     ESP_ERROR_CHECK(temperature_sensor_uninstall(temperatureSensor_));
 }
