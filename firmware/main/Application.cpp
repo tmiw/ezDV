@@ -234,11 +234,15 @@ void App::onTaskSleep_()
     rtc_gpio_set_level(GPIO_NUM_17, false);
     rtc_gpio_hold_en(GPIO_NUM_17);
 
+    /* Isolate GPIO 0 as it has a weak pullup by default. This should be
+       good for a few more uA of sleep current savings. */
+    rtc_gpio_isolate(GPIO_NUM_0);
+
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
 
     /* Start the ULV program */
-    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 20 * 1000)); // 20 ms * (1000 us/ms)
+    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 100 * 1000)); // 100 ms * (1000 us/ms)
     err = ulp_riscv_run();
     ESP_ERROR_CHECK(err);
     
