@@ -227,21 +227,18 @@ void App::onTaskSleep_()
     rtc_gpio_pullup_en(GPIO_NUM_5);
     rtc_gpio_hold_en(GPIO_NUM_5);
     
-    /* Enable pulldowns for LED GPIOs to prevent power consumption during shutdown. */
-    //std::vector<gpio_num_t> gpioList { GPIO_NUM_1, GPIO_NUM_2, GPIO_NUM_21, /*GPIO_NUM_41, GPIO_NUM_42, GPIO_NUM_40*/ };
-    /*for (auto& gpio : gpioList)
-    {
-        rtc_gpio_init(gpio);
-        rtc_gpio_set_direction(gpio, RTC_GPIO_MODE_OUTPUT_ONLY);
-        rtc_gpio_set_direction_in_sleep(gpio, RTC_GPIO_MODE_OUTPUT_ONLY);
-        rtc_gpio_set_level(gpio, false);
-        rtc_gpio_hold_en(gpio);
-    }*/
-    
+    /* Shut off peripheral power. */
+    rtc_gpio_init(GPIO_NUM_17);
+    rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
+    rtc_gpio_set_direction_in_sleep(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
+    rtc_gpio_set_level(GPIO_NUM_17, false);
+    rtc_gpio_hold_en(GPIO_NUM_17);
+
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
 
     /* Start the ULV program */
+    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 10 * 1000)); // 10 ms * (1000 us/ms)
     err = ulp_riscv_run();
     ESP_ERROR_CHECK(err);
     
@@ -264,12 +261,13 @@ void StartSleeping()
 {
     app->sleep();
 }
-
 extern "C" void app_main()
 {
     // Make sure the ULP program isn't running.
     ulp_riscv_timer_stop();
     ulp_riscv_halt();
+
+    ulp_num_cycles_with_gpio_on = 0;
 
     // Enable peripheral power (required for v0.4+). This will automatically
     // power down once we switch to the ULP processor on shutdown, reducing
@@ -278,7 +276,7 @@ extern "C" void app_main()
     ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT));
     ESP_ERROR_CHECK(gpio_set_pull_mode(GPIO_NUM_17, GPIO_FLOATING));
     ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_17, true));
-    
+
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
 

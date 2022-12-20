@@ -12,27 +12,29 @@
 volatile int num_cycles_with_gpio_on;
 
 #define TURN_ON_GPIO_NUM GPIO_NUM_5
-#define MIN_NUM_CYCLES (300000) /* found by experimentation to take 1s */
+#define MIN_NUM_CYCLES (100) /* found by experimentation to take 1s */
 
 int main (void)
 {
-    while(1)
+    ulp_riscv_gpio_init(TURN_ON_GPIO_NUM);
+    ulp_riscv_gpio_input_enable(TURN_ON_GPIO_NUM);
+    ulp_riscv_gpio_output_disable(TURN_ON_GPIO_NUM);
+    ulp_riscv_gpio_pullup(TURN_ON_GPIO_NUM);
+    ulp_riscv_gpio_pulldown_disable(TURN_ON_GPIO_NUM);
+
+    if (!ulp_riscv_gpio_get_level(TURN_ON_GPIO_NUM))
     {
-        if (!ulp_riscv_gpio_get_level(TURN_ON_GPIO_NUM))
+        num_cycles_with_gpio_on++;
+        if (num_cycles_with_gpio_on >= MIN_NUM_CYCLES)
         {
-            num_cycles_with_gpio_on++;
-            if (num_cycles_with_gpio_on >= MIN_NUM_CYCLES)
-            {
-                ulp_riscv_wakeup_main_processor();
-                break;
-            }
-        }
-        else
-        {
-            num_cycles_with_gpio_on = 0;
+            ulp_riscv_wakeup_main_processor();
         }
     }
-    
+    else
+    {
+        num_cycles_with_gpio_on = 0;
+    }
+
     /* ulp_riscv_halt() is called automatically when main exits */
     return 0;
 }
