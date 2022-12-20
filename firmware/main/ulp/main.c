@@ -12,7 +12,7 @@
 volatile int num_cycles_with_gpio_on;
 
 #define TURN_ON_GPIO_NUM GPIO_NUM_5
-#define MIN_NUM_CYCLES (100) /* found by experimentation to take 1s */
+#define MIN_NUM_CYCLES (50) /* based on wakeup period (20ms), 50 cycles should result in 1s required for wakeup. */
 
 int main (void)
 {

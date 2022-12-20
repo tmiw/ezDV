@@ -238,7 +238,7 @@ void App::onTaskSleep_()
     ESP_ERROR_CHECK(err);
 
     /* Start the ULV program */
-    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 10 * 1000)); // 10 ms * (1000 us/ms)
+    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 20 * 1000)); // 20 ms * (1000 us/ms)
     err = ulp_riscv_run();
     ESP_ERROR_CHECK(err);
     
