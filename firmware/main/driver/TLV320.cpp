@@ -555,17 +555,17 @@ void TLV320::tlv320ConfigureInterrupts_()
     uint8_t interruptConfig[] = 
     {
         1 << 2 | 1 << 0,
-        0 //1 << 6 | 1 << 0
+        1 << 6 | 1 << 0
     };
     setConfigurationOptionMultiple_(0, 48, interruptConfig, sizeof(interruptConfig));
 
     // Disable SCLK so we can use it for headset detection
     // (Page 0, Register 56, D2-D1 = 00)
-    //setConfigurationOption_(0, 56, 0b00 << 1);
+    setConfigurationOption_(0, 56, 0b00 << 1);
 
     // Enable headset detection (required for button detection)
     // (Page 0, Register 67, D7 = 1)
-    //setConfigurationOption_(0, 67, 1 << 7);
+    setConfigurationOption_(0, 67, 1 << 7);
 
     // INT1 output on MFP4
     // (Page 0, Register 55, Bits D4-D1 = 0100)
@@ -573,11 +573,11 @@ void TLV320::tlv320ConfigureInterrupts_()
 
     // INT2 output on MFP5
     // (Page 0, Register 52, Bits D5-D2 = 0110)
-    //setConfigurationOption_(0, 52, 0b0110 << 2);
+    setConfigurationOption_(0, 52, 0b0110 << 2);
 
     // Enable interrupts
     int1Gpio_.enableInterrupt(true);
-    //int2Gpio_.enableInterrupt(true);
+    int2Gpio_.enableInterrupt(true);
 }
 
 void TLV320::onInterrupt1Fire_(bool state)
