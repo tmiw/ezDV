@@ -148,6 +148,10 @@ void MAX17048::onTaskSleep_()
     enabled_ = false;
     ESP_ERROR_CHECK(temperature_sensor_disable(temperatureSensor_));
     ESP_ERROR_CHECK(temperature_sensor_uninstall(temperatureSensor_));
+
+    // Force MAX17048 into hibernate to reduce power consumption.
+    bool rv = writeInt16Reg_(REG_HIBRT, 0xFFFF);
+    assert(rv == true);
 }
 
 void MAX17048::onTaskTick_()
@@ -281,6 +285,11 @@ void MAX17048::configureDevice_()
     // Set VRESET threshold.
     val = (EMPTY_ALERT_THRESHOLD << 8);
     rv = writeInt16Reg_(REG_VRESET, val);
+    assert(rv == true);
+
+    // Disable hibernate mode. Hibernate will be forced
+    // on sleep.
+    rv = writeInt16Reg_(REG_HIBRT, 0);
     assert(rv == true);
     
     ESP_LOGI(CURRENT_LOG_TAG, "Device configured.");
