@@ -120,6 +120,63 @@ named "ezDV" followed by the last two octets of its MAC address. From there, you
 device to that network and open http://192.168.4.1/ in your Web browser; this will show a page that looks like
 the below: 
 
+![Main webpage for ezDV](docs/ezDV_Main_Webpage.jpg)
+
+From here, you can choose one of four tabs:
+
+* Reporting: Configures your callsign (to be encoded in FreeDV transmissions for reporting to [PSK Reporter](https://pskreporter.info/)).
+* Voice Keyer: Configures ezDV's voice keyer feature.
+* Wi-Fi: Configures how ezDV connects to Wi-Fi.
+* Radio: Configures how ezDV connects to your network-enabled radio.
+
+Note that most changes here will require a power cycle in order to take effect.
+
+### Reporting
+
+For PSK Reporter functionality, there is only one field here: your callsign. (ezDV does not report to PSK Reporter
+itself due to it being intended for use in environments without reliable internet access.) Leaving this field blank
+will transmit no callsign when using one of the FreeDV modes.
+
+### Voice Keyer
+
+On this tab, you can configure the Voice Keyer feature:
+
+![Voice keyer tab for ezDV](docs/ezDV_Voice_Keyer.jpg)
+
+The fields to configure here are as follows:
+
+* "Enable voice keyer": Enables or disables the voice keyer. If disabled, pushing Mode while transmitting has no effect.
+* "Voice keyer file": Provide a mono, 8 KHz sample rate file consisting of audio that should be encoded and transmitted.
+* "Number of times to transmit": The number of times that ezDV should transmit your voice keyer file.
+* "Number of seconds to wait after transmit": The number of seconds to wait after transmitting the voice keyer file before transmitting it again.
+
+### Wi-Fi
+
+This tab allows you to configure ezDV to connect to a Wi-Fi network or to create its own:
+
+![Wi-Fi tab for ezDV](docs/ezDV_Wi-Fi.jpg)
+
+The fields to configure here are as follows:
+
+* "Wireless Mode": either "Access Point" (if you want ezDV to create its own access point) or "Client" (if you want ezDV to connect to an existing network).
+* "SSID": either the network to connect to (if "Client") or the name of the network ezDV is creating (if "Access Point").
+* "Security Type": valid only for "Access Point" mode and determines how the network should be secured (WEP, WPA, WPA2 and Open are supported).
+* "Channel": valid only for "Access Point" mode and determines the 2.4 GHz Wi-Fi channel that ezDV should listen on.
+* "Password": the password ezDV should use to connect to the network (or is required to connect to ezDV).
+
+### Radio
+
+This tab allows you to configure ezDV to connect to a network-enabled radio. Note that this tab is disabled unless Wi-Fi is enabled:
+
+![Radio tab for ezDV](docs/ezDV_Radio.jpg)
+
+The fields to configure here are as follows:
+
+* "Radio Type": the type of radio ezDV will connect to (currently only the IC-705 is supported).
+* "IP Address": the IP address that ezDV should use to connect to the radio. Typically this is 192.168.4.2 if ezDV is an access point or 192.168.59.1 if the IC-705's wireless network is used.
+* "Port": the port to connect to on the radio. This is typically 50001 if using the IC-705.
+* "Username": the username to use to connect to the radio.
+* "Password" the password to use to connect to the radio.
 
 ## License
 
