@@ -37,19 +37,19 @@ difference() {
 
 include <../library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
-printBaseShell      = true;
-printLidShell       = false;
+printBaseShell      = false;
+printLidShell       = true;
 
 // Edit these parameters for your own board dimensions
 wallThickness       = 2.0;
 basePlaneThickness  = 2.0;
-lidPlaneThickness   = 2.0;
+lidPlaneThickness   = 1.0;
 
 // Total height of box = basePlaneThickness + lidPlaneThickness 
 //                     + baseWallHeight + lidWallHeight
 
-baseWallHeight      = 12.5;
-lidWallHeight       = 9;
+baseWallHeight      = 13.5;
+lidWallHeight       = 3.5;
 
 pcbLength           = 69.85;
 pcbWidth            = 64.70;
@@ -82,8 +82,8 @@ pcbStands = [
 ];
      
 cutoutsFront = [
-    [16.51, 2.5, 8, 8, 0, yappCircle, yappCenter ],
-    [45.72, 2.5, 8, 8, 0, yappCircle, yappCenter ],
+    [14.97, 2.5, 7, 7, 0, yappCircle, yappCenter ],
+    [48.26, 2.5, 7, 7, 0, yappCircle, yappCenter ],
     [21.75, -1.5, 12.5, 7, 0, yappRectangle ],
     //[34.56, -2.5, 6, 1, 0, yappRectangle ]
 ];
@@ -95,10 +95,15 @@ snapJoins = [
 
 cutoutsLid = [
     // Buttons
-    [3, 14.63, 4, 4, 0, yappRectangle, yappCenter],
+    /*[3, 14.63, 4, 4, 0, yappRectangle, yappCenter],
     [11.89, 14.63, 4, 4, 0, yappRectangle, yappCenter],
     [20.78, 14.63, 4, 4, 0, yappRectangle, yappCenter],
-    [29.67, 14.63, 4, 4, 0, yappRectangle, yappCenter],
+    [29.67, 14.63, 4, 4, 0, yappRectangle, yappCenter],*/
+    
+    [3.17, 14.62, 3, 3, 0, yappCircle, yappCenter],
+    [12.06, 14.62, 3, 3, 0, yappCircle, yappCenter],
+    [20.95, 14.62, 3, 3, 0, yappCircle, yappCenter],
+    [29.84, 14.62, 3, 3, 0, yappCircle, yappCenter],
     
     // Status LEDs
     [2.54, 55.88, 2, 2, 0, yappCircle],
@@ -106,36 +111,5 @@ cutoutsLid = [
     [7.62, 55.88, 2, 2, 0, yappCircle],
     [10.16, 55.88, 2, 2, 0, yappCircle],
 ];
-
-module addButton(x, y)
-{
-    translate([pcbX + y, pcbY + x, -4])
-    {
-        union()
-        {
-            translate([-2.5, -2.5, 0]) difference()
-            {
-                color("red") cube([5,5,2]);
-                //color("black") translate([0.25,0.25,0.25]) cube([4.5,4.5,/*3.25,3.25,*/1]);
-                translate([1.25,1.25,-1]) color("blue") cube([2.5,2.5,13]);
-                //translate([0,0,4]) cube([3.5,3.5,1]);
-                //translate([0.3,0.3,2]) cube([3,3,2]);
-            };
-            translate([0,0,-lidWallHeight+pcbThickness+4.5]) cube([2,2,(baseWallHeight-standoffHeight)+lidWallHeight], center=true);
-            translate([0,0,3.5]) color("green") cube([3.3,3.3,1], center=true);
-            //translate([0,0,-lidWallHeight+pcbThickness]) cube([3,3,2], center=true);
-            //translate([0,0,-lidWallHeight+pcbThickness-2]) cube([5.5,5.5,2], center=true);
-            translate([0,0,-lidWallHeight+pcbThickness]) rotate([180,0,0]) linear_extrude(height = 4, center = true, convexity = 10, twist = 0, scale = 2.75) square([2,2], center = true);
-        }
-    }
-}
-
-module lidHookInside()
-{
-    addButton(14.63, 3);
-    addButton(14.63, 11.89);
-    addButton(14.63, 20.78);
-    addButton(14.63, 29.67);
-}
 
 YAPPgenerate();
