@@ -55,7 +55,6 @@ private:
     I2CDevice* i2cDevice_;
     InputGPIO<BAT_ALERT_GPIO> batAlertGpio_;
     bool enabled_;
-    temperature_sensor_handle_t temperatureSensor_;
     adc_oneshot_unit_handle_t adcHandle_;
     adc_cali_handle_t adcCalibrationHandle_;
     

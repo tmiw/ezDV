@@ -64,7 +64,6 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , enabled_(false)
-    , temperatureSensor_(nullptr)
     , adcHandle_(nullptr)
     , adcCalibrationHandle_(nullptr)
 {
@@ -97,12 +96,6 @@ void MAX17048::onTaskStart_()
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Device not found; battery monitoring disabled.");
     }
-    
-    // Start internal temperature sensor for measurement compensation.
-    // Using -10 - 80C for now for best accuracy. TBD.
-    temperature_sensor_config_t tempSensorConfig = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
-    ESP_ERROR_CHECK(temperature_sensor_install(&tempSensorConfig, &temperatureSensor_));
-    ESP_ERROR_CHECK(temperature_sensor_enable(temperatureSensor_));
     
     // Start ADC. This will be the primary sensor for battery calibration unless the value is 
     // obviously invalid, then we use the internal temp sensor.
@@ -143,11 +136,7 @@ void MAX17048::onTaskSleep_()
     // Stop ADC
     ESP_ERROR_CHECK(adc_cali_delete_scheme_curve_fitting(adcCalibrationHandle_));
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adcHandle_));
-    
-    // Stop temperature sensor
     enabled_ = false;
-    ESP_ERROR_CHECK(temperature_sensor_disable(temperatureSensor_));
-    ESP_ERROR_CHECK(temperature_sensor_uninstall(temperatureSensor_));
 
     // Force MAX17048 into hibernate to reduce power consumption.
     bool rv = writeInt16Reg_(REG_HIBRT, 0xFFFF);
@@ -166,11 +155,8 @@ void MAX17048::onTaskTick_()
         bool success = readInt16Reg_(REG_CONFIG, &config);
         assert(success);
         
-        auto temp = temperatureFromADC_();
-        
-        float degC = 0;
-        ESP_ERROR_CHECK(temperature_sensor_get_celsius(temperatureSensor_, &degC));
-        
+        auto degC = temperatureFromADC_();
+                
         int rcomp = 0x97;
         if (degC > 20)
         {
