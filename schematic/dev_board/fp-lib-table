@@ -1,3 +1,0 @@
-(fp_lib_table
-  (lib (name ezDV)(type KiCad)(uri ${KIPRJMOD}/parts/ezDV.pretty)(options "")(descr ""))
-)
