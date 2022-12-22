@@ -93,6 +93,9 @@ HttpServerTask::~HttpServerTask()
 /* Set HTTP response content type according to file extension */
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename)
 {
+    // Enable unsafe inline scripting (required by newer Chrome)
+    httpd_resp_set_hdr(req, "Content-Security-Policy", "script-src 'self' 'unsafe-inline'");
+
     if (IS_FILE_EXT(filename, ".pdf")) 
     {
         return httpd_resp_set_type(req, "application/pdf");

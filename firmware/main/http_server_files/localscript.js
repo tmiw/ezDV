@@ -182,6 +182,7 @@ function wsConnect()
       }
       else if (json.type == "reportingInfo")
       {
+          $(".reporting-enable-row").show();
           $("#reportingReset").prop("disabled", false);
           $("#reportingCallsign").val(json.callsign);
       }
@@ -436,6 +437,8 @@ $( document ).ready(function()
     $("#voiceKeyerSuccessAlertRow").hide();
     $("#voiceKeyerFailAlertRow").hide();
 
+    $(".reporting-enable-row").hide();
+    
     $("#reportingSave").show();
     $("#reportingSaveProgress").hide();
 
