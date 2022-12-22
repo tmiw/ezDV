@@ -105,11 +105,21 @@ Pushing the Mode button briefly while in receive will cycle through the followin
 * Analog passthrough ("ANA" will beep in Morse code)
 
 Additionally, if you hold down PTT and then push Mode briefly, the voice keyer function will activate. This
-requires additional configuration to use (see "Web based configuration" below).
+requires additional configuration to use (see "Web based configuration" below). Pressing any button after
+doing this will stop the voice keyer.
 
 The Volume Up and Down buttons adjust the receive and transmit audio depending on if the PTT button is
 also held. For best results, transmit audio should be adjusted while in 700D/700E/1600 mode such that
 the ALC indicator on your radio is just barely showing (similar to how to configure data modes). 
+
+## Web based configuration
+
+By default, Wi-Fi on ezDV is disabled for security reasons. To enable it (or recover from bad configuration), 
+hold down the Mode and Volume Down buttons until ezDV turns on. This will cause ezDV to create an access point
+named "ezDV" followed by the last two octets of its MAC address. From there, you can connect your PC or mobile
+device to that network and open http://192.168.4.1/ in your Web browser; this will show a page that looks like
+the below: 
+
 
 ## License
 
