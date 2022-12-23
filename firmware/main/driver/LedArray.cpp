@@ -33,11 +33,11 @@ namespace driver
 
 LedArray::LedArray()
     : DVTask("LedArray", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
-    , syncLed_(GPIO_SYNC_LED)
-    , overloadLed_(GPIO_OVL_LED)
-    , pttLed_(GPIO_PTT_LED)
+    , syncLed_(GPIO_SYNC_LED, true)
+    , overloadLed_(GPIO_OVL_LED, true)
+    , pttLed_(GPIO_PTT_LED, true)
     , pttNpmLed_(GPIO_PTT_NPN)
-    , networkLed_(GPIO_NET_LED)
+    , networkLed_(GPIO_NET_LED, true)
 {
     registerMessageHandler(this, &LedArray::onSetLedState_);
 }

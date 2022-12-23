@@ -19,6 +19,7 @@
 #define OUTPUT_GPIO_H
 
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 
 namespace ezdv
 {
@@ -29,13 +30,16 @@ namespace driver
 class OutputGPIO
 {
 public:
-    OutputGPIO(gpio_num_t gpio);
+    OutputGPIO(gpio_num_t gpio, bool pwm = false);
     virtual ~OutputGPIO();
     
     void setState(bool state);
 
 private:
     gpio_num_t gpio_;
+    bool pwm_;
+
+    ledc_channel_t getPWMChannel_();
 };
 
 } // namespace driver
