@@ -15,6 +15,7 @@
 #define CURRENT_LOG_TAG ("app")
 
 #define BOOTUP_VOL_DOWN_GPIO (GPIO_NUM_7)
+#define TLV320_RESET_GPIO (GPIO_NUM_13)
 
 extern "C"
 {
@@ -227,6 +228,17 @@ void App::onTaskSleep_()
     rtc_gpio_pullup_en(GPIO_NUM_5);
     rtc_gpio_hold_en(GPIO_NUM_5);
     
+    // Isolate TLV320 related GPIOs to prevent issues when coming back from sleep
+    // (see app_start() for explanation).
+    std::vector<gpio_num_t> tlv320Gpios { 
+        GPIO_NUM_3, GPIO_NUM_9, GPIO_NUM_10, GPIO_NUM_11,
+        GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, 
+        TLV320_RESET_GPIO };
+    for (auto& gpio : tlv320Gpios)
+    {
+        rtc_gpio_isolate(gpio);
+    }
+
     /* Shut off peripheral power. */
     rtc_gpio_init(GPIO_NUM_17);
     rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
@@ -273,13 +285,37 @@ extern "C" void app_main()
 
     ulp_num_cycles_with_gpio_on = 0;
 
+    // TLV320 related GPIOs need to be isolated prior to enabling
+    // peripheral power. If we don't do this, the following happens
+    // the first time after waking up from deep sleep:
+    //
+    // 1. Network (and potentially other LEDs) stop working, and
+    // 2. Audio glitches occur on startup.
+    std::vector<gpio_num_t> tlv320Gpios { 
+        GPIO_NUM_3, GPIO_NUM_9, GPIO_NUM_10, GPIO_NUM_11,
+        GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, 
+        TLV320_RESET_GPIO };
+    for (auto& gpio : tlv320Gpios)
+    {
+        rtc_gpio_isolate(gpio);
+    }
+
     // Enable peripheral power (required for v0.4+). This will automatically
     // power down once we switch to the ULP processor on shutdown, reducing
     // "off" current considerably.
-    ESP_ERROR_CHECK(gpio_reset_pin(GPIO_NUM_17));
-    ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT));
-    ESP_ERROR_CHECK(gpio_set_pull_mode(GPIO_NUM_17, GPIO_FLOATING));
-    ESP_ERROR_CHECK(gpio_set_level(GPIO_NUM_17, true));
+    rtc_gpio_init(GPIO_NUM_17);
+    rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
+    rtc_gpio_set_level(GPIO_NUM_17, true);
+    rtc_gpio_hold_en(GPIO_NUM_17);
+
+    // Now we can re-attach TLV320 related GPIOs and get
+    // ready to configure it.
+    for (auto& gpio : tlv320Gpios)
+    {
+        rtc_gpio_hold_dis(gpio);
+        rtc_gpio_deinit(gpio);
+        gpio_reset_pin(gpio);
+    }
 
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
@@ -309,7 +345,7 @@ extern "C" void app_main()
         app->wake();
     }
     
-#if 1
+#if 0
     // infinite loop to track heap use
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
     bool ptt = false;
