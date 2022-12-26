@@ -323,9 +323,16 @@ float MAX17048::temperatureFromADC_()
     adc_channel_t adcChannel;
     ESP_ERROR_CHECK(adc_oneshot_io_to_channel(ADC_GPIO_NUM, &adcUnit, &adcChannel));
     
-    // Read temperature ADC. 
+    // Read 8 samples from the temperature ADC and average them out.
+    // This improves accuracy.
     int val = 0;
-    ESP_ERROR_CHECK(adc_oneshot_read(adcHandle_, adcChannel, &val));
+    int valAccum = 0;
+    for (int count = 0; count < 8; count++)
+    {
+        ESP_ERROR_CHECK(adc_oneshot_read(adcHandle_, adcChannel, &val));
+        valAccum += val;
+    }
+    val = valAccum >> 3;
     
     ESP_LOGI(CURRENT_LOG_TAG, "ADC: %d", val);
     
