@@ -236,11 +236,17 @@ void App::onTaskSleep_()
         TLV320_RESET_GPIO };
     for (auto& gpio : tlv320Gpios)
     {
-        rtc_gpio_isolate(gpio);
+        rtc_gpio_init(gpio);
+        rtc_gpio_set_direction(gpio, RTC_GPIO_MODE_INPUT_ONLY);
+        rtc_gpio_set_direction_in_sleep(gpio, RTC_GPIO_MODE_INPUT_ONLY);
+        rtc_gpio_pulldown_en(gpio);
+        rtc_gpio_pullup_dis(gpio);
+        rtc_gpio_hold_en(gpio);
     }
 
     /* Shut off peripheral power. */
     rtc_gpio_init(GPIO_NUM_17);
+    rtc_gpio_hold_dis(GPIO_NUM_17);
     rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_set_direction_in_sleep(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_set_level(GPIO_NUM_17, false);
@@ -248,7 +254,7 @@ void App::onTaskSleep_()
 
     /* Isolate GPIO 0 as it has a weak pullup by default. This should be
        good for a few more uA of sleep current savings. */
-    rtc_gpio_isolate(GPIO_NUM_0);
+    //rtc_gpio_isolate(GPIO_NUM_0);
 
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
@@ -297,13 +303,19 @@ extern "C" void app_main()
         TLV320_RESET_GPIO };
     for (auto& gpio : tlv320Gpios)
     {
-        rtc_gpio_isolate(gpio);
+        rtc_gpio_init(gpio);
+        rtc_gpio_set_direction(gpio, RTC_GPIO_MODE_INPUT_ONLY);
+        rtc_gpio_set_direction_in_sleep(gpio, RTC_GPIO_MODE_INPUT_ONLY);
+        rtc_gpio_pulldown_en(gpio);
+        rtc_gpio_pullup_dis(gpio);
+        rtc_gpio_hold_en(gpio);
     }
 
     // Enable peripheral power (required for v0.4+). This will automatically
     // power down once we switch to the ULP processor on shutdown, reducing
     // "off" current considerably.
     rtc_gpio_init(GPIO_NUM_17);
+    rtc_gpio_hold_dis(GPIO_NUM_17);
     rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_set_level(GPIO_NUM_17, true);
     rtc_gpio_hold_en(GPIO_NUM_17);

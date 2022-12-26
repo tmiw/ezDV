@@ -117,7 +117,9 @@ void TLV320::onTaskSleep_()
 {
     // Stop reading from I2S.
     i2s_channel_disable(i2sRxDevice_);
+    i2s_del_channel(i2sRxDevice_);
     i2s_channel_disable(i2sTxDevice_);
+    i2s_del_channel(i2sTxDevice_);
     i2sRxDevice_ = nullptr;
     i2sTxDevice_ = nullptr;
 
