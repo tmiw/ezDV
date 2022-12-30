@@ -213,6 +213,9 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/2d12b1eb-d708-4b6f-8c59-a60576bf388c"
       (reference "#PWR043") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/9ddbc315-017c-44d3-91f0-c664857981e0"
+      (reference "#PWR044") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -331,16 +334,19 @@
       (reference "J1") (unit 1) (value "TYPE-C-31-M-04") (footprint "ezDV_production:HRO_TYPE-C-31-M-04")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/fb58d1e5-5ba8-431c-b8d8-c5e16bd5c7a5"
-      (reference "J2") (unit 1) (value "Radio_Jack") (footprint "CUI_SJ-43514")
+      (reference "J2") (unit 1) (value "Radio_Jack") (footprint "ezDV_production:CUI_SJ-43514")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/ce294c39-95c9-4cf9-b9ba-cc735cefed26"
-      (reference "J3") (unit 1) (value "User_Jack") (footprint "CUI_SJ-43514")
+      (reference "J3") (unit 1) (value "User_Jack") (footprint "ezDV_production:CUI_SJ-43514")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/50e2f5d6-2c91-4632-9b97-83a0b2659e62"
       (reference "J4") (unit 1) (value "I2C Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/7cac633b-b58f-4622-89aa-3e5c2e75bc16"
       (reference "J5") (unit 1) (value "PTT Breakout") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/b10d3d21-4e8b-4a61-ae39-ad19f28a0cb4"
+      (reference "J6") (unit 1) (value "ESP32_UART0") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
