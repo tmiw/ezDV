@@ -44,6 +44,8 @@ public:
     MAX17048(I2CDevice* i2cDevice);
     virtual ~MAX17048() = default;
 
+    bool isLowSOC() const { return isLowSoc_; }
+    
 protected:
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;
@@ -57,6 +59,7 @@ private:
     bool enabled_;
     adc_oneshot_unit_handle_t adcHandle_;
     adc_cali_handle_t adcCalibrationHandle_;
+    bool isLowSoc_;
     
     bool writeInt16Reg_(uint8_t reg, uint16_t val);
     bool readInt16Reg_(uint8_t reg, uint16_t* val);

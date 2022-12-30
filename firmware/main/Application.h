@@ -71,6 +71,9 @@ private:
     storage::SettingsTask settingsTask_;
     ui::UserInterfaceTask uiTask_;
     audio::VoiceKeyerTask voiceKeyerTask_;
+
+    void enablePeripheralPower_();
+    void enterDeepSleep_();
     
 };
 
