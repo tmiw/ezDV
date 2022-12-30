@@ -115,13 +115,9 @@ void UserInterfaceTask::onTaskSleep_()
 
     // Enable all LEDs so the user knows we're shutting down. They'll turn off
     // once the ESP32 enters deep sleep
-    ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
-    publish(&msg);
-    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+    ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD, true);
     publish(&msg);
     msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
-    publish(&msg);
-    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
     publish(&msg);
 
     // Send goodbye message to beeper. The extra spaces are to give a bit more timing
@@ -239,10 +235,13 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
 
 void UserInterfaceTask::onFreeDVSyncStateMessage_(DVTask* origin, audio::FreeDVSyncStateMessage* message)
 {
-    // Enable/disable sync LED as appropriate
-    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::SYNC, message->syncState);
-    publish(ledMessage);
-    delete ledMessage;
+    if (isActive_)
+    {
+        // Enable/disable sync LED as appropriate
+        driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::SYNC, message->syncState);
+        publish(ledMessage);
+        delete ledMessage;
+    }
 }
 
 void UserInterfaceTask::onLeftChannelVolumeMessage_(DVTask* origin, storage::LeftChannelVolumeMessage* message)
@@ -281,18 +280,21 @@ void UserInterfaceTask::updateVolumeCommon_()
 
 void UserInterfaceTask::onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message)
 {
-    if (message->state)
+    if (isActive_)
     {
-        networkFlashTimer_.start();
-    }
-    else
-    {
-        networkFlashTimer_.stop();
-        
-        netLedStatus_ = false;
-        driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
-        publish(ledMessage);
-        delete ledMessage;
+        if (message->state)
+        {
+            networkFlashTimer_.start();
+        }
+        else
+        {
+            networkFlashTimer_.stop();
+            
+            netLedStatus_ = false;
+            driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
+            publish(ledMessage);
+            delete ledMessage;
+        }
     }
 }
 
@@ -303,11 +305,14 @@ void UserInterfaceTask::onRadioStateChange_(DVTask* origin, network::RadioConnec
 
 void UserInterfaceTask::flashNetworkLight_()
 {
-    netLedStatus_ = radioStatus_ || !netLedStatus_;
-    
-    driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
-    publish(ledMessage);
-    delete ledMessage;
+    if (isActive_)
+    {
+        netLedStatus_ = radioStatus_ || !netLedStatus_;
+        
+        driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::NETWORK, netLedStatus_);
+        publish(ledMessage);
+        delete ledMessage;
+    }
 }
 
 void UserInterfaceTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
@@ -367,14 +372,17 @@ void UserInterfaceTask::startTx_()
 
 void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message)
 {
-    // We only want to light up the Overload LED if the currently active channel
-    // is overloading (e.g. left channel if transmitting, right on receive)
-    bool overloadLedLit = 
-        (isTransmitting_ && message->leftChannel) || 
-        (!isTransmitting_ && message->rightChannel);
+    if (isActive_)
+    {
+        // We only want to light up the Overload LED if the currently active channel
+        // is overloading (e.g. left channel if transmitting, right on receive)
+        bool overloadLedLit = 
+            (isTransmitting_ && message->leftChannel) || 
+            (!isTransmitting_ && message->rightChannel);
 
-    driver::SetLedStateMessage ledMessage(driver::SetLedStateMessage::OVERLOAD, overloadLedLit);
-    publish(&ledMessage);
+        driver::SetLedStateMessage ledMessage(driver::SetLedStateMessage::OVERLOAD, overloadLedLit);
+        publish(&ledMessage);
+    }
 }
 
 void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message)
