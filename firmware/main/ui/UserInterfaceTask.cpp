@@ -56,6 +56,7 @@ UserInterfaceTask::UserInterfaceTask()
     , radioStatus_(false)
     , voiceKeyerRunning_(false)
     , voiceKeyerEnabled_(false)
+    , lastBatteryLevel_(0)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
@@ -69,6 +70,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onVoiceKeyerCompleteMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onADCOverload_);
     registerMessageHandler(this, &UserInterfaceTask::onHeadsetButtonPressed_);
+    registerMessageHandler(this, &UserInterfaceTask::onBatteryStateUpdate_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -385,6 +387,24 @@ void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetB
     {
         stopTx_();
     }
+}
+
+void UserInterfaceTask::onBatteryStateUpdate_(DVTask* origin, driver::BatteryStateMessage* message)
+{
+    auto recvSoc = (int)message->soc;
+
+    if (recvSoc < lastBatteryLevel_ && recvSoc < 10)
+    {
+        // We dropped to the next percentage point and we're
+        // almost out of power. Emit a CW "B" to the headset
+        // to let the user know.
+        ESP_LOGI(CURRENT_LOG_TAG, "Battery low, letting user know");
+        audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("B");
+        publish(beeperMessage);
+        delete beeperMessage;
+    }
+
+    lastBatteryLevel_ = recvSoc;
 }
 
 }

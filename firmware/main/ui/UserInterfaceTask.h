@@ -22,6 +22,7 @@
 #include "task/DVTimer.h"
 #include "audio/FreeDVMessage.h"
 #include "audio/VoiceKeyerMessage.h"
+#include "driver/BatteryMessage.h"
 #include "driver/ButtonMessage.h"
 #include "driver/TLV320Message.h"
 #include "network/NetworkMessage.h"
@@ -59,6 +60,7 @@ private:
     bool radioStatus_;
     bool voiceKeyerRunning_;
     bool voiceKeyerEnabled_;
+    int lastBatteryLevel_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
@@ -93,6 +95,9 @@ private:
 
     // Timer handling
     void updateVolumeCommon_();
+
+    // Battery state handling
+    void onBatteryStateUpdate_(DVTask* origin, driver::BatteryStateMessage* message);
 };
 
 }
