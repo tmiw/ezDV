@@ -7691,7 +7691,7 @@
     (property "Sheetname" "Power and USB")
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/61ab989d-d641-49c6-a67a-06187e4d98c3")
     (attr smd)
-    (fp_text reference "C3" (at 1.890135 0.124853 135) (layer "F.SilkS")
+    (fp_text reference "C3" (at 1.890135 0.124853 180) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 7206f5e8-8ea2-426f-bb2b-5ef6633a3447)
     )
