@@ -284,33 +284,32 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
 }
 
 // Implement required Codec2 math methods below as CMSIS doesn't work on ESP32.
-
-void codec2_dot_product_f32(float* left, float* right, size_t len, float* result)
-{
-    dsps_dotprod_f32(left, right, result, len);
-}
-
-void codec2_complex_dot_product_f32(float* left, float* right, size_t len, float* resultReal, float* resultImag)
-{
-    // Complex number math: (a + bi)(c + di) = ac + bci + adi + (bi)(di) = ac - bd + (bc + ad)i
-    float realTimesRealResult = 0; // ac
-    float realTimesImag1Result = 0; // bci
-    float realTimesImag2Result = 0; // adi
-    float imagTimesImagResult = 0; // bi * di
-    
-    dsps_dotprode_f32(left, right, &realTimesRealResult, len, 0, 0);
-    dsps_dotprode_f32(left, right, &realTimesImag1Result, len, 1, 0);
-    dsps_dotprode_f32(left, right, &realTimesImag2Result, len, 0, 1);
-    dsps_dotprode_f32(left, right, &imagTimesImagResult, len, 1, 1);
-    
-    *resultReal = realTimesRealResult - imagTimesImagResult;
-    *resultImag = realTimesImag1Result + realTimesImag2Result;
-}
-
-/* Required memory allocation wrapper for embedded platforms. For ezDV, we want to allocate as much as possible
-   on external RAM. */
 extern "C"
 {
+    void codec2_dot_product_f32(float* left, float* right, size_t len, float* result)
+    {
+        dsps_dotprod_f32(left, right, result, len);
+    }
+
+    void codec2_complex_dot_product_f32(COMP* left, COMP* right, size_t len, float* resultReal, float* resultImag)
+    {
+        float realTimesRealResult = 0; // ac
+        float realTimesImag1Result = 0; // bc
+        float realTimesImag2Result = 0; // ad
+        float imagTimesImagResult = 0; // bi * di
+        
+        dsps_dotprode_f32((float*)left, (float*)right, &realTimesRealResult, len, 2, 2);
+        dsps_dotprode_f32((float*)left + 1, (float*)right, &realTimesImag1Result, len, 2, 2);
+        dsps_dotprode_f32((float*)left, (float*)right + 1, &realTimesImag2Result, len, 2, 2);
+        dsps_dotprode_f32((float*)left + 1, (float*)right + 1, &imagTimesImagResult, len, 2, 2);
+        
+        *resultReal = realTimesRealResult - imagTimesImagResult;
+        *resultImag = realTimesImag1Result + realTimesImag2Result;
+    }
+
+    /* Required memory allocation wrapper for embedded platforms. For ezDV, we want to allocate as much as possible
+    on external RAM. */
+
     void* codec2_malloc(size_t size)
     {
         return heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
