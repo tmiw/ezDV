@@ -417,8 +417,6 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
     };
     setConfigurationOptionMultiple_(0, 60, prb, 2);
     
-#if 0
-    
     // Set ADC filter coefficients for HPF, center frequency 130 Hz.
     // All five biquads on both channels are set to this filter to reduce
     // background hiss in the recorded audio.
@@ -439,7 +437,6 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
     setConfigurationOptionMultiple_(9, 104, adcFilter, sizeof(adcFilter));
     setConfigurationOptionMultiple_(8, 116, adcFilter, sizeof(adcFilter));
     setConfigurationOptionMultiple_(9, 124, adcFilter, sizeof(adcFilter));
-#endif
 }
 
 void TLV320::tlv320ConfigureRoutingADC_()
@@ -613,6 +610,7 @@ void TLV320::onInterrupt2Fire_(bool state)
     {
         // Page 0, register 44, bit D5 contains the status of the headset button
         auto val = getConfigurationOption_(0, 44);
+        ESP_LOGI(CURRENT_LOG_TAG, "button state: %x", val);
         if (val & (1 << 5))
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Headset button pressed");
