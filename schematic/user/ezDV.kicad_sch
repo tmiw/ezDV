@@ -412,7 +412,7 @@
       (reference "R9") (unit 1) (value "4.7K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/0f4ee63d-cd6b-4996-b36a-aa962c1b1daf"
-      (reference "R10") (unit 1) (value "1K") (footprint "Resistor_SMD:R_0402_1005Metric")
+      (reference "R10") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/ea82cbfa-37d6-4bd8-97ec-ada2df481519"
       (reference "R11") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
