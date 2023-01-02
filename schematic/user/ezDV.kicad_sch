@@ -228,6 +228,9 @@
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/400afef1-22bc-4c07-8336-ae8560f400ff"
       (reference "#PWR0104") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/5b7c44a7-9ca4-4c85-befd-cec0606baa66"
+      (reference "#PWR0105") (unit 1) (value "GND") (footprint "")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
       (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
     )
@@ -347,6 +350,9 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/b10d3d21-4e8b-4a61-ae39-ad19f28a0cb4"
       (reference "J6") (unit 1) (value "ESP32_UART0") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/712ca947-5659-4aae-b74a-1e16e70cfcab"
+      (reference "J7") (unit 1) (value "MCU Power") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
