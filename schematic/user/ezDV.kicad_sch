@@ -216,6 +216,9 @@
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/9ddbc315-017c-44d3-91f0-c664857981e0"
       (reference "#PWR044") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/f6d7fc19-1b16-4b00-83a4-64f6be57ddd2"
+      (reference "#PWR045") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -353,6 +356,9 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/712ca947-5659-4aae-b74a-1e16e70cfcab"
       (reference "J7") (unit 1) (value "MCU Power") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8dc3fe8e-f842-44ab-94d9-205b0b8d725c"
+      (reference "J8") (unit 1) (value "ULP Serial") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
