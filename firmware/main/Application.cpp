@@ -231,6 +231,7 @@ void App::onTaskStart_()
     // Start UI
     voiceKeyerTask_.start();
     uiTask_.start();
+    waitForStart(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
     waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
     
     // Start Wi-Fi
@@ -289,6 +290,7 @@ void App::onTaskWake_()
     // Wake UI
     voiceKeyerTask_.wake();
     uiTask_.wake();
+    waitForAwake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
     
     // Wake Wi-Fi

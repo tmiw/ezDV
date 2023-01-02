@@ -27,7 +27,7 @@ namespace audio
 {
 
 VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
-    : DVTask("VoiceKeyerTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 100, pdMS_TO_TICKS(20))
+    : DVTask("VoiceKeyerTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
     , AudioInput(1, 1)
     , currentState_(VoiceKeyerTask::IDLE)
     , voiceKeyerFile_(nullptr)
@@ -55,6 +55,7 @@ VoiceKeyerTask::~VoiceKeyerTask()
 
 void VoiceKeyerTask::onTaskStart_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Starting VoiceKeyerTask");
     esp_vfs_fat_mount_config_t mountConfig = {
         .format_if_mount_failed = true,
         .max_files = 5,
@@ -240,7 +241,12 @@ void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFil
 
     unlink(VOICE_KEYER_FILE);
     voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "wb");
-    assert(voiceKeyerFile_ != nullptr);
+    if (voiceKeyerFile_ == nullptr)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Cannot open voice keyer file (errno %d)", errno);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        assert(voiceKeyerFile_ != nullptr);
+    }
 }
 
 void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploadDataMessage* message)

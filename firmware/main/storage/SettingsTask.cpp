@@ -709,6 +709,10 @@ void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* u
 
 void SettingsTask::onSetVoiceKeyerSettingsMessage_(DVTask* origin, SetVoiceKeyerSettingsMessage* message)
 {
+    // Minor wait in case someone else wants to wait for our response.
+    // XXX -- this shouldn't be needed.
+    vTaskDelay(pdMS_TO_TICKS(50));
+    
     setVoiceKeyerSettings_(message->enabled, message->timesToTransmit, message->secondsToWait);
 }
 
