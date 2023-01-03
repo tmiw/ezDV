@@ -219,6 +219,12 @@
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/f6d7fc19-1b16-4b00-83a4-64f6be57ddd2"
       (reference "#PWR045") (unit 1) (value "GND") (footprint "")
     )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/dc6efcfd-5d62-433e-9ed5-9d56fd2ed5c4"
+      (reference "#PWR046") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/e4d0fdae-21cf-4660-bc4b-2baf93ae44da"
+      (reference "#PWR047") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -235,7 +241,7 @@
       (reference "#PWR0105") (unit 1) (value "GND") (footprint "")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8497ab8a-e117-48c9-9c97-87c21ad3ce69"
-      (reference "BT1") (unit 1) (value "Battery") (footprint "TestPoint:TestPoint_2Pads_Pitch5.08mm_Drill1.3mm")
+      (reference "BT1") (unit 1) (value "Battery") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/68b4f0be-adfc-404c-a66b-f6ab5906ccb1"
       (reference "C1") (unit 1) (value "33pF") (footprint "Capacitor_SMD:C_0402_1005Metric")
@@ -359,6 +365,12 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8dc3fe8e-f842-44ab-94d9-205b0b8d725c"
       (reference "J8") (unit 1) (value "ULP Serial") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/dfe2af4f-1836-49b8-8801-ff3fa4d11aa2"
+      (reference "J9") (unit 1) (value "User Audio") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/bc3f2a67-536d-484e-91c2-a85266232b6a"
+      (reference "J10") (unit 1) (value "Radio Audio") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/af34297c-2ac6-4f74-9ce8-808869ffbae0"
       (reference "Q1") (unit 1) (value "AO3401A") (footprint "Package_TO_SOT_SMD:SOT-23")
