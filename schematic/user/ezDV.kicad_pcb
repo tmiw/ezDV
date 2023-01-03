@@ -7,8 +7,8 @@
   (paper "A4")
   (title_block
     (title "ezDV")
-    (date "2022-10-01")
-    (rev "v0.5")
+    (date "2023-01-02")
+    (rev "v0.6")
     (company "FreeDV Project")
   )
 
@@ -9408,7 +9408,7 @@
   (gr_text "PTT" (at 56.582797 75.061596) (layer "F.SilkS") (tstamp 7311ed02-0573-4ad5-84f9-15820c764fdd)
     (effects (font (size 1 1) (thickness 0.15)))
   )
-  (gr_text "ezDV v0.5 by Mooneer Salem\nhttps://github.com/tmiw/ezDV" (at 102.87 115.57 90) (layer "F.SilkS") (tstamp 9d820a31-0413-406b-8486-9dc20afb7185)
+  (gr_text "ezDV v0.6 by Mooneer Salem\nhttps://github.com/tmiw/ezDV" (at 102.87 115.57 90) (layer "F.SilkS") (tstamp 9d820a31-0413-406b-8486-9dc20afb7185)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_text "Sync" (at 94.5 73.66) (layer "F.SilkS") (tstamp e2d4e0bc-07ef-498c-8fb4-be7199eac050)
