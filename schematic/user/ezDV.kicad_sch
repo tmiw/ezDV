@@ -364,7 +364,7 @@
       (reference "J7") (unit 1) (value "MCU Power") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8dc3fe8e-f842-44ab-94d9-205b0b8d725c"
-      (reference "J8") (unit 1) (value "ULP Serial") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
+      (reference "J8") (unit 1) (value "ULP Serial") (footprint "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/dfe2af4f-1836-49b8-8801-ff3fa4d11aa2"
       (reference "J9") (unit 1) (value "User Audio") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical")
