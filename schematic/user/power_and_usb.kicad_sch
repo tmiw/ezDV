@@ -2284,7 +2284,7 @@
     (uuid 83d7c8be-b297-4bd3-9651-c75764419245)
     (property "Reference" "U3" (id 0) (at 241.3 38.1 0))
     (property "Value" "NCP167AFCT330T2G" (id 1) (at 241.3 40.64 0))
-    (property "Footprint" "Package_CSP:WLCSP-4_0.64x0.64mm_P0.35mm" (id 2) (at 241.3 48.26 0)
+    (property "Footprint" "ezDV_production:BGA4N35P2X2_64X64X33N" (id 2) (at 241.3 48.26 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.onsemi.com/download/data-sheet/pdf/ncp167-d.pdf" (id 3) (at 241.3 48.26 0)

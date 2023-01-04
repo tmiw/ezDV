@@ -532,7 +532,7 @@
       (reference "U2") (unit 1) (value "MAX17048G+T10") (footprint "ezDV_production:SON50P200X200X80-9N")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/83d7c8be-b297-4bd3-9651-c75764419245"
-      (reference "U3") (unit 1) (value "NCP167AFCT330T2G") (footprint "Package_CSP:WLCSP-4_0.64x0.64mm_P0.35mm")
+      (reference "U3") (unit 1) (value "NCP167AFCT330T2G") (footprint "ezDV_production:BGA4N35P2X2_64X64X33N")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/1be71790-f137-46b3-b37a-0a441e994164"
       (reference "U4") (unit 1) (value "TLV320AIC3254IRHBR") (footprint "ezDV_production:IC_ADS125H01IRHBT")
