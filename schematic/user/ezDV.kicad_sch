@@ -309,6 +309,9 @@
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/a972e736-3279-4017-b66b-e642b7f9a153"
       (reference "C22") (unit 1) (value "33pF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
+    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/6bfb8a90-c18f-439c-99da-c4587b693de7"
+      (reference "C23") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/753a31a0-3c9a-4329-a070-dd89ce5d28c3"
       (reference "D1") (unit 1) (value "Green") (footprint "Diode_SMD:D_0603_1608Metric")
     )
