@@ -9440,7 +9440,7 @@
       (effects (font (size 0.5 0.5) (thickness 0.125)))
       (tstamp cf36fd0f-7b73-4fb7-b2df-7b867e352183)
     )
-    (fp_text value "2.7K" (at 0 1.17 90) (layer "F.Fab")
+    (fp_text value "2.2K" (at 0 1.17 90) (layer "F.Fab")
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 097c8191-e8ab-4fab-8b55-63382f1dc7a0)
     )
