@@ -9,4 +9,7 @@
   (lib (name "105450-0101")(type "KiCad")(uri "${KIPRJMOD}/105450-0101.kicad_sym")(options "")(descr ""))
   (lib (name "TYPE-C-31-M-04")(type "KiCad")(uri "${KIPRJMOD}/TYPE-C-31-M-04.kicad_sym")(options "")(descr ""))
   (lib (name "SJ-43514")(type "KiCad")(uri "${KIPRJMOD}/SJ-43514.kicad_sym")(options "")(descr ""))
+  (lib (name "ESD122DMXR")(type "KiCad")(uri "${KIPRJMOD}/ESD122DMXR.kicad_sym")(options "")(descr ""))
+  (lib (name "TPD1E10B06DPYR")(type "KiCad")(uri "${KIPRJMOD}/TPD1E10B06DPYR.kicad_sym")(options "")(descr ""))
+  (lib (name "TPD1E05U06DPYR")(type "KiCad")(uri "${KIPRJMOD}/TPD1E05U06DPYR.kicad_sym")(options "")(descr ""))
 )
