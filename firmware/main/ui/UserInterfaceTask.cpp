@@ -119,7 +119,12 @@ void UserInterfaceTask::onTaskSleep_()
     publish(&msg);
     msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
     publish(&msg);
-
+    msg.ledState = false;
+    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+    publish(&msg);
+    msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+    publish(&msg);
+    
     // Send goodbye message to beeper. The extra spaces are to give a bit more timing
     // so the beeper doesn't step on itself.
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("  73  ");

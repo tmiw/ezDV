@@ -176,6 +176,8 @@ void App::enterDeepSleep_()
     
     /* Small delay to ensure the messages are printed */
     vTaskDelay(100);
+    fflush(stdout);
+    vTaskDelay(100);
 
     ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
     esp_deep_sleep_start();    
