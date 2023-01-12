@@ -39,6 +39,7 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     , bytesToUpload_(0)
     , micDeviceTask_(micDeviceTask)
     , fdvTask_(fdvTask)
+    , wlHandle_(-1)
 {
     registerMessageHandler(this, &VoiceKeyerTask::onStartVoiceKeyerMessage_);
     registerMessageHandler(this, &VoiceKeyerTask::onStopVoiceKeyerMessage_);
@@ -87,11 +88,18 @@ void VoiceKeyerTask::onTaskSleep_()
     }
 
     // Unmount FATFS after we're done with it
-    ESP_ERROR_CHECK(
-        esp_vfs_fat_spiflash_unmount_rw_wl(
+    if (wlHandle_ != -1)
+    {
+        auto err = esp_vfs_fat_spiflash_unmount_rw_wl(
             "/vk",
             wlHandle_
-        ));
+        );
+            
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Could not unmount voice keyer partition: %s", esp_err_to_name(err));
+        }
+    }
 }
 
 void VoiceKeyerTask::onTaskTick_()

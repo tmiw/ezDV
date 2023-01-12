@@ -283,48 +283,57 @@ void App::onTaskWake_()
 
     // Wake audio processing
     freedvTask_.wake();
-    audioMixer_.wake();
-    beeperTask_.wake();
     waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
+    
+    audioMixer_.wake();
     waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
+        
+    beeperTask_.wake();
     waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
 
     // Wake UI
     voiceKeyerTask_.wake();
-    uiTask_.wake();
     waitForAwake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+    
+    uiTask_.wake();
     waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
     
     // Wake Wi-Fi
     wirelessTask_.wake();
+    waitForAwake(&wirelessTask_, pdMS_TO_TICKS(1000));
 
     // Wake storage handling
     settingsTask_.wake();
+    waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
 }
 
 void App::onTaskSleep_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
 
+    // Disable buttons
+    buttonArray_.sleep();
+    waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
+
     // Sleep Wi-Fi
     wirelessTask_.sleep();
+    waitForSleep(&wirelessTask_, pdMS_TO_TICKS(1000));
     
     // Sleep UI
     uiTask_.sleep();
-    voiceKeyerTask_.sleep();
     waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
-
+    voiceKeyerTask_.sleep();
+    waitForSleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+    
     // Sleep storage handling
     settingsTask_.sleep();
     waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
 
-    // Delay a second or two to allow final beeper to play
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    // Delay a second or two to allow final beeper to play.
+    beeperTask_.sleep();
+    waitForSleep(&beeperTask_, pdMS_TO_TICKS(5000));
 
     // Sleep audio processing
-    beeperTask_.sleep();
-    waitForSleep(&beeperTask_, pdMS_TO_TICKS(3000));
-
     freedvTask_.sleep();
     waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
 
@@ -334,12 +343,12 @@ void App::onTaskSleep_()
     // Sleep device drivers
     tlv320Device_.sleep();
     waitForSleep(&tlv320Device_, pdMS_TO_TICKS(2000));
+    
+    ledArray_.sleep();
+    waitForSleep(&ledArray_, pdMS_TO_TICKS(1000));
 
     max17048_.sleep();
-    buttonArray_.sleep();
-    ledArray_.sleep();
-    waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
-    waitForSleep(&ledArray_, pdMS_TO_TICKS(1000));
+    waitForSleep(&max17048_, pdMS_TO_TICKS(1000));
     
     enterDeepSleep_();
 }

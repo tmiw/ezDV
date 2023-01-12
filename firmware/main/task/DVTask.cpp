@@ -132,7 +132,7 @@ void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 }
 
 void DVTask::publish(DVTaskMessage* message)
-{
+{    
     auto messagePair = std::make_pair(message->getEventBase(), message->getEventType());
 
     std::vector<DVTask*> tasksToPostTo;
