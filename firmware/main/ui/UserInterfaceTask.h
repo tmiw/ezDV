@@ -61,6 +61,7 @@ private:
     bool voiceKeyerRunning_;
     bool voiceKeyerEnabled_;
     int lastBatteryLevel_;
+    bool sleepPending_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);

@@ -57,6 +57,7 @@ UserInterfaceTask::UserInterfaceTask()
     , voiceKeyerRunning_(false)
     , voiceKeyerEnabled_(false)
     , lastBatteryLevel_(0)
+    , sleepPending_(false)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
@@ -154,33 +155,7 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
             }
             case driver::ButtonLabel::MODE:
             {
-                if (isTransmitting_ && voiceKeyerEnabled_)
-                {
-                    // PTT + Mode = enable voice keyer
-                    audio::StartVoiceKeyerMessage vkStartMessage;
-                    publish(&vkStartMessage);
-
-                    voiceKeyerRunning_ = true;
-                }
-                else
-                {
-                    int tmpMode = (int)currentMode_ + 1;
-                    currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)tmpMode;
-                    if (currentMode_ == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
-                    {
-                        currentMode_ = audio::SetFreeDVModeMessage::ANALOG;
-                    }
-
-                    audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
-                    publish(setModeMessage);
-                    delete setModeMessage;
-
-                    // Send new mode to beeper
-                    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
-                    publish(beeperMessage);
-                    delete beeperMessage;
-                }
-
+                // Processing will happen on button release.
                 break;
             }
             case driver::ButtonLabel::VOL_UP:
@@ -204,6 +179,7 @@ void UserInterfaceTask::onButtonLongPressedMessage_(DVTask* origin, driver::Butt
         if (message->button == driver::ButtonLabel::MODE)
         {
             // Long press Mode button triggers shutdown, all other long presses currently ignored
+            sleepPending_ = true;
             StartSleeping();
         }
     }
@@ -226,7 +202,35 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                 break;
             }
             case driver::ButtonLabel::MODE:
-                // Ignored
+                if (!sleepPending_)
+                {
+                    if (isTransmitting_ && voiceKeyerEnabled_)
+                    {
+                        // PTT + Mode = enable voice keyer
+                        audio::StartVoiceKeyerMessage vkStartMessage;
+                        publish(&vkStartMessage);
+
+                        voiceKeyerRunning_ = true;
+                    }
+                    else
+                    {
+                        int tmpMode = (int)currentMode_ + 1;
+                        currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)tmpMode;
+                        if (currentMode_ == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
+                        {
+                            currentMode_ = audio::SetFreeDVModeMessage::ANALOG;
+                        }
+
+                        audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
+                        publish(setModeMessage);
+                        delete setModeMessage;
+
+                        // Send new mode to beeper
+                        audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
+                        publish(beeperMessage);
+                        delete beeperMessage;
+                    }
+                }
                 break;
             case driver::ButtonLabel::VOL_UP:
             case driver::ButtonLabel::VOL_DOWN:
