@@ -236,7 +236,7 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     // Disable power save.
-    esp_wifi_set_ps(WIFI_PS_NONE);
+    //esp_wifi_set_ps(WIFI_PS_NONE);
 
     if (mode == storage::WifiMode::ACCESS_POINT)
     {
