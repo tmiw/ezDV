@@ -26,6 +26,8 @@ namespace driver
 OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm)
     : gpio_(gpio)
     , pwm_(pwm)
+    , dutyCycle_(8192)
+    , state_(false)
 {
     ESP_ERROR_CHECK(gpio_reset_pin(gpio_));
     ESP_ERROR_CHECK(gpio_set_direction(gpio_, GPIO_MODE_OUTPUT));
@@ -63,6 +65,14 @@ OutputGPIO::~OutputGPIO()
     ESP_ERROR_CHECK(gpio_reset_pin(gpio_));
 }
 
+void OutputGPIO::setDutyCycle(int dutyCycle)
+{
+    dutyCycle_ = dutyCycle;
+    
+    // Update duty cycle in the PWM driver.
+    setState(state_);
+}
+
 void OutputGPIO::setState(bool state)
 {
     if (pwm_)
@@ -70,13 +80,15 @@ void OutputGPIO::setState(bool state)
         auto pwmChannel = getPWMChannel_();
 
         // 819 = 10% duty cycle (((2 ** 13) - 1) * 10%)
-        ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, pwmChannel, state ? 819 : 0));
+        ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, pwmChannel, state ? dutyCycle_ : 0));
         ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, pwmChannel));
     }
     else
     {
         ESP_ERROR_CHECK(gpio_set_level(gpio_, state));
     }
+    
+    state_ = state;
 }
 
 ledc_channel_t OutputGPIO::getPWMChannel_()

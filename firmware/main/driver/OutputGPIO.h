@@ -34,10 +34,13 @@ public:
     virtual ~OutputGPIO();
     
     void setState(bool state);
+    void setDutyCycle(int dutyCycle);
 
 private:
     gpio_num_t gpio_;
     bool pwm_;
+    int dutyCycle_;
+    bool state_;
 
     ledc_channel_t getPWMChannel_();
 };
