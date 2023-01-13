@@ -72,6 +72,8 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onADCOverload_);
     registerMessageHandler(this, &UserInterfaceTask::onHeadsetButtonPressed_);
     registerMessageHandler(this, &UserInterfaceTask::onBatteryStateUpdate_);
+    registerMessageHandler(this, &UserInterfaceTask::onLeftChannelVolumeMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onRightChannelVolumeMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
