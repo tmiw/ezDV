@@ -340,7 +340,7 @@ void SettingsTask::initializeWifi_()
     }
     else
     {
-        ESP_LOGI(CURRENT_LOG_TAG, "wifiPassword: %s", wifiPassword_);
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiPassword: ********");
     }
     
     // Publish current Wi-Fi settings to everyone who may care.
@@ -411,7 +411,7 @@ void SettingsTask::initializeRadio_()
     }
     else
     {
-        ESP_LOGI(CURRENT_LOG_TAG, "radioPassword: %s", radioPassword_);
+        ESP_LOGI(CURRENT_LOG_TAG, "radioPassword: ********");
     }
     
     // Publish current Wi-Fi settings to everyone who may care.
