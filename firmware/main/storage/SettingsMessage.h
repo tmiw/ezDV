@@ -61,6 +61,11 @@ enum SettingsMessageTypes
     SET_REPORTING_SETTINGS = 18,
     REQUEST_REPORTING_SETTINGS = 19,
     REPORTING_SETTINGS_SAVED = 20,
+    
+    LED_BRIGHTNESS_SETTINGS = 21,
+    SET_LED_BRIGHTNESS_SETTINGS = 22,
+    REQUEST_LED_BRIGHTNESS_SETTINGS = 23,
+    LED_BRIGHTNESS_SETTINGS_SAVED = 24,
 };
 
 template<uint32_t TYPE_ID>
@@ -193,6 +198,21 @@ using ReportingSettingsMessage = ReportingSettingsMessageCommon<REPORTING_SETTIN
 using SetReportingSettingsMessage = ReportingSettingsMessageCommon<SET_REPORTING_SETTINGS>;
 
 template<uint32_t TYPE_ID>
+class LedBrightnessMessageCommon : public DVTaskMessageBase<TYPE_ID, LedBrightnessMessageCommon<TYPE_ID>>
+{
+public:
+    LedBrightnessMessageCommon(int dutyCycleProvided = 0)
+        : DVTaskMessageBase<TYPE_ID, LedBrightnessMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , dutyCycle(dutyCycleProvided) { }
+    virtual ~LedBrightnessMessageCommon() = default;
+
+    int dutyCycle;
+};
+
+using LedBrightnessSettingsMessage = LedBrightnessMessageCommon<LED_BRIGHTNESS_SETTINGS>;
+using SetLedBrightnessSettingsMessage = LedBrightnessMessageCommon<SET_LED_BRIGHTNESS_SETTINGS>;
+
+template<uint32_t TYPE_ID>
 class RequesSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RequesSettingsMessageCommon<TYPE_ID>>
 {
 public:
@@ -213,6 +233,9 @@ using VoiceKeyerSettingsSavedMessage = RequesSettingsMessageCommon<VOICE_KEYER_S
 
 using RequestReportingSettingsMessage = RequesSettingsMessageCommon<REQUEST_REPORTING_SETTINGS>;
 using ReportingSettingsSavedMessage = RequesSettingsMessageCommon<REPORTING_SETTINGS_SAVED>;
+
+using RequestLedBrightnessSettingsMessage = RequesSettingsMessageCommon<REQUEST_LED_BRIGHTNESS_SETTINGS>;
+using LedBrightnessSettingsSavedMessage = RequesSettingsMessageCommon<LED_BRIGHTNESS_SETTINGS_SAVED>;
 
 }
 

@@ -70,6 +70,8 @@ private:
     bool enableVoiceKeyer_;
     int voiceKeyerNumberTimesToTransmit_;
     int voiceKeyerSecondsToWaitAfterTransmit_;
+    
+    int ledDutyCycle_;
 
     DVTimer commitTimer_;
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
@@ -89,6 +91,9 @@ private:
     void onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message);
     void onSetRightChannelVolume_(DVTask* origin, SetRightChannelVolumeMessage* message);
     
+    void onRequestLedBrightness_(DVTask* origin, RequestLedBrightnessSettingsMessage* message);
+    void onSetLedBrightness_(DVTask* origin, SetLedBrightnessSettingsMessage* message);
+    
     void loadAllSettings_();
     void commit_();
     
@@ -98,12 +103,14 @@ private:
     void setRadioSettings_(bool enabled, char* host, int port, char* username, char* password);
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
     void setReportingSettings_(char* callsign);
+    void setLedBrightness_(int dutyCycle);
 
     void initializeVolumes_();
     void initializeWifi_();
     void initializeRadio_();
     void initialzeVoiceKeyer_();
     void initializeReporting_();
+    void initializeLedBrightness_();
 };
 
 } // namespace storage

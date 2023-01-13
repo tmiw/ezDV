@@ -42,6 +42,8 @@
 
 #define REPORTING_CALLSIGN_ID ("repCall")
 
+#define LED_DUTY_CYCLE_ID ("ledDtyCyc")
+
 #define DEFAULT_WIFI_ENABLED (false)
 #define DEFAULT_WIFI_MODE (WifiMode::ACCESS_POINT)
 #define DEFAULT_WIFI_SECURITY (WifiSecurityMode::NONE)
@@ -53,6 +55,8 @@
 #define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
 
 #define DEFAULT_REPORTING_CALLSIGN ("")
+
+#define DEFAULT_LED_DUTY_CYCLE (8192)
 
 namespace ezdv
 {
@@ -72,6 +76,7 @@ SettingsTask::SettingsTask()
     , enableVoiceKeyer_(false)
     , voiceKeyerNumberTimesToTransmit_(0)
     , voiceKeyerSecondsToWaitAfterTransmit_(0)
+    , ledDutyCycle_(0)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
@@ -94,7 +99,9 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetVoiceKeyerSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onRequestReportingSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onSetReportingSettingsMessage_);
-
+    registerMessageHandler(this, &SettingsTask::onRequestLedBrightness_);
+    registerMessageHandler(this, &SettingsTask::onSetLedBrightness_);
+    
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
     esp_err_t err = nvs_flash_init();
@@ -203,6 +210,21 @@ void SettingsTask::onRequestReportingSettingsMessage_(DVTask* origin, RequestRep
     delete response;
 }
 
+void SettingsTask::onRequestLedBrightness_(DVTask* origin, RequestLedBrightnessSettingsMessage* message)
+{
+    // Publish current reporting settings to everyone who may care.
+    LedBrightnessSettingsMessage* response = new LedBrightnessSettingsMessage(
+        ledDutyCycle_
+    );
+
+    assert(response != nullptr);
+    if (origin != nullptr)
+    {
+        origin->post(response);
+    }
+    delete response;
+}
+
 void SettingsTask::onSetLeftChannelVolume_(DVTask* origin, SetLeftChannelVolumeMessage* message)
 {
     setLeftChannelVolume_(message->volume);
@@ -222,6 +244,7 @@ void SettingsTask::loadAllSettings_()
         initializeRadio_();
         initialzeVoiceKeyer_();
         initializeReporting_();
+        initializeLedBrightness_();
     }
 }
 
@@ -501,6 +524,24 @@ void SettingsTask::initializeReporting_()
     assert(message != nullptr);
     publish(message);
     delete message;
+}
+
+void SettingsTask::initializeLedBrightness_()
+{
+    esp_err_t result = storageHandle_->get_item(LED_DUTY_CYCLE_ID, ledDutyCycle_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "LED brightness settings not found, will set to defaults");
+        setLedBrightness_(DEFAULT_LED_DUTY_CYCLE);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving ledDutyCycle: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "ledDutyCycle: %d", ledDutyCycle_);
+    }
 }
 
 void SettingsTask::commit_()
@@ -788,6 +829,43 @@ void SettingsTask::setReportingSettings_(char* callsign)
         delete message;
         
         ReportingSettingsSavedMessage response;
+        publish(&response);
+    }
+}
+
+void SettingsTask::onSetLedBrightness_(DVTask* origin, SetLedBrightnessSettingsMessage* message)
+{
+    // Minor wait in case someone else wants to wait for our response.
+    // XXX -- this shouldn't be needed.
+    vTaskDelay(pdMS_TO_TICKS(50));
+    
+    setLedBrightness_(message->dutyCycle);
+}
+
+void SettingsTask::setLedBrightness_(int dutyCycle)
+{
+    ledDutyCycle_ = dutyCycle;
+    
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_item(LED_DUTY_CYCLE_ID, ledDutyCycle_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting ledDutyCycle: %s", esp_err_to_name(result));
+        }
+
+        commitTimer_.stop();
+        commitTimer_.start(true);
+
+        // Publish new voice keyer settings to everyone who may care.
+        LedBrightnessSettingsMessage* message = new LedBrightnessSettingsMessage(
+            ledDutyCycle_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+        
+        LedBrightnessSettingsSavedMessage response;
         publish(&response);
     }
 }
