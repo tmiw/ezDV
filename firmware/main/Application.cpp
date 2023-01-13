@@ -317,7 +317,7 @@ void App::onTaskSleep_()
 
     // Sleep Wi-Fi
     wirelessTask_.sleep();
-    waitForSleep(&wirelessTask_, pdMS_TO_TICKS(1000));
+    waitForSleep(&wirelessTask_, pdMS_TO_TICKS(5000));
     
     // Sleep UI
     uiTask_.sleep();

@@ -145,8 +145,8 @@ void WirelessTask::onTaskSleep_()
 {
     // Audio and CIV need to stop before control
     icomAudioTask_.sleep();
-    icomCIVTask_.sleep();
     waitForSleep(&icomAudioTask_, pdMS_TO_TICKS(1000));
+    icomCIVTask_.sleep();
     waitForSleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
     icomControlTask_.sleep();
     waitForSleep(&icomControlTask_, pdMS_TO_TICKS(1000));
