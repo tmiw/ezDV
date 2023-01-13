@@ -40,6 +40,7 @@ LedArray::LedArray()
     , networkLed_(GPIO_NET_LED, true)
 {
     registerMessageHandler(this, &LedArray::onSetLedState_);
+    registerMessageHandler(this, &LedArray::onLedBrightnessSettingsMessage_);
 }
 
 LedArray::~LedArray()
@@ -86,6 +87,14 @@ void LedArray::onSetLedState_(DVTask* origin, SetLedStateMessage* message)
         default:
             assert(0);
     }
+}
+
+void LedArray::onLedBrightnessSettingsMessage_(DVTask* origin, storage::LedBrightnessSettingsMessage* message)
+{
+    networkLed_.setDutyCycle(message->dutyCycle);
+    overloadLed_.setDutyCycle(message->dutyCycle);
+    pttLed_.setDutyCycle(message->dutyCycle);
+    syncLed_.setDutyCycle(message->dutyCycle);
 }
 
 }

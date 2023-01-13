@@ -18,6 +18,7 @@
 #ifndef LED_ARRAY_H
 #define LED_ARRAY_H
 
+#include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "LedMessage.h"
 #include "OutputGPIO.h"
@@ -49,6 +50,7 @@ private:
     OutputGPIO networkLed_;
 
     void onSetLedState_(DVTask* origin, SetLedStateMessage* message);
+    void onLedBrightnessSettingsMessage_(DVTask* origin, storage::LedBrightnessSettingsMessage* message);
 };
 
 }

@@ -62,6 +62,7 @@ private:
         UPDATE_VOICE_KEYER = 5,
         BEGIN_UPLOAD_VOICE_KEYER_FILE = 6,
         UPDATE_REPORTING = 7,
+        UPDATE_LED_BRIGHTNESS = 8,
     };
     
     template<uint32_t MSG_ID>
@@ -101,7 +102,8 @@ private:
     using UpdateVoiceKeyerMessage = HttpRequestMessageCommon<UPDATE_VOICE_KEYER>;
     using BeginUploadVoiceKeyerFileMessage = HttpRequestMessageCommon<BEGIN_UPLOAD_VOICE_KEYER_FILE>;
     using UpdateReportingMessage = HttpRequestMessageCommon<UPDATE_REPORTING>;
-
+    using UpdateLedBrightnessMessage = HttpRequestMessageCommon<UPDATE_LED_BRIGHTNESS>;
+    
     using WebSocketList = std::vector<int>;
     
     httpd_handle_t configServerHandle_;
@@ -118,7 +120,8 @@ private:
     void onUpdateReportingMessage_(DVTask* origin, UpdateReportingMessage* message);
     void onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message);
     void onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message);
-
+    void onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrightnessMessage* message);
+    
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     
     static esp_err_t ServeWebsocketPage_(httpd_req_t *req);

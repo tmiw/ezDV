@@ -37,7 +37,10 @@
             <div class="col">
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <button id="reportingTab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#reportingTabForm" aria-current="page-radio">Reporting</button>
+                        <button id="generalTab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#generalTabForm" aria-current="page-general">General</button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="reportingTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#reportingTabForm" aria-current="page-reporting">Reporting</button>
                     </li>
                     <li class="nav-item">
                         <button id="voiceKeyerTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#voiceKeyerTabForm" aria-current="page-voice-keyer">Voice Keyer</button>
@@ -52,7 +55,15 @@
             </div>
         </div>
         <div class="tab-content" id="nav-tabContent">
-            <form class="tab-pane fade show active" id="reportingTabForm">
+            <form class="tab-pane fade show active" id="generalTabForm">
+                <div class="row mb-3 general-enable-row">
+                    <label for="ledBrightness" class="col-xs-4 col-md-2 col-form-labell">LED Brightness</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="ledBrightness" type="range" max="8192" min="819" step="410" class="form-control" />
+                    </div>
+                </div>
+            </form>
+            <form class="tab-pane fade show" id="reportingTabForm">
                 <div class="row mb-3" id="reportingSuccessAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-success" role="alert">

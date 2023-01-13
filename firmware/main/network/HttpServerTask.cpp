@@ -57,6 +57,9 @@ extern "C"
 #define JSON_REPORTING_STATUS_TYPE "reportingInfo"
 #define JSON_REPORTING_SAVED_TYPE "reportingSaved"
 
+#define JSON_LED_BRIGHTNESS_STATUS_TYPE "ledBrightnessInfo"
+#define JSON_LED_BRIGHTNESS_SAVED_TYPE "ledBrightnessSaved"
+
 namespace ezdv
 {
 
@@ -80,6 +83,7 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onFileUploadCompleteMessage_);
 
     registerMessageHandler(this, &HttpServerTask::onUpdateReportingMessage_);
+    registerMessageHandler(this, &HttpServerTask::onUpdateLedBrightnessMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -327,6 +331,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     UpdateReportingMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
+                else if (!strcmp(type, "saveLedBrightnessInfo"))
+                {
+                    UpdateLedBrightnessMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
                 else if (!strcmp(type, "uploadVoiceKeyerFile"))
                 {
                     BeginUploadVoiceKeyerFileMessage message(fd, jsonMessage);
@@ -548,6 +557,36 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current reporting settings");
+        }
+    }
+    
+    {
+        storage::RequestLedBrightnessSettingsMessage request;
+        publish(&request);
+        
+        auto response = waitFor<storage::LedBrightnessSettingsMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_LED_BRIGHTNESS_STATUS_TYPE);
+                cJSON_AddNumberToObject(root, "dutyCycle", response->dutyCycle);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for LED brightness info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current LED brightness settings");
         }
     }
 }
@@ -982,6 +1021,61 @@ void HttpServerTask::onFileUploadCompleteMessage_(DVTask* origin, audio::FileUpl
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for VK file upload");
     }
+}
+
+void HttpServerTask::onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrightnessMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating LED brightness settings");
+    
+    int dutyCycle = 0;
+    bool settingsValid = true;
+         
+    auto dutyCycleJSON = cJSON_GetObjectItem(message->request, "dutyCycle");
+    if (dutyCycleJSON != nullptr)
+    {
+        dutyCycle = (int)cJSON_GetNumberValue(dutyCycleJSON);
+        settingsValid &= dutyCycle > 819 && dutyCycle <= 8192;
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        storage::SetLedBrightnessSettingsMessage request(dutyCycle);
+        publish(&request);
+    
+        auto response = waitFor<storage::LedBrightnessSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            success = true;
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for LED brightness settings to be saved");
+        }
+    }
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_LED_BRIGHTNESS_SAVED_TYPE);
+        cJSON_AddBoolToObject(root, "success", success);
+
+        // Note: below is responsible for cleanup.
+        WebSocketList list { message->fd };
+        sendJSONMessage_(root, list);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for LED brightness settings");
+    }
+    
+    cJSON_free(message->request);
 }
 
 }

@@ -200,6 +200,11 @@ function wsConnect()
               $("#reportingFailAlertRow").show();
           }
       }
+      else if (json.type == "ledBrightnessInfo")
+      {
+          $(".general-enable-row").show();
+          $("#ledBrightness").val(json.dutyCycle);
+      }
       else if (json.type == "voiceKeyerUploadComplete")
       {
           // TBD: handle errors
@@ -401,6 +406,17 @@ $("#voiceKeyerSave").click(function()
 
 });
 
+$(document).on('input', '#ledBrightness', function() {
+    var obj = 
+    {
+        "type": "saveLedBrightnessInfo",
+        "dutyCycle": parseInt($(this).val())
+    };
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+});
+
 //==========================================================================================
 // Disable all form elements on page load. Connect to WebSocket and wait for initial messages.
 // These messages will trigger prefilling and reenabling of the form.
@@ -445,5 +461,7 @@ $( document ).ready(function()
     $("#reportingSuccessAlertRow").hide();
     $("#reportingFailAlertRow").hide();
 
+    $(".general-enable-row").hide();
+    
     wsConnect();
 });
