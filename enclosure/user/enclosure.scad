@@ -48,7 +48,7 @@ lidPlaneThickness   = 1.0;
 // Total height of box = basePlaneThickness + lidPlaneThickness 
 //                     + baseWallHeight + lidWallHeight
 
-baseWallHeight      = 13.5;
+baseWallHeight      = 14.5;
 lidWallHeight       = 3.5;
 
 pcbLength           = 69.85;
@@ -69,7 +69,7 @@ roundRadius         = 2.0;  // don't make this to big..
 
 //-- How much the PCB needs to be raised from the base
 //-- to leave room for solderings and whatnot
-standoffHeight      = 10.0;
+standoffHeight      = 11.0;
 pinDiameter         = 2.5;
 pinHoleSlack        = 0.5;
 standoffDiameter    = 5;
@@ -85,7 +85,7 @@ cutoutsFront = [
     [14.97, 2.5, 7, 7, 0, yappCircle, yappCenter ],
     [48.26, 2.5, 7, 7, 0, yappCircle, yappCenter ],
     [21.75, -1.5, 12.5, 7, 0, yappRectangle ],
-    //[34.56, -2.5, 6, 1, 0, yappRectangle ]
+    [37.56, -0.5, 2, 1, 0, yappRectangle ]
 ];
 
 snapJoins = [
