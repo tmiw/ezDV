@@ -95,8 +95,7 @@ void App::enablePeripheralPower_()
     // 2. Audio glitches occur on startup.
     std::vector<gpio_num_t> tlv320Gpios { 
         GPIO_NUM_3, GPIO_NUM_9, GPIO_NUM_10, GPIO_NUM_11,
-        GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, 
-        TLV320_RESET_GPIO };
+        GPIO_NUM_12, GPIO_NUM_14, TLV320_RESET_GPIO };
     for (auto& gpio : tlv320Gpios)
     {
         rtc_gpio_init(gpio);
@@ -106,6 +105,9 @@ void App::enablePeripheralPower_()
         rtc_gpio_pullup_dis(gpio);
         rtc_gpio_hold_en(gpio);
     }
+    
+    // Sleep for above changes to take effect.
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     // Enable peripheral power (required for v0.4+). This will automatically
     // power down once we switch to the ULP processor on shutdown, reducing
@@ -115,6 +117,9 @@ void App::enablePeripheralPower_()
     rtc_gpio_set_direction(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_set_level(GPIO_NUM_17, true);
     rtc_gpio_hold_en(GPIO_NUM_17);
+    
+    // Sleep until peripheral power activates.
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     // Now we can re-attach TLV320 related GPIOs and get
     // ready to configure it.
@@ -124,6 +129,9 @@ void App::enablePeripheralPower_()
         rtc_gpio_deinit(gpio);
         gpio_reset_pin(gpio);
     }
+    
+    // Sleep for GPIO reattach to take effect.
+    vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 void App::enterDeepSleep_()
@@ -150,6 +158,9 @@ void App::enterDeepSleep_()
         rtc_gpio_pullup_dis(gpio);
         rtc_gpio_hold_en(gpio);
     }
+    
+    // Sleep for GPIO changes to take effect.
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     /* Shut off peripheral power. */
     rtc_gpio_init(GPIO_NUM_17);
@@ -158,10 +169,9 @@ void App::enterDeepSleep_()
     rtc_gpio_set_direction_in_sleep(GPIO_NUM_17, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_set_level(GPIO_NUM_17, false);
     rtc_gpio_hold_en(GPIO_NUM_17);
-
-    /* Isolate GPIO 0 as it has a weak pullup by default. This should be
-       good for a few more uA of sleep current savings. */
-    //rtc_gpio_isolate(GPIO_NUM_0);
+    
+    // Sleep for power-down to take effect.
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
