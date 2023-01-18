@@ -384,7 +384,7 @@ extern "C" void app_main()
     DVTask::Initialize();
 
     // Note: GPIO ISRs use per GPIO ISRs.
-    ESP_ERROR_CHECK(gpio_install_isr_service(0));
+    ESP_ERROR_CHECK(gpio_install_isr_service(ESP_INTR_FLAG_LOWMED));
     
     app = new ezdv::App();
     assert(app != nullptr);

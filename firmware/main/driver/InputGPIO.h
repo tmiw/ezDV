@@ -96,7 +96,7 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enableP
         ESP_ERROR_CHECK(gpio_pulldown_en(NumGPIO));
         ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
     }
-    enableInterrupt(false);
+    //enableInterrupt(false);
     
     currentState_ = gpio_get_level(NumGPIO) == 1;
 
