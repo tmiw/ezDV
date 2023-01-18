@@ -575,7 +575,9 @@ void TLV320::tlv320ConfigureInterrupts_()
     setConfigurationOption_(0, 52, 0b0110 << 2);
 
     // Enable interrupts
+    int1Gpio_.start();
     int1Gpio_.enableInterrupt(true);
+    int2Gpio_.start();
     int2Gpio_.enableInterrupt(true);
 }
 

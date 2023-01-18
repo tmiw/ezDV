@@ -52,9 +52,16 @@ ButtonArray::~ButtonArray()
 
 void ButtonArray::onTaskStart_()
 {
+    pttButton_.start();
     pttButton_.enableInterrupt(true);
+    
+    modeButton_.start();
     modeButton_.enableInterrupt(true);
+    
+    volUpButton_.start();
     volUpButton_.enableInterrupt(true);
+    
+    volDownButton_.start();
     volDownButton_.enableInterrupt(true);
 }
 

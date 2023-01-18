@@ -101,7 +101,10 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetReportingSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onRequestLedBrightness_);
     registerMessageHandler(this, &SettingsTask::onSetLedBrightness_);
-    
+}
+
+void SettingsTask::onTaskStart_()
+{
     // Initialize NVS
     ESP_LOGI(CURRENT_LOG_TAG, "Initializing NVS.");
     esp_err_t err = nvs_flash_init();
@@ -125,16 +128,13 @@ SettingsTask::SettingsTask()
         ESP_LOGW(CURRENT_LOG_TAG, "settings will not be saved.");
         storageHandle_ = nullptr;
     }
-}
-
-void SettingsTask::onTaskStart_()
-{
+    
     loadAllSettings_();
 }
 
 void SettingsTask::onTaskWake_()
 {
-    loadAllSettings_();
+    onTaskStart_();
 }
 
 void SettingsTask::onTaskSleep_()

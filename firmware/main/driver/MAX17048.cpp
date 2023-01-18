@@ -91,6 +91,7 @@ void MAX17048::onTaskStart_()
         auto rv = writeInt16Reg_(REG_STATUS, val);
         assert(rv == true);
         
+        batAlertGpio_.start();
         batAlertGpio_.enableInterrupt(true);
     }
     else

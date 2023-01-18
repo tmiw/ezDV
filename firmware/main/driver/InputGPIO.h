@@ -44,6 +44,8 @@ public:
 
     InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup = true, bool enablePulldown = false);
     virtual ~InputGPIO();
+    
+    void start();
 
     void enableInterrupt(bool enable);
     bool getCurrentValue();
@@ -62,6 +64,8 @@ private:
     GPIOChangeFn onStateChange_;
     bool interruptEnabled_;
     bool currentState_;
+    bool enablePullup_;
+    bool enablePulldown_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
 
@@ -74,33 +78,10 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enableP
     , onStateChange_(onChange)
     , interruptEnabled_(false)
     , currentState_(false)
+    , enablePullup_(enablePullup)
+    , enablePulldown_(enablePulldown)
 {
-    ESP_ERROR_CHECK(gpio_reset_pin(NumGPIO));
-    ESP_ERROR_CHECK(gpio_set_direction(NumGPIO, GPIO_MODE_INPUT));
-
-    if (!enablePullup && !enablePulldown)
-    {
-        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_FLOATING));
-        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
-        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
-    }
-    else if (enablePullup)
-    {
-        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
-        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
-        ESP_ERROR_CHECK(gpio_pullup_en(NumGPIO));
-    }
-    else if (enablePulldown)
-    {
-        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLDOWN_ONLY));
-        ESP_ERROR_CHECK(gpio_pulldown_en(NumGPIO));
-        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
-    }
-    //enableInterrupt(false);
-    
-    currentState_ = gpio_get_level(NumGPIO) == 1;
-
-    owner_->registerMessageHandler(this, &InputGPIO<NumGPIO>::onGPIOStateChange_);
+    // empty
 }
 
 template<gpio_num_t NumGPIO>
@@ -110,6 +91,37 @@ InputGPIO<NumGPIO>::~InputGPIO()
 
     // TBD: deregister handler
     assert(0);
+}
+
+template<gpio_num_t NumGPIO>
+void InputGPIO<NumGPIO>::start()
+{
+    ESP_ERROR_CHECK(gpio_reset_pin(NumGPIO));
+    ESP_ERROR_CHECK(gpio_set_direction(NumGPIO, GPIO_MODE_INPUT));
+
+    if (!enablePullup_ && !enablePulldown_)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_FLOATING));
+        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
+    }
+    else if (enablePullup_)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLUP_ONLY));
+        ESP_ERROR_CHECK(gpio_pulldown_dis(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_en(NumGPIO));
+    }
+    else if (enablePulldown_)
+    {
+        ESP_ERROR_CHECK(gpio_set_pull_mode(NumGPIO, GPIO_PULLDOWN_ONLY));
+        ESP_ERROR_CHECK(gpio_pulldown_en(NumGPIO));
+        ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
+    }
+    enableInterrupt(false);
+    
+    currentState_ = gpio_get_level(NumGPIO) == 1;
+
+    owner_->registerMessageHandler(this, &InputGPIO<NumGPIO>::onGPIOStateChange_);
 }
 
 template<gpio_num_t NumGPIO>
