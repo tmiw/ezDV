@@ -441,8 +441,8 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
 
 void TLV320::tlv320ConfigureRoutingADC_()
 {
-    // Enable 1.7V mic bias on headset jack using LDOIN (Page 1, register 51)
-    setConfigurationOption_(1, 51, (1 << 6) | (0b01 << 4) | (1 << 3));
+    // Enable 2.5V mic bias on headset jack using LDOIN (Page 1, register 51)
+    setConfigurationOption_(1, 51, (1 << 6) | (0b10 << 4) | (1 << 3));
     
     // Set ADC routing: IN1_L left channel, IN1_R right channel,
     // 20kohm impedence (Page 1, registers 52, 54, 55, 57)
