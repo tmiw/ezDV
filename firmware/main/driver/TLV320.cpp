@@ -311,52 +311,29 @@ void TLV320::tlv320ConfigureClocks_()
     // ADC_CLK <= 55.296 MHz
     // DAC_CLK <= 55.296 MHz
     
-    // NADC = 40
-    // NDAC = 40
-    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 81.92 MHz
+    // NADC = 1
+    // NDAC = 1
+    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 2.048 MHz
     // CODEC_CLKIN <= 137MHz
-    // CODEC_CLKIN from PLL_CLK
+    // CODEC_CLKIN from MCLK (8000 * 256 = 2.048 MHz)
     
-    // MCLK is 2.048MHz (8000 * 256)
-    // PLL_CLK = MCLK * R * J.D/P
-    // 81.92 MHz = 2.048 * 1 * 40.0000 / 1
-    // P = 1, R = 1, J = 40, D = 0 
-    
-    uint8_t pllOpts[] = {
-        // Set CODEC_CLKIN to PLL and use MCLK for PLL
-        // (Page 0, register 4)
-        (0 << 2) | 0b11,
-        
-        // Set PLL P = 1, R = 1, J = 40, D = 0, power up PLL
-        // (Page 0, registers 5-8)
-        (1 << 7) | (0b001 << 4) | (0b001),  // P, R, power up
-        40, // J
-        0, // D[MSB]
-        0 // D[LSB]
-    };
-    setConfigurationOptionMultiple_(0, 4, pllOpts, 5);
-    
-    // Wait 10ms for PLL to become available
-    // (Section 2.7.1, "TLV320AIC3254 Application Reference Guide")
-    vTaskDelay(pdMS_TO_TICKS(10));
-    
-    // Set NDAC = 40, MDAC = 2. Power on divider.
+    // Set NDAC = 1, MDAC = 2. Power on divider.
     // (Page 0, registers 11 and 12)
     // Program DOSR to 128 (Page 0, registers 13-14)
     uint8_t dacOpts[] = {
-        (1 << 7) | 40,
+        (1 << 7) | 1,
         (1 << 7) | 2,
         0,
         128
     };
     setConfigurationOptionMultiple_(0, 11, dacOpts, 4);
         
-    // Set NADC = 40, MADC = 2. Keep dividers powered off as
+    // Set NADC = 1, MADC = 2. Keep dividers powered off as
     // NADC == NDAC and MADC == MDAC.
     // (Page 0, registers 18 and 19)
     // Program AOSR to 128 (Page 0, register 20).
     uint8_t adcOpts[] = {
-        40,
+        1,
         2,
         128
     };
