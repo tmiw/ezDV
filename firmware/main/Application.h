@@ -33,6 +33,7 @@
 #include "network/WirelessTask.h"
 #include "storage/SettingsTask.h"
 #include "ui/UserInterfaceTask.h"
+#include "ui/RFComplianceTestTask.h"
 
 using namespace ezdv::task;
 
@@ -70,7 +71,10 @@ private:
     network::WirelessTask wirelessTask_;
     storage::SettingsTask settingsTask_;
     ui::UserInterfaceTask uiTask_;
+    ui::RfComplianceTestTask rfComplianceTask_;
     audio::VoiceKeyerTask voiceKeyerTask_;
+    
+    bool rfComplianceEnabled_;
 
     void enablePeripheralPower_();
     void enterDeepSleep_();

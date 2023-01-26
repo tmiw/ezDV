@@ -522,16 +522,20 @@ void TLV320::tlv320ConfigureAGC_()
 
 void TLV320::tlv320ConfigureInterrupts_()
 {
+    // Set headphone overcurrent detection debounce to 128ms
+    // (Page 1, Register 11, Bit D4 = 1, D3-1 = 101)
+    setConfigurationOption_(1, 11, (1 << 4) | (0b101 << 1));
+    
     // Use INT1 for ADC/DAC overload event
     // (Page 0, Register 48, Bit D2 = 1)
 
-    // Use INT2 for button press event
+    // Use INT2 for button press, headset detect event
     // (Page 0, Register 49, Bit D6 = 1)
 
     uint8_t interruptConfig[] = 
     {
-        1 << 2 | 1 << 0,
-        1 << 6 | 1 << 0
+        (1 << 2) | (1 << 0),
+        (1 << 7) | (1 << 6) | (1 << 0)
     };
     setConfigurationOptionMultiple_(0, 48, interruptConfig, sizeof(interruptConfig));
 
@@ -539,9 +543,9 @@ void TLV320::tlv320ConfigureInterrupts_()
     // (Page 0, Register 56, D2-D1 = 00)
     setConfigurationOption_(0, 56, 0b00 << 1);
 
-    // Enable headset detection (required for button detection)
+    // Enable headset detection (required for button detection) with 32ms debounce.
     // (Page 0, Register 67, D7 = 1)
-    setConfigurationOption_(0, 67, 1 << 7);
+    setConfigurationOption_(0, 67, (1 << 7) | (0b11 << 0));
 
     // INT1 output on MFP4
     // (Page 0, Register 55, Bits D4-D1 = 0100)

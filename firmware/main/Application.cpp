@@ -15,6 +15,7 @@
 #define CURRENT_LOG_TAG ("app")
 
 #define BOOTUP_VOL_DOWN_GPIO (GPIO_NUM_7)
+#define BOOTUP_PTT_GPIO (GPIO_NUM_4)
 #define TLV320_RESET_GPIO (GPIO_NUM_13)
 
 extern "C"
@@ -31,44 +32,10 @@ App::App()
     , max17048_(&i2cDevice_)
     , tlv320Device_(&i2cDevice_)
     , wirelessTask_(&freedvTask_, &tlv320Device_)
+    , rfComplianceTask_(&ledArray_, &tlv320Device_)
     , voiceKeyerTask_(&tlv320Device_, &freedvTask_)
+    , rfComplianceEnabled_(false)
 {
-    // Link TLV320 output FIFOs to FreeDVTask
-    tlv320Device_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
-        freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
-    );
-
-    tlv320Device_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
-        freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
-    );
-
-    // Link FreeDVTask output FIFOs to:
-    //    * RX: AudioMixer left channel
-    //    * TX: TLV320 right channel
-    freedvTask_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::USER_CHANNEL, 
-        audioMixer_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
-    );
-
-    freedvTask_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
-        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
-    );
-
-    // Link beeper output to AudioMixer right channel
-    beeperTask_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
-        audioMixer_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
-    );
-
-    // Link audio mixer to TLV320 left channel
-    audioMixer_.setAudioOutput(
-        audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
-        tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
-    );
-        
     // Check to see if Vol Down is being held on startup. 
     // If so, force use of default Wi-Fi setup. Note that 
     // we have to duplicate the initial pin setup here 
@@ -82,6 +49,67 @@ App::App()
     if (gpio_get_level(BOOTUP_VOL_DOWN_GPIO) == 0)
     {
         wirelessTask_.setWiFiOverride(true);
+    }
+    
+    // Check to see if PTT is beind held on startup.
+    // This triggers the RF compliance test system.
+    ESP_ERROR_CHECK(gpio_reset_pin(BOOTUP_PTT_GPIO));
+    ESP_ERROR_CHECK(gpio_set_direction(BOOTUP_PTT_GPIO, GPIO_MODE_INPUT));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(BOOTUP_PTT_GPIO, GPIO_PULLUP_ONLY));
+    ESP_ERROR_CHECK(gpio_pullup_en(BOOTUP_PTT_GPIO));
+    
+    if (gpio_get_level(BOOTUP_PTT_GPIO) == 0)
+    {
+        rfComplianceEnabled_ = true;
+        
+        // RF compliance task should be piped to TLV320.
+        rfComplianceTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+            tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
+        );
+            
+        rfComplianceTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::RIGHT_CHANNEL,
+            tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+        );
+    }
+    else
+    {
+        // Link TLV320 output FIFOs to FreeDVTask
+        tlv320Device_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+            freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+        );
+
+        tlv320Device_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
+            freedvTask_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+        );
+
+        // Link FreeDVTask output FIFOs to:
+        //    * RX: AudioMixer left channel
+        //    * TX: TLV320 right channel
+        freedvTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::USER_CHANNEL, 
+            audioMixer_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+        );
+
+        freedvTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+            tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+        );
+
+        // Link beeper output to AudioMixer right channel
+        beeperTask_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+            audioMixer_.getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
+        );
+
+        // Link audio mixer to TLV320 left channel
+        audioMixer_.setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+            tlv320Device_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
+        );
     }
 }
 
@@ -230,27 +258,35 @@ void App::onTaskStart_()
 
     buttonArray_.start();
     waitForStart(&buttonArray_, pdMS_TO_TICKS(1000));
-        
-    // Start audio processing
-    freedvTask_.start();
-    audioMixer_.start();
-    beeperTask_.start();
-
-    waitForStart(&freedvTask_, pdMS_TO_TICKS(1000));
-    waitForStart(&audioMixer_, pdMS_TO_TICKS(1000));
-    waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
-
-    // Start UI
-    voiceKeyerTask_.start();
-    uiTask_.start();
-    waitForStart(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-    waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
     
-    // Start Wi-Fi
-    wirelessTask_.start();
+    if (!rfComplianceEnabled_)
+    {
+        // Start audio processing
+        freedvTask_.start();
+        audioMixer_.start();
+        beeperTask_.start();
 
-    // Start storage handling
-    settingsTask_.start();
+        waitForStart(&freedvTask_, pdMS_TO_TICKS(1000));
+        waitForStart(&audioMixer_, pdMS_TO_TICKS(1000));
+        waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
+
+        // Start UI
+        voiceKeyerTask_.start();
+        uiTask_.start();
+        waitForStart(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
+    
+        // Start Wi-Fi
+        wirelessTask_.start();
+
+        // Start storage handling
+        settingsTask_.start();
+    }
+    else
+    {
+        rfComplianceTask_.start();
+        waitForStart(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+    }
 }
 
 void App::onTaskWake_()
@@ -291,30 +327,38 @@ void App::onTaskWake_()
     buttonArray_.wake();
     waitForAwake(&buttonArray_, pdMS_TO_TICKS(1000));
 
-    // Wake audio processing
-    freedvTask_.wake();
-    waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
+    if (!rfComplianceEnabled_)
+    {
+        // Wake audio processing
+        freedvTask_.wake();
+        waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
     
-    audioMixer_.wake();
-    waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
+        audioMixer_.wake();
+        waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
         
-    beeperTask_.wake();
-    waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
+        beeperTask_.wake();
+        waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
 
-    // Wake UI
-    voiceKeyerTask_.wake();
-    waitForAwake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        // Wake UI
+        voiceKeyerTask_.wake();
+        waitForAwake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
     
-    uiTask_.wake();
-    waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
+        uiTask_.wake();
+        waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
     
-    // Wake Wi-Fi
-    wirelessTask_.wake();
-    waitForAwake(&wirelessTask_, pdMS_TO_TICKS(1000));
+        // Wake Wi-Fi
+        wirelessTask_.wake();
+        waitForAwake(&wirelessTask_, pdMS_TO_TICKS(1000));
 
-    // Wake storage handling
-    settingsTask_.wake();
-    waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
+        // Wake storage handling
+        settingsTask_.wake();
+        waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
+    }
+    else
+    {
+        rfComplianceTask_.wake();
+        waitForAwake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+    }
 }
 
 void App::onTaskSleep_()
@@ -325,30 +369,38 @@ void App::onTaskSleep_()
     buttonArray_.sleep();
     waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
 
-    // Sleep Wi-Fi
-    wirelessTask_.sleep();
-    waitForSleep(&wirelessTask_, pdMS_TO_TICKS(5000));
+    if (!rfComplianceEnabled_)
+    {
+        // Sleep Wi-Fi
+        wirelessTask_.sleep();
+        waitForSleep(&wirelessTask_, pdMS_TO_TICKS(5000));
     
-    // Sleep UI
-    uiTask_.sleep();
-    waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
-    voiceKeyerTask_.sleep();
-    waitForSleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        // Sleep UI
+        uiTask_.sleep();
+        waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
+        voiceKeyerTask_.sleep();
+        waitForSleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
     
-    // Sleep storage handling
-    settingsTask_.sleep();
-    waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
+        // Sleep storage handling
+        settingsTask_.sleep();
+        waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
 
-    // Delay a second or two to allow final beeper to play.
-    beeperTask_.sleep();
-    waitForSleep(&beeperTask_, pdMS_TO_TICKS(5000));
+        // Delay a second or two to allow final beeper to play.
+        beeperTask_.sleep();
+        waitForSleep(&beeperTask_, pdMS_TO_TICKS(5000));
 
-    // Sleep audio processing
-    freedvTask_.sleep();
-    waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
+        // Sleep audio processing
+        freedvTask_.sleep();
+        waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
 
-    audioMixer_.sleep();
-    waitForSleep(&audioMixer_, pdMS_TO_TICKS(3000));
+        audioMixer_.sleep();
+        waitForSleep(&audioMixer_, pdMS_TO_TICKS(3000));
+    }
+    else
+    {
+        rfComplianceTask_.sleep();
+        waitForSleep(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+    }
 
     // Sleep device drivers
     tlv320Device_.sleep();
