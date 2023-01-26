@@ -152,6 +152,10 @@ private:
     TaskHandle_t taskObject_;
     EventMap eventRegistrationMap_;
 
+    int32_t taskQueueSize_;
+    int32_t taskStackSize_;
+    UBaseType_t taskPriority_;
+    BaseType_t pinnedCoreId_;
     QueueHandle_t taskQueue_;
     
     TickType_t taskTick_;
@@ -160,6 +164,8 @@ private:
 
     void threadEntry_();
     void postHelper_(MessageEntry* entry);
+    
+    void startTask_();
 
     template<typename ControlMessageType>
     void waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait);

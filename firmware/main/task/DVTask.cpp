@@ -41,20 +41,14 @@ void DVTask::Initialize()
 
 DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
     : taskName_(taskName)
+    , taskQueueSize_(taskQueueSize)
+    , taskStackSize_(taskStackSize)
+    , taskPriority_(taskPriority)
+    , pinnedCoreId_(pinnedCoreId)
+    , taskQueue_(nullptr)
     , taskTick_(taskTick)
 {
-    // Create task event queue
-    taskQueue_ = xQueueCreate(taskQueueSize, sizeof(MessageEntry*));
-    assert(taskQueue_ != nullptr);
-
-    // Register task start/wake/sleep handlers.
-    registerMessageHandler(this, &DVTask::onTaskStart_);
-    registerMessageHandler(this, &DVTask::onTaskWake_);
-    registerMessageHandler(this, &DVTask::onTaskSleep_);
-
-    auto returnValue = 
-        xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName.c_str(), taskStackSize, this, taskPriority, &taskObject_, pinnedCoreId);
-    assert(returnValue == pdPASS);
+    // empty
 }
 
 DVTask::~DVTask()
@@ -65,12 +59,16 @@ DVTask::~DVTask()
 
 void DVTask::start()
 {
+    startTask_();
+    
     TaskStartMessage message;
     post(&message);
 }
 
 void DVTask::wake()
 {
+    startTask_();
+    
     TaskWakeMessage message;
     post(&message);
 }
@@ -79,6 +77,22 @@ void DVTask::sleep()
 {
     TaskSleepMessage message;
     post(&message);
+}
+
+void DVTask::startTask_()
+{
+    // Create task event queue
+    taskQueue_ = xQueueCreate(taskQueueSize_, sizeof(MessageEntry*));
+    assert(taskQueue_ != nullptr);
+
+    // Register task start/wake/sleep handlers.
+    registerMessageHandler(this, &DVTask::onTaskStart_);
+    registerMessageHandler(this, &DVTask::onTaskWake_);
+    registerMessageHandler(this, &DVTask::onTaskSleep_);
+
+    auto returnValue = 
+        xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_.c_str(), taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
+    assert(returnValue == pdPASS);
 }
 
 void DVTask::onTaskTick_()
@@ -114,14 +128,17 @@ void DVTask::post(DVTaskMessage* message)
 
 void DVTask::postISR(DVTaskMessage* message)
 {
-    MessageEntry* entry = createMessageEntry_(nullptr, message);
-    BaseType_t taskUnblocked = pdFALSE;
-
-    xQueueSendToBackFromISR(taskQueue_, &entry, &taskUnblocked);
-
-    if (taskUnblocked != pdFALSE)
+    if (taskQueue_)
     {
-        portYIELD_FROM_ISR();
+        MessageEntry* entry = createMessageEntry_(nullptr, message);
+        BaseType_t taskUnblocked = pdFALSE;
+
+        xQueueSendToBackFromISR(taskQueue_, &entry, &taskUnblocked);
+
+        if (taskUnblocked != pdFALSE)
+        {
+            portYIELD_FROM_ISR();
+        }
     }
 }
 
@@ -225,8 +242,11 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
 void DVTask::postHelper_(MessageEntry* entry)
 {
-    auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
-    assert(rv != errQUEUE_FULL);
+    if (taskQueue_)
+    {
+        auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
+        assert(rv != errQUEUE_FULL);
+    }
 }
 
 void DVTask::threadEntry_()
