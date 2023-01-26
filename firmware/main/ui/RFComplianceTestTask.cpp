@@ -1,6 +1,6 @@
 /* 
  * This file is part of the ezDV project (https://github.com/tmiw/ezDV).
- * Copyright (c) 2022 Mooneer Salem
+ * Copyright (c) 2023 Mooneer Salem
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -129,6 +129,12 @@ void RfComplianceTestTask::onTaskTick_()
             codec2_fifo_write(outputLeftFifo, &leftChannelVal, 1);
             codec2_fifo_write(outputRightFifo, &rightChannelVal, 1);
         }
+        
+        // Get some I2C traffic flowing.
+        storage::LeftChannelVolumeMessage leftChanVolMessage(48);
+        storage::RightChannelVolumeMessage rightChanVolMessage(48);
+        tlv320Task_->post(&leftChanVolMessage);
+        tlv320Task_->post(&rightChanVolMessage);
     }
 }
 
