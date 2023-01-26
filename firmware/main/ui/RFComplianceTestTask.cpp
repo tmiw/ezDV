@@ -120,15 +120,31 @@ void RfComplianceTestTask::onTaskTick_()
         struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
         struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
     
-        // 160 samples = 20ms @ 8 KHz sample rate
-        for (int index = 0; index < 160; index++)
+        // 320 samples = 40ms @ 8 KHz sample rate
+        for (int index = 0; index < 320; index++)
         {
-            // 6048 is the amplitude required to have the sine wave appear at 0 dB in Audacity.
-            short leftChannelVal = 32767 * sin(2 * M_PI * LEFT_FREQ_HZ * leftChannelCtr_++ * SAMPLE_RATE_RECIP);
-            short rightChannelVal = 32767 * sin(2 * M_PI * RIGHT_FREQ_HZ * rightChannelCtr_++ * SAMPLE_RATE_RECIP);
-        
-            codec2_fifo_write(outputLeftFifo, &leftChannelVal, 1);
-            codec2_fifo_write(outputRightFifo, &rightChannelVal, 1);
+            bool isWritten = false;
+            
+            if (codec2_fifo_free(outputLeftFifo) > 0)
+            {
+                short leftChannelVal = 32767 * sin(2 * M_PI * LEFT_FREQ_HZ * leftChannelCtr_++ * SAMPLE_RATE_RECIP);
+                codec2_fifo_write(outputLeftFifo, &leftChannelVal, 1);
+                
+                isWritten = true;
+            }
+            
+            if (codec2_fifo_free(outputRightFifo) > 0)
+            {
+                short rightChannelVal = 32767 * sin(2 * M_PI * RIGHT_FREQ_HZ * rightChannelCtr_++ * SAMPLE_RATE_RECIP);
+                codec2_fifo_write(outputRightFifo, &rightChannelVal, 1);
+                
+                isWritten = true;
+            }
+            
+            if (!isWritten)
+            {
+                break;
+            }
         }
         
         // Get some I2C traffic flowing.
