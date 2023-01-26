@@ -55,6 +55,7 @@ private:
     ezdv::driver::TLV320* tlv320Task_;
     int leftChannelCtr_;
     int rightChannelCtr_;
+    bool pttGpio_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);

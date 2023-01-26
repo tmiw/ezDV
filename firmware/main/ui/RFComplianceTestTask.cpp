@@ -44,6 +44,7 @@ RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask,
     , tlv320Task_(tlv320Task)
     , leftChannelCtr_(0)
     , rightChannelCtr_(0)
+    , pttGpio_(false)
 {
     registerMessageHandler(this, &RfComplianceTestTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonLongPressedMessage_);
@@ -135,6 +136,11 @@ void RfComplianceTestTask::onTaskTick_()
         storage::RightChannelVolumeMessage rightChanVolMessage(48);
         tlv320Task_->post(&leftChanVolMessage);
         tlv320Task_->post(&rightChanVolMessage);
+        
+        // Toggle PTT line on radio jack
+        pttGpio_ = !pttGpio_;
+        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::PTT_NPN, pttGpio_);
+        publish(&msg);
     }
 }
 
