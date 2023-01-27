@@ -125,9 +125,22 @@ void RfComplianceTestTask::onTaskTick_()
         {
             bool isWritten = false;
             
+            // Max amplitude of the test sine waves is 339. This has been experimentally determined to 
+            // produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
+            // using the following setup:
+            //
+            // * Griffin iMic USB sound device
+            // * Foundation Engineering USB isolator (to prevent ground loops)
+            // * iMic input volume is set to 1.0 (31.0 dB) inside the macOS Audio MIDI Setup app
+            // 
+            // Lack of clipping has also been verified by ensuring Effect->Volume and Compression->Amplify
+            // suggests a positive "Amplification (dB)" value after recording the audio from the TLV320.
+            //
+            // NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). This may need
+            // to be adjusted once a LPF is added.
             if (codec2_fifo_free(outputLeftFifo) > 0)
             {
-                short leftChannelVal = 32767 * sin(2 * M_PI * LEFT_FREQ_HZ * leftChannelCtr_++ * SAMPLE_RATE_RECIP);
+                short leftChannelVal = 339 * sin(2 * M_PI * LEFT_FREQ_HZ * leftChannelCtr_++ * SAMPLE_RATE_RECIP);
                 codec2_fifo_write(outputLeftFifo, &leftChannelVal, 1);
                 
                 isWritten = true;
@@ -135,7 +148,7 @@ void RfComplianceTestTask::onTaskTick_()
             
             if (codec2_fifo_free(outputRightFifo) > 0)
             {
-                short rightChannelVal = 32767 * sin(2 * M_PI * RIGHT_FREQ_HZ * rightChannelCtr_++ * SAMPLE_RATE_RECIP);
+                short rightChannelVal = 339 * sin(2 * M_PI * RIGHT_FREQ_HZ * rightChannelCtr_++ * SAMPLE_RATE_RECIP);
                 codec2_fifo_write(outputRightFifo, &rightChannelVal, 1);
                 
                 isWritten = true;
