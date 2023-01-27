@@ -260,6 +260,9 @@ void TLV320::initializeI2S_()
             },
         },
     };
+    
+    // Set clock multiplier to 512 to support increased DAC oversampling ratio
+    i2sConfiguration.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_512;
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sTxDevice_, &i2sConfiguration));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sRxDevice_, &i2sConfiguration));
@@ -294,46 +297,44 @@ void TLV320::tlv320ConfigureClocks_()
     // https://www.ti.com/lit/an/slaa404c/slaa404c.pdf
             
     // AOSR = 128
-    // DOSR = 128
+    // DOSR = 512
     // ADC_FS = 8K
     // DAC_FS = 8K
     // ADC_MOD_CLK = AOSR * ADC_FS = 128 * 8000 = 1.024 MHz <= 6.758 MHz
-    // DAC_MOD_CLK = DOSR * DAC_FS = 128 * 8000 = 1.024 MHz <= 6.758 MHz
+    // DAC_MOD_CLK = DOSR * DAC_FS = 512 * 8000 = 4.096 MHz <= 6.758 MHz
     
     // ADC Processing Block = PRB_R1
     // DAC Processing Block = PRB_P1
     // MADC = 2
-    // MDAC = 2
+    // MDAC = 1
     // ADC_CLK = MADC * ADC_MOD_CLK = 2 * 1.024 MHz = 2.048 MHz
-    // DAC_CLK = MDAC * DAC_MOD_CLK = 2 * 1.024 MHz = 2.048 MHz
+    // DAC_CLK = MDAC * DAC_MOD_CLK = 1 * 4.096 MHz = 4.096 MHz
     // (MADC * AOSR) / 32 = 256 / 32 = 8 >= RC(R1) = 6
-    // (MDAC * DOSR) / 32 = 256 / 32 = 8 >= RC(P1) = 8
+    // (MDAC * DOSR) / 32 = 256 / 32 = 16 >= RC(P1) = 8
     // ADC_CLK <= 55.296 MHz
     // DAC_CLK <= 55.296 MHz
     
-    // NADC = 1
+    // NADC = 2
     // NDAC = 1
-    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 2.048 MHz
+    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 4.096 MHz
     // CODEC_CLKIN <= 137MHz
-    // CODEC_CLKIN from MCLK (8000 * 256 = 2.048 MHz)
+    // CODEC_CLKIN from MCLK (8000 * 512 = 4.096 MHz)
     
-    // Set NDAC = 1, MDAC = 2. Power on divider.
+    // Set NDAC = 1, MDAC = 1. Power on divider.
     // (Page 0, registers 11 and 12)
-    // Program DOSR to 128 (Page 0, registers 13-14)
+    // Program DOSR to 512 (Page 0, registers 13-14)
     uint8_t dacOpts[] = {
         (1 << 7) | 1,
-        (1 << 7) | 2,
-        0,
-        128
+        (1 << 7) | 1,
+        0b10,
+        0
     };
     setConfigurationOptionMultiple_(0, 11, dacOpts, 4);
         
-    // Set NADC = 1, MADC = 2. Keep dividers powered off as
-    // NADC == NDAC and MADC == MDAC.
-    // (Page 0, registers 18 and 19)
+    // Set NADC = 2, MADC = 2. (Page 0, registers 18 and 19)
     // Program AOSR to 128 (Page 0, register 20).
     uint8_t adcOpts[] = {
-        1,
+        2,
         2,
         128
     };
