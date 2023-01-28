@@ -473,8 +473,8 @@ void TLV320::tlv320ConfigureRoutingADC_()
 
 void TLV320::tlv320ConfigureRoutingDAC_()
 {
-    // 6kohm depop, N = 6.0, 50ms soft start (Page 1, register 20)
-    setConfigurationOption_(1, 20, (0b01 << 6) | (0b1010 << 2) | (0b01 << 0));
+    // 6kohm depop, N = 6.0 (Page 1, register 20)
+    setConfigurationOption_(1, 20, (0b1010 << 2) | (0b01 << 0));
     
     // Set DAC routing: HPL, HPR come from DAC
     // (Page 1, registers 12 and 13)
