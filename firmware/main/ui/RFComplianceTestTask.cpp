@@ -120,8 +120,18 @@ void RfComplianceTestTask::onTaskTick_()
         struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
         struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
     
-        // 320 samples = 40ms @ 8 KHz sample rate
-        for (int index = 0; index < 320; index++)
+        if (leftChannelCtr_ >= 8000)
+        {
+            leftChannelCtr_ = 0;
+        }
+        
+        if (rightChannelCtr_ >= 8000)
+        {
+            rightChannelCtr_ = 0;
+        }
+        
+        // 160 samples = 20ms @ 8 KHz sample rate
+        for (int index = 0; index < 160; index++)
         {
             bool isWritten = false;
             
