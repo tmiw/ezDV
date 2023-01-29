@@ -391,10 +391,11 @@ void TLV320::tlv320ConfigurePower_()
 
 void TLV320::tlv320ConfigureProcessingBlocks_()
 {
-    // Set ADC_PRB and DAC_PRB to P2 and R1 (Page 0, registers 60-61).
+    // Set ADC_PRB and DAC_PRB to P1 and R1 (Page 0, registers 60-61).
+    // Note: Use ADC_PRB = R2 if enabling the ADC filter below.
     uint8_t prb[] = {
         1,
-        2
+        1
     };
     setConfigurationOptionMultiple_(0, 60, prb, 2);
     

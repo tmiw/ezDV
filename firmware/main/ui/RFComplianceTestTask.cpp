@@ -25,29 +25,30 @@
 
 #define CURRENT_LOG_TAG ("RfComplianceTestTask")
 
+// TBD -- check that these calculations happen at compile time and not runtime.
 #define SAMPLE_RATE 48000
-#define SAMPLE_RATE_RECIP 0.000020833333333 /* 48000 Hz */
+#define SAMPLE_RATE_RECIP (1.0/SAMPLE_RATE)
 #define LEFT_FREQ_HZ 400.0
 #define LEFT_FREQ_HZ_RECIP (1.0/LEFT_FREQ_HZ)
 #define RIGHT_FREQ_HZ 700.0
 #define RIGHT_FREQ_HZ_RECIP (1.0/RIGHT_FREQ_HZ)
 
-#define SAMPLES_PER_TICK 960
+#define SAMPLES_PER_TICK (0.02*SAMPLE_RATE)
 
-// Max amplitude of the test sine waves is 430. This has been experimentally determined to 
+// Max amplitude of the test sine waves is 32767. This has been experimentally determined to 
 // produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
 // using the following setup:
 //
-// * Griffin iMic USB sound device
-// * Foundation Engineering USB isolator (to prevent ground loops)
-// * iMic input volume is set to 1.0 (31.0 dB) inside the macOS Audio MIDI Setup app
+// * SignaLink USB
+// * TLV320 volume set to 0 dB
 // 
 // Lack of clipping has also been verified by ensuring Effect->Volume and Compression->Amplify
 // suggests a positive "Amplification (dB)" value after recording the audio from the TLV320.
 //
-// NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). This may need
-// to be adjusted once a LPF is added.
-#define SINE_WAVE_AMPLITUDE 430.0
+// NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). The TLV320
+/// volume and/or amplitude here may need to be adjusted once a LPF is added.
+#define CODEC_VOLUME_LEVEL 0
+#define SINE_WAVE_AMPLITUDE 32767.0
 
 // Defined in Application.cpp.
 extern void StartSleeping();
@@ -78,7 +79,7 @@ RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask,
     
     // Pre-generate sine waves as sin() won't run fast enough for real time
     // at a high enough sample rate.
-    leftChannelSineWaveCount_ = LEFT_FREQ_HZ_RECIP * SAMPLE_RATE;
+    leftChannelSineWaveCount_ = SAMPLE_RATE;
     leftChannelSineWave_ = new short[leftChannelSineWaveCount_];
     assert(leftChannelSineWave_ != nullptr);
     
@@ -87,7 +88,7 @@ RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask,
         leftChannelSineWave_[index] = SINE_WAVE_AMPLITUDE * sin(2.0 * M_PI * LEFT_FREQ_HZ * (float)index * SAMPLE_RATE_RECIP);
     }
     
-    rightChannelSineWaveCount_ = RIGHT_FREQ_HZ_RECIP * SAMPLE_RATE;
+    rightChannelSineWaveCount_ = SAMPLE_RATE;
     rightChannelSineWave_ = new short[rightChannelSineWaveCount_];
     assert(rightChannelSineWave_ != nullptr);
     
@@ -126,8 +127,8 @@ void RfComplianceTestTask::onTaskWake_()
     publish(&msg);
     
     // Set TLV320 to max volume.
-    storage::LeftChannelVolumeMessage leftChanVolMessage(48);
-    storage::RightChannelVolumeMessage rightChanVolMessage(48);
+    storage::LeftChannelVolumeMessage leftChanVolMessage(CODEC_VOLUME_LEVEL);
+    storage::RightChannelVolumeMessage rightChanVolMessage(CODEC_VOLUME_LEVEL);
     tlv320Task_->post(&leftChanVolMessage);
     tlv320Task_->post(&rightChanVolMessage);
 }
@@ -195,8 +196,8 @@ void RfComplianceTestTask::onTaskTick_()
         }
         
         // Get some I2C traffic flowing.
-        storage::LeftChannelVolumeMessage leftChanVolMessage(48);
-        storage::RightChannelVolumeMessage rightChanVolMessage(48);
+        storage::LeftChannelVolumeMessage leftChanVolMessage(CODEC_VOLUME_LEVEL);
+        storage::RightChannelVolumeMessage rightChanVolMessage(CODEC_VOLUME_LEVEL);
         tlv320Task_->post(&leftChanVolMessage);
         tlv320Task_->post(&rightChanVolMessage);
         
