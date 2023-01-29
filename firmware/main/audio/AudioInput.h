@@ -22,8 +22,8 @@
 
 #include "codec2_fifo.h"
 
-// 0.5s @ 8000 Hz
-#define DEFAULT_NUM_SAMPLES_FOR_FIFO 4000
+// 0.5s @ 48000 Hz
+#define DEFAULT_NUM_SAMPLES_FOR_FIFO 24000
 
 namespace ezdv
 {

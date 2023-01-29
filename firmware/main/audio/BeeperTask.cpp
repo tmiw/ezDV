@@ -27,7 +27,8 @@
 #define SPACE_BETWEEN_CHARS 3
 #define SPACE_BETWEEN_WORDS 7
 #define CW_SIDETONE_FREQ_HZ ((float)600.0)
-#define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
+#define SAMPLE_RATE 48000
+#define SAMPLE_RATE_RECIP 0.000020833333333 /* 48000 Hz */
 
 // Found via experimentation
 #define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS))
@@ -90,11 +91,16 @@ BeeperTask::BeeperTask()
 {
     registerMessageHandler(this, &BeeperTask::onSetBeeperText_);
     registerMessageHandler(this, &BeeperTask::onClearBeeperText_);
+    
+    beeperBlock_ = new short[CW_TIME_UNIT_MS * SAMPLE_RATE / 1000];
+    assert(beeperBlock_ != nullptr);
 }
 
 BeeperTask::~BeeperTask()
 {
     beeperTimer_.stop();
+    
+    delete[] beeperBlock_;
 }
 
 void BeeperTask::onTaskStart_()
@@ -155,25 +161,25 @@ void BeeperTask::onTimerTick_()
 
     if (beeperList_.size() > 0)
     {
-        short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
+        int sz = CW_TIME_UNIT_MS * SAMPLE_RATE / 1000;
         bool emitSine = beeperList_[0];
         beeperList_.erase(beeperList_.begin());
 
         //ESP_LOGI("UserInterface", "Beep: %d", emitSine);
         if (emitSine)
         {
-            for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
+            for (int index = 0; index < sz; index++)
             {
-                bufToQueue[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
+                beeperBlock_[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
             }
         }
         else
         {
             sineCounter_ = 0;
-            memset(bufToQueue, 0, sizeof(bufToQueue));
+            memset(beeperBlock_, 0, sizeof(short) * sz);
         }
 
-        codec2_fifo_write(outputFifo, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+        codec2_fifo_write(outputFifo, beeperBlock_, sz);
     }
     else
     {

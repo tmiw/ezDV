@@ -60,6 +60,7 @@ private:
     i2s_chan_handle_t i2sRxDevice_;
     InputGPIO<GPIO_TLV320_INT1> int1Gpio_;
     InputGPIO<GPIO_TLV320_INT2> int2Gpio_;
+    short* tempData_;
     
     void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
     void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);

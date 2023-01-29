@@ -56,6 +56,10 @@ private:
     int leftChannelCtr_;
     int rightChannelCtr_;
     bool pttGpio_;
+    short* leftChannelSineWave_;
+    int leftChannelSineWaveCount_;
+    short* rightChannelSineWave_;
+    int rightChannelSineWaveCount_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);

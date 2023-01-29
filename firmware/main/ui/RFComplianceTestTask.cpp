@@ -18,14 +18,36 @@
 #include <cstring>
 #include <cmath>
 
+#include "esp_log.h"
+
 #include "RfComplianceTestTask.h"
 #include "driver/LedMessage.h"
 
 #define CURRENT_LOG_TAG ("RfComplianceTestTask")
 
-#define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
-#define LEFT_FREQ_HZ 1000
-#define RIGHT_FREQ_HZ 2000
+#define SAMPLE_RATE 48000
+#define SAMPLE_RATE_RECIP 0.000020833333333 /* 48000 Hz */
+#define LEFT_FREQ_HZ 400.0
+#define LEFT_FREQ_HZ_RECIP (1.0/LEFT_FREQ_HZ)
+#define RIGHT_FREQ_HZ 700.0
+#define RIGHT_FREQ_HZ_RECIP (1.0/RIGHT_FREQ_HZ)
+
+#define SAMPLES_PER_TICK 960
+
+// Max amplitude of the test sine waves is 430. This has been experimentally determined to 
+// produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
+// using the following setup:
+//
+// * Griffin iMic USB sound device
+// * Foundation Engineering USB isolator (to prevent ground loops)
+// * iMic input volume is set to 1.0 (31.0 dB) inside the macOS Audio MIDI Setup app
+// 
+// Lack of clipping has also been verified by ensuring Effect->Volume and Compression->Amplify
+// suggests a positive "Amplification (dB)" value after recording the audio from the TLV320.
+//
+// NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). This may need
+// to be adjusted once a LPF is added.
+#define SINE_WAVE_AMPLITUDE 430.0
 
 // Defined in Application.cpp.
 extern void StartSleeping();
@@ -37,7 +59,7 @@ namespace ui
 {
 
 RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask, ezdv::driver::TLV320* tlv320Task)
-    : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
+    : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
     , AudioInput(1, 2)
     , isActive_(false)
     , ledArrayTask_(ledArrayTask)
@@ -45,10 +67,34 @@ RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask,
     , leftChannelCtr_(0)
     , rightChannelCtr_(0)
     , pttGpio_(false)
+    , leftChannelSineWave_(nullptr)
+    , leftChannelSineWaveCount_(0)
+    , rightChannelSineWave_(nullptr)
+    , rightChannelSineWaveCount_(0)
 {
     registerMessageHandler(this, &RfComplianceTestTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonReleasedMessage_);
+    
+    // Pre-generate sine waves as sin() won't run fast enough for real time
+    // at a high enough sample rate.
+    leftChannelSineWaveCount_ = LEFT_FREQ_HZ_RECIP * SAMPLE_RATE;
+    leftChannelSineWave_ = new short[leftChannelSineWaveCount_];
+    assert(leftChannelSineWave_ != nullptr);
+    
+    for (int index = 0; index < leftChannelSineWaveCount_; index++)
+    {
+        leftChannelSineWave_[index] = SINE_WAVE_AMPLITUDE * sin(2.0 * M_PI * LEFT_FREQ_HZ * (float)index * SAMPLE_RATE_RECIP);
+    }
+    
+    rightChannelSineWaveCount_ = RIGHT_FREQ_HZ_RECIP * SAMPLE_RATE;
+    rightChannelSineWave_ = new short[rightChannelSineWaveCount_];
+    assert(rightChannelSineWave_ != nullptr);
+    
+    for (int index = 0; index < rightChannelSineWaveCount_; index++)
+    {
+        rightChannelSineWave_[index] = SINE_WAVE_AMPLITUDE * sin(2.0 * M_PI * RIGHT_FREQ_HZ * (float)index * SAMPLE_RATE_RECIP);
+    }
 }
 
 RfComplianceTestTask::~RfComplianceTestTask()
@@ -117,56 +163,34 @@ void RfComplianceTestTask::onTaskTick_()
 {
     if (isActive_)
     {
+        //auto timeBegin = esp_timer_get_time();
+        
         struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
         struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
-    
-        if (leftChannelCtr_ >= 8000)
-        {
-            leftChannelCtr_ = 0;
-        }
         
-        if (rightChannelCtr_ >= 8000)
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
         {
-            rightChannelCtr_ = 0;
-        }
-        
-        // 160 samples = 20ms @ 8 KHz sample rate
-        for (int index = 0; index < 160; index++)
-        {
-            bool isWritten = false;
+            if (leftChannelCtr_ >= leftChannelSineWaveCount_)
+            {
+                leftChannelCtr_ = 0;
+            }
             
-            // Max amplitude of the test sine waves is 339. This has been experimentally determined to 
-            // produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
-            // using the following setup:
-            //
-            // * Griffin iMic USB sound device
-            // * Foundation Engineering USB isolator (to prevent ground loops)
-            // * iMic input volume is set to 1.0 (31.0 dB) inside the macOS Audio MIDI Setup app
-            // 
-            // Lack of clipping has also been verified by ensuring Effect->Volume and Compression->Amplify
-            // suggests a positive "Amplification (dB)" value after recording the audio from the TLV320.
-            //
-            // NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). This may need
-            // to be adjusted once a LPF is added.
             if (codec2_fifo_free(outputLeftFifo) > 0)
             {
-                short leftChannelVal = 339 * sin(2 * M_PI * LEFT_FREQ_HZ * leftChannelCtr_++ * SAMPLE_RATE_RECIP);
-                codec2_fifo_write(outputLeftFifo, &leftChannelVal, 1);
-                
-                isWritten = true;
+                codec2_fifo_write(outputLeftFifo, &leftChannelSineWave_[leftChannelCtr_++], 1);
+            }
+        }
+        
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        {
+            if (rightChannelCtr_ >= rightChannelSineWaveCount_)
+            {
+                rightChannelCtr_ = 0;
             }
             
             if (codec2_fifo_free(outputRightFifo) > 0)
             {
-                short rightChannelVal = 339 * sin(2 * M_PI * RIGHT_FREQ_HZ * rightChannelCtr_++ * SAMPLE_RATE_RECIP);
-                codec2_fifo_write(outputRightFifo, &rightChannelVal, 1);
-                
-                isWritten = true;
-            }
-            
-            if (!isWritten)
-            {
-                break;
+                codec2_fifo_write(outputRightFifo, &rightChannelSineWave_[rightChannelCtr_++], 1);
             }
         }
         
@@ -180,6 +204,9 @@ void RfComplianceTestTask::onTaskTick_()
         pttGpio_ = !pttGpio_;
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::PTT_NPN, pttGpio_);
         publish(&msg);
+        
+        //auto timeEnd = esp_timer_get_time();
+        //ESP_LOGI(CURRENT_LOG_TAG, "tone gen completed in %d us", (int)(timeEnd - timeBegin));
     }
 }
 

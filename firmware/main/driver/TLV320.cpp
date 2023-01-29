@@ -41,8 +41,8 @@
 // Tag to prepend to log entries coming from this file.
 #define CURRENT_LOG_TAG ("TLV320Driver")
 
-// Timer constants below are for 8000 Hz sample rate
-#define I2S_NUM_SAMPLES_PER_INTERVAL (160)
+// Timer constants below are for 48000 Hz sample rate
+#define I2S_NUM_SAMPLES_PER_INTERVAL (960)
 
 namespace ezdv
 {
@@ -67,6 +67,9 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     registerMessageHandler<storage::RightChannelVolumeMessage>(this, &TLV320::onRightChannelVolume_);
 
     initializeResetGPIO_();
+    
+    tempData_ = new short[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
+    assert(tempData_ != nullptr);
 }
 
 void TLV320::onTaskStart_()
@@ -133,20 +136,19 @@ void TLV320::onTaskTick_()
 {
     if (i2sRxDevice_ == nullptr || i2sTxDevice_ == nullptr) return;
 
-    short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
-    memset(tempData, 0, sizeof(tempData));
+    size_t bytesRead = sizeof(short) * I2S_NUM_SAMPLES_PER_INTERVAL * 2;
+    memset(tempData_, 0, bytesRead);
     
     // Perform read from I2S. 
-    size_t bytesRead = sizeof(tempData);
-    ESP_ERROR_CHECK(i2s_channel_read(i2sRxDevice_, tempData, sizeof(tempData), &bytesRead, portMAX_DELAY));
+    ESP_ERROR_CHECK(i2s_channel_read(i2sRxDevice_, tempData_, bytesRead, &bytesRead, portMAX_DELAY));
 
     // Output channel bytes to configured output FIFOs.
     struct FIFO* leftChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
     struct FIFO* rightChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
     for (int index = 0; index < bytesRead / 2 / sizeof(short); index++)
     {
-        if (leftChannelFifo != nullptr) codec2_fifo_write(leftChannelFifo, &tempData[2*index], 1);
-        if (rightChannelFifo != nullptr) codec2_fifo_write(rightChannelFifo, &tempData[2*index + 1], 1);
+        if (leftChannelFifo != nullptr) codec2_fifo_write(leftChannelFifo, &tempData_[2*index], 1);
+        if (rightChannelFifo != nullptr) codec2_fifo_write(rightChannelFifo, &tempData_[2*index + 1], 1);
     }
 
     leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
@@ -154,16 +156,17 @@ void TLV320::onTaskTick_()
     if ((leftChannelFifo && codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL) || 
         (rightChannelFifo && codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL))
     {
-        memset(tempData, 0, sizeof(tempData));
+        bytesRead = sizeof(short) * I2S_NUM_SAMPLES_PER_INTERVAL * 2;
+        memset(tempData_, 0, bytesRead);
         
         for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
         {
-            if (leftChannelFifo) codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
-            if (rightChannelFifo) codec2_fifo_read(rightChannelFifo, &tempData[2*index + 1], 1);
+            if (leftChannelFifo) codec2_fifo_read(leftChannelFifo, &tempData_[2*index], 1);
+            if (rightChannelFifo) codec2_fifo_read(rightChannelFifo, &tempData_[2*index + 1], 1);
         }
         
         size_t bytesWritten = 0;
-        ESP_ERROR_CHECK(i2s_channel_write(i2sTxDevice_, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
+        ESP_ERROR_CHECK(i2s_channel_write(i2sTxDevice_, tempData_, bytesRead, &bytesWritten, portMAX_DELAY));
     }
 }
 
@@ -245,7 +248,7 @@ void TLV320::initializeI2S_()
     //     Philips format (1 bit shifted, 16 bit/channel stereo)
     //     GPIOs as listed
     i2s_std_config_t i2sConfiguration = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(8000),
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(48000),
         .slot_cfg = I2S_STD_PHILIP_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = TLV320_MCLK_GPIO,
@@ -262,7 +265,7 @@ void TLV320::initializeI2S_()
     };
     
     // Set clock multiplier to 512 to support increased DAC oversampling ratio
-    i2sConfiguration.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_512;
+    //i2sConfiguration.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_512;
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sTxDevice_, &i2sConfiguration));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sRxDevice_, &i2sConfiguration));
@@ -297,70 +300,48 @@ void TLV320::tlv320ConfigureClocks_()
     // https://www.ti.com/lit/an/slaa404c/slaa404c.pdf
             
     // AOSR = 128
-    // DOSR = 768
-    // ADC_FS = 8K
-    // DAC_FS = 8K
-    // ADC_MOD_CLK = AOSR * ADC_FS = 128 * 8000 = 1.024 MHz <= 6.758 MHz
-    // DAC_MOD_CLK = DOSR * DAC_FS = 768 * 8000 = 6.144 MHz <= 6.758 MHz
+    // DOSR = 128
+    // ADC_FS = 48K
+    // DAC_FS = 48K
+    // ADC_MOD_CLK = AOSR * ADC_FS = 128 * 48000 = 6.144 MHz <= 6.758 MHz
+    // DAC_MOD_CLK = DOSR * DAC_FS = 128 * 48000 = 6.144 MHz <= 6.758 MHz
     
     // ADC Processing Block = PRB_R1
     // DAC Processing Block = PRB_P1
-    // MADC = 48
-    // MDAC = 8
-    // ADC_CLK = MADC * ADC_MOD_CLK = 48 * 1.024 MHz = 49.152 MHz
-    // DAC_CLK = MDAC * DAC_MOD_CLK = 8 * 6.144 MHz = 49.152 MHz
-    // (MADC * AOSR) / 32 = 6144 / 32 = 192 >= RC(R1) = 6
-    // (MDAC * DOSR) / 32 = 6144 / 32 = 192 >= RC(P1) = 8
+    // MADC = 2
+    // MDAC = 2
+    // ADC_CLK = MADC * ADC_MOD_CLK = 2 * 6.144 MHz = 12.288 MHz
+    // DAC_CLK = MDAC * DAC_MOD_CLK = 2 * 6.144 MHz = 12.288 MHz
+    // (MADC * AOSR) / 32 = 256 / 32 = 8 >= RC(R1) = 6
+    // (MDAC * DOSR) / 32 = 256 / 32 = 8 >= RC(P1) = 8
     // ADC_CLK <= 55.296 MHz
     // DAC_CLK <= 55.296 MHz
     
-    // NADC = 2
-    // NDAC = 2
-    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 98.304 MHz
+    // NADC = 1
+    // NDAC = 1
+    // CODEC_CLKIN = NADC * ADC_CLK = NDAC * DAC_CLK = 12.288 MHz
     // CODEC_CLKIN <= 137MHz
-    // CODEC_CLKIN from PLL_CLK
-    
-    // PLL_CLK = MCLK * R * J.D/P
-    // 98.304 MHz = 4.096 * 1 * 24.0000 / 1
-    // P = 1, R = 1, J = 24, D = 0 
-
-    uint8_t pllOpts[] = {
-        // Set CODEC_CLKIN to PLL and use MCLK for PLL
-        // (Page 0, register 4)
-        (0 << 2) | 0b11,
-
-        // Set PLL P = 1, R = 1, J = 24, D = 0, power up PLL
-        // (Page 0, registers 5-8)
-        (1 << 7) | (0b001 << 4) | (0b001),  // P, R, power up
-        24, // J
-        0, // D[MSB]
-        0 // D[LSB]
-    };
-    setConfigurationOptionMultiple_(0, 4, pllOpts, 5);
-
-    // Wait 10ms for PLL to become available
-    // (Section 2.7.1, "TLV320AIC3254 Application Reference Guide")
-    vTaskDelay(pdMS_TO_TICKS(10));
+    // CODEC_CLKIN from MCLK
         
-    // Set NDAC = 2, MDAC = 8. Power on divider.
+    // Set NDAC = 1, MDAC = 2. Power on divider.
     // (Page 0, registers 11 and 12)
-    // Program DOSR to 768 (Page 0, registers 13-14)
+    // Program DOSR to 128 (Page 0, registers 13-14)
     uint8_t dacOpts[] = {
+        (1 << 7) | 1,
         (1 << 7) | 2,
-        (1 << 7) | 8,
-        0b11,
-        0
+        0b00,
+        128
     };
     setConfigurationOptionMultiple_(0, 11, dacOpts, 4);
         
-    // Set NADC = 2, MADC = 48. (Page 0, registers 18 and 19)
+    // Set NADC = 1, MADC = 2. (Page 0, registers 18 and 19)
     // Program AOSR to 128 (Page 0, register 20).
     uint8_t adcOpts[] = {
-        2,
-        (1 << 7) | 48,
+        (1 << 7) | 1,
+        (1 << 7) | 2,
         128
     };
-    setConfigurationOptionMultiple_(0, 18, adcOpts, 2);
+    setConfigurationOptionMultiple_(0, 18, adcOpts, 3);
     
     // Set I2S word size to 16 bits (Page 0, register 27)
     setConfigurationOption_(0, 27, 0);
@@ -417,6 +398,7 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
     };
     setConfigurationOptionMultiple_(0, 60, prb, 2);
     
+#if 0
     // Set ADC filter coefficients for HPF, center frequency 130 Hz.
     // All five biquads on both channels are set to this filter to reduce
     // background hiss in the recorded audio.
@@ -437,6 +419,7 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
     setConfigurationOptionMultiple_(9, 104, adcFilter, sizeof(adcFilter));
     setConfigurationOptionMultiple_(8, 116, adcFilter, sizeof(adcFilter));
     setConfigurationOptionMultiple_(9, 124, adcFilter, sizeof(adcFilter));
+#endif
 }
 
 void TLV320::tlv320ConfigureRoutingADC_()

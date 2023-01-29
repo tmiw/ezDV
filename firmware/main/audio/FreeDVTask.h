@@ -54,6 +54,11 @@ private:
 
     bool isTransmitting_;
     bool isActive_;
+    
+    short* inputFilterMemory_;
+    short* outputFilterMemory_;
+    FIFO* inputFifo8K_;
+    FIFO* outputFifo8K_;
 
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
