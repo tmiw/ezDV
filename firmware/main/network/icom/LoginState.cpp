@@ -326,16 +326,16 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     typedPacket->rxenable = 1;
     typedPacket->txenable = 1;
     
-    // Force 8K sample rate PCM
+    // Force 48K sample rate PCM
     typedPacket->rxcodec = 4;
-    typedPacket->rxsample = ToBigEndian((uint32_t)8000);
+    typedPacket->rxsample = ToBigEndian((uint32_t)48000);
     typedPacket->txcodec = 4;
-    typedPacket->txsample = ToBigEndian((uint32_t)8000);
+    typedPacket->txsample = ToBigEndian((uint32_t)48000);
     
     // CIV/audio local port numbers and latency
     typedPacket->civport = ToBigEndian((uint32_t)civPort_);
     typedPacket->audioport = ToBigEndian((uint32_t)audioPort_);
-    typedPacket->txbuffer = ToBigEndian((uint32_t)160);
+    typedPacket->txbuffer = ToBigEndian((uint32_t)160); // 16 packet buffer at IC-705 (480 samples/packet @ 48K)
     typedPacket->convert = 1;
     
     sendTracked_(packet);

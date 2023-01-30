@@ -33,6 +33,8 @@ namespace icom
 
 using namespace ezdv::task;
 
+#define ICOM_AUDIO_SAMPLES_PER_RUN 480
+
 class AudioState : public TrackedPacketState
 {
 public:
@@ -50,7 +52,7 @@ private:
     DVTimer audioOutTimer_;
     DVTimer audioWatchdogTimer_;
     uint16_t audioSequenceNumber_;
-    float audioMultiplier_[160];
+    float audioMultiplier_[ICOM_AUDIO_SAMPLES_PER_RUN];
 
     void onAudioOutTimer_();
     void onAudioWatchdog_();
