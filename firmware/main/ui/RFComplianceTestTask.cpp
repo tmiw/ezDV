@@ -28,9 +28,9 @@
 // TBD -- check that these calculations happen at compile time and not runtime.
 #define SAMPLE_RATE 48000
 #define SAMPLE_RATE_RECIP (1.0/SAMPLE_RATE)
-#define LEFT_FREQ_HZ 400.0
+#define LEFT_FREQ_HZ 1275.0
 #define LEFT_FREQ_HZ_RECIP (1.0/LEFT_FREQ_HZ)
-#define RIGHT_FREQ_HZ 700.0
+#define RIGHT_FREQ_HZ 1725.0
 #define RIGHT_FREQ_HZ_RECIP (1.0/RIGHT_FREQ_HZ)
 
 #define SAMPLES_PER_TICK (0.02*SAMPLE_RATE)
