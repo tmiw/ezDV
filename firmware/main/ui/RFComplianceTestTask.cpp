@@ -27,13 +27,13 @@
 
 // TBD -- check that these calculations happen at compile time and not runtime.
 #define SAMPLE_RATE 48000
-#define SAMPLE_RATE_RECIP (1.0/SAMPLE_RATE)
-#define LEFT_FREQ_HZ 1275.0
-#define LEFT_FREQ_HZ_RECIP (1.0/LEFT_FREQ_HZ)
-#define RIGHT_FREQ_HZ 1725.0
-#define RIGHT_FREQ_HZ_RECIP (1.0/RIGHT_FREQ_HZ)
+#define SAMPLE_RATE_RECIP ((float)1.0/(float)SAMPLE_RATE)
+#define LEFT_FREQ_HZ ((float)1275.0)
+#define LEFT_FREQ_HZ_RECIP ((float)1.0/LEFT_FREQ_HZ)
+#define RIGHT_FREQ_HZ ((float)1725.0)
+#define RIGHT_FREQ_HZ_RECIP ((float)1.0/RIGHT_FREQ_HZ)
 
-#define SAMPLES_PER_TICK (0.02*SAMPLE_RATE)
+#define SAMPLES_PER_TICK ((float)0.02*(float)SAMPLE_RATE)
 
 // Max amplitude of the test sine waves is 32767. This has been experimentally determined to 
 // produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
@@ -48,7 +48,7 @@
 // NOTE: the max amplitude is assuming no LPF on the output (true for v0.6 HW). The TLV320
 /// volume and/or amplitude here may need to be adjusted once a LPF is added.
 #define CODEC_VOLUME_LEVEL 0
-#define SINE_WAVE_AMPLITUDE 32767.0
+#define SINE_WAVE_AMPLITUDE ((float)32767.0)
 
 // Defined in Application.cpp.
 extern void StartSleeping();
@@ -72,6 +72,7 @@ RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask,
     , leftChannelSineWaveCount_(0)
     , rightChannelSineWave_(nullptr)
     , rightChannelSineWaveCount_(0)
+    , currentMode_(0)
 {
     registerMessageHandler(this, &RfComplianceTestTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonLongPressedMessage_);
@@ -191,6 +192,20 @@ void RfComplianceTestTask::onButtonReleasedMessage_(DVTask* origin, driver::Butt
             break;
         case driver::ButtonLabel::MODE:
             msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+            
+            // Cycle between supported modes:
+            // 1. Sine wave, both channels.
+            // 2. Sine wave, left channel only.
+            // 3. Sine wave, right channel only.
+            // 4. Square wave, both channels.
+            // 5. Square wave, left channel only.
+            // 6. Square wave, right channel only.
+            // 7. No audio.
+            currentMode_++;
+            if (currentMode_ >= 7)
+            {
+                currentMode_ = 0;
+            }
             break;
         case driver::ButtonLabel::VOL_UP:
             msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
@@ -212,33 +227,17 @@ void RfComplianceTestTask::onTaskTick_()
     {
         //auto timeBegin = esp_timer_get_time();
         
-        struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
-        struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
-        
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        if (currentMode_ >= 0 && currentMode_ <= 2)
         {
-            if (leftChannelCtr_ >= leftChannelSineWaveCount_)
-            {
-                leftChannelCtr_ = 0;
-            }
-            
-            if (codec2_fifo_free(outputLeftFifo) > 0)
-            {
-                codec2_fifo_write(outputLeftFifo, &leftChannelSineWave_[leftChannelCtr_++], 1);
-            }
+            sineWave_();
         }
-        
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        else if (currentMode_ >= 3 && currentMode_ <= 5)
         {
-            if (rightChannelCtr_ >= rightChannelSineWaveCount_)
-            {
-                rightChannelCtr_ = 0;
-            }
-            
-            if (codec2_fifo_free(outputRightFifo) > 0)
-            {
-                codec2_fifo_write(outputRightFifo, &rightChannelSineWave_[rightChannelCtr_++], 1);
-            }
+            squareWave_();
+        }
+        else if (currentMode_ == 6)
+        {
+            // do nothing, silence
         }
         
         // Get some I2C traffic flowing.
@@ -254,6 +253,88 @@ void RfComplianceTestTask::onTaskTick_()
         
         //auto timeEnd = esp_timer_get_time();
         //ESP_LOGI(CURRENT_LOG_TAG, "tone gen completed in %d us", (int)(timeEnd - timeBegin));
+    }
+}
+
+void RfComplianceTestTask::sineWave_()
+{
+    struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
+    struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
+    
+    if (currentMode_ == 0 || currentMode_ == 1)
+    {
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        {
+            if (leftChannelCtr_ >= leftChannelSineWaveCount_)
+            {
+                leftChannelCtr_ = 0;
+            }
+        
+            if (codec2_fifo_free(outputLeftFifo) > 0)
+            {
+                codec2_fifo_write(outputLeftFifo, &leftChannelSineWave_[leftChannelCtr_++], 1);
+            }
+        }
+    }
+    
+    if (currentMode_ == 0 || currentMode_ == 2)
+    {
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        {
+            if (rightChannelCtr_ >= rightChannelSineWaveCount_)
+            {
+                rightChannelCtr_ = 0;
+            }
+        
+            if (codec2_fifo_free(outputRightFifo) > 0)
+            {
+                codec2_fifo_write(outputRightFifo, &rightChannelSineWave_[rightChannelCtr_++], 1);
+            }
+        }
+    }
+}
+
+void RfComplianceTestTask::squareWave_()
+{
+    struct FIFO* outputLeftFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
+    struct FIFO* outputRightFifo = getAudioOutput(AudioInput::RIGHT_CHANNEL);
+    
+    if (currentMode_ == 3 || currentMode_ == 4)
+    {
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        {
+            int numSamplesPerPeriod = (int)(SAMPLE_RATE * LEFT_FREQ_HZ_RECIP);
+            if (leftChannelCtr_ >= numSamplesPerPeriod)
+            {
+                leftChannelCtr_ = 0;
+            }
+        
+            if (codec2_fifo_free(outputLeftFifo) > 0)
+            {
+                int halfway = numSamplesPerPeriod >> 1;
+                short val = leftChannelCtr_++ < halfway ? SINE_WAVE_AMPLITUDE : -SINE_WAVE_AMPLITUDE;
+                codec2_fifo_write(outputLeftFifo, &val, 1);
+            }
+        }
+    }
+    
+    if (currentMode_ == 3 || currentMode_ == 5)
+    {
+        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        {
+            int numSamplesPerPeriod = (int)(SAMPLE_RATE * RIGHT_FREQ_HZ_RECIP);
+            if (rightChannelCtr_ >= numSamplesPerPeriod)
+            {
+                rightChannelCtr_ = 0;
+            }
+        
+            if (codec2_fifo_free(outputRightFifo) > 0)
+            {
+                int halfway = numSamplesPerPeriod >> 1;
+                short val = rightChannelCtr_++ < halfway ? SINE_WAVE_AMPLITUDE : -SINE_WAVE_AMPLITUDE;
+                codec2_fifo_write(outputRightFifo, &val, 1);
+            }
+        }
     }
 }
 

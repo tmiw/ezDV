@@ -60,11 +60,16 @@ private:
     int leftChannelSineWaveCount_;
     short* rightChannelSineWave_;
     int rightChannelSineWaveCount_;
+    int currentMode_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
     void onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message);
     void onButtonReleasedMessage_(DVTask* origin, driver::ButtonReleasedMessage* message);
+    
+    // Mode handling
+    void sineWave_();
+    void squareWave_();
 };
 
 }
