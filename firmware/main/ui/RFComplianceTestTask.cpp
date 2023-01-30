@@ -140,7 +140,30 @@ void RfComplianceTestTask::onTaskSleep_()
 
 void RfComplianceTestTask::onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message)
 {
-    // empty
+    ezdv::driver::SetLedStateMessage msg;
+    msg.ledState = false;
+    
+    // Turn off LED for pressed button
+    switch (message->button)
+    {
+        case driver::ButtonLabel::PTT:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+            break;
+        case driver::ButtonLabel::MODE:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+            break;
+        case driver::ButtonLabel::VOL_UP:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+            break;
+        case driver::ButtonLabel::VOL_DOWN:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+            break;
+        default:
+            // ignore unknown buttons
+            return;
+    }
+    
+    publish(&msg);
 }
 
 void RfComplianceTestTask::onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message)
@@ -157,7 +180,30 @@ void RfComplianceTestTask::onButtonLongPressedMessage_(DVTask* origin, driver::B
 
 void RfComplianceTestTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonReleasedMessage* message)
 {
-    // empty
+    ezdv::driver::SetLedStateMessage msg;
+    msg.ledState = true;
+    
+    // Turn on LED for released button
+    switch (message->button)
+    {
+        case driver::ButtonLabel::PTT:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+            break;
+        case driver::ButtonLabel::MODE:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+            break;
+        case driver::ButtonLabel::VOL_UP:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+            break;
+        case driver::ButtonLabel::VOL_DOWN:
+            msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+            break;
+        default:
+            // ignore unknown buttons
+            return;
+    }
+    
+    publish(&msg);
 }
 
 void RfComplianceTestTask::onTaskTick_()
