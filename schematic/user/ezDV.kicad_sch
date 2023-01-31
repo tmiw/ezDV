@@ -468,6 +468,9 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/e40b1ac5-61d6-4d30-bea3-a56645d50890"
       (reference "Q5") (unit 2) (value "MBT3904DW1T1") (footprint "Package_TO_SOT_SMD:SOT-363_SC-70-6")
     )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/eed57fb4-479e-454d-8c65-55cfc9d4241e"
+      (reference "Q6") (unit 1) (value "MBT3904DW1T1") (footprint "Package_TO_SOT_SMD:SOT-363_SC-70-6")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/83a7fcdb-8e5a-4954-abbb-74c4199b386f"
       (reference "R1") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
