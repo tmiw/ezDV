@@ -21,7 +21,7 @@
 
 #define I2C_SDA_GPIO GPIO_NUM_47
 #define I2C_SCL_GPIO GPIO_NUM_48
-#define I2C_SCK_FREQ_HZ (100000)
+#define I2C_SCK_FREQ_HZ (400000)
 
 namespace ezdv
 {
