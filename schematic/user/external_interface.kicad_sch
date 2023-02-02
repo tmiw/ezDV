@@ -839,7 +839,7 @@
 
   (no_connect (at 55.88 120.65) (uuid b7e6375a-46be-4f1a-bac6-646e4d1653ec))
   (no_connect (at 48.26 115.57) (uuid ea7e4e28-bc03-4216-9639-33946269b6b3))
-  (no_connect (at 55.88 110.49) (uuid ea7e4e28-bc03-4216-9639-33946269b6b3))
+  (no_connect (at 55.88 110.49) (uuid ea7e4e28-bc03-4216-9639-33946269b6b4))
 
   (wire (pts (xy 133.35 86.36) (xy 133.35 88.9))
     (stroke (width 0) (type default) (color 0 0 0 0))
@@ -2432,9 +2432,9 @@
     (pin "1" (uuid 89577f6d-f6b9-485b-9034-1442e0cc8936))
     (pin "2" (uuid 5ff08964-5a10-4299-a1f2-5e0b6aa1bc0e))
     (pin "6" (uuid c6e8592a-911f-4828-9558-392be6d4f8ee))
-    (pin "3" (uuid a1900ce8-ad21-4429-a792-49836fbd9396))
-    (pin "4" (uuid 0f232799-cb5e-4d1f-85c1-4f0944f1d9d3))
-    (pin "5" (uuid 6e151de1-b5c7-462f-9f8a-a9876c54ce9c))
+    (pin "3" (uuid a1900ce8-ad21-4429-a792-49836fbd9397))
+    (pin "4" (uuid 0f232799-cb5e-4d1f-85c1-4f0944f1d9d4))
+    (pin "5" (uuid 6e151de1-b5c7-462f-9f8a-a9876c54ce9d))
   )
 
   (symbol (lib_id "Device:LED") (at 162.56 85.09 270) (unit 1)

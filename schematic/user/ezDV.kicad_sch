@@ -237,12 +237,6 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/516a70a5-823e-4c21-9a44-7073550b0195"
       (reference "#PWR051") (unit 1) (value "GND") (footprint "")
     )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/31eb8793-09a8-4107-a07c-4d1917fda0fb"
-      (reference "#PWR052") (unit 1) (value "GND") (footprint "")
-    )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/9db0fa2e-6007-404e-bed9-012619c9faa5"
-      (reference "#PWR053") (unit 1) (value "GND") (footprint "")
-    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -347,12 +341,6 @@
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/6bfb8a90-c18f-439c-99da-c4587b693de7"
       (reference "C23") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
-    )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/6326bfbc-863f-495a-bcec-cb1892a06bfc"
-      (reference "C24") (unit 1) (value "0.47uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
-    )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/41ed9a30-5cad-4cc1-aeae-8d09c9e70dc9"
-      (reference "C25") (unit 1) (value "0.47uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/753a31a0-3c9a-4329-a070-dd89ce5d28c3"
       (reference "D1") (unit 1) (value "Green") (footprint "Diode_SMD:D_0603_1608Metric")
@@ -575,12 +563,6 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/086ede42-eb9a-409c-b7bc-a07cebce49ef"
       (reference "R35") (unit 1) (value "10K") (footprint "Resistor_SMD:R_0402_1005Metric")
-    )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/c1deb181-3b7a-4657-81f5-d5731ee0f3d0"
-      (reference "R36") (unit 1) (value "10") (footprint "Resistor_SMD:R_0402_1005Metric")
-    )
-    (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/a440a0a5-16ba-4e8c-8a7e-b498300ce0e1"
-      (reference "R37") (unit 1) (value "10") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/6c4d79e6-0e5c-40f5-8090-0752a8ce7b7c"
       (reference "SW1") (unit 1) (value "ESP32S3 Reset") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
