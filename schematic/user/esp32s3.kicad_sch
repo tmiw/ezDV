@@ -6,8 +6,8 @@
 
   (title_block
     (title "ezDV ESP32-S3")
-    (date "2023-01-02")
-    (rev "v0.6")
+    (date "2023-02-02")
+    (rev "v0.7")
     (company "FreeDV Project")
   )
 
