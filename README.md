@@ -178,6 +178,33 @@ The fields to configure here are as follows:
 * "Username": the username to use to connect to the radio.
 * "Password" the password to use to connect to the radio.
 
+## Hardware Test Mode
+
+ezDV has a hardware test mode that can be used to ensure that the board is functioning properly. To access this mode,
+hold down the PTT button while turning on ezDV. Once ezDV starts, you will hear audio tones at 1275 Hz (user jack) and 
+1725 Hz (radio jack) and all LEDs will be lit at 50% duty cycle. If the board is functioning properly, only the frequency
+associated to the given jack (and harmonics, if square wave) will be in the output audio. Pushing the Mode button will cycle 
+through the following:
+
+* Sine tones at both jacks.
+* Sine tone only on user jack.
+* Sine tone only on radio jack.
+* Square tones at both jacks.
+* Square tone only on user jack.
+* Square tone only on radio jack.
+* No audio on either jack.
+
+Additionally, pushing any of the buttons will extinguish the following LEDs:
+
+* PTT: PTT (red)
+* Mode: Sync (green)
+* Volume Up: Overload (red)
+* Volume Down: Network (blue)
+
+Releasing the button will re-illuminate the associated LED.
+
+To shut down ezDV while in this mode, long-press the Mode button as with regular operation.
+
 ## License
 
 This project is subject to the terms of the [TAPR Open Hardware License v1.0](https://tapr.org/the-tapr-open-hardware-license/) (schematics, 
