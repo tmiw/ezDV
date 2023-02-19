@@ -52,7 +52,6 @@ private:
     int sineCounter_;
     bool deferShutdown_;
     std::vector<bool> beeperList_;
-    short* beeperBlock_;
 
     void onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message);
     void onClearBeeperText_(DVTask* origin, ClearBeeperTextMessage* message);

@@ -20,11 +20,9 @@
 #include "FreeDVTask.h"
 
 #include "esp_dsp.h"
-#include "codec2_fdmdv.h"
 #include "codec2_math.h"
 
-#define EIGHT_KHZ_BUF_SIZE 160
-#define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP (EIGHT_KHZ_BUF_SIZE * FDMDV_OS_48)
+#define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP 160
 #define CURRENT_LOG_TAG ("FreeDV")
 
 namespace ezdv
@@ -44,20 +42,6 @@ FreeDVTask::FreeDVTask()
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
     registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
     registerMessageHandler(this, &FreeDVTask::onReportingSettingsUpdate_);
-    
-    inputFilterMemory_ = new short[FDMDV_OS_TAPS_48K + FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
-    assert(inputFilterMemory_ != nullptr);
-    memset(inputFilterMemory_, 0, sizeof(short) * (FDMDV_OS_TAPS_48K + FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP));
-    
-    outputFilterMemory_ = new short[FDMDV_OS_TAPS_48_8K + EIGHT_KHZ_BUF_SIZE];
-    assert(outputFilterMemory_ != nullptr);
-    memset(outputFilterMemory_, 0, sizeof(short) * (FDMDV_OS_TAPS_48_8K + EIGHT_KHZ_BUF_SIZE));
-    
-    inputFifo8K_ = codec2_fifo_create(2560);
-    assert(inputFifo8K_ != nullptr);
-    
-    outputFifo8K_ = codec2_fifo_create(2560);
-    assert(outputFifo8K_ != nullptr);
 }
 
 FreeDVTask::~FreeDVTask()
@@ -74,9 +58,6 @@ FreeDVTask::~FreeDVTask()
         freedv_close(dv_);
         dv_ = nullptr;
     }
-    
-    delete[] inputFilterMemory_;
-    delete[] outputFilterMemory_;
 }
 
 void FreeDVTask::onTaskStart_()
@@ -128,23 +109,16 @@ void FreeDVTask::onTaskTick_()
         codecOutputFifo = getAudioOutput(audio::AudioInput::ChannelLabel::USER_CHANNEL);
     }
 
-    // Downconvert to 8K and add to 8K input FIFO
-    while (codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
-    {
-        short temp[EIGHT_KHZ_BUF_SIZE];
-        codec2_fifo_read(codecInputFifo, &inputFilterMemory_[FDMDV_OS_TAPS_48K], FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
-        fdmdv_48_to_8_short(temp, &inputFilterMemory_[FDMDV_OS_TAPS_48K], EIGHT_KHZ_BUF_SIZE);
-        codec2_fifo_write(inputFifo8K_, temp, EIGHT_KHZ_BUF_SIZE);
-    }
-    
     if (dv_ == nullptr)
     {
         // Analog mode, just pipe through the audio.
-        while (codec2_fifo_used(inputFifo8K_) >= EIGHT_KHZ_BUF_SIZE)
+        short inputBuf[FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
+        memset(inputBuf, 0, sizeof(inputBuf));
+        
+        while (codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
         {
-            short tempOut[EIGHT_KHZ_BUF_SIZE];
-            codec2_fifo_read(inputFifo8K_, tempOut, EIGHT_KHZ_BUF_SIZE);
-            codec2_fifo_write(outputFifo8K_, tempOut, EIGHT_KHZ_BUF_SIZE);
+            codec2_fifo_read(codecInputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
+            codec2_fifo_write(codecOutputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
         }
     }
     else
@@ -155,19 +129,17 @@ void FreeDVTask::onTaskTick_()
         {
             int numSpeechSamples = freedv_get_n_speech_samples(dv_);
             int numModemSamples = freedv_get_n_nom_modem_samples(dv_);
-            
             short inputBuf[numSpeechSamples];
             short outputBuf[numModemSamples];
         
-            int rv = codec2_fifo_read(inputFifo8K_, inputBuf, numSpeechSamples);
+            int rv = codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples);
             if (rv == 0)
             {
                 //auto timeBegin = esp_timer_get_time();
                 freedv_tx(dv_, outputBuf, inputBuf);
                 //auto timeEnd = esp_timer_get_time();
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
-                
-                codec2_fifo_write(outputFifo8K_, outputBuf, numModemSamples);
+                codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
             }
         }
         else
@@ -176,14 +148,14 @@ void FreeDVTask::onTaskTick_()
             short outputBuf[freedv_get_n_speech_samples(dv_)];
             int nin = freedv_nin(dv_);
         
-            int rv = codec2_fifo_read(inputFifo8K_, inputBuf, nin);
+            int rv = codec2_fifo_read(codecInputFifo, inputBuf, nin);
             if (rv == 0)
             {
                 //auto timeBegin = esp_timer_get_time();
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
                 //auto timeEnd = esp_timer_get_time();
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
-                codec2_fifo_write(outputFifo8K_, outputBuf, nout);
+                codec2_fifo_write(codecOutputFifo, outputBuf, nout);
                 nin = freedv_nin(dv_);
             }
         
@@ -194,15 +166,6 @@ void FreeDVTask::onTaskTick_()
         FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
         publish(message);
         delete message;
-    }
-    
-    // Upconvert back to 48K for the audio codec.
-    while (codec2_fifo_used(outputFifo8K_) >= EIGHT_KHZ_BUF_SIZE)
-    {
-        short tempOut[FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
-        codec2_fifo_read(outputFifo8K_, &outputFilterMemory_[FDMDV_OS_TAPS_48_8K], EIGHT_KHZ_BUF_SIZE);
-        fdmdv_8_to_48_short(tempOut, &outputFilterMemory_[FDMDV_OS_TAPS_48_8K], EIGHT_KHZ_BUF_SIZE);
-        codec2_fifo_write(codecOutputFifo, tempOut, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
     }
 }
 

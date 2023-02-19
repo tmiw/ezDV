@@ -18,15 +18,13 @@
 #include <cstring>
 #include <cmath>
 
-#include "esp_log.h"
-
 #include "RfComplianceTestTask.h"
 #include "driver/LedMessage.h"
 
 #define CURRENT_LOG_TAG ("RfComplianceTestTask")
 
 // TBD -- check that these calculations happen at compile time and not runtime.
-#define SAMPLE_RATE 48000
+#define SAMPLE_RATE 8000
 #define SAMPLE_RATE_RECIP ((float)1.0/(float)SAMPLE_RATE)
 #define LEFT_FREQ_HZ ((float)1275.0)
 #define LEFT_FREQ_HZ_RECIP ((float)1.0/LEFT_FREQ_HZ)
@@ -60,7 +58,7 @@ namespace ui
 {
 
 RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask, ezdv::driver::TLV320* tlv320Task)
-    : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
+    : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
     , AudioInput(1, 2)
     , isActive_(false)
     , ledArrayTask_(ledArrayTask)
@@ -250,9 +248,6 @@ void RfComplianceTestTask::onTaskTick_()
         pttGpio_ = !pttGpio_;
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::PTT_NPN, pttGpio_);
         publish(&msg);
-        
-        //auto timeEnd = esp_timer_get_time();
-        //ESP_LOGI(CURRENT_LOG_TAG, "tone gen completed in %d us", (int)(timeEnd - timeBegin));
     }
 }
 
