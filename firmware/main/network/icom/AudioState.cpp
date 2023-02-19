@@ -40,7 +40,7 @@ AudioState::AudioState(IcomStateMachine* parent)
 {
     parent->getTask()->registerMessageHandler(this, &AudioState::onRightChannelVolumeMessage_);
 
-    for (int index = 0; index < ICOM_AUDIO_SAMPLES_PER_RUN; index++)
+    for (int index = 0; index < 160; index++)
     {
         audioMultiplier_[index] = 1;
     }
@@ -114,14 +114,13 @@ void AudioState::onAudioOutTimer_()
     }
     
     // Get input audio and write to socket
-    // 20ms @ 48 KHz = 960, but 480 samples is about the max we can stuff in per packet
-    uint16_t samplesToRead = ICOM_AUDIO_SAMPLES_PER_RUN; 
+    uint16_t samplesToRead = 160; // 320 bytes
     short tempAudioOut[samplesToRead];
     float tempAudioInFloat[samplesToRead];
     float tempAudioOutFloat[samplesToRead];
-    int ctr = 0;
+    //memset(tempAudioOut, 0, samplesToRead * sizeof(short));
 
-    while (ctr++ < 2 && codec2_fifo_used(inputFifo) >= samplesToRead)
+    if (codec2_fifo_used(inputFifo) >= samplesToRead)
     {
         codec2_fifo_read(inputFifo, tempAudioOut, samplesToRead);
 
@@ -154,7 +153,7 @@ void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChan
     float volInDb = 0.5 * message->volume;
 
     float multiplier = exp(volInDb/20.0 * log(10.0));
-    for (int index = 0; index < ICOM_AUDIO_SAMPLES_PER_RUN; index++)
+    for (int index = 0; index < 160; index++)
     {
         audioMultiplier_[index] = multiplier;
     }
