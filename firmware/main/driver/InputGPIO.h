@@ -22,6 +22,9 @@
 #include "driver/gpio.h"
 
 #include "task/DVTask.h"
+#include "task/DVTimer.h"
+
+#define DEBOUNCE_TIMER_US (20000)
 
 extern "C"
 {
@@ -60,6 +63,7 @@ private:
         virtual ~InterruptFireMessage() = default;
     };
 
+    DVTimer debounceTimer_;
     DVTask* owner_;
     GPIOChangeFn onStateChange_;
     bool interruptEnabled_;
@@ -68,13 +72,15 @@ private:
     bool enablePulldown_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
+    void onDebounceTimerFire_();
 
     static void OnGPIOInterrupt_(void* ptr);
 };
 
 template<gpio_num_t NumGPIO>
 InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup, bool enablePulldown)
-    : owner_(owner)
+    : debounceTimer_(owner, std::bind(&InputGPIO<NumGPIO>::onDebounceTimerFire_, this), DEBOUNCE_TIMER_US)
+    , owner_(owner)
     , onStateChange_(onChange)
     , interruptEnabled_(false)
     , currentState_(false)
@@ -151,6 +157,16 @@ bool InputGPIO<NumGPIO>::getCurrentValue()
 template<gpio_num_t NumGPIO>
 void InputGPIO<NumGPIO>::onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message)
 {
+    // Start debounce timer.
+    debounceTimer_.start(true);
+}
+
+template<gpio_num_t NumGPIO>
+void InputGPIO<NumGPIO>::onDebounceTimerFire_()
+{
+    // Re-enable interrupt handler so we can restart debounce next button press.
+    enableInterrupt(true);
+    
     auto pendingCurrent = getCurrentValue();
     if (pendingCurrent != currentState_)
     {
@@ -166,6 +182,10 @@ void InputGPIO<NumGPIO>::OnGPIOInterrupt_(void* ptr)
     InputGPIO* gpioObj = (InputGPIO*)ptr;
     if (gpioObj->interruptEnabled_)
     {
+        // Temporarily disable the interrupt until after debounce checking finishes.
+        gpioObj->enableInterrupt(false);
+        
+        // Begin debounce logic inside non-interrupt context.
         InterruptFireMessage message;
         gpioObj->owner_->postISR(&message);
     }
