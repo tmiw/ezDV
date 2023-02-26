@@ -243,6 +243,9 @@
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/b91a3ce6-924c-4265-9ee8-77f567c8452a"
       (reference "#PWR053") (unit 1) (value "GND") (footprint "")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ba804e5d-a696-4e59-93af-b8b8186ac08b"
+      (reference "#PWR054") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -353,6 +356,9 @@
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/7a621d10-74a3-4ab1-87f9-94ce0f2ac8a0"
       (reference "C25") (unit 1) (value "47nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3fb07317-7c87-45e2-9892-4f463a65021f"
+      (reference "C26") (unit 1) (value "1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/753a31a0-3c9a-4329-a070-dd89ce5d28c3"
       (reference "D1") (unit 1) (value "Green") (footprint "Diode_SMD:D_0603_1608Metric")
@@ -581,6 +587,9 @@
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/71ad89bd-7057-4766-b5d0-fc5bdb8f5fd8"
       (reference "R37") (unit 1) (value "100") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/0ea241bb-850c-412e-be57-0843abb462c9"
+      (reference "R38") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/6c4d79e6-0e5c-40f5-8090-0752a8ce7b7c"
       (reference "SW1") (unit 1) (value "ESP32S3 Reset") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
