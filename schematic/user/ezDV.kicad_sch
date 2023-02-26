@@ -264,6 +264,18 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/e22c5f6c-6cf1-4f14-b48c-b20e00e1d3a7"
       (reference "#PWR057") (unit 1) (value "GND") (footprint "")
     )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/eff218ff-ca0a-4d80-8eee-bec27a140010"
+      (reference "#PWR058") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/23ee1de1-5caf-4283-a2d6-8fcbae0717ac"
+      (reference "#PWR059") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/25a2d5b2-2c61-4d23-b916-6aa9d6e32e75"
+      (reference "#PWR060") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/4f75173d-d98f-464b-9bba-dc591ae670a8"
+      (reference "#PWR061") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -434,6 +446,18 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/56d34912-43ff-4dbd-8288-1df1a36e8ec8"
       (reference "D16") (unit 1) (value "TPD1E05U06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/b6cd5c43-2861-4dd1-8c6a-ba016503f0fd"
+      (reference "D17") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/bd9f5999-6180-471b-95b8-d9648ff40d09"
+      (reference "D18") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/5c260192-8a6c-4b11-9aa7-0f3661e19574"
+      (reference "D19") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/6057082c-f90a-427f-8fdf-e53704ad792d/24e5b60a-be70-42a7-80f8-9ea3ca7ac029"
+      (reference "D20") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/483ad7e7-75f0-44a8-a49d-296a3868db7a"
       (reference "FB1") (unit 1) (value " YI160808U300-3R0T") (footprint "Inductor_SMD:L_0603_1608Metric")
