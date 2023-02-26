@@ -276,6 +276,12 @@
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/4f75173d-d98f-464b-9bba-dc591ae670a8"
       (reference "#PWR061") (unit 1) (value "GND") (footprint "")
     )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/b88727f1-588b-460b-993b-64fc6c7ef633"
+      (reference "#PWR062") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/4f28386c-0f09-425f-8cb7-9053eb564d63"
+      (reference "#PWR063") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -458,6 +464,12 @@
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/24e5b60a-be70-42a7-80f8-9ea3ca7ac029"
       (reference "D20") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/cc47ef65-25af-4e49-bff9-b896896389ca"
+      (reference "D21") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8a1c38a2-c10c-413c-9e46-1ffe4fffc7f2"
+      (reference "D22") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/483ad7e7-75f0-44a8-a49d-296a3868db7a"
       (reference "FB1") (unit 1) (value " YI160808U300-3R0T") (footprint "Inductor_SMD:L_0603_1608Metric")
