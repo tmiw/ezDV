@@ -246,6 +246,15 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ba804e5d-a696-4e59-93af-b8b8186ac08b"
       (reference "#PWR054") (unit 1) (value "GND") (footprint "")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ae2c450a-31fe-4c60-9fc9-709f63d930bd"
+      (reference "#PWR055") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/81a8020e-0d96-453d-9369-c081fe01610d"
+      (reference "#PWR056") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/e22c5f6c-6cf1-4f14-b48c-b20e00e1d3a7"
+      (reference "#PWR057") (unit 1) (value "GND") (footprint "")
+    )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
     )
@@ -360,6 +369,15 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3fb07317-7c87-45e2-9892-4f463a65021f"
       (reference "C26") (unit 1) (value "1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/687d3996-09b8-4418-9af4-918a186f69c3"
+      (reference "C27") (unit 1) (value "10nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/528a1440-b970-4b79-8b92-1c24e4294e02"
+      (reference "C28") (unit 1) (value "100nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/01e8e41b-20b0-443e-ad90-96e2d9ba2c2d"
+      (reference "C29") (unit 1) (value "4.7uF 50V") (footprint "Capacitor_SMD:C_0805_2012Metric")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/753a31a0-3c9a-4329-a070-dd89ce5d28c3"
       (reference "D1") (unit 1) (value "Green") (footprint "Diode_SMD:D_0603_1608Metric")
     )
@@ -407,6 +425,9 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/56d34912-43ff-4dbd-8288-1df1a36e8ec8"
       (reference "D16") (unit 1) (value "TPD1E05U06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/483ad7e7-75f0-44a8-a49d-296a3868db7a"
+      (reference "FB1") (unit 1) (value " YI160808U300-3R0T") (footprint "Inductor_SMD:L_0603_1608Metric")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/6de3b7f3-0614-4a95-bbad-0be76c8aec2f"
       (reference "H1") (unit 1) (value "MountingHole_Pad") (footprint "MountingHole:MountingHole_3.2mm_M3_Pad")
@@ -590,6 +611,9 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/0ea241bb-850c-412e-be57-0843abb462c9"
       (reference "R38") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/f1a0a14a-be1a-4de2-bd1a-497fc9e81c2a"
+      (reference "R39") (unit 1) (value "0.25") (footprint "Resistor_SMD:R_0603_1608Metric")
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/6c4d79e6-0e5c-40f5-8090-0752a8ce7b7c"
       (reference "SW1") (unit 1) (value "ESP32S3 Reset") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
