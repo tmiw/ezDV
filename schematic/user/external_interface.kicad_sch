@@ -847,8 +847,8 @@
   )
 
   (no_connect (at 50.8 101.6) (uuid 3f715d75-36aa-4490-8deb-44fcb3f5ce97))
-  (no_connect (at 58.42 106.68) (uuid 3f715d75-36aa-4490-8deb-44fcb3f5ce97))
-  (no_connect (at 50.8 111.76) (uuid 3f715d75-36aa-4490-8deb-44fcb3f5ce97))
+  (no_connect (at 58.42 106.68) (uuid 3f715d75-36aa-4490-8deb-44fcb3f5ce98))
+  (no_connect (at 50.8 111.76) (uuid 3f715d75-36aa-4490-8deb-44fcb3f5ce99))
 
   (wire (pts (xy 133.35 86.36) (xy 133.35 88.9))
     (stroke (width 0) (type default) (color 0 0 0 0))
