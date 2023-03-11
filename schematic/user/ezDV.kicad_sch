@@ -255,15 +255,6 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ba804e5d-a696-4e59-93af-b8b8186ac08b"
       (reference "#PWR054") (unit 1) (value "GND") (footprint "")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ae2c450a-31fe-4c60-9fc9-709f63d930bd"
-      (reference "#PWR055") (unit 1) (value "GND") (footprint "")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/81a8020e-0d96-453d-9369-c081fe01610d"
-      (reference "#PWR056") (unit 1) (value "GND") (footprint "")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/e22c5f6c-6cf1-4f14-b48c-b20e00e1d3a7"
-      (reference "#PWR057") (unit 1) (value "GND") (footprint "")
-    )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/eff218ff-ca0a-4d80-8eee-bec27a140010"
       (reference "#PWR058") (unit 1) (value "GND") (footprint "")
     )
@@ -420,15 +411,6 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3fb07317-7c87-45e2-9892-4f463a65021f"
       (reference "C26") (unit 1) (value "1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/687d3996-09b8-4418-9af4-918a186f69c3"
-      (reference "C27") (unit 1) (value "10nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/528a1440-b970-4b79-8b92-1c24e4294e02"
-      (reference "C28") (unit 1) (value "100nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/01e8e41b-20b0-443e-ad90-96e2d9ba2c2d"
-      (reference "C29") (unit 1) (value "10uF 50V") (footprint "Capacitor_SMD:C_0805_2012Metric")
-    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/36979a11-ecad-416e-b494-2ac8065264f5"
       (reference "C30") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
@@ -497,9 +479,6 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8a1c38a2-c10c-413c-9e46-1ffe4fffc7f2"
       (reference "D22") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/483ad7e7-75f0-44a8-a49d-296a3868db7a"
-      (reference "FB1") (unit 1) (value "MPZ2012S221AT000") (footprint "Inductor_SMD:L_0805_2012Metric")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/6de3b7f3-0614-4a95-bbad-0be76c8aec2f"
       (reference "H1") (unit 1) (value "MountingHole_Pad") (footprint "MountingHole:MountingHole_3.2mm_M3_Pad")
@@ -575,9 +554,6 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/cfdc2a72-8f1d-49ef-a893-56a5e9900fe1"
       (reference "R2") (unit 1) (value "5.1K") (footprint "Resistor_SMD:R_0402_1005Metric")
-    )
-    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/a37faf50-14d6-484f-8976-65edd274ed23"
-      (reference "R3") (unit 1) (value "2") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/bda0efee-a2ae-4a5d-a8fe-1d53118fedd5"
       (reference "R4") (unit 1) (value "1.6K") (footprint "Resistor_SMD:R_0402_1005Metric")
