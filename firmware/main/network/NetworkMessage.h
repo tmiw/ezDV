@@ -39,6 +39,8 @@ enum NetworkMessageTypes
     RADIO_CONNECTION_STATUS = 2,
     START_FILE_UPLOAD = 3,
     FILE_UPLOAD_DATA = 4,
+    START_FIRMWARE_UPLOAD = 5,
+    FIRMWARE_UPLOAD_DATA = 6,
 };
 
 template<uint32_t MSG_ID>
@@ -83,8 +85,31 @@ public:
     int length;
 };
 
-}
+class StartFirmwareUploadMessage : public DVTaskMessageBase<START_FIRMWARE_UPLOAD, StartFirmwareUploadMessage>
+{
+public:
+    StartFirmwareUploadMessage()
+        : DVTaskMessageBase<START_FIRMWARE_UPLOAD, StartFirmwareUploadMessage>(NETWORK_MESSAGE)
+        {}
+    virtual ~StartFirmwareUploadMessage() = default;
+};
+
+class FirmwareUploadDataMessage : public DVTaskMessageBase<FIRMWARE_UPLOAD_DATA, FirmwareUploadDataMessage>
+{
+public:
+    FirmwareUploadDataMessage(char* bufProvided = nullptr, int lengthProvided = 0)
+        : DVTaskMessageBase<FIRMWARE_UPLOAD_DATA, FirmwareUploadDataMessage>(NETWORK_MESSAGE)
+        , buf(bufProvided)
+        , length(lengthProvided)
+        {}
+    virtual ~FirmwareUploadDataMessage() = default;
+
+    char *buf;
+    int length;
+};
 
 }
 
-#endif // LED_MESSAGE_H
+}
+
+#endif // NETWORK_MESSAGE_H
