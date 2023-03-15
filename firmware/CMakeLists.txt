@@ -14,11 +14,13 @@ set(EXTRA_COMPONENT_DIRS
          externals/esp-dsp)
 
 project(ezdv)
+add_subdirectory(externals)    
 
 else()
 
 project(ezdv)
-    
+
+add_subdirectory(externals)    
 add_subdirectory(main)
 
 endif()
