@@ -369,10 +369,10 @@ void HttpServerTask::onTaskStart_()
     if (!isRunning_)
     {
         esp_vfs_spiffs_conf_t conf = {
-        .base_path = "/http",
-        .partition_label = "http",
-        .max_files = 5,
-        .format_if_mount_failed = false
+            .base_path = "/http",
+            .partition_label = "http_0",
+            .max_files = 5,
+            .format_if_mount_failed = false
         };
 
         // Use settings defined above to initialize and mount SPIFFS filesystem.

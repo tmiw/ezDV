@@ -119,4 +119,4 @@ target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections 
 ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
 
 # Embedded HTTP server files
-spiffs_create_partition_image(http http_server_files FLASH_IN_PROJECT)
+spiffs_create_partition_image(http_0 http_server_files FLASH_IN_PROJECT)
