@@ -7,3 +7,6 @@
 [submodule "firmware/externals/uzlib"]
 	path = firmware/externals/uzlib
 	url = https://github.com/tmiw/uzlib
+[submodule "firmware/externals/tinyuntar"]
+	path = firmware/externals/tinyuntar
+	url = https://github.com/tmiw/TinyUntar.git
