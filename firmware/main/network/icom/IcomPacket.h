@@ -18,8 +18,6 @@
 #ifndef ICOM_PACKET_H
 #define ICOM_PACKET_H
 
-#include "esp_heap_caps.h"
-
 #include <string>
 #include <vector>
 #include <memory>
@@ -33,33 +31,6 @@ namespace network
 
 namespace icom
 {
-
-template<typename T>
-struct IcomAllocator
-{
-    typedef T value_type;
-    IcomAllocator() noexcept { }
-    
-    template<class U> IcomAllocator(const IcomAllocator<U>&) noexcept {}
-    template<class U> bool operator==(const IcomAllocator<U>&) const noexcept
-    {
-        return true;
-    }
-    template<class U> bool operator!=(const IcomAllocator<U>&) const noexcept
-    {
-        return false;
-    }
-    
-    T* allocate(const size_t n) const noexcept
-    {
-        return (T*)heap_caps_malloc(n*sizeof(T), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
-    }
-    
-    void deallocate(T* const p, size_t) const noexcept
-    {
-        heap_caps_free(p);
-    }
-};
 
 class IcomPacket
 {

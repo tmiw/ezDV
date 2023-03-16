@@ -18,6 +18,7 @@
 #ifndef TRACKED_PACKET_STATE_H
 #define TRACKED_PACKET_STATE_H
 
+#include "util/PSRamAllocator.h"
 #include "task/DVTimer.h"
 #include "IcomProtocolState.h"
 #include "IcomPacket.h"
@@ -61,14 +62,14 @@ private:
         uint16_t, 
         std::pair<uint64_t, IcomPacket>, 
         std::less<uint16_t>, 
-        IcomAllocator<
+        util::PSRamAllocator<
             std::pair<
                 const uint16_t, 
                 std::pair<uint64_t, IcomPacket>
             >
         > > sentPackets_;
-    std::vector<uint16_t, IcomAllocator<uint16_t>> rxPacketIds_;
-    std::map<uint16_t, int, std::less<uint16_t>, IcomAllocator<std::pair<const uint16_t, int>>> rxMissingPacketIds_;
+    std::vector<uint16_t, util::PSRamAllocator<uint16_t>> rxPacketIds_;
+    std::map<uint16_t, int, std::less<uint16_t>, util::PSRamAllocator<std::pair<const uint16_t, int>>> rxMissingPacketIds_;
     
     void sendPing_();
     void retransmitPacket_(uint16_t packet);
