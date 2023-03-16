@@ -21,13 +21,17 @@
 #include <thread>
 #include <condition_variable>
 #include <vector>
+#include <mutex>
 
 #include "untar.h"
 #include "uzlib.h"
 
+#include "util/PSRamAllocator.h"
 #include "network/NetworkMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+
+#define UZLIB_DICT_SIZE (32767)
 
 namespace ezdv
 {
@@ -51,13 +55,25 @@ protected:
     virtual void onTaskTick_() override;
     
 private:
-    char tarBlock_[TAR_BLOCK_SIZE];
+    char* uzlibDict_;
     std::thread updateThread_;
     std::condition_variable dataBlockCV_;
+    std::mutex dataBlockMutex_;
+    uzlib_uncomp* uzlibData_;
+    bool isRunning_;
+    
+    typedef std::pair<char*, int> VectorEntryType;
+    std::vector<VectorEntryType, util::PSRamAllocator<VectorEntryType> > receivedDataBlocks_;
+    
+    // Update thread entry function.
+    void updateThreadEntryFn_();
     
     // Firmware file upload handlers
     void onStartFirmwareUploadMessage_(DVTask* origin, network::StartFirmwareUploadMessage* message);
     void onFirmwareUploadDataMessage_(DVTask* origin, network::FirmwareUploadDataMessage* message);
+    
+    // uzlib callbacks
+    static int UzlibReadCallback_(struct uzlib_uncomp *uncomp);
     
     // tinyuntar callbacks
     static int UntarHeaderCallback_(header_translated_t *header, 
