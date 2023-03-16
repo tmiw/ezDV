@@ -281,6 +281,7 @@ void App::onTaskStart_()
 
         // Start storage handling
         settingsTask_.start();
+        softwareUpdateTask_.start();
     }
     else
     {
@@ -353,6 +354,9 @@ void App::onTaskWake_()
         // Wake storage handling
         settingsTask_.wake();
         waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
+        
+        softwareUpdateTask_.wake();
+        waitForAwake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
     }
     else
     {
@@ -384,6 +388,9 @@ void App::onTaskSleep_()
         // Sleep storage handling
         settingsTask_.sleep();
         waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
+        
+        softwareUpdateTask_.sleep();
+        waitForSleep(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
 
         // Delay a second or two to allow final beeper to play.
         beeperTask_.sleep();

@@ -43,6 +43,7 @@ set(SOURCES
     "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
+    "storage/SoftwareUpdateTask.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp"
@@ -111,6 +112,9 @@ set(LPCNET OFF CACHE BOOL "")
 add_subdirectory(${codec2_SOURCE_DIR} ${codec2_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 target_link_libraries(${COMPONENT_LIB} PUBLIC codec2 uzlib tinyuntar)
+target_include_directories(${COMPONENT_LIB} PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../externals/tinyuntar/tinyuntar
+    ${CMAKE_CURRENT_SOURCE_DIR}/../externals/uzlib/src)
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
 target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion)

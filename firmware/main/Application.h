@@ -32,6 +32,7 @@
 #include "driver/TLV320.h"
 #include "network/WirelessTask.h"
 #include "storage/SettingsTask.h"
+#include "storage/SoftwareUpdateTask.h"
 #include "ui/UserInterfaceTask.h"
 #include "ui/RFComplianceTestTask.h"
 
@@ -70,6 +71,7 @@ private:
     driver::TLV320 tlv320Device_;
     network::WirelessTask wirelessTask_;
     storage::SettingsTask settingsTask_;
+    storage::SoftwareUpdateTask softwareUpdateTask_;
     ui::UserInterfaceTask uiTask_;
     ui::RfComplianceTestTask rfComplianceTask_;
     audio::VoiceKeyerTask voiceKeyerTask_;
