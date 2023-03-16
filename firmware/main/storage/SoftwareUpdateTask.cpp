@@ -15,7 +15,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <chrono>
+
+using namespace std::chrono_literals;
+
 #include "SoftwareUpdateTask.h"
+#include "SoftwareUpdateMessage.h"
 
 #define CURRENT_LOG_TAG "SoftwareUpdateTask"
 
@@ -57,14 +62,8 @@ void SoftwareUpdateTask::onTaskSleep_()
     if (updateThread_.joinable())
     {
         isRunning_ = false;
-        dataBlockCV_.notify_all();
+        dataBlockCV_.notify_one();
         updateThread_.join();
-        
-        for (auto& val : receivedDataBlocks_)
-        {
-            delete[] val.first;
-        }
-        receivedDataBlocks_.clear();
     }
 }
 
@@ -75,18 +74,16 @@ void SoftwareUpdateTask::onTaskTick_()
 
 void SoftwareUpdateTask::onStartFirmwareUploadMessage_(DVTask* origin, network::StartFirmwareUploadMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Beginning firmware flash");
+    
     // If we're already running, we should stop the existing firmware update first.
     if (updateThread_.joinable())
     {
-        isRunning_ = false;
-        dataBlockCV_.notify_all();
-        updateThread_.join();
+        ESP_LOGW(CURRENT_LOG_TAG, "Need to stop current flash before we can start again");
         
-        for (auto& val : receivedDataBlocks_)
-        {
-            delete[] val.first;
-        }
-        receivedDataBlocks_.clear();
+        isRunning_ = false;
+        dataBlockCV_.notify_one();
+        updateThread_.join();
     }
     
     // Start update thread. This is needed because of the API uzlib/tinyutar use
@@ -102,6 +99,8 @@ void SoftwareUpdateTask::onFirmwareUploadDataMessage_(DVTask* origin, network::F
     // If we're not currently flashing, ignore the message.
     if (!updateThread_.joinable())
     {
+        ESP_LOGW(CURRENT_LOG_TAG, "Received firmware data but not currently running!");
+        
         delete[] message->buf;
         return;
     }
@@ -111,11 +110,15 @@ void SoftwareUpdateTask::onFirmwareUploadDataMessage_(DVTask* origin, network::F
         std::unique_lock<std::mutex> lock(dataBlockMutex_);
         receivedDataBlocks_.push_back(VectorEntryType(message->buf, message->length));
     }
-    dataBlockCV_.notify_all();
+    dataBlockCV_.notify_one();
 }
 
 void SoftwareUpdateTask::updateThreadEntryFn_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Begin FW flash helper thread");
+    
+    currentDataBlock_ = nullptr;
+    
     // Initialize uzlib data needed for decompression.
     uzlibData_ = (uzlib_uncomp*)heap_caps_calloc(1, sizeof(uzlib_uncomp), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(uzlibData_ != nullptr);
@@ -128,26 +131,60 @@ void SoftwareUpdateTask::updateThreadEntryFn_()
     uzlibData_->source_read_cb = &UzlibReadCallback_;
     
     auto res = uzlib_gzip_parse_header(uzlibData_);
-    if (res != TINF_OK) {
-        // TBD -- invalid gzip file
-        return;
+    if (res != TINF_OK) 
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Not a valid .gz file (res = %d)", res);
+
+        FirmwareUpdateCompleteMessage message(false);
+        publish(&message);
+        
+        goto fw_cleanup;
     }
     
-    entry_callbacks_t untarCallbacks = {
-        .read_data_cb = &UntarReadBlockCallback_,
-        .header_cb = &UntarHeaderCallback_,
-        .data_cb = &UntarDataCallback_,
-        .end_cb = &UntarEndFileCallback_
-    };
+    {
+        entry_callbacks_t untarCallbacks = {
+            .read_data_cb = &UntarReadBlockCallback_,
+            .header_cb = &UntarHeaderCallback_,
+            .data_cb = &UntarDataCallback_,
+            .end_cb = &UntarEndFileCallback_
+        };
     
-    auto ret = read_tar(&untarCallbacks, this);
-    if (ret == 0)
-    {
-        // Tar read was successful
+        auto ret = read_tar(&untarCallbacks, this);
+        if (ret == 0)
+        {
+            // Tar read was successful
+            FirmwareUpdateCompleteMessage message(true);
+            publish(&message);
+        }
+        else
+        {        
+            // Tar read was unsuccessful. The returned code was why.
+            ESP_LOGE(CURRENT_LOG_TAG, "Untar failed (errno = %d)", ret);
+            FirmwareUpdateCompleteMessage message(false);
+            publish(&message);
+        }
     }
-    else
+
+fw_cleanup:
+    isRunning_ = false;
+
+    // Perform cleanup as required
     {
-        // Tar read was unsuccessful. The returned code was why.
+        std::unique_lock<std::mutex> lock(dataBlockMutex_);
+    
+        for (auto& val : receivedDataBlocks_)
+        {
+            delete[] val.first;
+        }
+        receivedDataBlocks_.clear();
+        
+        if (currentDataBlock_)
+        {
+            delete[] currentDataBlock_;
+        }
+        
+        heap_caps_free(uzlibData_);
+        heap_caps_free(uzlibDict_);
     }
 }
 
@@ -200,27 +237,35 @@ int SoftwareUpdateTask::UzlibReadCallback_(struct uzlib_uncomp *uncomp)
     SoftwareUpdateTask* thisPtr = (SoftwareUpdateTask*)uncomp->contextData;
     std::unique_lock<std::mutex> lock(thisPtr->dataBlockMutex_);
     
+    ESP_LOGI(CURRENT_LOG_TAG, "uzlib has requested more data");
+    
     // If there's no data available, wait until we get more.
-    if (thisPtr->receivedDataBlocks_.size() == 0)
+    while (thisPtr->isRunning_ && thisPtr->receivedDataBlocks_.size() == 0)
     {
-        thisPtr->dataBlockCV_.wait(lock);
-        if (!thisPtr->isRunning_)
-        {
-            // Return EOF so we force stop of the gunzip process.
-            return -1;
-        }
+        ESP_LOGW(CURRENT_LOG_TAG, "no data yet for uzlib");
+        thisPtr->dataBlockCV_.wait_for(lock, 10ms);
+    }
+
+    if (!thisPtr->isRunning_)
+    {
+        // Return EOF so we force stop of the gunzip process.
+        return -1;
     }
     
     // Set source pointers and return.
     if (thisPtr->uzlibData_->source != nullptr)
     {
-        delete[] thisPtr->uzlibData_->source;
+        delete[] thisPtr->currentDataBlock_;
+        thisPtr->uzlibData_->source = nullptr;
+        thisPtr->currentDataBlock_ = nullptr;
     }
-    thisPtr->uzlibData_->source = (const unsigned char*)thisPtr->receivedDataBlocks_[0].first;
+    
+    thisPtr->currentDataBlock_ = thisPtr->receivedDataBlocks_[0].first;
+    thisPtr->uzlibData_->source = (const unsigned char*)thisPtr->currentDataBlock_ + 1;
     thisPtr->uzlibData_->source_limit = (const unsigned char*)(thisPtr->receivedDataBlocks_[0].first + thisPtr->receivedDataBlocks_[0].second);
     thisPtr->receivedDataBlocks_.erase(thisPtr->receivedDataBlocks_.begin());
     
-    return thisPtr->uzlibData_->source[0];
+    return *thisPtr->currentDataBlock_;;
 }
 
 }

@@ -27,6 +27,7 @@
 #include "task/DVTask.h"
 #include "audio/VoiceKeyerMessage.h"
 #include "driver/BatteryMessage.h"
+#include "storage/SoftwareUpdateMessage.h"
 
 extern "C"
 {
@@ -53,6 +54,8 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
+    bool firmwareUploadInProgress_;
+    
     enum HttpRequestId 
     {
         WEBSOCKET_CONNECTED = 1,
@@ -120,6 +123,7 @@ private:
     void onUpdateReportingMessage_(DVTask* origin, UpdateReportingMessage* message);
     void onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message);
     void onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message);
+    void onFirmwareUpdateCompleteMessage_(DVTask* origin, storage::FirmwareUpdateCompleteMessage* message);
     void onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrightnessMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);

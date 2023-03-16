@@ -61,6 +61,7 @@ private:
     std::mutex dataBlockMutex_;
     uzlib_uncomp* uzlibData_;
     bool isRunning_;
+    char* currentDataBlock_;
     
     typedef std::pair<char*, int> VectorEntryType;
     std::vector<VectorEntryType, util::PSRamAllocator<VectorEntryType> > receivedDataBlocks_;

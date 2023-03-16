@@ -210,6 +210,22 @@ function wsConnect()
           // TBD: handle errors
           saveVoiceKeyerSettings();
       }
+      else if (json.type == "firmwareUploadComplete")
+      {
+          $("#updateSave").show();
+          $("#updateSaveProgress").hide();
+          
+          if (json.success)
+          {
+              $("#updateSuccessAlertRow").show();
+              $("#updateFailAlertRow").hide();
+          }
+          else
+          {
+              $("#updateSuccessAlertRow").hide();
+              $("#updateFailAlertRow").show();
+          }
+      }
       else if (json.type == "batteryStatus")
       {
           // Update battery percentage and time remaining
@@ -362,7 +378,6 @@ $("#radioSave").click(function()
     ws.send(JSON.stringify(obj));
 });
 
-
 $("#voiceKeyerSave").click(function()
 {
     $("#voiceKeyerSave").hide();
@@ -402,6 +417,51 @@ $("#voiceKeyerSave").click(function()
         };
 
         reader.readAsArrayBuffer($('#voiceKeyerFile').get(0).files[0]);
+    }
+
+});
+
+$("#updateSave").click(function()
+{
+    $("#updateSuccessAlertRow").hide();
+    $("#updateFailAlertRow").hide();
+    
+    $("#updateSave").hide();
+    $("#updateSaveProgress").show();
+
+    if ($('#firmwareFile').get(0).files.length === 0) 
+    {
+        // Ignore if there aren't any selected files. TBD
+        $("#updateSave").show();
+        $("#updateSaveProgress").hide();
+    }
+    else
+    {
+        var reader = new FileReader();
+        reader.onload = function() 
+        {
+            // read successful, send to server
+            var startMessage = {
+                type: "uploadFirmwareFile"
+            };
+            ws.send(JSON.stringify(startMessage));
+
+            // Send 4K blocks to ezDV so it can better handle
+            // them (vs. sending 100K+ at once).
+            for (var size = 0; size < reader.result.byteLength; size += 4096)
+            {
+                ws.send(reader.result.slice(size, size + 4096));
+            }
+        };
+        reader.onerror = function()
+        {
+            alert("Could not open file for upload!");
+
+            $("#updateSave").show();
+            $("#updateSaveProgress").hide();
+        };
+
+        reader.readAsArrayBuffer($('#firmwareFile').get(0).files[0]);
     }
 
 });
@@ -461,6 +521,12 @@ $( document ).ready(function()
     $("#reportingSuccessAlertRow").hide();
     $("#reportingFailAlertRow").hide();
 
+    $("#updateSave").show();
+    $("#updateSaveProgress").hide();
+    
+    $("#updateSuccessAlertRow").hide();
+    $("#updateFailAlertRow").hide();
+    
     $(".general-enable-row").hide();
     
     wsConnect();

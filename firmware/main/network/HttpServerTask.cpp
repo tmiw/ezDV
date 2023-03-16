@@ -60,6 +60,8 @@ extern "C"
 #define JSON_LED_BRIGHTNESS_STATUS_TYPE "ledBrightnessInfo"
 #define JSON_LED_BRIGHTNESS_SAVED_TYPE "ledBrightnessSaved"
 
+#define JSON_FIRMWARE_UPLOAD_COMPLETE "firmwareUploadComplete"
+
 namespace ezdv
 {
 
@@ -68,6 +70,7 @@ namespace network
 
 HttpServerTask::HttpServerTask()
     : ezdv::task::DVTask("HttpServerTask", 1, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(1000))
+    , firmwareUploadInProgress_(false)
     , isRunning_(false)
 {
     registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
@@ -84,6 +87,8 @@ HttpServerTask::HttpServerTask()
 
     registerMessageHandler(this, &HttpServerTask::onUpdateReportingMessage_);
     registerMessageHandler(this, &HttpServerTask::onUpdateLedBrightnessMessage_);
+    
+    registerMessageHandler(this, &HttpServerTask::onFirmwareUpdateCompleteMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -341,15 +346,35 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     BeginUploadVoiceKeyerFileMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
+                else if (!strcmp(type, "uploadFirmwareFile"))
+                {
+                    // Note: this has to be set sooner than in the handler for the below
+                    // as we could end up getting file blocks before the handler can be
+                    // processed.
+                    thisObj->firmwareUploadInProgress_ = true;
+                    
+                    ESP_LOGI(CURRENT_LOG_TAG, "Configuring firmware file upload");    
+                    StartFirmwareUploadMessage reqMessage;
+                    thisObj->publish(&reqMessage);
+                }
             }
         }
     }
     else if (ws_pkt.type == HTTPD_WS_TYPE_BINARY)
     {
-        // Binary packet, used for sending over the new voice keyer file
-        ESP_LOGI(CURRENT_LOG_TAG, "Received %d bytes of voice keyer data", ws_pkt.len);
-        FileUploadDataMessage message((char*)buf, ws_pkt.len);
-        thisObj->publish(&message); // note: buf will be freed by voice keyer task.
+        // Binary packet, used for sending over the new voice keyer or firmware file
+        if (thisObj->firmwareUploadInProgress_)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Received %d bytes of firmware data", ws_pkt.len);
+            FirmwareUploadDataMessage message((char*)buf, ws_pkt.len);
+            thisObj->publish(&message); // note: buf will be freed by voice keyer task.
+        }
+        else
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Received %d bytes of voice keyer data", ws_pkt.len);
+            FileUploadDataMessage message((char*)buf, ws_pkt.len);
+            thisObj->publish(&message); // note: buf will be freed by voice keyer task.
+        }
     }
     
     return ESP_OK;
@@ -854,7 +879,8 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
 void HttpServerTask::onBeginUploadVoiceKeyerFileMessage_(DVTask* origin, BeginUploadVoiceKeyerFileMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Configuring voice keyer file upload");
-
+    firmwareUploadInProgress_ = false;
+    
     int sizeToUpload = 0;
     auto sizeJSON = cJSON_GetObjectItem(message->request, "size");
     if (sizeJSON != nullptr)
@@ -1020,6 +1046,27 @@ void HttpServerTask::onFileUploadCompleteMessage_(DVTask* origin, audio::FileUpl
     {
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for VK file upload");
+    }
+}
+
+void HttpServerTask::onFirmwareUpdateCompleteMessage_(DVTask* origin, storage::FirmwareUpdateCompleteMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Firmware upload complete");
+
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_FIRMWARE_UPLOAD_COMPLETE);
+        cJSON_AddBoolToObject(root, "success", message->success);
+
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for firmware file upload");
     }
 }
 

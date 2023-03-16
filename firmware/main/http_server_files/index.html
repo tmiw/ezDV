@@ -51,6 +51,9 @@
                     <li class="nav-item">
                         <button id="radioTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm" aria-current="page-radio" disabled>Radio</button>
                     </li>
+                    <li class="nav-item">
+                        <button id="updateTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#updateTabForm" aria-current="page-update">Firmware Update</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -151,6 +154,41 @@
                     </div>
                     <div class="col">
                     <button type="reset" class="btn btn-danger" id="voiceKeyerReset">Reset</button>
+                    </div>
+                    <div class="col-8">&nbsp;</div>
+                </div>
+            </form>
+            <form class="tab-pane fade show" id="updateTabForm">
+                <div class="row mb-3" id="updateSuccessAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-success" role="alert">
+                        The ezDV firmware has been updated. Please turn ezDV off and on again for it to take effect.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3" id="updateFailAlertRow">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="alert alert-danger" role="alert">
+                        Could not update firmware. Please verify the file below and try again.
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 update-enable-row">
+                    <label for="firmwareFile" class="col-xs-4 col-md-2 col-form-labell">Firmware file (.tar.gz)</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="firmwareFile" type="file" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-2">&nbsp</div>
+                    <div class="col">
+                        <button type="button" class="btn btn-success" id="updateSave">Update</button>
+                        <div class="spinner-border" id="updateSaveProgress" role="status">
+                            <span class="visually-hidden">Saving...</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                    <button type="reset" class="btn btn-danger" id="updateReset">Reset</button>
                     </div>
                     <div class="col-8">&nbsp;</div>
                 </div>

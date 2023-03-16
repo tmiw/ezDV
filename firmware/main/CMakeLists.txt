@@ -43,6 +43,7 @@ set(SOURCES
     "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
+    "storage/SoftwareUpdateMessage.cpp"
     "storage/SoftwareUpdateTask.cpp"
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
