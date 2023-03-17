@@ -282,6 +282,9 @@ void App::onTaskStart_()
         // Start storage handling
         settingsTask_.start();
         softwareUpdateTask_.start();
+        
+        // Mark boot as successful, no need to rollback.
+        esp_ota_mark_app_valid_cancel_rollback();
     }
     else
     {
@@ -357,6 +360,9 @@ void App::onTaskWake_()
         
         softwareUpdateTask_.wake();
         waitForAwake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+        
+        // Mark boot as successful, no need to rollback.
+        esp_ota_mark_app_valid_cancel_rollback();
     }
     else
     {

@@ -33,6 +33,9 @@ namespace storage
 SoftwareUpdateTask::SoftwareUpdateTask()
     : DVTask("SoftwareUpdateTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
     , isRunning_(false)
+    , nextAppPartition_(nullptr)
+    , nextHttpPartition_(nullptr)
+    , appPartitionHandle_(0)
 {
     registerMessageHandler(this, &SoftwareUpdateTask::onStartFirmwareUploadMessage_);
     registerMessageHandler(this, &SoftwareUpdateTask::onFirmwareUploadDataMessage_);
@@ -113,9 +116,75 @@ void SoftwareUpdateTask::onFirmwareUploadDataMessage_(DVTask* origin, network::F
     dataBlockCV_.notify_one();
 }
 
+bool SoftwareUpdateTask::setPartitionPointers_()
+{
+    // Get partition objects required for the update.
+    int appSlot = 0;
+    nextAppPartition_ = const_cast<esp_partition_t*>(esp_ota_get_next_update_partition(nullptr));
+    if (nextAppPartition_->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
+    {
+        appSlot = 0;
+    }
+    else if (nextAppPartition_->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
+    {
+        appSlot = 1;
+    }
+    else
+    {
+        // Should not reach here.
+        ESP_LOGE(CURRENT_LOG_TAG, "Firmware flash doesn't support more than two OTA slots");
+        nextAppPartition_ = nullptr;
+        return false;
+    }
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Will be flashing to slot %d", appSlot);
+    
+    std::string nextHttpSlotName = "http_0";
+    if (appSlot == 0)
+    {
+        nextHttpSlotName = "http_0";
+    }
+    else if (appSlot == 1)
+    {
+        nextHttpSlotName = "http_1";
+    }
+    
+    nextHttpPartition_ = const_cast<esp_partition_t*>(esp_partition_find_first(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nextHttpSlotName.c_str()));
+    if (nextHttpPartition_ == nullptr)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not find http partition '%s'", nextHttpSlotName.c_str());
+        nextAppPartition_ = nullptr;
+        return false;
+    }
+    
+    // Open and prep partitions for flashing
+    if (esp_ota_begin(nextAppPartition_, OTA_SIZE_UNKNOWN, &appPartitionHandle_) != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not begin flashing app partition");
+        nextHttpPartition_ = nullptr;
+        nextAppPartition_ = nullptr;
+        return false;
+    }
+    
+    if (esp_partition_erase_range(nextHttpPartition_, 0, nextHttpPartition_->size) != ESP_OK)
+    {
+        // Caller will abort the OTA operation if we can't erase this partition.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not erase http partition '%s'", nextHttpSlotName.c_str());
+        return false;
+    }
+    
+    httpPartitionOffset_ = 0;
+    return true;
+}
+
 void SoftwareUpdateTask::updateThreadEntryFn_()
 {
+    bool success = false;
+    
     ESP_LOGI(CURRENT_LOG_TAG, "Begin FW flash helper thread");
+    
+    // Grab needed partition objects.
+    setPartitionPointers_();
     
     currentDataBlock_ = nullptr;
     
@@ -152,8 +221,18 @@ void SoftwareUpdateTask::updateThreadEntryFn_()
         auto ret = read_tar(&untarCallbacks, this);
         if (ret == 0)
         {
-            // Tar read was successful
-            FirmwareUpdateCompleteMessage message(true);
+            // Tar read was successful, check if flash was successful.
+            if (nextHttpPartition_ == nullptr)
+            {
+                // HTTP partition was successfully flashed if nextHttpPartition_ gets reset to null.
+                if (esp_ota_end(appPartitionHandle_) == ESP_OK && esp_ota_set_boot_partition(nextAppPartition_) == ESP_OK)
+                {
+                    ESP_LOGI(CURRENT_LOG_TAG, "Flash successful, will boot using the next slot on reboot.");
+                    success = true;
+                }
+            }
+            
+            FirmwareUpdateCompleteMessage message(success);
             publish(&message);
         }
         else
@@ -186,6 +265,18 @@ fw_cleanup:
         heap_caps_free(uzlibData_);
         heap_caps_free(uzlibDict_);
     }
+    
+    if (!success)
+    {
+        // Abort firmware flash if we got a failure.
+        if (nextAppPartition_ != nullptr)
+        {
+            esp_ota_abort(appPartitionHandle_);
+            appPartitionHandle_ = 0;
+        }
+    }
+    nextAppPartition_ = nullptr;
+    nextHttpPartition_ = nullptr;
 }
 
 int SoftwareUpdateTask::UntarHeaderCallback_(header_translated_t *header, 
@@ -204,7 +295,25 @@ int SoftwareUpdateTask::UntarDataCallback_(header_translated_t *header,
 										int length)
 {
     // Called when a data block has been seen in the file.
+    SoftwareUpdateTask* thisPtr = (SoftwareUpdateTask*)context_data;
     
+    if (!strcmp(header->filename, "ezdv.bin"))
+    {
+        // app partition handling
+        if (esp_ota_write(thisPtr->appPartitionHandle_, block, length) != ESP_OK)
+        {
+            return -1;
+        }
+    }
+    else if (!strcmp(header->filename, "http.bin"))
+    {
+        // HTTP partition handling
+        if (esp_partition_write(thisPtr->nextHttpPartition_, thisPtr->httpPartitionOffset_, block, length) != ESP_OK)
+        {
+            return -1;
+        }
+        thisPtr->httpPartitionOffset_ += length;
+    }
     return 0; // non-zero terminates untarring
 }
 
@@ -212,7 +321,14 @@ int SoftwareUpdateTask::UntarEndFileCallback_(header_translated_t *header,
 									int entry_index, 
 									void *context_data)
 {
+    SoftwareUpdateTask* thisPtr = (SoftwareUpdateTask*)context_data;
     ESP_LOGI(CURRENT_LOG_TAG, "Finished reading %s from tarball", header->filename);
+    
+    if (!strcmp(header->filename, "http.bin"))
+    {
+        // Set partition pointer to NULL to mark that we've finished flashing the HTTP partition.
+        thisPtr->nextHttpPartition_ = nullptr;
+    }
     
     return 0; // non-zero terminates untarring
 }
@@ -265,7 +381,7 @@ int SoftwareUpdateTask::UzlibReadCallback_(struct uzlib_uncomp *uncomp)
     thisPtr->uzlibData_->source_limit = (const unsigned char*)(thisPtr->receivedDataBlocks_[0].first + thisPtr->receivedDataBlocks_[0].second);
     thisPtr->receivedDataBlocks_.erase(thisPtr->receivedDataBlocks_.begin());
     
-    return *thisPtr->currentDataBlock_;;
+    return *thisPtr->currentDataBlock_;
 }
 
 }

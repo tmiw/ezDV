@@ -69,6 +69,7 @@ if(${ESP_PLATFORM})
                                 esp_http_server
                                 esp_timer
                                 esp_wifi
+                                app_update
                                 driver
                                 nvs_flash
                                 json)

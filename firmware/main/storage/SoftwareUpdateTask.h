@@ -23,6 +23,9 @@
 #include <vector>
 #include <mutex>
 
+#include "esp_partition.h"
+#include "esp_ota_ops.h"
+
 #include "untar.h"
 #include "uzlib.h"
 
@@ -62,9 +65,16 @@ private:
     uzlib_uncomp* uzlibData_;
     bool isRunning_;
     char* currentDataBlock_;
+    esp_partition_t* nextAppPartition_;
+    esp_partition_t* nextHttpPartition_;
+    esp_ota_handle_t appPartitionHandle_;
+    int httpPartitionOffset_;
     
     typedef std::pair<char*, int> VectorEntryType;
     std::vector<VectorEntryType, util::PSRamAllocator<VectorEntryType> > receivedDataBlocks_;
+    
+    // Partition pointer initialization.
+    bool setPartitionPointers_();
     
     // Update thread entry function.
     void updateThreadEntryFn_();
