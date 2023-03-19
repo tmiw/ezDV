@@ -127,6 +127,10 @@ You can also use [esptool](https://github.com/espressif/esptool). For example:
 esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin
 ```
 
+### Using the Wi-Fi interface
+
+You can also update the firmware wirelessly. See "Web based configuration" below for info.
+
 ## Using ezDV
 
 ezDV has four buttons on the left, in order from top to bottom:
@@ -176,18 +180,26 @@ the below:
 
 From here, you can choose one of four tabs:
 
+* General: Contains miscallenous ezDV configuration options.
 * Reporting: Configures your callsign (to be encoded in FreeDV transmissions for reporting to [PSK Reporter](https://pskreporter.info/)).
 * Voice Keyer: Configures ezDV's voice keyer feature.
 * Wi-Fi: Configures how ezDV connects to Wi-Fi.
 * Radio: Configures how ezDV connects to your network-enabled radio.
+* Firmware Update: Allows the user to perform a firmware update on ezDV.
 
 Note that most changes here will require a power cycle in order to take effect.
+
+### General
+
+Currently, this tab allows the user to adjust the brightness on the LEDs on the front of ezDV.
 
 ### Reporting
 
 For PSK Reporter functionality, there is only one field here: your callsign. (ezDV does not report to PSK Reporter
 itself due to it being intended for use in environments without reliable internet access.) Leaving this field blank
-will transmit no callsign when using one of the FreeDV modes.
+will transmit no callsign when using one of the FreeDV modes:
+
+![Reporting tab for ezDV](docs/ezDV_Reporting.jpg)
 
 ### Voice Keyer
 
@@ -229,6 +241,12 @@ The fields to configure here are as follows:
 * "Port": the port to connect to on the radio. This is typically 50001 if using the IC-705.
 * "Username": the username to use to connect to the radio.
 * "Password" the password to use to connect to the radio.
+
+### Firmware Update
+
+This tab allows you to flash new firmware to the ezDV board. Simply provide a .tar.gz file containing ezdv.bin and http.bin files from the desired version and click on the "Update" button. If successful, turning ezDV off and on again will cause the new firmware to take effect:
+
+![Reporting tab for ezDV](docs/ezDV_Firmware_Update.jpg)
 
 ## Hardware Test Mode
 
