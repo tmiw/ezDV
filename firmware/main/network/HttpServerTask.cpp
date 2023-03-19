@@ -26,6 +26,8 @@
 #include "esp_vfs.h"
 #include "esp_spiffs.h"
 
+#include "esp_partition.h"
+#include "esp_ota_ops.h"
 #include "esp_http_server.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -393,9 +395,27 @@ void HttpServerTask::onTaskStart_()
 {
     if (!isRunning_)
     {
+        char* partitionLabel = "http_0";
+        auto partition = const_cast<esp_partition_t*>(esp_ota_get_running_partition());
+        if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
+        {
+            partitionLabel = "http_0";
+        }
+        else if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
+        {
+            partitionLabel = "http_1";
+        }
+        else
+        {
+            // Should not reach here.
+            ESP_LOGE(CURRENT_LOG_TAG, "Detected more than two app slots, this is unexpected");
+            assert(false);
+        }
+        ESP_LOGI(CURRENT_LOG_TAG, "Using partition %s for HTTP server.", partitionLabel);
+        
         esp_vfs_spiffs_conf_t conf = {
             .base_path = "/http",
-            .partition_label = "http_0",
+            .partition_label = partitionLabel,
             .max_files = 5,
             .format_if_mount_failed = false
         };
