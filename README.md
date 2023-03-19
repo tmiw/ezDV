@@ -91,7 +91,7 @@ On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require 
 
 1. Download the ESP Flash Tool from https://www.espressif.com/en/support/download/other-tools.
 2. Decompress all of the files in the ZIP file and execute flash\_download\_tool\_3.9.3.exe.
-3. Select "ESP32S3" for "ChipType", "Develop" for "WorkMode" and "USB" for "LoadMode" as shown below:
+3. Select "ESP32-S3" for "ChipType", "Develop" for "WorkMode" and "USB" for "LoadMode" as shown below:
 
 ![ESP Flash Tool step 3](docs/ezDV_Flash_1.png)
 
@@ -101,9 +101,9 @@ On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require 
 |---|---|
 | bootloader.bin | 0x0 |
 | partition-table.bin | 0x8000 |
-| ota\_data\_initial.bin | 0xf000 |
-| ezdv.bin | 0x8000 |
-| http_0.bin | 0x7f8000 |
+| ota\_data\_initial.bin | 0xF000 |
+| ezdv.bin | 0x20000 |
+| http_0.bin | 0x7F8000 |
 
 Additionally, check each of the checkboxes to the left of the file name. It should look something like this, with each of the rows having a green background:
 
