@@ -10,7 +10,7 @@
     <div class="container-fluid">
         <div class="row page-toolbar">
             <div class="col">
-               &nbsp;
+               <div class="version">@PROJECT_VER@</div>
             </div>
             <!--<div class="col-auto">
                 <div class="wifi"></div>

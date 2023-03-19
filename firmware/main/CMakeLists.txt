@@ -121,6 +121,9 @@ target_include_directories(${COMPONENT_LIB} PUBLIC
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
 target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion)
 
+# Generate HTML with correct version number
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/http_server_files/index.html.in ${CMAKE_CURRENT_SOURCE_DIR}/http_server_files/index.html)
+
 # RISC-V ULP setup 
 ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
 
