@@ -30,7 +30,7 @@ namespace driver
 class OutputGPIO
 {
 public:
-    OutputGPIO(gpio_num_t gpio, bool pwm = false);
+    OutputGPIO(gpio_num_t gpio, bool pwm = false, bool fade = false);
     virtual ~OutputGPIO();
     
     void setState(bool state);
@@ -39,10 +39,14 @@ public:
 private:
     gpio_num_t gpio_;
     bool pwm_;
+    bool fade_;
     int dutyCycle_;
     bool state_;
 
     ledc_channel_t getPWMChannel_();
+    void updateDutyCycle_();
+    
+    static bool FadeFnInitialized_;
 };
 
 } // namespace driver

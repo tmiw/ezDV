@@ -17,21 +17,38 @@
 
 #include "OutputGPIO.h"
 
+#define LED_PWM_FREQUENCY (160000) /* 160 KHz */
+#define LED_DUTY_RESOLUTION LEDC_TIMER_8_BIT
+#define LED_DUTY_CYCLE_SHIFT (5) /* relative to 5 Khz frequency, i.e. add 1 for every doubling of frequency after 5 KHz.
+                                    This is so we can translate e.g. 8192 to the maximum for the current duty resolution. */
+
 namespace ezdv
 {
 
 namespace driver
 {
 
-OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm)
+bool OutputGPIO::FadeFnInitialized_ = false;
+
+OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm, bool fade)
     : gpio_(gpio)
     , pwm_(pwm)
+    , fade_(fade)
     , dutyCycle_(8192)
     , state_(false)
 {
+    if (!FadeFnInitialized_)
+    {
+        FadeFnInitialized_ = true;
+        ESP_ERROR_CHECK(ledc_fade_func_install(0));
+    }
+    
     ESP_ERROR_CHECK(gpio_reset_pin(gpio_));
     ESP_ERROR_CHECK(gpio_set_direction(gpio_, GPIO_MODE_OUTPUT));
     ESP_ERROR_CHECK(gpio_set_pull_mode(gpio_, GPIO_FLOATING));
+    
+    // Needed to reduce EMI on radio aduio in HW test mode.
+    ESP_ERROR_CHECK(gpio_set_drive_capability(gpio_, GPIO_DRIVE_CAP_0));
 
     if (pwm)
     {
@@ -39,9 +56,9 @@ OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm)
 
         ledc_timer_config_t ledc_timer = {
             .speed_mode       = LEDC_LOW_SPEED_MODE,
-            .duty_resolution  = LEDC_TIMER_13_BIT,
+            .duty_resolution  = LED_DUTY_RESOLUTION,
             .timer_num        = LEDC_TIMER_0,
-            .freq_hz          = 5000,  // Set output frequency at 5 kHz
+            .freq_hz          = LED_PWM_FREQUENCY,
             .clk_cfg          = LEDC_AUTO_CLK
         };
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
@@ -51,7 +68,7 @@ OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm)
             .gpio_num       = gpio_,
             .speed_mode     = LEDC_LOW_SPEED_MODE,
             .channel        = pwmChannel,
-            .intr_type      = LEDC_INTR_DISABLE,
+            .intr_type      = fade_ ? LEDC_INTR_FADE_END : LEDC_INTR_DISABLE,
             .timer_sel      = LEDC_TIMER_0,
             .duty           = 0, // Set duty to 0%
             .hpoint         = 0
@@ -70,25 +87,41 @@ void OutputGPIO::setDutyCycle(int dutyCycle)
     dutyCycle_ = dutyCycle;
     
     // Update duty cycle in the PWM driver.
-    setState(state_);
+    updateDutyCycle_();
 }
 
 void OutputGPIO::setState(bool state)
 {
+    if (state != state_)
+    {
+        state_ = state;
+        updateDutyCycle_();
+    }
+}
+
+void OutputGPIO::updateDutyCycle_()
+{
     if (pwm_)
     {
         auto pwmChannel = getPWMChannel_();
-
-        // 819 = 10% duty cycle (((2 ** 13) - 1) * 10%)
-        ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, pwmChannel, state ? dutyCycle_ : 0));
-        ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, pwmChannel));
+    
+        if (fade_)
+        {
+            // Fade to the new state within 20ms, wait till done (EMI mitigation).
+            // NOTE: only the PTT output GPIO is fading at the moment but we should consider 
+            // blocking wait in the future if others need it.
+            ESP_ERROR_CHECK(ledc_set_fade_time_and_start(LEDC_LOW_SPEED_MODE, pwmChannel, state_ ? dutyCycle_ >> LED_DUTY_CYCLE_SHIFT: 0, 20, LEDC_FADE_NO_WAIT));
+        }
+        else
+        {
+            // 819 = 10% duty cycle (((2 ** 13) - 1) * 10%)
+            ESP_ERROR_CHECK(ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, pwmChannel, state_ ? dutyCycle_ >> LED_DUTY_CYCLE_SHIFT : 0, 0));
+        }
     }
     else
     {
-        ESP_ERROR_CHECK(gpio_set_level(gpio_, state));
+        ESP_ERROR_CHECK(gpio_set_level(gpio_, state_));
     }
-    
-    state_ = state;
 }
 
 ledc_channel_t OutputGPIO::getPWMChannel_()
@@ -108,6 +141,9 @@ ledc_channel_t OutputGPIO::getPWMChannel_()
             break;
         case GPIO_NUM_16:
             pwmChannel = LEDC_CHANNEL_3;
+            break;
+        case GPIO_NUM_21:
+            pwmChannel = LEDC_CHANNEL_4;
             break;
         default:
             assert(0);

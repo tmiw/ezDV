@@ -36,7 +36,7 @@ LedArray::LedArray()
     , syncLed_(GPIO_SYNC_LED, true)
     , overloadLed_(GPIO_OVL_LED, true)
     , pttLed_(GPIO_PTT_LED, true)
-    , pttNpmLed_(GPIO_PTT_NPN)
+    , pttNpmLed_(GPIO_PTT_NPN, true, true)
     , networkLed_(GPIO_NET_LED, true)
 {
     registerMessageHandler(this, &LedArray::onSetLedState_);
