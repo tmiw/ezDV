@@ -244,10 +244,13 @@ void RfComplianceTestTask::onTaskTick_()
         tlv320Task_->post(&leftChanVolMessage);
         tlv320Task_->post(&rightChanVolMessage);
         
-        // Toggle PTT line on radio jack every 20ms.
-        pttCtr_++;
-        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::PTT_NPN, (pttCtr_ & (1 << 1)) != 0);
-        publish(&msg);
+        // Toggle PTT line on radio jack every 20ms as long as there's audio on either jack.
+        if (currentMode_ != 6)
+        {
+            pttCtr_++;
+            ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::PTT_NPN, (pttCtr_ & (1 << 1)) != 0);
+            publish(&msg);
+        }
     }
 }
 
