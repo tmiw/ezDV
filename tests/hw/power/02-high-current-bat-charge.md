@@ -4,7 +4,7 @@
 
 * USB-C PD power supply
 * USB measurement cable (e.g. [these from Amazon](https://www.amazon.com/gp/product/B09V81BTMK/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&psc=1))
-* 2000 mAh LiPo battery discharged to 3.6V
+* 2000 mAh LiPo battery discharged to 3.6V or less
 
 ## Test Steps
 

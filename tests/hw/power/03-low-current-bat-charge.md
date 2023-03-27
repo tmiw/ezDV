@@ -5,7 +5,7 @@
 * DC bench power supply set to 5 volts (and maximum 2A of current) with meters.
 * USB to alligator clips ([example](https://www.amazon.com/HCFeng-Alligator-Adapter-Testing-Circuit/dp/B0BG5T6CPF/ref=sr_1_5?keywords=usb+to+alligator+clips&qid=1679882225&sr=8-5))
 * USB-A male to USB-C male cable
-* 2000 mAh LiPo battery discharged to 3.6V
+* 2000 mAh LiPo battery discharged to 3.6V or less
 
 ## Test Steps
 
