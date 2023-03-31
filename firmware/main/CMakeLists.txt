@@ -20,6 +20,8 @@ set(SOURCES
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
     "driver/TLV320Message.cpp"
+    "network/flex/FlexMessage.cpp"
+    "network/flex/FlexTcpTask.cpp"
     "network/icom/AudioState.cpp"
     "network/icom/AreYouReadyAudioState.cpp"
     "network/icom/AreYouReadyCIVState.cpp"

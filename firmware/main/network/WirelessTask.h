@@ -23,6 +23,7 @@
 
 #include "task/DVTask.h"
 #include "icom/IcomSocketTask.h"
+#include "flex/FlexTcpTask.h"
 
 #include "audio/AudioInput.h"
 
@@ -60,6 +61,7 @@ private:
     icom::IcomSocketTask icomControlTask_;
     icom::IcomSocketTask icomAudioTask_;
     icom::IcomSocketTask icomCIVTask_;
+    flex::FlexTcpTask flexTcpTask_;
     
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;

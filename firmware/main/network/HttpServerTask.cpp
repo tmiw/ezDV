@@ -521,6 +521,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
             {
                 cJSON_AddStringToObject(root, "type", JSON_RADIO_STATUS_TYPE);
                 cJSON_AddBoolToObject(root, "enabled", response->enabled);
+                cJSON_AddNumberToObject(root, "radioType", response->type);
                 cJSON_AddStringToObject(root, "host", response->host);
                 cJSON_AddNumberToObject(root, "port", response->port);
                 cJSON_AddStringToObject(root, "username", response->username);
@@ -808,6 +809,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     ESP_LOGI(CURRENT_LOG_TAG, "Updating radio settings");
     
     bool enabled = false;
+    int type = 0;
     char* hostname = nullptr;
     int port = 0;
     char* username = nullptr;
@@ -821,6 +823,17 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
         enabled = cJSON_IsTrue(enabledJSON);
         if (enabled)
         {
+            auto typeJSON = cJSON_GetObjectItem(message->request, "radioType");
+            if (typeJSON != nullptr)
+            {
+                type = (int)cJSON_GetNumberValue(typeJSON);
+                settingsValid &= type == 0 || type == 1;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+            
             auto hostJSON = cJSON_GetObjectItem(message->request, "host");
             if (hostJSON != nullptr)
             {
@@ -832,7 +845,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
             if (portJSON != nullptr)
             {
                 port = (int)cJSON_GetNumberValue(portJSON);
-                settingsValid &= port > 0 && port <= 65535;
+                settingsValid &= type == 1 || (port > 0 && port <= 65535);
             }
             else
             {
@@ -843,14 +856,14 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
             if (usernameJSON != nullptr)
             {
                 username = cJSON_GetStringValue(usernameJSON);
-                settingsValid &= strlen(username) > 0;
+                settingsValid &= type == 1 || strlen(username) > 0;
             }
             
             auto passwordJSON = cJSON_GetObjectItem(message->request, "password");
             if (passwordJSON != nullptr)
             {
                 password = cJSON_GetStringValue(passwordJSON);
-                settingsValid &= strlen(password) > 0;
+                settingsValid &= type == 1 || strlen(password) > 0;
             }
         }
     }
@@ -862,7 +875,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     bool success = false;
     if (settingsValid)
     {
-        storage::SetRadioSettingsMessage request(enabled, hostname, port, username, password);
+        storage::SetRadioSettingsMessage request(enabled, type, hostname, port, username, password);
         publish(&request);
     
         auto response = waitFor<storage::RadioSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);

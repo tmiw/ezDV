@@ -317,7 +317,8 @@
                     <label for="radioType" class="col-xs-4 col-md-2 col-form-label">Radio Type</label>
                     <div class="col-xs-8 col-md-4">
                     <select id="radioType" class="form-control">
-                        <option>Icom (e.g. IC-705)</option>
+                        <option value="0">Icom (e.g. IC-705)</option>
+                        <option value="1">Flex 6000 series</option>
                     </select>
                     </div>
                 </div>

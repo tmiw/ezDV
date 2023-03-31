@@ -119,9 +119,10 @@ class RadioSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RadioSettin
 public:
     enum { MAX_STR_SIZE = 32 };
     
-    RadioSettingsMessageCommon(bool enabledProvided = false, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
+    RadioSettingsMessageCommon(bool enabledProvided = false, int typeProvided = 0, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
         : DVTaskMessageBase<TYPE_ID, RadioSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
         , enabled(enabledProvided)
+        , type(typeProvided)
         , port(portProvided)
     { 
         memset(host, 0, MAX_STR_SIZE);
@@ -136,6 +137,7 @@ public:
     virtual ~RadioSettingsMessageCommon() = default;
 
     bool enabled;
+    int type;
     int port;
     char host[MAX_STR_SIZE];
     char username[MAX_STR_SIZE];

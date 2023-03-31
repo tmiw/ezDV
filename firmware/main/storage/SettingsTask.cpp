@@ -31,6 +31,7 @@
 #define WIFI_PASSWORD_ID ("wifiPass")
 
 #define RADIO_ENABLED_ID ("radioEn")
+#define RADIO_TYPE_ID ("radioType")
 #define RADIO_HOSTNAME_ID ("radioHost")
 #define RADIO_PORT_ID ("radioPort")
 #define RADIO_USERNAME_ID ("radioUser")
@@ -72,6 +73,7 @@ SettingsTask::SettingsTask()
     , wifiMode_(WifiMode::ACCESS_POINT)
     , wifiSecurity_(WifiSecurityMode::NONE)
     , radioEnabled_(false)
+    , radioType_(0)
     , radioPort_(0)
     , enableVoiceKeyer_(false)
     , voiceKeyerNumberTimesToTransmit_(0)
@@ -166,6 +168,7 @@ void SettingsTask::onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSe
     // Publish current radio settings to everyone who may care.
     RadioSettingsMessage* response = new RadioSettingsMessage(
         radioEnabled_,
+        radioType_,
         radioHostname_,
         radioPort_,
         radioUsername_,
@@ -386,7 +389,7 @@ void SettingsTask::initializeRadio_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
-        setRadioSettings_(false, "", 0, "", "");
+        setRadioSettings_(false, 0, "", 0, "", "");
     }
     else if (result != ESP_OK)
     {
@@ -395,6 +398,16 @@ void SettingsTask::initializeRadio_()
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "radioEnabled: %d", radioEnabled_);
+    }
+    
+    result = storageHandle_->get_item(RADIO_TYPE_ID, radioType_);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioType: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "radioType: %d", radioType_);
     }
     
     result = storageHandle_->get_string(RADIO_HOSTNAME_ID, radioHostname_, RadioSettingsMessage::MAX_STR_SIZE);
@@ -440,6 +453,7 @@ void SettingsTask::initializeRadio_()
     // Publish current Wi-Fi settings to everyone who may care.
     RadioSettingsMessage* message = new RadioSettingsMessage(
         radioEnabled_,
+        radioType_,
         radioHostname_,
         radioPort_,
         radioUsername_,
@@ -684,13 +698,14 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
 
 void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMessage* message)
 {
-    setRadioSettings_(message->enabled, message->host, message->port, message->username, message->password);
+    setRadioSettings_(message->enabled, message->type, message->host, message->port, message->username, message->password);
 }
 
-void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* username, char* password)
+void SettingsTask::setRadioSettings_(bool enabled, int type, char* host, int port, char* username, char* password)
 {
     radioEnabled_ = enabled;
     radioPort_ = port;
+    radioType_ = type;
     
     memset(radioHostname_, 0, RadioSettingsMessage::MAX_STR_SIZE);
     memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
@@ -706,6 +721,11 @@ void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* u
         if (result != ESP_OK)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting radioEnabled: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(RADIO_TYPE_ID, radioType_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioType: %s", esp_err_to_name(result));
         }
         result = storageHandle_->set_string(RADIO_HOSTNAME_ID, radioHostname_);
         if (result != ESP_OK)
@@ -734,6 +754,7 @@ void SettingsTask::setRadioSettings_(bool enabled, char* host, int port, char* u
         // Publish new Wi-Fi settings to everyone who may care.
         RadioSettingsMessage* message = new RadioSettingsMessage(
             radioEnabled_,
+            radioType_,
             radioHostname_,
             radioPort_,
             radioUsername_,

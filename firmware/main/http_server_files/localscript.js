@@ -67,6 +67,17 @@ var updateRadioFormState = function()
     {
         $(".radio-enable-row").hide();
     }
+    
+    // For Flex, we only need the hostname. Nothing else.
+    var disabled = false;
+    if ($("#radioType").val() == "1")
+    {
+        disabled = true;
+    }
+    
+    $("#radioPort").prop( "disabled", disabled );
+    $("#radioUsername").prop( "disabled", disabled );
+    $("#radioPassword").prop( "disabled", disabled );
 };
 
 var saveVoiceKeyerSettings = function() {
@@ -134,6 +145,7 @@ function wsConnect()
           $("#radioReset").prop("disabled", false);
           $("#radioEnable").prop("checked", json.enabled);
           
+          $("#radioType").val(json.radioType);
           $("#radioIP").val(json.host);
           $("#radioPort").val(json.port);
           $("#radioUsername").val(json.username);
@@ -295,6 +307,11 @@ $("#radioEnable").change(function()
     updateRadioFormState();
 });
 
+$("#radioType").change(function()
+{
+    updateRadioFormState();
+});
+
 $("#wifiEnable").change(function()
 {
     updateWifiFormState();
@@ -365,6 +382,7 @@ $("#radioSave").click(function()
     {
         "type": "saveRadioInfo",
         "enabled": $("#radioEnable").is(':checked'),
+        "radioType": parseInt($("#radioType").val()),
         "host": $("#radioIP").val(),
         "port": parseInt($("#radioPort").val()),
         "username": $("#radioUsername").val(),

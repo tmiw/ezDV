@@ -132,6 +132,8 @@ void WirelessTask::onTaskStart_()
     icomControlTask_.start();
     icomAudioTask_.start();
     icomCIVTask_.start();
+    
+    flexTcpTask_.start();
 }
 
 void WirelessTask::onTaskWake_()
@@ -139,6 +141,8 @@ void WirelessTask::onTaskWake_()
     icomControlTask_.wake();
     icomAudioTask_.wake();
     icomCIVTask_.wake();
+    
+    flexTcpTask_.wake();
 }
 
 void WirelessTask::onTaskSleep_()
@@ -150,6 +154,9 @@ void WirelessTask::onTaskSleep_()
     waitForSleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
     icomControlTask_.sleep();
     waitForSleep(&icomControlTask_, pdMS_TO_TICKS(1000));
+    
+    flexTcpTask_.sleep();
+    waitForSleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
     
     disableHttp_();
     disableWifi_();
@@ -374,16 +381,37 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
             {
                 if (!client || !strcmp(response->host, ip))
                 {
-                    ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
-                    icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-                    publish(&connectMessage);
+                    switch (response->type)
+                    {
+                        case 0:
+                        {
+                            ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
+                            icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
+                            publish(&connectMessage);
 
-                    radioRunning_ = true;
+                            radioRunning_ = true;
+                            break;
+                        }
+                        case 1:
+                        {
+                            ESP_LOGI(CURRENT_LOG_TAG, "Starting FlexRadio connectivity");
+                            flex::FlexConnectRadioMessage connectMessage(response->host);
+                            publish(&connectMessage);
+
+                            radioRunning_ = true;
+                            break;
+                        }
+                        default:
+                        {
+                            ESP_LOGW(CURRENT_LOG_TAG, "Unknown radio type %d, ignoring", response->type);
+                            break;
+                        }
+                    }
                 }
             }
             else
             {
-                ESP_LOGI(CURRENT_LOG_TAG, "Icom radio connectivity disabled");
+                ESP_LOGI(CURRENT_LOG_TAG, "Radio connectivity disabled");
             }
             
             delete response;
@@ -397,10 +425,11 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
 
 void WirelessTask::onNetworkDisconnected_()
 {
-    // Force immediate state transition to idle for the IC-705 tasks.
+    // Force immediate state transition to idle for the radio tasks.
     icomControlTask_.sleep();
     icomAudioTask_.sleep();
     icomCIVTask_.sleep();
+    flexTcpTask_.sleep();
 
     // Shut down HTTP server.
     disableHttp_();
