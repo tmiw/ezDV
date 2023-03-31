@@ -84,11 +84,9 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
             break;
         case WIFI_EVENT_AP_STOP:
         case WIFI_EVENT_STA_DISCONNECTED:
-        case WIFI_EVENT_STA_BEACON_TIMEOUT:
             obj->onNetworkDisconnected_();
 
-            if (event_id == WIFI_EVENT_STA_BEACON_TIMEOUT ||
-                (event_id == WIFI_EVENT_STA_DISCONNECTED && !obj->wifiRunning_))
+            if (!obj->wifiRunning_)
             {
                 // Reattempt connection to access point if we couldn't find
                 // it the first time around.
