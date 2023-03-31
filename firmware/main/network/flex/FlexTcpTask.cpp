@@ -255,6 +255,7 @@ void FlexTcpTask::processCommand_(std::string& command)
         if (responseHandlers_[seq])
         {
             responseHandlers_[seq](rv, ss.str());
+            responseHandlers_.erase(seq);
         }
     }
     else
