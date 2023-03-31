@@ -25,7 +25,6 @@
 #include "esp_log.h"
 
 #define CURRENT_LOG_TAG "FlexTcpTask"
-#define MAX_PACKET_SIZE 1024
 
 namespace ezdv
 {
@@ -74,42 +73,37 @@ void FlexTcpTask::onTaskTick_()
         return;
     }
     
-    fd_set readSet;
-    struct timeval tv = {0, 0};
-    
-    FD_ZERO(&readSet);
-    FD_SET(socket_, &readSet);
-    
     // Process if there is pending data on the socket.
-    while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
-    {    
-        char buffer[MAX_PACKET_SIZE];
-        
-        auto rv = recv(socket_, buffer, MAX_PACKET_SIZE, 0);
+    char buffer = 0;
+    while (true)
+    {
+        auto rv = recv(socket_, &buffer, 1, 0);
         if (rv > 0)
         {
             // Append to input buffer. Then if we have a full line, we can process
             // accordingly.
-            inputBuffer_.write(buffer, rv);
+            if (buffer == '\n')
+            {
+                std::string line = inputBuffer_.str();
+                processCommand_(line);
+                inputBuffer_.str("");
+            }
+            else
+            {
+                inputBuffer_.write(&buffer, rv);
+            }
+        }
+        else if (rv == -1 && errno == EAGAIN)
+        {
+            // Nothing actually available on the socket, ignore.
+            break;
         }
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Detected disconnect from socket, reattempting connect");
             disconnect_();
             reconnectTimer_.start();
-            
             return;
-        }
-    }
-    
-    std::string line;
-    if (inputBuffer_.str().find("\n") != std::string::npos)
-    {
-        std::getline(inputBuffer_, line);
-
-        if (line.length() > 0)
-        {
-            processCommand_(line);
         }
     }
 }
@@ -152,6 +146,8 @@ void FlexTcpTask::connect_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
         sequenceNumber_ = 0;
+        
+        fcntl (socket_, F_SETFL , O_NONBLOCK);
     }
 }
 
