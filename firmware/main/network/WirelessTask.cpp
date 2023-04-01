@@ -100,13 +100,14 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     }
 }
 
-WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler)
+WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
+    , audioMixerHandler_(audioMixer)
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
     , radioRunning_(false)
@@ -132,6 +133,7 @@ void WirelessTask::onTaskStart_()
     icomCIVTask_.start();
     
     flexTcpTask_.start();
+    flexVitaTask_.start();
 }
 
 void WirelessTask::onTaskWake_()
@@ -141,6 +143,7 @@ void WirelessTask::onTaskWake_()
     icomCIVTask_.wake();
     
     flexTcpTask_.wake();
+    flexVitaTask_.wake();
 }
 
 void WirelessTask::onTaskSleep_()
@@ -152,6 +155,9 @@ void WirelessTask::onTaskSleep_()
     waitForSleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
     icomControlTask_.sleep();
     waitForSleep(&icomControlTask_, pdMS_TO_TICKS(1000));
+    
+    flexVitaTask_.sleep();
+    waitForSleep(&flexVitaTask_, pdMS_TO_TICKS(1000));
     
     flexTcpTask_.sleep();
     waitForSleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
@@ -379,6 +385,7 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
             {
                 if (!client || !strcmp(response->host, ip))
                 {
+                    radioType_ = response->type;
                     switch (response->type)
                     {
                         case 0:
@@ -447,20 +454,56 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             nullptr
         );
         
-        icomAudioTask_.setAudioOutput(
-            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
-            freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
-        );
+        if (radioType_ == 0)
+        {
+            icomAudioTask_.setAudioOutput(
+                audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+                freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+            );
         
-        freedvHandler_->setAudioOutput(
-            audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
-            icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
-        );
+            freedvHandler_->setAudioOutput(
+                audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+                icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+            );
+        }
+        else if (radioType_ == 1)
+        {
+            // Flex 100% goes through SmartSDR, so disable TLV320 user port handling
+            tlv320Handler_->setAudioOutput(
+                audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+                nullptr
+            );
+                
+            flexVitaTask_.setAudioOutput(
+                audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+                freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
+            );
+                
+            flexVitaTask_.setAudioOutput(
+                audio::AudioInput::ChannelLabel::RIGHT_CHANNEL,
+                freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+            );
+                
+            freedvHandler_->setAudioOutput(
+                audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
+                flexVitaTask_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+            );
+                
+            audioMixerHandler_->setAudioOutput(
+                audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+                flexVitaTask_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
+            );
+        }
     }
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "rerouting audio pipes internally");
 
+        tlv320Handler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+            freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+        );
+            
         tlv320Handler_->setAudioOutput(
             audio::AudioInput::ChannelLabel::RIGHT_CHANNEL, 
             freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
@@ -474,6 +517,11 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
         freedvHandler_->setAudioOutput(
             audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
             tlv320Handler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+        );
+            
+        audioMixerHandler_->setAudioOutput(
+            audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
+            tlv320Handler_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
         );
     }
 }

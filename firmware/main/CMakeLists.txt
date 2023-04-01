@@ -22,6 +22,7 @@ set(SOURCES
     "driver/TLV320Message.cpp"
     "network/flex/FlexMessage.cpp"
     "network/flex/FlexTcpTask.cpp"
+    "network/flex/FlexVitaTask.cpp"
     "network/icom/AudioState.cpp"
     "network/icom/AreYouReadyAudioState.cpp"
     "network/icom/AreYouReadyCIVState.cpp"
@@ -102,7 +103,7 @@ endfunction()
 
 FetchContent_Declare(codec2
     GIT_REPOSITORY https://github.com/drowe67/codec2.git
-    GIT_TAG origin/master
+    GIT_TAG origin/ms-8-to-24k
     GIT_SHALLOW ON
     GIT_PROGRESS ON
 )

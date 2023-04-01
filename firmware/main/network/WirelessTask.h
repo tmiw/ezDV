@@ -24,6 +24,7 @@
 #include "task/DVTask.h"
 #include "icom/IcomSocketTask.h"
 #include "flex/FlexTcpTask.h"
+#include "flex/FlexVitaTask.h"
 
 #include "audio/AudioInput.h"
 
@@ -46,7 +47,7 @@ class HttpServerTask;
 class WirelessTask : public DVTask
 {
 public:
-    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler);
+    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler);
     virtual ~WirelessTask();
     
     void setWiFiOverride(bool wifiOverride);
@@ -62,14 +63,17 @@ private:
     icom::IcomSocketTask icomAudioTask_;
     icom::IcomSocketTask icomCIVTask_;
     flex::FlexTcpTask flexTcpTask_;
+    flex::FlexVitaTask flexVitaTask_;
     
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;
     ezdv::audio::AudioInput* tlv320Handler_; 
+    ezdv::audio::AudioInput* audioMixerHandler_; 
     
     bool overrideWifiSettings_;
     bool wifiRunning_;
     bool radioRunning_;
+    int radioType_;
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
         

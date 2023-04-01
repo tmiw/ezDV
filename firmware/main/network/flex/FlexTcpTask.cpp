@@ -21,6 +21,8 @@
 #include <sys/socket.h>
 
 #include "FlexTcpTask.h"
+#include "audio/FreeDVMessage.h"
+#include "network/NetworkMessage.h"
 
 #include "esp_log.h"
 
@@ -147,7 +149,12 @@ void FlexTcpTask::connect_()
         ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
         sequenceNumber_ = 0;
         
-        fcntl (socket_, F_SETFL , O_NONBLOCK);
+        // Set socket to be non-blocking.
+        fcntl (socket_, F_SETFL, O_NONBLOCK);
+        
+        // Report successful connection
+        ezdv::network::RadioConnectionStatusMessage response(true);
+        publish(&response);
     }
 }
 
@@ -161,6 +168,10 @@ void FlexTcpTask::disconnect_()
     
         responseHandlers_.clear();
         inputBuffer_.clear();
+        
+        // Report disconnection
+        ezdv::network::RadioConnectionStatusMessage response(false);
+        publish(&response);
     }
 }
 
@@ -195,8 +206,6 @@ void FlexTcpTask::createWaveform_(std::string name, std::string shortName, std::
             sendRadioCommand_(setPrefix + "tx=1");
             sendRadioCommand_(setPrefix + "rx_filter depth=256");
             sendRadioCommand_(setPrefix + "tx_filter depth=256");
-            
-            // TBD: send handles to VITA task.
         }
     });
 }
@@ -256,6 +265,61 @@ void FlexTcpTask::processCommand_(std::string& command)
         {
             responseHandlers_[seq](rv, ss.str());
             responseHandlers_.erase(seq);
+        }
+    }
+    else if (command[0] == 'S')
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Received status update %s", command.c_str());
+        
+        command.erase(0, 1);
+        std::stringstream ss(command);
+        unsigned int clientId = 0;
+        std::string statusName;
+        
+        ss >> std::hex >> clientId;
+        char pipe = 0;
+        ss >> pipe >> statusName;
+        
+        if (statusName == "slice")
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Detected slice update");
+            
+            int sliceId = 0;
+            ss >> std::dec >> sliceId;
+            
+            if (command.find("mode=") != std::string::npos)
+            {
+                if (command.find("mode=FDV") != std::string::npos)
+                {
+                    // User wants to use the waveform.
+                    sendRadioCommand_("waveform set FreeDV-USB udpport=14992");
+                    sendRadioCommand_("waveform set FreeDV-LSB udpport=14992");
+                    sendRadioCommand_("client udpport 14992");
+                }
+            }
+        }
+        else if (statusName == "interlock")
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Detected interlock update");
+            
+            if (command.find("state=PTT_REQUESTED") != std::string::npos)
+            {
+                // Going into transmit mode
+                ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
+                audio::FreeDVSetPTTStateMessage pttStateMessage(true);
+                publish(&pttStateMessage);
+            }
+            else if (command.find("state=UNKEY_REQUESTED") != std::string::npos)
+            {
+                // Going back into receive
+                ESP_LOGI(CURRENT_LOG_TAG, "Radio went out of transmit");
+                audio::FreeDVSetPTTStateMessage pttStateMessage(false);
+                publish(&pttStateMessage);
+            }
+        }
+        else
+        {
+            ESP_LOGW(CURRENT_LOG_TAG, "Unknown status update type %s", statusName.c_str());
         }
     }
     else

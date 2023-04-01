@@ -21,6 +21,8 @@
 #include <cstring>
 #include "task/DVTaskMessage.h"
 
+#include "vita.h"
+
 extern "C"
 {
     DV_EVENT_DECLARE_BASE(FLEX_MESSAGE);
@@ -40,6 +42,8 @@ using namespace ezdv::task;
 enum FlexMessageTypes
 {
     CONNECT_RADIO = 1,
+    VITA_RECEIVE = 2,
+    VITA_SEND = 3,
 };
 
 class FlexConnectRadioMessage : public DVTaskMessageBase<CONNECT_RADIO, FlexConnectRadioMessage>
@@ -64,6 +68,27 @@ public:
 
     char ip[STR_SIZE];
 };
+
+template<uint32_t MSG_ID>
+class VitaMessageCommon : public DVTaskMessageBase<MSG_ID,  VitaMessageCommon<MSG_ID> >
+{
+public:
+    VitaMessageCommon(vita_packet* packetProvided = nullptr, int lengthProvided = 0)
+        : DVTaskMessageBase<MSG_ID,  VitaMessageCommon<MSG_ID> >(FLEX_MESSAGE)
+        , packet(packetProvided)
+        , length(lengthProvided)
+    {
+        // empty
+    }
+    
+    virtual ~VitaMessageCommon() = default;
+    
+    vita_packet* packet;
+    int length;
+};
+
+using ReceiveVitaMessage = VitaMessageCommon<VITA_RECEIVE>;
+using SendVitaMessage = VitaMessageCommon<VITA_SEND>;
 
 }
 
