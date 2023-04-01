@@ -42,6 +42,7 @@ FlexTcpTask::FlexTcpTask()
     , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), 10000000) /* reconnect every 10 seconds */
     , socket_(-1)
     , sequenceNumber_(0)
+    , activeSlice_(-1)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
@@ -167,6 +168,8 @@ void FlexTcpTask::disconnect_()
         cleanupWaveform_();
         close(socket_);
         socket_ = -1;
+        activeSlice_ = -1;
+        isLSB_ = false;
     
         responseHandlers_.clear();
         inputBuffer_.clear();
@@ -190,6 +193,18 @@ void FlexTcpTask::initializeWaveform_()
 
 void FlexTcpTask::cleanupWaveform_()
 {
+    std::stringstream ss;
+    
+    // Change mode back to something that exists.
+    if (activeSlice_ >= 0)
+    {
+        ss << "slice set " << activeSlice_ << " mode=";
+        if (isLSB_) ss << "LSB";
+        else ss << "USB";
+        
+        sendRadioCommand_(ss.str().c_str());
+    }
+    
     sendRadioCommand_("waveform remove FreeDV-USB");
     sendRadioCommand_("waveform remove FreeDV-LSB");
 }
@@ -293,6 +308,9 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 if (command.find("mode=FDV") != std::string::npos)
                 {
+                    activeSlice_ = sliceId;
+                    isLSB_ = command.find("mode=FDVL") != std::string::npos;
+                    
                     // User wants to use the waveform.
                     sendRadioCommand_("waveform set FreeDV-USB udpport=14992");
                     sendRadioCommand_("waveform set FreeDV-LSB udpport=14992");

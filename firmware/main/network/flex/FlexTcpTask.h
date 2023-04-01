@@ -59,6 +59,8 @@ private:
     int socket_;
     int sequenceNumber_;
     std::string ip_;
+    int activeSlice_;
+    bool isLSB_;
     
     using HandlerMapFn_ = std::function<void(unsigned int rv, std::string message)>;
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;
