@@ -43,6 +43,7 @@ FlexTcpTask::FlexTcpTask()
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
+    , isSleeping_(true)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
@@ -57,16 +58,24 @@ FlexTcpTask::~FlexTcpTask()
 void FlexTcpTask::onTaskStart_()
 {
     // nothing required, just waiting for a connect request.
+    isSleeping_ = false;
 }
 
 void FlexTcpTask::onTaskWake_()
 {
     // nothing required, just waiting for a connect request.
+    isSleeping_ = false;
 }
 
 void FlexTcpTask::onTaskSleep_()
 {
+    // empty, we have custom actions for sleep.
+}
+
+void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
+{
     ESP_LOGI(CURRENT_LOG_TAG, "Sleeping task");
+    isSleeping_ = true;
     disconnect_();
 }
 
@@ -103,7 +112,7 @@ void FlexTcpTask::onTaskTick_()
             // Nothing actually available on the socket, ignore.
             break;
         }
-        else
+        else if (!isSleeping_)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Detected disconnect from socket, reattempting connect");
             disconnect_();
@@ -166,17 +175,6 @@ void FlexTcpTask::disconnect_()
     if (socket_ > 0)
     {
         cleanupWaveform_();
-        close(socket_);
-        socket_ = -1;
-        activeSlice_ = -1;
-        isLSB_ = false;
-    
-        responseHandlers_.clear();
-        inputBuffer_.clear();
-        
-        // Report disconnection
-        ezdv::network::RadioConnectionStatusMessage response(false);
-        publish(&response);
     }
 }
 
@@ -202,11 +200,35 @@ void FlexTcpTask::cleanupWaveform_()
         if (isLSB_) ss << "LSB";
         else ss << "USB";
         
-        sendRadioCommand_(ss.str().c_str());
+        sendRadioCommand_(ss.str().c_str(), [&](unsigned int rv, std::string message) {
+            // Recursively call ourselves again to actually remove the waveform
+            // once we get a response for this command.
+            activeSlice_ = -1;
+            cleanupWaveform_();
+        });
+        
+        return;
     }
     
+    sendRadioCommand_("unsub slice all");
     sendRadioCommand_("waveform remove FreeDV-USB");
-    sendRadioCommand_("waveform remove FreeDV-LSB");
+    sendRadioCommand_("waveform remove FreeDV-LSB", [&](unsigned int rv, std::string message) {
+        // We can disconnect after we've fully unregistered the waveforms.
+        close(socket_);
+        socket_ = -1;
+        activeSlice_ = -1;
+        isLSB_ = false;
+    
+        responseHandlers_.clear();
+        inputBuffer_.clear();
+        
+        // Report disconnection
+        ezdv::network::RadioConnectionStatusMessage response(false);
+        publish(&response);
+        
+        // Report sleep
+        if (isSleeping_) DVTask::onTaskSleep_(nullptr, nullptr);
+    });
 }
 
 void FlexTcpTask::createWaveform_(std::string name, std::string shortName, std::string underlyingMode)
@@ -223,6 +245,7 @@ void FlexTcpTask::createWaveform_(std::string name, std::string shortName, std::
             sendRadioCommand_(setPrefix + "tx=1");
             sendRadioCommand_(setPrefix + "rx_filter depth=256");
             sendRadioCommand_(setPrefix + "tx_filter depth=256");
+            sendRadioCommand_(setPrefix + "udpport=14992");
         }
     });
 }
@@ -308,13 +331,9 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 if (command.find("mode=FDV") != std::string::npos)
                 {
+                    // User wants to use the waveform.
                     activeSlice_ = sliceId;
                     isLSB_ = command.find("mode=FDVL") != std::string::npos;
-                    
-                    // User wants to use the waveform.
-                    sendRadioCommand_("waveform set FreeDV-USB udpport=14992");
-                    sendRadioCommand_("waveform set FreeDV-LSB udpport=14992");
-                    sendRadioCommand_("client udpport 14992");
                 }
             }
         }
