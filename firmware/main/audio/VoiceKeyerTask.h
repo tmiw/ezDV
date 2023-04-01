@@ -42,6 +42,10 @@ public:
     VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask);
     virtual ~VoiceKeyerTask();
 
+    // Special setter for Flex radios as microphone goes through SmartSDR
+    // instead of TLV320.
+    void setMicDeviceTask(AudioInput* task) { micDeviceTask_ = task; }
+    
 protected:
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;

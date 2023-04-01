@@ -22,6 +22,7 @@
 #include <map>
 #include <functional>
 
+#include "audio/VoiceKeyerMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 #include "util/PSRamAllocator.h"
@@ -75,6 +76,8 @@ private:
     void processCommand_(std::string& command);
     
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
+    void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
+    void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
 };
 
 }

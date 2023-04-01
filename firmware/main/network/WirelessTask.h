@@ -27,6 +27,7 @@
 #include "flex/FlexVitaTask.h"
 
 #include "audio/AudioInput.h"
+#include "audio/VoiceKeyerTask.h"
 
 #include "NetworkMessage.h"
 #include "storage/SettingsMessage.h"
@@ -47,7 +48,7 @@ class HttpServerTask;
 class WirelessTask : public DVTask
 {
 public:
-    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler);
+    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
     virtual ~WirelessTask();
     
     void setWiFiOverride(bool wifiOverride);
@@ -69,6 +70,7 @@ private:
     ezdv::audio::AudioInput* freedvHandler_;
     ezdv::audio::AudioInput* tlv320Handler_; 
     ezdv::audio::AudioInput* audioMixerHandler_; 
+    ezdv::audio::VoiceKeyerTask* vkTask_; 
     
     bool overrideWifiSettings_;
     bool wifiRunning_;

@@ -100,7 +100,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     }
 }
 
-WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer)
+WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
@@ -108,6 +108,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
     , audioMixerHandler_(audioMixer)
+    , vkTask_(vkTask)
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
     , radioRunning_(false)
@@ -473,7 +474,10 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
                 audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
                 nullptr
             );
-                
+            
+            // Make sure voice keyer can restore Flex mic device once done.
+            vkTask_->setMicDeviceTask(&flexVitaTask_);
+            
             flexVitaTask_.setAudioOutput(
                 audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
                 freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
@@ -499,6 +503,9 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
     {
         ESP_LOGI(CURRENT_LOG_TAG, "rerouting audio pipes internally");
 
+        // Make sure voice keyer can restore TLV320 mic device once done.
+        vkTask_->setMicDeviceTask(tlv320Handler_);
+        
         tlv320Handler_->setAudioOutput(
             audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
             freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)

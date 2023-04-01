@@ -44,6 +44,8 @@ FlexTcpTask::FlexTcpTask()
     , sequenceNumber_(0)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
+    registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
+    registerMessageHandler(this, &FlexTcpTask::onRequestTxMessage_);
 }
 
 FlexTcpTask::~FlexTcpTask()
@@ -306,15 +308,15 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 // Going into transmit mode
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
-                audio::FreeDVSetPTTStateMessage pttStateMessage(true);
-                publish(&pttStateMessage);
+                audio::RequestTxMessage message;
+                publish(&message);
             }
             else if (command.find("state=UNKEY_REQUESTED") != std::string::npos)
             {
                 // Going back into receive
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went out of transmit");
-                audio::FreeDVSetPTTStateMessage pttStateMessage(false);
-                publish(&pttStateMessage);
+                audio::RequestRxMessage message;
+                publish(&message);
             }
         }
         else
@@ -332,6 +334,16 @@ void FlexTcpTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMes
 {
     ip_ = message->ip;
     connect_();
+}
+
+void FlexTcpTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
+{
+    sendRadioCommand_("xmit 1");
+}
+
+void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
+{
+    sendRadioCommand_("xmit 0");
 }
     
 }

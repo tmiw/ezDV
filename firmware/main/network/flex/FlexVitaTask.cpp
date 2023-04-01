@@ -330,9 +330,13 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
                 fdmdv_24_to_8(downsamplerOutBuf_, &downsamplerInBuf_[FDMDV_OS_TAPS_24K], MAX_VITA_SAMPLES);
             
                 // Queue on respective FIFO.
-                codec2_fifo_write(getAudioOutput(channel), downsamplerOutBuf_, MAX_VITA_SAMPLES);
-            }
-            
+                auto fifo = getAudioOutput(channel);
+                if (fifo != nullptr)
+                {
+                    // Note: may be null during voice keyer operation
+                    codec2_fifo_write(fifo, downsamplerOutBuf_, MAX_VITA_SAMPLES);
+                }
+            }            
             break;
         }
         default:
