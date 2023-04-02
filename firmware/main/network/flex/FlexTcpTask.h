@@ -64,6 +64,7 @@ private:
     int activeSlice_;
     bool isLSB_;
     bool isSleeping_;
+    int txSlice_;
     
     using HandlerMapFn_ = std::function<void(unsigned int rv, std::string message)>;
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;

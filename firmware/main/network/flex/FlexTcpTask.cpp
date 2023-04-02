@@ -44,6 +44,7 @@ FlexTcpTask::FlexTcpTask()
     , sequenceNumber_(0)
     , activeSlice_(-1)
     , isSleeping_(true)
+    , txSlice_(-1)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
@@ -218,6 +219,7 @@ void FlexTcpTask::cleanupWaveform_()
         socket_ = -1;
         activeSlice_ = -1;
         isLSB_ = false;
+        txSlice_ = -1;
     
         responseHandlers_.clear();
         inputBuffer_.clear();
@@ -326,6 +328,11 @@ void FlexTcpTask::processCommand_(std::string& command)
             
             int sliceId = 0;
             ss >> std::dec >> sliceId;
+
+            if (command.find("tx=1") != std::string::npos)
+            {
+                txSlice_ = sliceId;
+            }
             
             if (command.find("mode=") != std::string::npos)
             {
@@ -341,7 +348,8 @@ void FlexTcpTask::processCommand_(std::string& command)
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Detected interlock update");
             
-            if (command.find("state=PTT_REQUESTED") != std::string::npos)
+            if (command.find("state=PTT_REQUESTED") != std::string::npos &&
+                activeSlice_ == txSlice_)
             {
                 // Going into transmit mode
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
@@ -375,12 +383,18 @@ void FlexTcpTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMes
 
 void FlexTcpTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
 {
-    sendRadioCommand_("xmit 1");
+    if (activeSlice_ >= 0)
+    {
+        sendRadioCommand_("xmit 1");
+    }
 }
 
 void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
 {
-    sendRadioCommand_("xmit 0");
+    if (activeSlice_ >= 0)
+    {
+        sendRadioCommand_("xmit 0");
+    }
 }
     
 }

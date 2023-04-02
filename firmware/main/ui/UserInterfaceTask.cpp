@@ -43,7 +43,7 @@ static std::map<audio::SetFreeDVModeMessage::FreeDVMode, std::string> ModeList_ 
 };
 
 UserInterfaceTask::UserInterfaceTask()
-    : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
+    : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(10))
     , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US)
     , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US)
     , currentMode_(audio::SetFreeDVModeMessage::ANALOG)
@@ -152,7 +152,8 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
         {
             case driver::ButtonLabel::PTT:
             {
-                startTx_();
+                audio::RequestTxMessage msg;
+                publish(&msg);
                 break;
             }
             case driver::ButtonLabel::MODE:
@@ -199,7 +200,8 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                 {
                     // Only disable TX if the keyer is not currently running.
                     // Otherwise, the keyer is responsible for triggering TX.
-                    stopTx_();
+                    audio::RequestRxMessage msg;
+                    publish(&msg);
                 }
                 break;
             }
@@ -400,11 +402,13 @@ void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetB
 {
     if (!isTransmitting_)
     {
-        startTx_();
+        audio::RequestTxMessage msg;
+        publish(&msg);
     }
     else
     {
-        stopTx_();
+        audio::RequestRxMessage msg;
+        publish(&msg);
     }
 }
 
