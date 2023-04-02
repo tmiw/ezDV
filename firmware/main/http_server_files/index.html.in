@@ -62,7 +62,22 @@
                 <div class="row mb-3 general-enable-row">
                     <label for="ledBrightness" class="col-xs-4 col-md-2 col-form-labell">LED Brightness</label>
                     <div class="col-xs-8 col-md-4">
-                    <input id="ledBrightness" type="range" max="8192" min="819" step="410" class="form-control" />
+                        <input id="ledBrightness" type="range" max="8192" min="819" step="410" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3 general-enable-row">
+                    <label for="currentMode" class="col-xs-4 col-md-2 col-form-labell">Mode</label>
+                    <div class="col-xs-2 col-md-1">
+                        <button type="button" class="btn btn-primary mode-button" id="modeAnalog">Analog</button>
+                    </div>
+                    <div class="col-xs-2 col-md-1">
+                        <button type="button" class="btn btn-secondary mode-button" id="mode700D">700D</button>
+                    </div>
+                    <div class="col-xs-2 col-md-1">
+                        <button type="button" class="btn btn-secondary mode-button" id="mode700E">700E</button>
+                    </div>
+                    <div class="col-xs-2 col-md-1">
+                        <button type="button" class="btn btn-secondary mode-button" id="mode1600">1600</button>
                     </div>
                 </div>
             </form>

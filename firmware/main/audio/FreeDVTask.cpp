@@ -36,12 +36,14 @@ FreeDVTask::FreeDVTask()
     , AudioInput(2, 2)
     , dv_(nullptr)
     , rText_(nullptr)
+    , currentMode_(0)
     , isTransmitting_(false)
     , isActive_(false)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
     registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
     registerMessageHandler(this, &FreeDVTask::onReportingSettingsUpdate_);
+    registerMessageHandler(this, &FreeDVTask::onRequestGetFreeDVMode_);
 }
 
 FreeDVTask::~FreeDVTask()
@@ -172,6 +174,7 @@ void FreeDVTask::onTaskTick_()
 void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV mode to %d", (int)message->mode);
+    currentMode_ = (int)message->mode;
 
     if (dv_ != nullptr)
     {
@@ -277,6 +280,12 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
 
     FreeDVTask* task = (FreeDVTask*)state;
     reliable_text_reset(task->rText_);
+}
+
+void FreeDVTask::onRequestGetFreeDVMode_(DVTask* origin, RequestGetFreeDVModeMessage* message)
+{
+    SetFreeDVModeMessage msg((SetFreeDVModeMessage::FreeDVMode)currentMode_);
+    origin->post(&msg);
 }
 
 }

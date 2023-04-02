@@ -96,6 +96,17 @@ var saveVoiceKeyerSettings = function() {
     ws.send(JSON.stringify(obj));
 };
 
+var setFreeDVMode = function(mode) {
+    var obj = 
+    {
+        "type": "setMode",
+        "mode": mode
+    };
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+};
+
 //==========================================================================================
 // WebSocket handling
 //==========================================================================================
@@ -285,6 +296,32 @@ function wsConnect()
               }
           }
       }
+      else if (json.type == "currentMode")
+      {
+          $(".mode-button").addClass("btn-secondary");
+          $(".mode-button").removeClass("btn-primary");
+
+          if (json.currentMode == 0)
+          {
+              $("#modeAnalog").addClass("btn-primary");
+              $("#modeAnalog").removeClass("btn-secondary");
+          }
+          else if (json.currentMode == 1)
+          {
+              $("#mode700D").addClass("btn-primary");
+              $("#mode700D").removeClass("btn-secondary");
+          }
+          else if (json.currentMode == 2)
+          {
+              $("#mode700E").addClass("btn-primary");
+              $("#mode700E").removeClass("btn-secondary");
+          }
+          else if (json.currentMode == 3)
+          {
+              $("#mode1600").addClass("btn-primary");
+              $("#mode1600").removeClass("btn-secondary");
+          }
+      }
   };
 
   ws.onclose = function(e) 
@@ -437,6 +474,22 @@ $("#voiceKeyerSave").click(function()
         reader.readAsArrayBuffer($('#voiceKeyerFile').get(0).files[0]);
     }
 
+});
+
+$("#modeAnalog").click(function() {
+    setFreeDVMode(0);
+});
+
+$("#mode700D").click(function() {
+    setFreeDVMode(1);
+});
+
+$("#mode700E").click(function() {
+    setFreeDVMode(2);
+});
+
+$("#mode1600").click(function() {
+    setFreeDVMode(3);
 });
 
 $("#updateSave").click(function()

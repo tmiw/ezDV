@@ -64,6 +64,8 @@ extern "C"
 
 #define JSON_FIRMWARE_UPLOAD_COMPLETE "firmwareUploadComplete"
 
+#define JSON_CURRENT_MODE_TYPE "currentMode"
+
 namespace ezdv
 {
 
@@ -91,6 +93,9 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onUpdateLedBrightnessMessage_);
     
     registerMessageHandler(this, &HttpServerTask::onFirmwareUpdateCompleteMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onSetModeMessage_);
+    registerMessageHandler(this, &HttpServerTask::onSetFreeDVModeMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -358,6 +363,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                     ESP_LOGI(CURRENT_LOG_TAG, "Configuring firmware file upload");    
                     StartFirmwareUploadMessage reqMessage;
                     thisObj->publish(&reqMessage);
+                }
+                else if (!strcmp(type, "setMode"))
+                {
+                    SetModeMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
                 }
             }
         }
@@ -633,6 +643,36 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current LED brightness settings");
+        }
+    }
+
+    {
+        audio::RequestGetFreeDVModeMessage request;
+        publish(&request);
+        
+        auto response = waitFor<audio::SetFreeDVModeMessage>(pdMS_TO_TICKS(1000), NULL);
+        if (response)
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root != nullptr)
+            {
+                cJSON_AddStringToObject(root, "type", JSON_CURRENT_MODE_TYPE);
+                cJSON_AddNumberToObject(root, "currentMode", (int)response->mode);
+        
+                // Note: below is responsible for cleanup.
+                WebSocketList sockets = { message->fd };
+                sendJSONMessage_(root, sockets);
+                delete response;
+            }
+            else
+            {
+                // HTTP isn't 100% critical but we really should see what's leaking memory.
+                ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for FreeDV mode info!");
+            }
+        }
+        else
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current FreeDV mode info");
         }
     }
 }
@@ -1156,6 +1196,54 @@ void HttpServerTask::onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrig
     }
     
     cJSON_free(message->request);
+}
+
+void HttpServerTask::onSetModeMessage_(DVTask* origin, SetModeMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Updating current mode settings");
+    
+    int mode = 0;
+    bool settingsValid = true;
+         
+    auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
+    if (modeJSON != nullptr)
+    {
+        mode = (int)cJSON_GetNumberValue(modeJSON);
+        settingsValid &= mode >= 0 && mode <= 3;
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
+    bool success = false;
+    if (settingsValid)
+    {
+        audio::RequestSetFreeDVModeMessage request((audio::RequestSetFreeDVModeMessage::FreeDVMode)mode);
+        publish(&request);
+    }
+
+    // Note: this is an async request due to storage not being involved.    
+    cJSON_free(message->request);
+}
+
+void HttpServerTask::onSetFreeDVModeMessage_(DVTask* origin, audio::SetFreeDVModeMessage* message)
+{
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_CURRENT_MODE_TYPE);
+        cJSON_AddNumberToObject(root, "currentMode", (int)message->mode);
+
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for mode settings");
+    }
 }
 
 }

@@ -74,6 +74,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onBatteryStateUpdate_);
     registerMessageHandler(this, &UserInterfaceTask::onLeftChannelVolumeMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRightChannelVolumeMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onRequestSetFreeDVModeMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -219,20 +220,13 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                     else
                     {
                         int tmpMode = (int)currentMode_ + 1;
-                        currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)tmpMode;
-                        if (currentMode_ == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
+                        if (tmpMode == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
                         {
-                            currentMode_ = audio::SetFreeDVModeMessage::ANALOG;
+                            tmpMode = audio::SetFreeDVModeMessage::ANALOG;
                         }
 
-                        audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
-                        publish(setModeMessage);
-                        delete setModeMessage;
-
-                        // Send new mode to beeper
-                        audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
-                        publish(beeperMessage);
-                        delete beeperMessage;
+                        audio::RequestSetFreeDVModeMessage request((audio::RequestSetFreeDVModeMessage::FreeDVMode)tmpMode);
+                        post(&request);
                     }
                 }
                 break;
@@ -428,6 +422,20 @@ void UserInterfaceTask::onBatteryStateUpdate_(DVTask* origin, driver::BatterySta
     }
 
     lastBatteryLevel_ = recvSoc;
+}
+
+void UserInterfaceTask::onRequestSetFreeDVModeMessage_(DVTask* origin, audio::RequestSetFreeDVModeMessage* message)
+{
+    currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)message->mode;
+
+    audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
+    publish(setModeMessage);
+    delete setModeMessage;
+
+    // Send new mode to beeper
+    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
+    publish(beeperMessage);
+    delete beeperMessage;
 }
 
 }

@@ -25,6 +25,7 @@
 #include "cJSON.h"
 
 #include "task/DVTask.h"
+#include "audio/FreeDVMessage.h"
 #include "audio/VoiceKeyerMessage.h"
 #include "driver/BatteryMessage.h"
 #include "storage/SoftwareUpdateMessage.h"
@@ -66,6 +67,7 @@ private:
         BEGIN_UPLOAD_VOICE_KEYER_FILE = 6,
         UPDATE_REPORTING = 7,
         UPDATE_LED_BRIGHTNESS = 8,
+        SET_MODE = 9,
     };
     
     template<uint32_t MSG_ID>
@@ -106,6 +108,7 @@ private:
     using BeginUploadVoiceKeyerFileMessage = HttpRequestMessageCommon<BEGIN_UPLOAD_VOICE_KEYER_FILE>;
     using UpdateReportingMessage = HttpRequestMessageCommon<UPDATE_REPORTING>;
     using UpdateLedBrightnessMessage = HttpRequestMessageCommon<UPDATE_LED_BRIGHTNESS>;
+    using SetModeMessage = HttpRequestMessageCommon<SET_MODE>;
     
     using WebSocketList = std::vector<int>;
     
@@ -125,6 +128,9 @@ private:
     void onFileUploadCompleteMessage_(DVTask* origin, audio::FileUploadCompleteMessage* message);
     void onFirmwareUpdateCompleteMessage_(DVTask* origin, storage::FirmwareUpdateCompleteMessage* message);
     void onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrightnessMessage* message);
+
+    void onSetModeMessage_(DVTask* origin, SetModeMessage* message);
+    void onSetFreeDVModeMessage_(DVTask* origin, audio::SetFreeDVModeMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

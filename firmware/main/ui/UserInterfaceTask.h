@@ -99,6 +99,9 @@ private:
 
     // Battery state handling
     void onBatteryStateUpdate_(DVTask* origin, driver::BatteryStateMessage* message);
+
+    // Mode handling
+    void onRequestSetFreeDVModeMessage_(DVTask* origin, audio::RequestSetFreeDVModeMessage* message);
 };
 
 }

@@ -38,6 +38,8 @@ enum FreeDVMessageTypes
     SYNC_STATE = 1,
     SET_FREEDV_MODE = 2,
     SET_PTT_STATE = 3,
+    REQUEST_SET_FREEDV_MODE = 4,
+    REQUEST_GET_FREEDV_MODE = 5,
 };
 
 class FreeDVSyncStateMessage : public DVTaskMessageBase<SYNC_STATE, FreeDVSyncStateMessage>
@@ -52,7 +54,8 @@ public:
     bool syncState;
 };
 
-class SetFreeDVModeMessage : public DVTaskMessageBase<SET_FREEDV_MODE, SetFreeDVModeMessage>
+template<uint32_t MSG_ID>
+class FreeDVModeMessageCommon : public DVTaskMessageBase<MSG_ID, FreeDVModeMessageCommon<MSG_ID> >
 {
 public:
     enum FreeDVMode
@@ -65,13 +68,25 @@ public:
         MAX_FREEDV_MODES
     };
 
-    SetFreeDVModeMessage(FreeDVMode modeProvided = ANALOG)
-        : DVTaskMessageBase<SET_FREEDV_MODE, SetFreeDVModeMessage>(FREEDV_MESSAGE)
+    FreeDVModeMessageCommon(FreeDVMode modeProvided = ANALOG)
+        : DVTaskMessageBase<MSG_ID, FreeDVModeMessageCommon<MSG_ID> >(FREEDV_MESSAGE)
         , mode(modeProvided)
         {}
-    virtual ~SetFreeDVModeMessage() = default;
+    virtual ~FreeDVModeMessageCommon() = default;
 
     FreeDVMode mode;
+};
+
+using SetFreeDVModeMessage = FreeDVModeMessageCommon<SET_FREEDV_MODE>;
+using RequestSetFreeDVModeMessage = FreeDVModeMessageCommon<REQUEST_SET_FREEDV_MODE>;
+
+class RequestGetFreeDVModeMessage : public DVTaskMessageBase<REQUEST_GET_FREEDV_MODE, RequestGetFreeDVModeMessage>
+{
+public:
+    RequestGetFreeDVModeMessage()
+        : DVTaskMessageBase<REQUEST_GET_FREEDV_MODE, RequestGetFreeDVModeMessage>(FREEDV_MESSAGE)
+        {}
+    virtual ~RequestGetFreeDVModeMessage() = default;
 };
 
 class FreeDVSetPTTStateMessage : public DVTaskMessageBase<SET_PTT_STATE, FreeDVSetPTTStateMessage>

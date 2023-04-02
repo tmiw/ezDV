@@ -51,6 +51,7 @@ protected:
 private:
     struct freedv* dv_;
     reliable_text_t rText_;
+    int currentMode_;
 
     bool isTransmitting_;
     bool isActive_;
@@ -58,6 +59,7 @@ private:
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
     void onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message);
+    void onRequestGetFreeDVMode_(DVTask* origin, RequestGetFreeDVModeMessage* message);
 
     static void OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state);
 };
