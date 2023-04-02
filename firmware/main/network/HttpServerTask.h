@@ -68,6 +68,7 @@ private:
         UPDATE_REPORTING = 7,
         UPDATE_LED_BRIGHTNESS = 8,
         SET_MODE = 9,
+        START_STOP_VOICE_KEYER = 10,
     };
     
     template<uint32_t MSG_ID>
@@ -109,6 +110,7 @@ private:
     using UpdateReportingMessage = HttpRequestMessageCommon<UPDATE_REPORTING>;
     using UpdateLedBrightnessMessage = HttpRequestMessageCommon<UPDATE_LED_BRIGHTNESS>;
     using SetModeMessage = HttpRequestMessageCommon<SET_MODE>;
+    using StartStopVoiceKeyerMessage = HttpRequestMessageCommon<START_STOP_VOICE_KEYER>;
     
     using WebSocketList = std::vector<int>;
     
@@ -131,6 +133,12 @@ private:
 
     void onSetModeMessage_(DVTask* origin, SetModeMessage* message);
     void onSetFreeDVModeMessage_(DVTask* origin, audio::SetFreeDVModeMessage* message);
+
+    void sendVoiceKeyerExecutionState_(bool state);
+    void onStartStopVoiceKeyerMessage_(DVTask* origin, StartStopVoiceKeyerMessage* message);
+    void onStartVoiceKeyerMessage_(DVTask* origin, audio::StartVoiceKeyerMessage* message);
+    void onStopVoiceKeyerMessage_(DVTask* origin, audio::StopVoiceKeyerMessage* message);
+    void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

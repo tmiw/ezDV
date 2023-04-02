@@ -47,6 +47,11 @@ enum VoiceKeyerMessageTypes
 
     // Sent to indicate keyer has iterated the configured number of times
     VOICE_KEYER_COMPLETE = 6,
+
+    // VK request messages to maintain sync between web interface and physical
+    // buttons
+    REQUEST_START_STOP_KEYER = 7,
+    GET_KEYER_STATE = 8,
 };
 
 template<uint32_t MSG_ID>
@@ -74,6 +79,20 @@ using RequestTxMessage = StartStopCommon<REQUEST_TX>;
 using RequestRxMessage = StartStopCommon<REQUEST_RX>;
 
 using VoiceKeyerCompleteMessage = StartStopCommon<VOICE_KEYER_COMPLETE>;
+
+class RequestStartStopKeyerMessage : public DVTaskMessageBase<REQUEST_START_STOP_KEYER, RequestStartStopKeyerMessage>
+{
+public:
+    RequestStartStopKeyerMessage(bool reqProvided = false)
+        : DVTaskMessageBase<REQUEST_START_STOP_KEYER, RequestStartStopKeyerMessage>(VOICE_KEYER_MESSAGE)
+        , request(reqProvided)
+        {}
+    virtual ~RequestStartStopKeyerMessage() = default;
+
+    bool request;
+};
+
+using GetKeyerStateMessage = StartStopCommon<GET_KEYER_STATE>;
 
 }
 

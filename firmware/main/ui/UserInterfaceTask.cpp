@@ -75,6 +75,8 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onLeftChannelVolumeMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRightChannelVolumeMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRequestSetFreeDVModeMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onRequestStartStopKeyerMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onGetKeyerStateMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -143,10 +145,8 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
         if (voiceKeyerRunning_)
         {
             // Pushing any key stops the voice keyer
-            audio::StopVoiceKeyerMessage vkStopMessage;
-            publish(&vkStopMessage);
-
-            voiceKeyerRunning_ = false;
+            audio::RequestStartStopKeyerMessage vkRequest(false);
+            post(&vkRequest);
         }
 
         switch(message->button)
@@ -212,10 +212,8 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                     if (isTransmitting_ && voiceKeyerEnabled_)
                     {
                         // PTT + Mode = enable voice keyer
-                        audio::StartVoiceKeyerMessage vkStartMessage;
-                        publish(&vkStartMessage);
-
-                        voiceKeyerRunning_ = true;
+                        audio::RequestStartStopKeyerMessage vkRequest(true);
+                        post(&vkRequest);
                     }
                     else
                     {
@@ -436,6 +434,39 @@ void UserInterfaceTask::onRequestSetFreeDVModeMessage_(DVTask* origin, audio::Re
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
     publish(beeperMessage);
     delete beeperMessage;
+}
+
+void UserInterfaceTask::onRequestStartStopKeyerMessage_(DVTask* origin, audio::RequestStartStopKeyerMessage* message)
+{
+    if (voiceKeyerRunning_ != message->request)
+    {
+        if (message->request)
+        {
+            audio::StartVoiceKeyerMessage vkStartMessage;
+            publish(&vkStartMessage);
+        }
+        else
+        {
+            audio::StopVoiceKeyerMessage vkStopMessage;
+            publish(&vkStopMessage);
+        }
+    }
+
+    voiceKeyerRunning_ = message->request;
+}
+
+void UserInterfaceTask::onGetKeyerStateMessage_(DVTask* origin, audio::GetKeyerStateMessage* message)
+{
+    if (voiceKeyerRunning_)
+    {
+        audio::StartVoiceKeyerMessage vkResponse;
+        origin->post(&vkResponse);
+    }
+    else
+    {
+        audio::StopVoiceKeyerMessage vkResponse;
+        origin->post(&vkResponse);
+    }
 }
 
 }

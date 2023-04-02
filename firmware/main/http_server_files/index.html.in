@@ -80,6 +80,12 @@
                         <button type="button" class="btn btn-secondary mode-button" id="mode1600">1600</button>
                     </div>
                 </div>
+                <div class="row mb-3 general-enable-row">
+                    <label for="startVoiceKeyer" class="col-xs-4 col-md-2 col-form-labell">Start/Stop Voice Keyer</label>
+                    <div class="col-xs-8 col-md-4">
+                        <button type="button" class="btn btn-secondary mode-button" id="startVoiceKeyer">Voice Keyer</button>
+                    </div>
+                </div>
             </form>
             <form class="tab-pane fade show" id="reportingTabForm">
                 <div class="row mb-3" id="reportingSuccessAlertRow">

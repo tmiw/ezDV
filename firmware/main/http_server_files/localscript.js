@@ -5,11 +5,13 @@ var updateVoiceKeyerState = function()
 {
     if ($("#voiceKeyerEnable").is(':checked'))
     {
-        $(".vk-enable-row").show(); 
+        $(".vk-enable-row").show();
+        $("#startVoiceKeyer").prop("disabled", false);
     }
     else
     {
         $(".vk-enable-row").hide();
+        $("#startVoiceKeyer").prop("disabled", true);
     }
 };
 
@@ -322,6 +324,19 @@ function wsConnect()
               $("#mode1600").removeClass("btn-secondary");
           }
       }
+      else if (json.type == "voiceKeyerRunning")
+      {
+          if (json.running)
+          {
+              $("#startVoiceKeyer").removeClass("btn-secondary");
+              $("#startVoiceKeyer").addClass("btn-danger");
+          }
+          else
+          {
+            $("#startVoiceKeyer").addClass("btn-secondary");
+            $("#startVoiceKeyer").removeClass("btn-danger");
+          }
+      }
   };
 
   ws.onclose = function(e) 
@@ -490,6 +505,19 @@ $("#mode700E").click(function() {
 
 $("#mode1600").click(function() {
     setFreeDVMode(3);
+});
+
+$("#startVoiceKeyer").click(function() {
+    var running = $("#startVoiceKeyer").hasClass("btn-secondary");
+
+    var obj = 
+    {
+        "type": "startStopVoiceKeyer",
+        "running": running
+    };
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
 });
 
 $("#updateSave").click(function()

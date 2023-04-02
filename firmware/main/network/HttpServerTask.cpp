@@ -66,6 +66,8 @@ extern "C"
 
 #define JSON_CURRENT_MODE_TYPE "currentMode"
 
+#define JSON_VOICE_KEYER_RUNNING_TYPE "voiceKeyerRunning"
+
 namespace ezdv
 {
 
@@ -96,6 +98,11 @@ HttpServerTask::HttpServerTask()
 
     registerMessageHandler(this, &HttpServerTask::onSetModeMessage_);
     registerMessageHandler(this, &HttpServerTask::onSetFreeDVModeMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onStartStopVoiceKeyerMessage_);
+    registerMessageHandler(this, &HttpServerTask::onStartVoiceKeyerMessage_);
+    registerMessageHandler(this, &HttpServerTask::onStopVoiceKeyerMessage_);
+    registerMessageHandler(this, &HttpServerTask::onVoiceKeyerCompleteMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -367,6 +374,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                 else if (!strcmp(type, "setMode"))
                 {
                     SetModeMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "startStopVoiceKeyer"))
+                {
+                    StartStopVoiceKeyerMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
             }
@@ -674,6 +686,13 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for current FreeDV mode info");
         }
+    }
+
+    {
+        audio::GetKeyerStateMessage request;
+        publish(&request);
+        
+        // This is asynchronous, so we don't need to handle here.
     }
 }
 
@@ -1244,6 +1263,59 @@ void HttpServerTask::onSetFreeDVModeMessage_(DVTask* origin, audio::SetFreeDVMod
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for mode settings");
     }
+}
+
+void HttpServerTask::onStartStopVoiceKeyerMessage_(DVTask* origin, StartStopVoiceKeyerMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "");
+    
+    bool running = 0;
+         
+    auto runningJSON = cJSON_GetObjectItem(message->request, "running");
+    if (runningJSON != nullptr)
+    {
+        running = cJSON_IsTrue(runningJSON);
+    }
+
+    audio::RequestStartStopKeyerMessage vkRequest(running);
+    publish(&vkRequest);
+
+    // Note: this is an async request due to storage not being involved.    
+    cJSON_free(message->request);
+}
+
+void HttpServerTask::sendVoiceKeyerExecutionState_(bool state)
+{
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_RUNNING_TYPE);
+        cJSON_AddNumberToObject(root, "running", state);
+
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for voice keyer state");
+    }
+}
+
+void HttpServerTask::onStartVoiceKeyerMessage_(DVTask* origin, audio::StartVoiceKeyerMessage* message)
+{
+    sendVoiceKeyerExecutionState_(true);
+}
+
+void HttpServerTask::onStopVoiceKeyerMessage_(DVTask* origin, audio::StopVoiceKeyerMessage* message)
+{
+    sendVoiceKeyerExecutionState_(false);
+}
+
+void HttpServerTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message)
+{
+    sendVoiceKeyerExecutionState_(false);
 }
 
 }

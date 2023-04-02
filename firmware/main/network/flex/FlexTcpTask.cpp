@@ -173,6 +173,10 @@ void FlexTcpTask::connect_()
 
 void FlexTcpTask::disconnect_()
 {
+    // Report disconnection
+    ezdv::network::RadioConnectionStatusMessage response(false);
+    publish(&response);
+
     if (socket_ > 0)
     {
         cleanupWaveform_();
@@ -223,10 +227,6 @@ void FlexTcpTask::cleanupWaveform_()
     
         responseHandlers_.clear();
         inputBuffer_.clear();
-        
-        // Report disconnection
-        ezdv::network::RadioConnectionStatusMessage response(false);
-        publish(&response);
         
         // Report sleep
         if (isSleeping_) DVTask::onTaskSleep_(nullptr, nullptr);
