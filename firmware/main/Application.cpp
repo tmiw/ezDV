@@ -400,7 +400,7 @@ void App::onTaskSleep_()
 
         // Delay a second or two to allow final beeper to play.
         beeperTask_.sleep();
-        waitForSleep(&beeperTask_, pdMS_TO_TICKS(5000));
+        waitForSleep(&beeperTask_, pdMS_TO_TICKS(7000));
 
         // Sleep audio processing
         freedvTask_.sleep();
