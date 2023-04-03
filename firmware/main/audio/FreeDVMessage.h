@@ -18,6 +18,7 @@
 #ifndef FREEDV_MESSAGE_H
 #define FREEDV_MESSAGE_H
 
+#include <cstring>
 #include "task/DVTaskMessage.h"
 
 extern "C"
@@ -40,6 +41,7 @@ enum FreeDVMessageTypes
     SET_PTT_STATE = 3,
     REQUEST_SET_FREEDV_MODE = 4,
     REQUEST_GET_FREEDV_MODE = 5,
+    FREEDV_RX_CALLSIGN = 6,
 };
 
 class FreeDVSyncStateMessage : public DVTaskMessageBase<SYNC_STATE, FreeDVSyncStateMessage>
@@ -99,6 +101,23 @@ public:
     virtual ~FreeDVSetPTTStateMessage() = default;
 
     bool pttState;
+};
+
+class FreeDVReceivedCallsignMessage : public DVTaskMessageBase<FREEDV_RX_CALLSIGN, FreeDVReceivedCallsignMessage>
+{
+public:
+    enum { MAX_STR_SIZE = 16 };
+
+    FreeDVReceivedCallsignMessage(char* callsignProvided = "")
+        : DVTaskMessageBase<FREEDV_RX_CALLSIGN, FreeDVReceivedCallsignMessage>(FREEDV_MESSAGE) 
+    { 
+        memset(callsign, 0, sizeof(callsign));
+        strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
+    }
+    
+    virtual ~FreeDVReceivedCallsignMessage() = default;
+
+    char callsign[MAX_STR_SIZE];
 };
 
 }

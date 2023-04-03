@@ -49,6 +49,7 @@ FlexTcpTask::FlexTcpTask()
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestTxMessage_);
+    registerMessageHandler(this, &FlexTcpTask::onFreeDVReceivedCallsignMessage_);
 }
 
 FlexTcpTask::~FlexTcpTask()
@@ -333,6 +334,21 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 txSlice_ = sliceId;
             }
+
+            std::string toFind = "RF_frequency=";
+            auto freqLoc = command.find(toFind);
+            if (freqLoc != std::string::npos && activeSlice_ == sliceId)
+            {
+                auto endFreqLoc = command.find(" ", freqLoc);
+                if (endFreqLoc != std::string::npos)
+                {
+                    sliceFrequency_ = command.substr(freqLoc + toFind.length(), endFreqLoc);
+                }
+                else
+                {
+                    sliceFrequency_ = command.substr(freqLoc + toFind.length());
+                }
+            }
             
             if (command.find("mode=") != std::string::npos)
             {
@@ -394,6 +410,16 @@ void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* m
     if (activeSlice_ >= 0)
     {
         sendRadioCommand_("xmit 0");
+    }
+}
+
+void FlexTcpTask::onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message)
+{
+    if (activeSlice_ >= 0)
+    {
+        std::stringstream ss;
+        ss << "spot add rx_freq=" << sliceFrequency_ << " callsign=" << message->callsign << " mode=FREEDV"; //lifetime_seconds=300";
+        sendRadioCommand_(ss.str());
     }
 }
     

@@ -22,6 +22,7 @@
 #include <map>
 #include <functional>
 
+#include "audio/FreeDVMessage.h"
 #include "audio/VoiceKeyerMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
@@ -65,6 +66,7 @@ private:
     bool isLSB_;
     bool isSleeping_;
     int txSlice_;
+    std::string sliceFrequency_;
     
     using HandlerMapFn_ = std::function<void(unsigned int rv, std::string message)>;
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;
@@ -84,6 +86,9 @@ private:
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
     void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
+
+    // Spot handling
+    void onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message);
 };
 
 }

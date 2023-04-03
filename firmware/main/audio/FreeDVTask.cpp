@@ -278,6 +278,10 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
     // callsign one day.
     ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s", txt_ptr);
 
+    FreeDVTask* thisPtr = (FreeDVTask*)state;
+    FreeDVReceivedCallsignMessage message((char*)txt_ptr);
+    thisPtr->publish(&message);
+
     FreeDVTask* task = (FreeDVTask*)state;
     reliable_text_reset(task->rText_);
 }
