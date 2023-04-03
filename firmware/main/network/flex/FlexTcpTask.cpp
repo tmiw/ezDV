@@ -78,7 +78,15 @@ void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Sleeping task");
     isSleeping_ = true;
-    disconnect_();
+    
+    if (socket_ > 0)
+    {
+        disconnect_();
+    }
+    else
+    {
+        DVTask::onTaskSleep_(nullptr, nullptr);
+    }
 }
 
 void FlexTcpTask::onTaskTick_()
