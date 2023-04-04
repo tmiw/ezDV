@@ -25,6 +25,6 @@
 The waveform should look similar to the below. The lighter colored noise around the two waveforms should be as
 narrow as possible. 
 
-![USB waveform]](02-usb-waveform.png)
+![USB waveform](02-usb-waveform.png)
 
 *Note: this test is unlikely to fail if the [PC can properly enumerate ezDV](01-usb-enumeration.md) but is included for completeness.*
