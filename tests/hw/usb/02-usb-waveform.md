@@ -23,7 +23,7 @@
 ## Expected Results
 
 The waveform should look similar to the below. The lighter colored noise around the two waveforms should be as
-narrow as possible. 
+narrow as possible and show a visible eye. 
 
 ![USB waveform](02-usb-waveform.png)
 
