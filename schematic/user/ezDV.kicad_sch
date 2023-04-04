@@ -6,8 +6,8 @@
 
   (title_block
     (title "ezDV")
-    (date "2023-02-02")
-    (rev "v0.7")
+    (date "2023-04-03")
+    (rev "v0.8")
     (company "FreeDV Project")
   )
 
@@ -409,7 +409,7 @@
       (reference "C25") (unit 1) (value "47nF 50V") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3fb07317-7c87-45e2-9892-4f463a65021f"
-      (reference "C26") (unit 1) (value "1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+      (reference "C26") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/36979a11-ecad-416e-b494-2ac8065264f5"
       (reference "C30") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
