@@ -365,6 +365,29 @@ void FlexTcpTask::processCommand_(std::string& command)
                     // User wants to use the waveform.
                     activeSlice_ = sliceId;
                     isLSB_ = command.find("mode=FDVL") != std::string::npos;
+
+                    int low_cut = 150;
+                    int high_cut = 2850;
+                    int center = 1500;
+
+                    if (isLSB_)
+                    {
+                        low_cut = -2850;
+                        high_cut = -150;
+                        center = -1500;
+                    }
+
+                    std::stringstream ss;
+                    ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
+                    sendRadioCommand_(ss.str());
+
+                    ss.str("");
+                    ss << "slice " << activeSlice_ << " ";
+                    if (isLSB_) ss << "digl_offset=";
+                    else ss << "digu_offset=";
+                    ss << center;
+
+                    sendRadioCommand_(ss.str());
                 }
             }
         }
