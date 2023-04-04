@@ -256,7 +256,6 @@ void FlexTcpTask::createWaveform_(std::string name, std::string shortName, std::
             sendRadioCommand_(setPrefix + "tx=1");
             sendRadioCommand_(setPrefix + "rx_filter depth=256");
             sendRadioCommand_(setPrefix + "tx_filter depth=256");
-            sendRadioCommand_(setPrefix + "udpport=14992");
         }
     });
 }
@@ -382,11 +381,10 @@ void FlexTcpTask::processCommand_(std::string& command)
                     sendRadioCommand_(ss.str());
 
                     ss.str("");
-                    ss << "slice " << activeSlice_ << " ";
-                    if (isLSB_) ss << "digl_offset=";
-                    else ss << "digu_offset=";
-                    ss << center;
-
+                    ss << "waveform set FreeDV-";
+                    if (isLSB_) ss << "LSB";
+                    else ss << "USB";
+                    ss << " udpport=14992";
                     sendRadioCommand_(ss.str());
                 }
             }
