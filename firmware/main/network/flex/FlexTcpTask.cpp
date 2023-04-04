@@ -396,7 +396,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             ESP_LOGI(CURRENT_LOG_TAG, "Detected interlock update");
             
             if (command.find("state=PTT_REQUESTED") != std::string::npos &&
-                activeSlice_ == txSlice_)
+                activeSlice_ == txSlice_ && command.find("source=TUNE") == std::string::npos)
             {
                 // Going into transmit mode
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
