@@ -305,7 +305,7 @@ int SoftwareUpdateTask::UntarDataCallback_(header_translated_t *header,
             return -1;
         }
     }
-    else if (!strcmp(header->filename, "http.bin"))
+    else if (!strcmp(header->filename, "http.bin") || !strcmp(header->filename, "http_0.bin"))
     {
         // HTTP partition handling
         if (esp_partition_write(thisPtr->nextHttpPartition_, thisPtr->httpPartitionOffset_, block, length) != ESP_OK)
