@@ -224,9 +224,9 @@ void FlexTcpTask::cleanupWaveform_()
         return;
     }
     
-    sendRadioCommand_("unsub slice all");
+    sendRadioCommand_("unsub slice all"/*);
     sendRadioCommand_("waveform remove FreeDV-USB");
-    sendRadioCommand_("waveform remove FreeDV-LSB", [&](unsigned int rv, std::string message) {
+    sendRadioCommand_("waveform remove FreeDV-LSB"*/, [&](unsigned int rv, std::string message) {
         // We can disconnect after we've fully unregistered the waveforms.
         close(socket_);
         socket_ = -1;
