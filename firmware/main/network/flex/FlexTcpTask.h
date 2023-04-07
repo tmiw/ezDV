@@ -68,6 +68,10 @@ private:
     int txSlice_;
     std::string sliceFrequency_;
     
+    using FilterPair_ = std::pair<int, int>; // Low/high cut in Hz.
+    std::vector<FilterPair_, util::PSRamAllocator<FilterPair_> > filterWidths_;
+    FilterPair_ currentWidth_;
+    
     using HandlerMapFn_ = std::function<void(unsigned int rv, std::string message)>;
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;
     
@@ -87,6 +91,9 @@ private:
     void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
     void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
 
+    void onFreeDVModeChange_(DVTask* origin, audio::SetFreeDVModeMessage* message);
+    void setFilter_(int low, int high);
+    
     // Spot handling
     void onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message);
 };

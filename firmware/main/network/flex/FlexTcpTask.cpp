@@ -50,6 +50,16 @@ FlexTcpTask::FlexTcpTask()
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestTxMessage_);
     registerMessageHandler(this, &FlexTcpTask::onFreeDVReceivedCallsignMessage_);
+    registerMessageHandler(this, &FlexTcpTask::onFreeDVModeChange_);
+    
+    // Initialize filter widths. These are sent to SmartSDR on mode changes.
+    filterWidths_.push_back(FilterPair_(150, 2850)); // ANA
+    filterWidths_.push_back(FilterPair_(1000, 2000)); // 700D - 1K width
+    filterWidths_.push_back(FilterPair_(750, 2250)); // 700E - 1.5K width
+    filterWidths_.push_back(FilterPair_(937, 2062)); // 1600 - 1.125K width
+    
+    // Default to ANA unless we get something better.
+    currentWidth_ = filterWidths_[0];
 }
 
 FlexTcpTask::~FlexTcpTask()
@@ -365,20 +375,8 @@ void FlexTcpTask::processCommand_(std::string& command)
                     activeSlice_ = sliceId;
                     isLSB_ = command.find("mode=FDVL") != std::string::npos;
 
-                    int low_cut = 150;
-                    int high_cut = 2850;
-                    int center = 1500;
-
-                    if (isLSB_)
-                    {
-                        low_cut = -2850;
-                        high_cut = -150;
-                        center = -1500;
-                    }
-
-                    std::stringstream ss;
-                    ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
-                    sendRadioCommand_(ss.str());
+                    // Set the filter corresponding to the current mode.
+                    setFilter_(currentWidth_.first, currentWidth_.second);
 
                     ss.str("");
                     ss << "waveform set FreeDV-";
@@ -448,6 +446,31 @@ void FlexTcpTask::onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDV
     {
         std::stringstream ss;
         ss << "spot add rx_freq=" << sliceFrequency_ << " callsign=" << message->callsign << " mode=FREEDV"; //lifetime_seconds=300";
+        sendRadioCommand_(ss.str());
+    }
+}
+
+void FlexTcpTask::onFreeDVModeChange_(DVTask* origin, audio::SetFreeDVModeMessage* message)
+{
+    currentWidth_ = filterWidths_[message->mode];
+    setFilter_(currentWidth_.first, currentWidth_.second);
+}
+
+void FlexTcpTask::setFilter_(int low, int high)
+{
+    if (activeSlice_ >= 0)
+    {
+        int low_cut = low;
+        int high_cut = high;
+
+        if (isLSB_)
+        {
+            low_cut = -high;
+            high_cut = -low;
+        }
+
+        std::stringstream ss;
+        ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
         sendRadioCommand_(ss.str());
     }
 }
