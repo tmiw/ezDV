@@ -64,7 +64,6 @@ private:
     std::string ip_;
     int activeSlice_;
     bool isLSB_;
-    bool isSleeping_;
     int txSlice_;
     std::string sliceFrequency_;
     
@@ -77,7 +76,8 @@ private:
     
     void connect_();
     void disconnect_();
-    
+    void socketFinalCleanup_(bool reconnect);
+
     void initializeWaveform_();
     void createWaveform_(std::string name, std::string shortName, std::string underlyingMode);
     void cleanupWaveform_();

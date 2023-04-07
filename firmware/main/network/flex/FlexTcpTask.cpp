@@ -43,7 +43,6 @@ FlexTcpTask::FlexTcpTask()
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
-    , isSleeping_(true)
     , txSlice_(-1)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
@@ -70,13 +69,11 @@ FlexTcpTask::~FlexTcpTask()
 void FlexTcpTask::onTaskStart_()
 {
     // nothing required, just waiting for a connect request.
-    isSleeping_ = false;
 }
 
 void FlexTcpTask::onTaskWake_()
 {
     // nothing required, just waiting for a connect request.
-    isSleeping_ = false;
 }
 
 void FlexTcpTask::onTaskSleep_()
@@ -87,7 +84,6 @@ void FlexTcpTask::onTaskSleep_()
 void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Sleeping task");
-    isSleeping_ = true;
     
     if (socket_ > 0)
     {
@@ -132,14 +128,32 @@ void FlexTcpTask::onTaskTick_()
             // Nothing actually available on the socket, ignore.
             break;
         }
-        else if (!isSleeping_)
+        else
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Detected disconnect from socket, reattempting connect");
-            disconnect_();
-            reconnectTimer_.start();
+            socketFinalCleanup_(true);
             return;
         }
     }
+}
+
+void FlexTcpTask::socketFinalCleanup_(bool reconnect)
+{
+    // Report disconnection
+    ezdv::network::RadioConnectionStatusMessage response(false);
+    publish(&response);
+
+    close(socket_);
+    socket_ = -1;
+    activeSlice_ = -1;
+    isLSB_ = false;
+    txSlice_ = -1;
+
+    responseHandlers_.clear();
+    inputBuffer_.clear();
+    
+    // Report sleep
+    if (reconnect) reconnectTimer_.start();
 }
 
 void FlexTcpTask::connect_()
@@ -148,7 +162,7 @@ void FlexTcpTask::connect_()
     reconnectTimer_.stop();
     
     // Clean up any existing connections before starting.
-    disconnect_();
+    socketFinalCleanup_(false);
 
     struct sockaddr_in radioAddress;
     radioAddress.sin_addr.s_addr = inet_addr(ip_.c_str());
@@ -192,10 +206,6 @@ void FlexTcpTask::connect_()
 
 void FlexTcpTask::disconnect_()
 {
-    // Report disconnection
-    ezdv::network::RadioConnectionStatusMessage response(false);
-    publish(&response);
-
     if (socket_ > 0)
     {
         cleanupWaveform_();
@@ -238,17 +248,8 @@ void FlexTcpTask::cleanupWaveform_()
     sendRadioCommand_("waveform remove FreeDV-USB");
     sendRadioCommand_("waveform remove FreeDV-LSB"*/, [&](unsigned int rv, std::string message) {
         // We can disconnect after we've fully unregistered the waveforms.
-        close(socket_);
-        socket_ = -1;
-        activeSlice_ = -1;
-        isLSB_ = false;
-        txSlice_ = -1;
-    
-        responseHandlers_.clear();
-        inputBuffer_.clear();
-        
-        // Report sleep
-        if (isSleeping_) DVTask::onTaskSleep_(nullptr, nullptr);
+        socketFinalCleanup_(false);
+        DVTask::onTaskSleep_(nullptr, nullptr);
     });
 }
 
@@ -277,14 +278,22 @@ void FlexTcpTask::sendRadioCommand_(std::string command)
 
 void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsigned int rv, std::string message)> fn)
 {
-    std::ostringstream ss;
-    
-    responseHandlers_[sequenceNumber_] = fn;
+    if (socket_ > 0)
+    {
+        std::ostringstream ss;
+        
+        responseHandlers_[sequenceNumber_] = fn;
 
-    ESP_LOGI(CURRENT_LOG_TAG, "Sending '%s' as command %d", command.c_str(), sequenceNumber_);    
-    ss << "C" << (sequenceNumber_++) << "|" << command << "\n";
-    
-    write(socket_, ss.str().c_str(), ss.str().length());
+        ESP_LOGI(CURRENT_LOG_TAG, "Sending '%s' as command %d", command.c_str(), sequenceNumber_);    
+        ss << "C" << (sequenceNumber_++) << "|" << command << "\n";
+        
+        auto rv = write(socket_, ss.str().c_str(), ss.str().length());
+        if (rv <= 0)
+        {
+            // We've likely disconnected, do cleanup and re-attempt connection.
+            socketFinalCleanup_(true);
+        }
+    }
 }
 
 void FlexTcpTask::processCommand_(std::string& command)
