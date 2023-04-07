@@ -59,6 +59,8 @@
 
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
+#define LAST_MODE_ID ("lastMode")
+
 namespace ezdv
 {
 
@@ -103,6 +105,7 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onSetReportingSettingsMessage_);
     registerMessageHandler(this, &SettingsTask::onRequestLedBrightness_);
     registerMessageHandler(this, &SettingsTask::onSetLedBrightness_);
+    registerMessageHandler(this, &SettingsTask::onChangeFreeDVMode_);
 }
 
 void SettingsTask::onTaskStart_()
@@ -248,6 +251,7 @@ void SettingsTask::loadAllSettings_()
         initialzeVoiceKeyer_();
         initializeReporting_();
         initializeLedBrightness_();
+        initializeLastMode_();
     }
 }
 
@@ -556,6 +560,29 @@ void SettingsTask::initializeLedBrightness_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "ledDutyCycle: %d", ledDutyCycle_);
     }
+}
+
+void SettingsTask::initializeLastMode_()
+{
+    int lastMode = 0;
+    esp_err_t result = storageHandle_->get_item(LAST_MODE_ID, lastMode);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Last mode not found, will set to defaults");
+        setLastMode_(0);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving lastMode: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "lastMode: %d", lastMode);
+    }
+    
+    // Request mode change to previous mode
+    audio::RequestSetFreeDVModeMessage reqMsg((audio::RequestSetFreeDVModeMessage::FreeDVMode)lastMode);
+    publish(&reqMsg);
 }
 
 void SettingsTask::commit_()
@@ -888,6 +915,29 @@ void SettingsTask::setLedBrightness_(int dutyCycle)
         
         LedBrightnessSettingsSavedMessage response;
         publish(&response);
+    }
+}
+
+void SettingsTask::onChangeFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message)
+{
+    setLastMode_(message->mode);
+}
+
+void SettingsTask::setLastMode_(int lastMode)
+{
+    if (storageHandle_)
+    {        
+        esp_err_t result = storageHandle_->set_item(LAST_MODE_ID, lastMode);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting lastMode: %s", esp_err_to_name(result));
+        }
+
+        commitTimer_.stop();
+        commitTimer_.start(true);
+        
+        // Note: don't report mode changes on update. We're only interested
+        // in the last used mode on bootup.
     }
 }
 

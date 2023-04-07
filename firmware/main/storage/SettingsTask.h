@@ -28,6 +28,7 @@
 #include "task/DVTimer.h"
 
 #include "SettingsMessage.h"
+#include "audio/FreeDVMessage.h"
 
 namespace ezdv
 {
@@ -95,6 +96,8 @@ private:
     void onRequestLedBrightness_(DVTask* origin, RequestLedBrightnessSettingsMessage* message);
     void onSetLedBrightness_(DVTask* origin, SetLedBrightnessSettingsMessage* message);
     
+    void onChangeFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message);
+    
     void loadAllSettings_();
     void commit_();
     
@@ -105,6 +108,7 @@ private:
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
     void setReportingSettings_(char* callsign);
     void setLedBrightness_(int dutyCycle);
+    void setLastMode_(int lastMode);
 
     void initializeVolumes_();
     void initializeWifi_();
@@ -112,6 +116,7 @@ private:
     void initialzeVoiceKeyer_();
     void initializeReporting_();
     void initializeLedBrightness_();
+    void initializeLastMode_();
 };
 
 } // namespace storage
