@@ -81,6 +81,7 @@ SettingsTask::SettingsTask()
     , voiceKeyerNumberTimesToTransmit_(0)
     , voiceKeyerSecondsToWaitAfterTransmit_(0)
     , ledDutyCycle_(0)
+    , lastMode_(0)
     , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
@@ -564,8 +565,7 @@ void SettingsTask::initializeLedBrightness_()
 
 void SettingsTask::initializeLastMode_()
 {
-    int lastMode = 0;
-    esp_err_t result = storageHandle_->get_item(LAST_MODE_ID, lastMode);
+    esp_err_t result = storageHandle_->get_item(LAST_MODE_ID, lastMode_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Last mode not found, will set to defaults");
@@ -577,11 +577,11 @@ void SettingsTask::initializeLastMode_()
     }
     else
     {
-        ESP_LOGI(CURRENT_LOG_TAG, "lastMode: %d", lastMode);
+        ESP_LOGI(CURRENT_LOG_TAG, "lastMode: %d", lastMode_);
     }
     
     // Request mode change to previous mode
-    audio::RequestSetFreeDVModeMessage reqMsg((audio::RequestSetFreeDVModeMessage::FreeDVMode)lastMode);
+    audio::RequestSetFreeDVModeMessage reqMsg((audio::RequestSetFreeDVModeMessage::FreeDVMode)lastMode_);
     publish(&reqMsg);
 }
 
@@ -925,19 +925,23 @@ void SettingsTask::onChangeFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessa
 
 void SettingsTask::setLastMode_(int lastMode)
 {
-    if (storageHandle_)
-    {        
-        esp_err_t result = storageHandle_->set_item(LAST_MODE_ID, lastMode);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting lastMode: %s", esp_err_to_name(result));
-        }
+    if (lastMode_ != lastMode)
+    {
+        lastMode_ = lastMode;
+        if (storageHandle_)
+        {        
+            esp_err_t result = storageHandle_->set_item(LAST_MODE_ID, lastMode_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting lastMode: %s", esp_err_to_name(result));
+            }
 
-        commitTimer_.stop();
-        commitTimer_.start(true);
+            commitTimer_.stop();
+            commitTimer_.start(true);
         
-        // Note: don't report mode changes on update. We're only interested
-        // in the last used mode on bootup.
+            // Note: don't report mode changes on update. We're only interested
+            // in the last used mode on bootup.
+        }
     }
 }
 

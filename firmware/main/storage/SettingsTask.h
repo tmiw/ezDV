@@ -74,6 +74,7 @@ private:
     int voiceKeyerSecondsToWaitAfterTransmit_;
     
     int ledDutyCycle_;
+    int lastMode_;
 
     DVTimer commitTimer_;
     std::shared_ptr<nvs::NVSHandle> storageHandle_;
