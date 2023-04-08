@@ -53,9 +53,9 @@ FlexTcpTask::FlexTcpTask()
     
     // Initialize filter widths. These are sent to SmartSDR on mode changes.
     filterWidths_.push_back(FilterPair_(150, 2850)); // ANA
-    filterWidths_.push_back(FilterPair_(1000, 2000)); // 700D - 1K width
-    filterWidths_.push_back(FilterPair_(750, 2250)); // 700E - 1.5K width
-    filterWidths_.push_back(FilterPair_(937, 2062)); // 1600 - 1.125K width
+    filterWidths_.push_back(FilterPair_(750, 2250)); // 700D - 1K width + a bit extra
+    filterWidths_.push_back(FilterPair_(500, 2500)); // 700E - 1.5K width + a bit extra
+    filterWidths_.push_back(FilterPair_(687, 2313)); // 1600 - 1.125K width + a bit extra
     
     // Default to ANA unless we get something better.
     currentWidth_ = filterWidths_[0];
