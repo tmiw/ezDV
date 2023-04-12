@@ -25,6 +25,7 @@
 #include "BeeperMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
+#include "util/SineWaveGenerator.h"
 
 namespace ezdv
 {
@@ -49,6 +50,7 @@ protected:
 
 private:
     DVTimer beeperTimer_;
+    util::SineWaveGenerator sineGenerator_;
     int sineCounter_;
     bool deferShutdown_;
     std::vector<bool> beeperList_;

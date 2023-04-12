@@ -27,6 +27,7 @@
 #include "storage/SettingsMessage.h"
 #include "driver/LedArray.h"
 #include "driver/TLV320.h"
+#include "util/SineWaveGenerator.h"
 
 namespace ezdv
 {
@@ -50,15 +51,13 @@ protected:
     virtual void onTaskTick_() override;
 
 private:
+    util::SineWaveGenerator leftChannelSineWave_;
+    util::SineWaveGenerator rightChannelSineWave_;
     bool isActive_;
     ezdv::driver::LedArray* ledArrayTask_;
     ezdv::driver::TLV320* tlv320Task_;
     int leftChannelCtr_;
     int rightChannelCtr_;
-    short* leftChannelSineWave_;
-    int leftChannelSineWaveCount_;
-    short* rightChannelSineWave_;
-    int rightChannelSineWaveCount_;
     int currentMode_;
     unsigned int pttCtr_;
 

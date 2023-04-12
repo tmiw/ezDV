@@ -60,41 +60,19 @@ namespace ui
 RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask, ezdv::driver::TLV320* tlv320Task)
     : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
     , AudioInput(1, 2)
+    , leftChannelSineWave_(LEFT_FREQ_HZ, SINE_WAVE_AMPLITUDE)
+    , rightChannelSineWave_(RIGHT_FREQ_HZ, SINE_WAVE_AMPLITUDE)
     , isActive_(false)
     , ledArrayTask_(ledArrayTask)
     , tlv320Task_(tlv320Task)
     , leftChannelCtr_(0)
     , rightChannelCtr_(0)
-    , leftChannelSineWave_(nullptr)
-    , leftChannelSineWaveCount_(0)
-    , rightChannelSineWave_(nullptr)
-    , rightChannelSineWaveCount_(0)
     , currentMode_(0)
     , pttCtr_(0)
 {
     registerMessageHandler(this, &RfComplianceTestTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &RfComplianceTestTask::onButtonReleasedMessage_);
-    
-    // Pre-generate sine waves as sin() won't run fast enough for real time
-    // at a high enough sample rate.
-    leftChannelSineWaveCount_ = SAMPLE_RATE;
-    leftChannelSineWave_ = new short[leftChannelSineWaveCount_];
-    assert(leftChannelSineWave_ != nullptr);
-    
-    for (int index = 0; index < leftChannelSineWaveCount_; index++)
-    {
-        leftChannelSineWave_[index] = SINE_WAVE_AMPLITUDE * sin(2.0 * M_PI * LEFT_FREQ_HZ * (float)index * SAMPLE_RATE_RECIP);
-    }
-    
-    rightChannelSineWaveCount_ = SAMPLE_RATE;
-    rightChannelSineWave_ = new short[rightChannelSineWaveCount_];
-    assert(rightChannelSineWave_ != nullptr);
-    
-    for (int index = 0; index < rightChannelSineWaveCount_; index++)
-    {
-        rightChannelSineWave_[index] = SINE_WAVE_AMPLITUDE * sin(2.0 * M_PI * RIGHT_FREQ_HZ * (float)index * SAMPLE_RATE_RECIP);
-    }
 }
 
 RfComplianceTestTask::~RfComplianceTestTask()
@@ -263,14 +241,15 @@ void RfComplianceTestTask::sineWave_()
     {
         for (int index = 0; index < SAMPLES_PER_TICK; index++)
         {
-            if (leftChannelCtr_ >= leftChannelSineWaveCount_)
+            if (leftChannelCtr_ >= SAMPLE_RATE)
             {
                 leftChannelCtr_ = 0;
             }
         
             if (codec2_fifo_free(outputLeftFifo) > 0)
             {
-                codec2_fifo_write(outputLeftFifo, &leftChannelSineWave_[leftChannelCtr_++], 1);
+                short sample = leftChannelSineWave_.getSample(leftChannelCtr_++);
+                codec2_fifo_write(outputLeftFifo, &sample, 1);
             }
         }
     }
@@ -279,14 +258,15 @@ void RfComplianceTestTask::sineWave_()
     {
         for (int index = 0; index < SAMPLES_PER_TICK; index++)
         {
-            if (rightChannelCtr_ >= rightChannelSineWaveCount_)
+            if (rightChannelCtr_ >= SAMPLE_RATE)
             {
                 rightChannelCtr_ = 0;
             }
         
             if (codec2_fifo_free(outputRightFifo) > 0)
             {
-                codec2_fifo_write(outputRightFifo, &rightChannelSineWave_[rightChannelCtr_++], 1);
+                short sample = rightChannelSineWave_.getSample(rightChannelCtr_++);
+                codec2_fifo_write(outputRightFifo, &sample, 1);
             }
         }
     }

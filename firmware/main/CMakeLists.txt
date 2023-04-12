@@ -52,7 +52,8 @@ set(SOURCES
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp"
     "ui/RFComplianceTestTask.cpp"
-    "ui/UserInterfaceTask.cpp")
+    "ui/UserInterfaceTask.cpp"
+    "util/SineWaveGenerator.cpp")
 
 if(${ESP_PLATFORM})
     idf_component_register(SRCS ${SOURCES}

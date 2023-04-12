@@ -27,7 +27,6 @@
 #define SPACE_BETWEEN_CHARS 3
 #define SPACE_BETWEEN_WORDS 7
 #define CW_SIDETONE_FREQ_HZ ((float)600.0)
-#define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
 
 // Found via experimentation
 #define BEEPER_TIMER_TICK_MS ((int)(CW_TIME_UNIT_MS))
@@ -85,6 +84,7 @@ BeeperTask::BeeperTask()
     : DVTask("BeeperTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 10)
     , AudioInput(1, 1) // we don't need the input FIFO, just the output one
     , beeperTimer_(this, std::bind(&BeeperTask::onTimerTick_, this), BEEPER_TIMER_TICK_US)
+    , sineGenerator_(CW_SIDETONE_FREQ_HZ, 10000)
     , sineCounter_(0)
     , deferShutdown_(false)
 {
@@ -164,7 +164,7 @@ void BeeperTask::onTimerTick_()
         {
             for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
             {
-                bufToQueue[index] = 10000 * sin(2 * M_PI * CW_SIDETONE_FREQ_HZ * sineCounter_++ * SAMPLE_RATE_RECIP);
+                bufToQueue[index] = sineGenerator_.getSample(sineCounter_++);
             }
         }
         else
