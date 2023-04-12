@@ -17,9 +17,9 @@
 
 #include <cmath>
 #include <unistd.h>
-#include <sys/socket.h>
 
 #include "FlexVitaTask.h"
+#include "FlexKeyValueParser.h"
 
 #include "esp_log.h"
 
@@ -56,6 +56,7 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onSendVitaMessage_);
+    registerMessageHandler(this, &FlexVitaTask::onWirelessNetworkStatusMessage_);
     
     downsamplerInBuf_ = (float*)heap_caps_malloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K) * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
@@ -79,12 +80,12 @@ FlexVitaTask::~FlexVitaTask()
 
 void FlexVitaTask::onTaskStart_()
 {
-    // nothing required, just waiting for a connect request.
+    // empty, wait for Wi-Fi to come up
 }
 
 void FlexVitaTask::onTaskWake_()
 {
-    // nothing required, just waiting for a connect request.
+    // empty, wait for Wi-Fi to come up
 }
 
 void FlexVitaTask::onTaskSleep_()
@@ -165,56 +166,6 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     }
 }
 
-void FlexVitaTask::connect_()
-{
-    // Clean up any existing connections before starting.
-    disconnect_();
-
-    struct sockaddr_in radioAddress;
-    radioAddress.sin_addr.s_addr = inet_addr(ip_.c_str());
-    radioAddress.sin_family = AF_INET;
-    radioAddress.sin_port = htons(4993); // hardcoded as per Flex documentation
-    
-    socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (socket_ == -1)
-    {
-        auto err = errno;
-        ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while creating socket", err, strerror(err));
-    }
-    assert(socket_ != -1);
-
-    // Listen on our hardcoded VITA port
-    struct sockaddr_in ourSocketAddress;
-    memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
-
-    ourSocketAddress.sin_family = AF_INET;
-    ourSocketAddress.sin_port = htons(VITA_PORT);
-    ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-        
-    auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
-    if (rv == -1)
-    {
-        auto err = errno;
-        ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while binding", err, strerror(err));
-    }
-    assert(rv != -1);
-    
-    // Connect to the radio.
-    ESP_LOGI(CURRENT_LOG_TAG, "Connecting to radio at IP %s", ip_.c_str());
-    rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
-    if (rv == -1)
-    {
-        auto err = errno;
-        ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while connecting", err, strerror(err));
-    }
-    assert(rv != -1);
-
-    ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
-    fcntl (socket_, F_SETFL , O_NONBLOCK);
-    
-    packetReadTimer_.start();
-}
-
 void FlexVitaTask::disconnect_()
 {
     if (socket_ > 0)
@@ -268,7 +219,12 @@ void FlexVitaTask::readPendingPackets_()
 void FlexVitaTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message)
 {
     ip_ = message->ip;
-    connect_();
+    
+    radioAddress_.sin_addr.s_addr = inet_addr(ip_.c_str());
+    radioAddress_.sin_family = AF_INET;
+    radioAddress_.sin_port = htons(4993); // hardcoded as per Flex documentation
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");    
 }
 
 void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* message)
@@ -283,6 +239,19 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
     if((packet->class_id & VITA_OUI_MASK) != FLEX_OUI)
         goto cleanup;
 
+    // Look for discovery packets
+    if (packet->stream_id == DISCOVERY_STREAM_ID && packet->class_id == DISCOVERY_CLASS_ID)
+    {
+        std::stringstream ss((char*)packet->raw_payload);
+        auto parameters = FlexKeyValueParser::GetCommandParameters(ss);
+
+        auto radioFriendlyName = parameters["nickname"] + " (" + parameters["callsign"] + ")";
+        auto radioIp = parameters["ip"];
+        
+        ESP_LOGI(CURRENT_LOG_TAG, "Discovery: found radio %s at IP %s", radioFriendlyName.c_str(), radioIp.c_str());
+        goto cleanup;
+    }
+    
     switch(packet->stream_id & STREAM_BITS_MASK) 
     {
         case STREAM_BITS_WAVEFORM | STREAM_BITS_IN:
@@ -355,7 +324,7 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
 
     if (socket_ > 0)
     {
-        int rv = send(socket_, (char*)packet, message->length, 0);
+        int rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
         int tries = 0;
         while (rv == -1 && tries < 100)
         {
@@ -364,7 +333,7 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
             {
                 // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
                 vTaskDelay(1);
-                rv = send(socket_, (char*)packet, message->length, 0);
+                rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
                 continue;
             }
             else
@@ -392,6 +361,46 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
     }
     
     delete packet;
+}
+
+void FlexVitaTask::onWirelessNetworkStatusMessage_(DVTask* origin, WirelessNetworkStatusMessage* message)
+{
+    if (message->state)
+    {
+        // Bind socket so we can at least get discovery packets.
+        socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (socket_ == -1)
+        {
+            auto err = errno;
+            ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while creating socket", err, strerror(err));
+        }
+        assert(socket_ != -1);
+
+        // Listen on our hardcoded VITA port
+        struct sockaddr_in ourSocketAddress;
+        memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
+
+        ourSocketAddress.sin_family = AF_INET;
+        ourSocketAddress.sin_port = htons(VITA_PORT);
+        ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+        
+        auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
+        if (rv == -1)
+        {
+            auto err = errno;
+            ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while binding", err, strerror(err));
+        }
+        assert(rv != -1);
+    
+        ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
+        fcntl (socket_, F_SETFL , O_NONBLOCK);
+    
+        packetReadTimer_.start();
+    }
+    else
+    {
+        disconnect_();
+    }
 }
     
 }

@@ -389,7 +389,7 @@ void FlexTcpTask::processCommand_(std::string& command)
                     tmp << "waveform set FreeDV-";
                     if (isLSB_) tmp << "LSB";
                     else tmp << "USB";
-                    tmp << " udpport=14992";
+                    tmp << " udpport=4992";
                     sendRadioCommand_(tmp.str());
                 }
             }

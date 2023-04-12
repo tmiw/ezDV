@@ -20,8 +20,10 @@
 
 #include <ctime>
 #include <deque>
+#include <sys/socket.h>
 
 #include "audio/AudioInput.h"
+#include "network/NetworkMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 #include "util/PSRamAllocator.h"
@@ -43,7 +45,7 @@ using namespace ezdv::task;
 class FlexVitaTask : public DVTask, public audio::AudioInput
 {
 public:
-    enum { VITA_PORT = 14992 }; // Hardcoding VITA port because we can only handle one slice at a time.
+    enum { VITA_PORT = 4992 }; // Hardcoding VITA port because we can only handle one slice at a time.
     
     FlexVitaTask();
     virtual ~FlexVitaTask();
@@ -55,6 +57,7 @@ protected:
     virtual void onTaskTick_() override;
     
 private:
+    struct sockaddr_in radioAddress_;
     std::deque<float, util::PSRamAllocator<float> > inputVector_;
     DVTimer packetReadTimer_;
     int socket_;
@@ -71,7 +74,6 @@ private:
     short* upsamplerInBuf_;
     float* upsamplerOutBuf_;
     
-    void connect_();
     void disconnect_();
     
     void readPendingPackets_();
@@ -81,6 +83,8 @@ private:
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* message);
     void onSendVitaMessage_(DVTask* origin, SendVitaMessage* message);
+    
+    void onWirelessNetworkStatusMessage_(DVTask* origin, WirelessNetworkStatusMessage* message);
 };
 
 }
