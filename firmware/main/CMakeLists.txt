@@ -71,6 +71,7 @@ if(${ESP_PLATFORM})
                                 fatfs
                                 wear_levelling
                                 esp_http_server
+                                esp_netif
                                 esp_timer
                                 esp_wifi
                                 app_update

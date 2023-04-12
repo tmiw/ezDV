@@ -1266,9 +1266,7 @@ void HttpServerTask::onSetFreeDVModeMessage_(DVTask* origin, audio::SetFreeDVMod
 }
 
 void HttpServerTask::onStartStopVoiceKeyerMessage_(DVTask* origin, StartStopVoiceKeyerMessage* message)
-{
-    ESP_LOGI(CURRENT_LOG_TAG, "");
-    
+{    
     bool running = 0;
          
     auto runningJSON = cJSON_GetObjectItem(message->request, "running");

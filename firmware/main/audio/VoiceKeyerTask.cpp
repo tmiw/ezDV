@@ -47,6 +47,8 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
 
     registerMessageHandler(this, &VoiceKeyerTask::onFileUploadDataMessage_);
     registerMessageHandler(this, &VoiceKeyerTask::onStartFileUploadMessage_);
+
+    registerMessageHandler(this, &VoiceKeyerTask::onRequestRxMessage_);
 }
 
 VoiceKeyerTask::~VoiceKeyerTask()
@@ -274,6 +276,17 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
 
         FileUploadCompleteMessage response;
         publish(&response);
+    }
+}
+
+void VoiceKeyerTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
+{
+    if (currentState_ == VoiceKeyerTask::TX)
+    {
+        // If something is requesting receive while the keyer is active, we should 
+        // stop the keyer.
+        audio::RequestStartStopKeyerMessage vkRequest(false);
+        publish(&vkRequest);
     }
 }
 

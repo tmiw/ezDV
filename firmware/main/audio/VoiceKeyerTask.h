@@ -23,6 +23,7 @@
 #include "AudioInput.h"
 #include "VoiceKeyerMessage.h"
 #include "WAVFileReader.h"
+#include "audio/FreeDVMessage.h"
 #include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
@@ -82,6 +83,9 @@ private:
     // Voice keyer file upload handlers
     void onStartFileUploadMessage_(DVTask* origin, network::StartFileUploadMessage* message);
     void onFileUploadDataMessage_(DVTask* origin, network::FileUploadDataMessage* message);
+
+    // Listen for RequestRxMessage so we can stop voice keyer if running.
+    void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
 };
 
 }
