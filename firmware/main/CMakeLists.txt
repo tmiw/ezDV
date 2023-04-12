@@ -20,6 +20,7 @@ set(SOURCES
     "driver/OutputGPIO.cpp"
     "driver/TLV320.cpp"
     "driver/TLV320Message.cpp"
+    "network/flex/FlexKeyValueParser.cpp"
     "network/flex/FlexMessage.cpp"
     "network/flex/FlexTcpTask.cpp"
     "network/flex/FlexVitaTask.cpp"

@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 
 #include "FlexTcpTask.h"
+#include "FlexKeyValueParser.h"
 #include "audio/FreeDVMessage.h"
 #include "network/NetworkMessage.h"
 
@@ -356,7 +357,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             int sliceId = 0;
             ss >> std::dec >> sliceId;
             
-            auto parameters = getCommandParameters_(ss);
+            auto parameters = FlexKeyValueParser::GetCommandParameters(ss);
 
             auto tx = parameters.find("tx");
             if (tx != parameters.end() && tx->second == "1")
@@ -397,7 +398,7 @@ void FlexTcpTask::processCommand_(std::string& command)
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Detected interlock update");
             
-            auto parameters = getCommandParameters_(ss);
+            auto parameters = FlexKeyValueParser::GetCommandParameters(ss);
             auto state = parameters.find("state");
             auto source = parameters.find("source");
             
@@ -483,25 +484,6 @@ void FlexTcpTask::setFilter_(int low, int high)
         ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
         sendRadioCommand_(ss.str());
     }
-}
-
-std::map<std::string, std::string> FlexTcpTask::getCommandParameters_(std::stringstream& ss)
-{
-    std::string word = "";
-    std::map<std::string, std::string> ret;
-    
-    while (std::getline(ss, word, ' ')) 
-    {
-        std::stringstream wordStream(word);
-        std::string parameter = "";
-        std::string value = "";
-        
-        std::getline(wordStream, parameter, '=');
-        std::getline(wordStream, value);
-        ret[parameter] = value;
-    }
-    
-    return ret;
 }
     
 }
