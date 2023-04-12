@@ -355,44 +355,41 @@ void FlexTcpTask::processCommand_(std::string& command)
             
             int sliceId = 0;
             ss >> std::dec >> sliceId;
+            
+            auto parameters = getCommandParameters_(ss);
 
-            if (command.find("tx=1") != std::string::npos)
+            auto tx = parameters.find("tx");
+            if (tx != parameters.end() && tx->second == "1")
             {
                 txSlice_ = sliceId;
             }
 
-            std::string toFind = "RF_frequency=";
-            auto freqLoc = command.find(toFind);
-            if (freqLoc != std::string::npos && activeSlice_ == sliceId)
+            auto rfFrequency = parameters.find("RF_frequency");
+            if (rfFrequency != parameters.end() && activeSlice_ == sliceId)
             {
-                auto endFreqLoc = command.find(" ", freqLoc);
-                if (endFreqLoc != std::string::npos)
-                {
-                    sliceFrequency_ = command.substr(freqLoc + toFind.length(), endFreqLoc);
-                }
-                else
-                {
-                    sliceFrequency_ = command.substr(freqLoc + toFind.length());
-                }
+                sliceFrequency_ = rfFrequency->second;
             }
             
-            if (command.find("mode=") != std::string::npos)
+            auto mode = parameters.find("mode");
+            if (mode != parameters.end())
             {
-                if (command.find("mode=FDV") != std::string::npos)
+                if (mode->second == "FDVU" || mode->second == "FDVL")
                 {
+                    ESP_LOGI(CURRENT_LOG_TAG, "Swtiching slice %d to FreeDV mode", sliceId);
+                    
                     // User wants to use the waveform.
                     activeSlice_ = sliceId;
-                    isLSB_ = command.find("mode=FDVL") != std::string::npos;
+                    isLSB_ = mode->second == "FDVL";
 
                     // Set the filter corresponding to the current mode.
                     setFilter_(currentWidth_.first, currentWidth_.second);
 
-                    ss.str("");
-                    ss << "waveform set FreeDV-";
-                    if (isLSB_) ss << "LSB";
-                    else ss << "USB";
-                    ss << " udpport=14992";
-                    sendRadioCommand_(ss.str());
+                    std::stringstream tmp;
+                    tmp << "waveform set FreeDV-";
+                    if (isLSB_) tmp << "LSB";
+                    else tmp << "USB";
+                    tmp << " udpport=14992";
+                    sendRadioCommand_(tmp.str());
                 }
             }
         }
@@ -400,15 +397,19 @@ void FlexTcpTask::processCommand_(std::string& command)
         {
             ESP_LOGI(CURRENT_LOG_TAG, "Detected interlock update");
             
-            if (command.find("state=PTT_REQUESTED") != std::string::npos &&
-                activeSlice_ == txSlice_ && command.find("source=TUNE") == std::string::npos)
+            auto parameters = getCommandParameters_(ss);
+            auto state = parameters.find("state");
+            auto source = parameters.find("source");
+            
+            if (state != parameters.end() && state->second == "PTT_REQUESTED" &&
+                activeSlice_ == txSlice_ && source->second != "TUNE")
             {
                 // Going into transmit mode
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
                 audio::RequestTxMessage message;
                 publish(&message);
             }
-            else if (command.find("state=UNKEY_REQUESTED") != std::string::npos)
+            else if (state != parameters.end() && state->second == "UNKEY_REQUESTED")
             {
                 // Going back into receive
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went out of transmit");
@@ -482,6 +483,25 @@ void FlexTcpTask::setFilter_(int low, int high)
         ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
         sendRadioCommand_(ss.str());
     }
+}
+
+std::map<std::string, std::string> FlexTcpTask::getCommandParameters_(std::stringstream& ss)
+{
+    std::string word = "";
+    std::map<std::string, std::string> ret;
+    
+    while (std::getline(ss, word, ' ')) 
+    {
+        std::stringstream wordStream(word);
+        std::string parameter = "";
+        std::string value = "";
+        
+        std::getline(wordStream, parameter, '=');
+        std::getline(wordStream, value);
+        ret[parameter] = value;
+    }
+    
+    return ret;
 }
     
 }

@@ -96,6 +96,8 @@ private:
     
     // Spot handling
     void onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message);
+    
+    std::map<std::string, std::string> getCommandParameters_(std::stringstream& ss);
 };
 
 }
