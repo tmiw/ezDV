@@ -68,6 +68,8 @@ extern "C"
 
 #define JSON_VOICE_KEYER_RUNNING_TYPE "voiceKeyerRunning"
 
+#define JSON_FLEX_RADIO_DISCOVERED_TYPE "flexRadioDiscovered"
+
 namespace ezdv
 {
 
@@ -103,6 +105,8 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onStartVoiceKeyerMessage_);
     registerMessageHandler(this, &HttpServerTask::onStopVoiceKeyerMessage_);
     registerMessageHandler(this, &HttpServerTask::onVoiceKeyerCompleteMessage_);
+    
+    registerMessageHandler(this, &HttpServerTask::onFlexRadioDiscoveredMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -1314,6 +1318,26 @@ void HttpServerTask::onStopVoiceKeyerMessage_(DVTask* origin, audio::StopVoiceKe
 void HttpServerTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message)
 {
     sendVoiceKeyerExecutionState_(false);
+}
+
+void HttpServerTask::onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex::FlexRadioDiscoveredMessage* message)
+{
+    // Send response
+    cJSON *root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_FLEX_RADIO_DISCOVERED_TYPE);
+        cJSON_AddStringToObject(root, "ip", message->ip);
+        cJSON_AddStringToObject(root, "description", message->desc);
+
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+    else
+    {
+        // HTTP isn't 100% critical but we really should see what's leaking memory.
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for Flex radio info");
+    }
 }
 
 }

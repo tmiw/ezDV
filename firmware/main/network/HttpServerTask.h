@@ -30,6 +30,8 @@
 #include "driver/BatteryMessage.h"
 #include "storage/SoftwareUpdateMessage.h"
 
+#include "network/flex/FlexMessage.h"
+
 extern "C"
 {
     DV_EVENT_DECLARE_BASE(HTTP_SERVER_MESSAGE);
@@ -139,6 +141,8 @@ private:
     void onStartVoiceKeyerMessage_(DVTask* origin, audio::StartVoiceKeyerMessage* message);
     void onStopVoiceKeyerMessage_(DVTask* origin, audio::StopVoiceKeyerMessage* message);
     void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
+    
+    void onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex::FlexRadioDiscoveredMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

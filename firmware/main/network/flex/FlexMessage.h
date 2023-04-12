@@ -44,6 +44,7 @@ enum FlexMessageTypes
     CONNECT_RADIO = 1,
     VITA_RECEIVE = 2,
     VITA_SEND = 3,
+    DISCOVERED_RADIO = 4,
 };
 
 class FlexConnectRadioMessage : public DVTaskMessageBase<CONNECT_RADIO, FlexConnectRadioMessage>
@@ -66,6 +67,39 @@ public:
     }
     virtual ~FlexConnectRadioMessage() = default;
 
+    char ip[STR_SIZE];
+};
+
+class FlexRadioDiscoveredMessage : public DVTaskMessageBase<DISCOVERED_RADIO, FlexRadioDiscoveredMessage>
+{
+public:
+    static const int STR_SIZE = 32;
+    
+    FlexRadioDiscoveredMessage(
+        char* descProvided = nullptr,
+        char* ipProvided = nullptr)
+        : DVTaskMessageBase<DISCOVERED_RADIO, FlexRadioDiscoveredMessage>(FLEX_MESSAGE)
+    {
+        memset(desc, 0, STR_SIZE);
+        memset(ip, 0, STR_SIZE);
+        
+        if (ipProvided != nullptr)
+        {
+            strncpy(ip, ipProvided, STR_SIZE - 1);
+        }
+        
+        ip[STR_SIZE - 1] = 0;
+        
+        if (descProvided != nullptr)
+        {
+            strncpy(desc, descProvided, STR_SIZE - 1);
+        }
+        
+        desc[STR_SIZE - 1] = 0;
+    }
+    virtual ~FlexRadioDiscoveredMessage() = default;
+
+    char desc[STR_SIZE];
     char ip[STR_SIZE];
 };
 

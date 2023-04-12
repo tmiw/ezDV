@@ -249,6 +249,10 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
         auto radioIp = parameters["ip"];
         
         ESP_LOGI(CURRENT_LOG_TAG, "Discovery: found radio %s at IP %s", radioFriendlyName.c_str(), radioIp.c_str());
+        
+        FlexRadioDiscoveredMessage discoveryMessage((char*)radioFriendlyName.c_str(), (char*)radioIp.c_str());
+        publish(&discoveryMessage);
+        
         goto cleanup;
     }
     

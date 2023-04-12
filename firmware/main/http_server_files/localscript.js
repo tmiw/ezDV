@@ -75,6 +75,33 @@ var updateRadioFormState = function()
     if ($("#radioType").val() == "1")
     {
         disabled = true;
+        
+        // Update drop-down with current radio list.
+        var radioSelectBox = $("#radioList");
+        var currentIP = $("#radioIP").val();
+        radioSelectBox.find('option').remove().end();
+
+        var opt = $('<option></option>').val("").html("(other)");
+        if (!(currentIP in flexRadioDictionary))
+        {
+            opt.prop("selected", true);
+        }
+        radioSelectBox.append(opt);
+        
+        $.each(flexRadioDictionary, function(val, text) {
+            var opt = $('<option></option>').val(val).html(text);
+            if (val in flexRadioDictionary)
+            {
+                opt.prop("selected", true);
+            }
+            radioSelectBox.append(opt);
+        });
+        
+        $(".flex-radio-config").show();
+    }
+    else
+    {
+        $(".flex-radio-config").hide();
     }
     
     $("#radioPort").prop( "disabled", disabled );
@@ -165,6 +192,19 @@ function wsConnect()
           $("#radioPassword").val(json.password);
           
           updateRadioFormState();
+      }
+      else if (json.type == "flexRadioDiscovered")
+      {
+          // Add discovered radio to the list.
+          var radioDescription = json.description;
+          var radioIp = json.ip;
+          
+          // Only update the dropdown if we're adding something brand new.
+          if (!(radioIp in flexRadioDictionary))
+          {
+              flexRadioDictionary[radioIp] = radioDescription;
+              updateRadioFormState();
+          }
       }
       else if (json.type == "radioSaved")
       {
@@ -362,6 +402,24 @@ $("#radioEnable").change(function()
 $("#radioType").change(function()
 {
     updateRadioFormState();
+});
+
+$("#radioList").change(function()
+{
+    $("#radioIP").val($("#radioList").val());
+});
+
+$("#radioIP").change(function()
+{
+    var ip = $("#radioIP").val();
+    if (ip in flexRadioDictionary)
+    {
+        $("#radioList").val(ip);
+    }
+    else
+    {
+        $("#radioList").val("");
+    }
 });
 
 $("#wifiEnable").change(function()
@@ -575,6 +633,9 @@ $(document).on('input', '#ledBrightness', function() {
     // Async send request and wait for response.
     ws.send(JSON.stringify(obj));
 });
+
+// Initialize radio dictionary (Flex). This is global to everything in this file.
+flexRadioDictionary = {};
 
 //==========================================================================================
 // Disable all form elements on page load. Connect to WebSocket and wait for initial messages.
