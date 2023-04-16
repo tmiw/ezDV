@@ -100,10 +100,10 @@ cutoutsLid = [
     [20.78, 14.63, 4, 4, 0, yappRectangle, yappCenter],
     [29.67, 14.63, 4, 4, 0, yappRectangle, yappCenter],*/
     
-    [2.67, 14.62, 4.3, 4.3, 0, yappCircle, yappCenter],
-    [11.56, 14.62, 4.3, 4.3, 0, yappCircle, yappCenter],
-    [20.45, 14.62, 4.3, 4.3, 0, yappCircle, yappCenter],
-    [29.34, 14.62, 4.3, 4.3, 0, yappCircle, yappCenter],
+    [3.17, 14.62, 4.7, 4.7, 0, yappCircle, yappCenter],
+    [12.06, 14.62, 4.7, 4.7, 0, yappCircle, yappCenter],
+    [20.95, 14.62, 4.7, 4.7, 0, yappCircle, yappCenter],
+    [29.84, 14.62, 4.7, 4.7, 0, yappCircle, yappCenter],
     
     // Status LEDs
     [2.54, 55.88, 2, 2, 0, yappCircle],
