@@ -70,6 +70,8 @@ extern "C"
 
 #define JSON_FLEX_RADIO_DISCOVERED_TYPE "flexRadioDiscovered"
 
+extern void StartSleeping();
+
 namespace ezdv
 {
 
@@ -107,6 +109,8 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onVoiceKeyerCompleteMessage_);
     
     registerMessageHandler(this, &HttpServerTask::onFlexRadioDiscoveredMessage_);
+    
+    registerMessageHandler(this, &HttpServerTask::onRebootDeviceMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -383,6 +387,11 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                 else if (!strcmp(type, "startStopVoiceKeyer"))
                 {
                     StartStopVoiceKeyerMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "rebootDevice"))
+                {
+                    RebootDeviceMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
             }
@@ -1338,6 +1347,14 @@ void HttpServerTask::onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex
         // HTTP isn't 100% critical but we really should see what's leaking memory.
         ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for Flex radio info");
     }
+}
+
+extern "C" bool rebootDevice;
+
+void HttpServerTask::onRebootDeviceMessage_(DVTask* origin, RebootDeviceMessage* message)
+{
+    rebootDevice = true;
+    StartSleeping();
 }
 
 }

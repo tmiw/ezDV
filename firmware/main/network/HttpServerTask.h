@@ -71,6 +71,7 @@ private:
         UPDATE_LED_BRIGHTNESS = 8,
         SET_MODE = 9,
         START_STOP_VOICE_KEYER = 10,
+        REBOOT_DEVICE = 11,
     };
     
     template<uint32_t MSG_ID>
@@ -113,6 +114,7 @@ private:
     using UpdateLedBrightnessMessage = HttpRequestMessageCommon<UPDATE_LED_BRIGHTNESS>;
     using SetModeMessage = HttpRequestMessageCommon<SET_MODE>;
     using StartStopVoiceKeyerMessage = HttpRequestMessageCommon<START_STOP_VOICE_KEYER>;
+    using RebootDeviceMessage = HttpRequestMessageCommon<REBOOT_DEVICE>;
     
     using WebSocketList = std::vector<int>;
     
@@ -143,6 +145,8 @@ private:
     void onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message);
     
     void onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex::FlexRadioDiscoveredMessage* message);
+    
+    void onRebootDeviceMessage_(DVTask* origin, RebootDeviceMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

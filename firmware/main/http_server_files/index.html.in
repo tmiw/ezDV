@@ -86,6 +86,12 @@
                         <button type="button" class="btn btn-secondary mode-button" id="startVoiceKeyer">Voice Keyer</button>
                     </div>
                 </div>
+                <div class="row mb-3 general-enable-row">
+                    <label for="rebootDevice" class="col-xs-4 col-md-2 col-form-labell">Reboot device</label>
+                    <div class="col-xs-8 col-md-4">
+                        <button type="button" class="btn btn-secondary mode-button" id="rebootDevice">Reboot</button>
+                    </div>
+                </div>
             </form>
             <form class="tab-pane fade show" id="reportingTabForm">
                 <div class="row mb-3" id="reportingSuccessAlertRow">

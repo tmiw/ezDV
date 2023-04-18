@@ -23,6 +23,8 @@ extern "C"
     // Power off handler application
     extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
     extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
+    
+    bool rebootDevice = false;
 }
 
 namespace ezdv
@@ -217,8 +219,15 @@ void App::enterDeepSleep_()
     fflush(stdout);
     vTaskDelay(100);
 
-    ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
-    esp_deep_sleep_start();    
+    if (rebootDevice)
+    {
+        esp_restart();
+    }
+    else
+    {
+        ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
+        esp_deep_sleep_start();    
+    }
 }
 
 void App::onTaskStart_()
@@ -394,6 +403,7 @@ void StartSleeping()
 {
     app->sleep();
 }
+
 extern "C" void app_main()
 {
     // Make sure the ULP program isn't running.

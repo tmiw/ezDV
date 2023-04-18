@@ -506,6 +506,17 @@ $("#radioSave").click(function()
     ws.send(JSON.stringify(obj));
 });
 
+$("#rebootDevice").click(function()
+{
+    var obj = 
+    {
+        "type": "rebootDevice",
+    };
+    
+    // Async send request and wait for response.
+    ws.send(JSON.stringify(obj));
+});
+
 $("#voiceKeyerSave").click(function()
 {
     $("#voiceKeyerSave").hide();
