@@ -275,7 +275,7 @@ void App::onTaskStart_()
         start(&uiTask_, pdMS_TO_TICKS(1000));
     
         // Start Wi-Fi
-        wirelessTask_.start();
+        start(&wirelessTask_, pdMS_TO_TICKS(5000));
 
         // Start storage handling
         settingsTask_.start();
@@ -335,7 +335,7 @@ void App::onTaskWake_()
         wake(&uiTask_, pdMS_TO_TICKS(1000));
     
         // Wake Wi-Fi
-        wake(&wirelessTask_, pdMS_TO_TICKS(1000));
+        wake(&wirelessTask_, pdMS_TO_TICKS(5000));
 
         // Wake storage handling
         wake(&settingsTask_, pdMS_TO_TICKS(1000));
