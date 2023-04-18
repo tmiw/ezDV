@@ -494,6 +494,18 @@ void HttpServerTask::onTaskSleep_()
 {
     if (isRunning_)
     {
+        // Close all active web sockets
+        for (auto& sock : activeWebSockets_)
+        {
+            httpd_ws_frame_t wsPkt;
+            memset(&wsPkt, 0, sizeof(httpd_ws_frame_t));
+            wsPkt.payload = nullptr;
+            wsPkt.len = 0;
+            wsPkt.type = HTTPD_WS_TYPE_CLOSE;
+            
+            httpd_ws_send_data(configServerHandle_, sock, &wsPkt);
+        }
+        
         ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
         esp_vfs_spiffs_unregister("http");
 

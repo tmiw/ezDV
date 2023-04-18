@@ -150,6 +150,8 @@ void WirelessTask::onTaskWake_()
 
 void WirelessTask::onTaskSleep_()
 {
+    disableHttp_();
+        
     // Audio and CIV need to stop before control
     sleep(&icomAudioTask_, pdMS_TO_TICKS(1000));
     sleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
@@ -158,7 +160,6 @@ void WirelessTask::onTaskSleep_()
     sleep(&flexVitaTask_, pdMS_TO_TICKS(1000));
     sleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
     
-    disableHttp_();
     disableWifi_();
 }
 
@@ -358,7 +359,7 @@ void WirelessTask::disableHttp_()
 {
     if (wifiRunning_)
     {
-        httpServerTask_.sleep();
+        sleep(&httpServerTask_, pdMS_TO_TICKS(1000));
     }
 }
 

@@ -144,7 +144,10 @@ function wsConnect()
 {
   ws = new WebSocket("ws://" + location.hostname + "/ws");
   ws.binaryType = "arraybuffer";
-  ws.onopen = function() { };
+  ws.onopen = function()
+  {
+      $(".modal").hide();
+  };
   ws.onmessage = function(e) 
   {
       var json = JSON.parse(e.data);
@@ -382,6 +385,7 @@ function wsConnect()
   ws.onclose = function(e) 
   {
     console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+    $(".modal").show();
     setTimeout(function() {
         wsConnect();
     }, 1000);
@@ -653,7 +657,7 @@ flexRadioDictionary = {};
 // These messages will trigger prefilling and reenabling of the form.
 //==========================================================================================
 $( document ).ready(function() 
-{
+{    
     $(".wifi-enable-row").hide();
     $("#wifiEnable").prop("disabled", true);
     $("#wifiReset").prop("disabled", true);
