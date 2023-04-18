@@ -79,6 +79,64 @@ void DVTask::sleep()
     post(&message);
 }
 
+void DVTask::start(DVTask* taskToStart, TickType_t ticksToWait)
+{
+    TaskStartMessage startMessage;
+    
+    taskToStart->startTask_();
+    
+    if (ticksToWait > 0)
+    {
+        auto entry = createMessageEntry_(this, &startMessage);
+        TaskQueueMessage message(taskToStart, entry);
+        post(&message);
+        
+        waitForOurs_<TaskStartedMessage>(taskToStart, ticksToWait);
+    }
+    else
+    {
+        post(&startMessage);
+    }
+}
+
+void DVTask::wake(DVTask* taskToWake, TickType_t ticksToWait)
+{
+    TaskWakeMessage wakeMessage;
+    
+    taskToWake->startTask_();
+    
+    if (ticksToWait > 0)
+    {
+        auto entry = createMessageEntry_(this, &wakeMessage);
+        TaskQueueMessage message(taskToWake, entry);
+        post(&message);
+        
+        waitForOurs_<TaskAwakeMessage>(taskToWake, ticksToWait);
+    }
+    else
+    {
+        post(&wakeMessage);
+    }
+}
+
+void DVTask::sleep(DVTask* taskToSleep, TickType_t ticksToWait)
+{
+    TaskSleepMessage sleepMessage;
+        
+    if (ticksToWait > 0)
+    {
+        auto entry = createMessageEntry_(this, &sleepMessage);
+        TaskQueueMessage message(taskToSleep, entry);
+        post(&message);
+        
+        waitForOurs_<TaskAsleepMessage>(taskToSleep, ticksToWait);
+    }
+    else
+    {
+        post(&sleepMessage);
+    }
+}
+
 void DVTask::startTask_()
 {
     // Create task event queue
@@ -89,6 +147,7 @@ void DVTask::startTask_()
     registerMessageHandler(this, &DVTask::onTaskStart_);
     registerMessageHandler(this, &DVTask::onTaskWake_);
     registerMessageHandler(this, &DVTask::onTaskSleep_);
+    registerMessageHandler(this, &DVTask::onTaskQueueMessage_);
 
     auto returnValue = 
         xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_.c_str(), taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
@@ -177,29 +236,8 @@ void DVTask::publish(DVTaskMessage* message)
 
 }
 
-void DVTask::waitForStart(DVTask* taskToWaitFor, TickType_t ticksToWait)
-{
-    waitForOurs_<TaskStartedMessage>(taskToWaitFor, ticksToWait);
-}
-
-void DVTask::waitForSleep(DVTask* taskToWaitFor, TickType_t ticksToWait)
-{
-    waitForOurs_<TaskAsleepMessage>(taskToWaitFor, ticksToWait);
-}
-
-void DVTask::waitForAwake(DVTask* taskToWaitFor, TickType_t ticksToWait)
-{
-    waitForOurs_<TaskAwakeMessage>(taskToWaitFor, ticksToWait);
-}
-
 void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
-    // XXX - Slight delay in case main app is waiting for us.
-    // Otherwise very fast starting/stopping tasks will finish before
-    // the main app can wait, meaning that the app will never get the 
-    // completion message.
-    vTaskDelay(pdMS_TO_TICKS(10));
-
     onTaskStart_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_.c_str());
@@ -209,13 +247,7 @@ void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 }
 
 void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
-{
-    // XXX - Slight delay in case main app is waiting for us.
-    // Otherwise very fast starting/stopping tasks will finish before
-    // the main app can wait, meaning that the app will never get the 
-    // completion message.
-    vTaskDelay(pdMS_TO_TICKS(10));
-
+{    
     onTaskWake_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s awake", taskName_.c_str());
@@ -226,12 +258,6 @@ void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
 void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
-    // XXX - Slight delay in case main app is waiting for us.
-    // Otherwise very fast starting/stopping tasks will finish before
-    // the main app can wait, meaning that the app will never get the 
-    // completion message.
-    vTaskDelay(pdMS_TO_TICKS(10));
-
     onTaskSleep_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());
@@ -245,41 +271,49 @@ void DVTask::postHelper_(MessageEntry* entry)
     if (taskQueue_)
     {
         auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
+        if (rv == errQUEUE_FULL)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Task %s has a full queue! (maximum: %ld)", taskName_.c_str(), taskQueueSize_);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
         assert(rv != errQUEUE_FULL);
     }
 }
 
-void DVTask::threadEntry_()
+void DVTask::singleMessagingLoop_(int64_t ticksRemaining)
 {
+    MessageEntry* entry = nullptr;
+
+    if (xQueueReceive(taskQueue_, &entry, ticksRemaining) == pdTRUE)
+    {
+        //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
+        auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
+        EventMap::iterator iter = iterPair.first;
+        while (iter != iterPair.second)
+        {
+            (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
+            iter++;
+        }
+
+        // Deallocate message now that we're done with it.
+        char* entryPtr = (char*)entry;
+        delete[] entryPtr;
+    }
+}
+
+void DVTask::threadEntry_()
+{    
     UBaseType_t stackWaterMark = INT_MAX;
     
     // Run in an infinite loop, continually waiting for messages
     // and processing them.
     for (;;)
-    {
-        MessageEntry* entry = nullptr;
-        
+    {        
         int64_t ticksRemaining = taskTick_;
         while (ticksRemaining > 0)
         {
             auto tasksBegin = xTaskGetTickCount();
-            
-            if (xQueueReceive(taskQueue_, &entry, ticksRemaining) == pdTRUE)
-            {
-                //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
-                auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
-                EventMap::iterator iter = iterPair.first;
-                while (iter != iterPair.second)
-                {
-                    (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
-                    iter++;
-                }
-
-                // Deallocate message now that we're done with it.
-                char* entryPtr = (char*)entry;
-                delete[] entryPtr;
-            }
-            
+            singleMessagingLoop_(ticksRemaining);
             ticksRemaining -= xTaskGetTickCount() - tasksBegin;
         }
 
@@ -292,6 +326,11 @@ void DVTask::threadEntry_()
             //ESP_LOGI(taskName_.c_str(), "New stack high water mark of %d", newStackWaterMark);
         }
     }
+}
+
+void DVTask::onTaskQueueMessage_(DVTask* origin, TaskQueueMessage* message)
+{
+    message->destination->postHelper_(message->entry);
 }
 
 void DVTask::ThreadEntry_(DVTask* thisObj)

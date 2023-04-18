@@ -229,8 +229,7 @@ void App::onTaskStart_()
 
     // The battery driver should also be initialized early in case we
     // need to immediately sleep due to low power.
-    max17048_.start();
-    waitForAwake(&max17048_, pdMS_TO_TICKS(1000));
+    start(&max17048_, pdMS_TO_TICKS(1000));
 
     if (max17048_.isLowSOC())
     {
@@ -238,8 +237,7 @@ void App::onTaskStart_()
     }
 
     // Initialize LED array early as we want all the LEDs lit during the boot process.
-    ledArray_.start();
-    waitForStart(&ledArray_, pdMS_TO_TICKS(1000));
+    start(&ledArray_, pdMS_TO_TICKS(1000));
 
     {
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
@@ -253,28 +251,19 @@ void App::onTaskStart_()
     }
 
     // Start device drivers
-    tlv320Device_.start();
-    waitForStart(&tlv320Device_, pdMS_TO_TICKS(10000));
-
-    buttonArray_.start();
-    waitForStart(&buttonArray_, pdMS_TO_TICKS(1000));
+    start(&tlv320Device_, pdMS_TO_TICKS(10000));
+    start(&buttonArray_, pdMS_TO_TICKS(1000));
     
     if (!rfComplianceEnabled_)
     {
         // Start audio processing
-        freedvTask_.start();
-        audioMixer_.start();
-        beeperTask_.start();
-
-        waitForStart(&freedvTask_, pdMS_TO_TICKS(1000));
-        waitForStart(&audioMixer_, pdMS_TO_TICKS(1000));
-        waitForStart(&beeperTask_, pdMS_TO_TICKS(1000));
+        start(&freedvTask_, pdMS_TO_TICKS(1000));
+        start(&audioMixer_, pdMS_TO_TICKS(1000));
+        start(&beeperTask_, pdMS_TO_TICKS(1000));
 
         // Start UI
-        voiceKeyerTask_.start();
-        uiTask_.start();
-        waitForStart(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-        waitForStart(&uiTask_, pdMS_TO_TICKS(1000));
+        start(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        start(&uiTask_, pdMS_TO_TICKS(1000));
     
         // Start Wi-Fi
         wirelessTask_.start();
@@ -288,8 +277,7 @@ void App::onTaskStart_()
     }
     else
     {
-        rfComplianceTask_.start();
-        waitForStart(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        start(&rfComplianceTask_, pdMS_TO_TICKS(1000));
     }
 }
 
@@ -301,8 +289,7 @@ void App::onTaskWake_()
 
     // The battery driver should be initialized early in case we
     // need to immediately sleep due to low power.
-    max17048_.wake();
-    waitForAwake(&max17048_, pdMS_TO_TICKS(1000));
+    wake(&max17048_, pdMS_TO_TICKS(1000));
 
     if (max17048_.isLowSOC())
     {
@@ -310,8 +297,7 @@ void App::onTaskWake_()
     }
     
     // Initialize LED array early as we want all the LEDs lit during the boot process.
-    ledArray_.wake();
-    waitForAwake(&ledArray_, pdMS_TO_TICKS(1000));
+    wake(&ledArray_, pdMS_TO_TICKS(1000));
 
     {
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
@@ -325,49 +311,35 @@ void App::onTaskWake_()
     }
 
     // Wake up device drivers
-    tlv320Device_.wake();
-    waitForAwake(&tlv320Device_, pdMS_TO_TICKS(10000));
-
-    buttonArray_.wake();
-    waitForAwake(&buttonArray_, pdMS_TO_TICKS(1000));
+    wake(&tlv320Device_, pdMS_TO_TICKS(10000));
+    wake(&buttonArray_, pdMS_TO_TICKS(1000));
 
     if (!rfComplianceEnabled_)
     {
         // Wake audio processing
-        freedvTask_.wake();
-        waitForAwake(&freedvTask_, pdMS_TO_TICKS(1000));
-    
-        audioMixer_.wake();
-        waitForAwake(&audioMixer_, pdMS_TO_TICKS(1000));
-        
-        beeperTask_.wake();
-        waitForAwake(&beeperTask_, pdMS_TO_TICKS(1000));
+        wake(&freedvTask_, pdMS_TO_TICKS(1000));
+        wake(&audioMixer_, pdMS_TO_TICKS(1000));
+        wake(&beeperTask_, pdMS_TO_TICKS(1000));
 
         // Wake UI
-        voiceKeyerTask_.wake();
-        waitForAwake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-    
-        uiTask_.wake();
-        waitForAwake(&uiTask_, pdMS_TO_TICKS(1000));
+        wake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        wake(&uiTask_, pdMS_TO_TICKS(1000));
     
         // Wake Wi-Fi
-        wirelessTask_.wake();
-        waitForAwake(&wirelessTask_, pdMS_TO_TICKS(1000));
+        wake(&wirelessTask_, pdMS_TO_TICKS(1000));
 
         // Wake storage handling
-        settingsTask_.wake();
-        waitForAwake(&settingsTask_, pdMS_TO_TICKS(1000));
-        
-        softwareUpdateTask_.wake();
-        waitForAwake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+        wake(&settingsTask_, pdMS_TO_TICKS(1000));
+
+        // Wake SW update handling
+        wake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
         
         // Mark boot as successful, no need to rollback.
         esp_ota_mark_app_valid_cancel_rollback();
     }
     else
     {
-        rfComplianceTask_.wake();
-        waitForAwake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        wake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
     }
 }
 
@@ -376,54 +348,39 @@ void App::onTaskSleep_()
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
 
     // Disable buttons
-    buttonArray_.sleep();
-    waitForSleep(&buttonArray_, pdMS_TO_TICKS(1000));
+    sleep(&buttonArray_, pdMS_TO_TICKS(1000));
 
     if (!rfComplianceEnabled_)
     {
         // Sleep Wi-Fi
-        wirelessTask_.sleep();
-        waitForSleep(&wirelessTask_, pdMS_TO_TICKS(5000));
+        sleep(&wirelessTask_, pdMS_TO_TICKS(5000));
     
         // Sleep UI
-        uiTask_.sleep();
-        waitForSleep(&uiTask_, pdMS_TO_TICKS(1000));
-        voiceKeyerTask_.sleep();
-        waitForSleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        sleep(&uiTask_, pdMS_TO_TICKS(1000));
+        sleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
     
         // Sleep storage handling
-        settingsTask_.sleep();
-        waitForSleep(&settingsTask_, pdMS_TO_TICKS(1000));
+        sleep(&settingsTask_, pdMS_TO_TICKS(1000));
         
-        softwareUpdateTask_.sleep();
-        waitForSleep(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+        // Sleep SW update
+        sleep(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
 
         // Delay a second or two to allow final beeper to play.
-        beeperTask_.sleep();
-        waitForSleep(&beeperTask_, pdMS_TO_TICKS(7000));
+        sleep(&beeperTask_, pdMS_TO_TICKS(7000));
 
         // Sleep audio processing
-        freedvTask_.sleep();
-        waitForSleep(&freedvTask_, pdMS_TO_TICKS(1000));
-
-        audioMixer_.sleep();
-        waitForSleep(&audioMixer_, pdMS_TO_TICKS(3000));
+        sleep(&freedvTask_, pdMS_TO_TICKS(1000));
+        sleep(&audioMixer_, pdMS_TO_TICKS(3000));
     }
     else
     {
-        rfComplianceTask_.sleep();
-        waitForSleep(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        sleep(&rfComplianceTask_, pdMS_TO_TICKS(1000));
     }
 
     // Sleep device drivers
-    tlv320Device_.sleep();
-    waitForSleep(&tlv320Device_, pdMS_TO_TICKS(2000));
-    
-    ledArray_.sleep();
-    waitForSleep(&ledArray_, pdMS_TO_TICKS(1000));
-
-    max17048_.sleep();
-    waitForSleep(&max17048_, pdMS_TO_TICKS(1000));
+    sleep(&tlv320Device_, pdMS_TO_TICKS(2000));
+    sleep(&ledArray_, pdMS_TO_TICKS(1000));
+    sleep(&max17048_, pdMS_TO_TICKS(1000));
     
     enterDeepSleep_();
 }

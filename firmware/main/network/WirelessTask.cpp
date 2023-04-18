@@ -102,7 +102,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 }
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
-    : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(1000))
+    : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 128, pdMS_TO_TICKS(1000))
     , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
     , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
     , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
@@ -151,18 +151,12 @@ void WirelessTask::onTaskWake_()
 void WirelessTask::onTaskSleep_()
 {
     // Audio and CIV need to stop before control
-    icomAudioTask_.sleep();
-    waitForSleep(&icomAudioTask_, pdMS_TO_TICKS(1000));
-    icomCIVTask_.sleep();
-    waitForSleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
-    icomControlTask_.sleep();
-    waitForSleep(&icomControlTask_, pdMS_TO_TICKS(1000));
+    sleep(&icomAudioTask_, pdMS_TO_TICKS(1000));
+    sleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
+    sleep(&icomControlTask_, pdMS_TO_TICKS(1000));
     
-    flexVitaTask_.sleep();
-    waitForSleep(&flexVitaTask_, pdMS_TO_TICKS(1000));
-    
-    flexTcpTask_.sleep();
-    waitForSleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
+    sleep(&flexVitaTask_, pdMS_TO_TICKS(1000));
+    sleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
     
     disableHttp_();
     disableWifi_();

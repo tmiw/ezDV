@@ -42,6 +42,9 @@ enum DVTaskControlMessageTypes
     TASK_STARTED = 5,
     TASK_AWAKE = 6,
     TASK_ASLEEP = 7,
+    
+    TASK_QUEUE_MSG = 8, // special message so that we can defer sending control messages until waitFor executes
+                        // or when current handler finishes
 };
 
 template<uint32_t MSG_ID>

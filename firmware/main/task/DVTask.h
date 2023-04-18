@@ -42,6 +42,8 @@ namespace task
 class DVTask
 {
 public:
+    using MessageHandlerHandle = void*;
+    
     /// @brief Constructs a new task for the application
     /// @param taskName The friendly name of the task (used for debugging).
     /// @param taskPriority The task's priority.
@@ -80,34 +82,32 @@ public:
     /// @param message The message to publish.
     void publish(DVTaskMessage* message);
 
-    /// @brief Wait until the task fully starts.
-    /// @param ticksToWait The number of ticks to wait
-    /// @param taskToWaitFor The task to wait for.
-    void waitForStart(DVTask* taskToWaitFor, TickType_t ticksToWait);
-
-    /// @brief Wait until the task fully sleeps.
-    /// @param ticksToWait The number of ticks to wait
-    /// @param taskToWaitFor The task to wait for.
-    void waitForSleep(DVTask* taskToWaitFor, TickType_t ticksToWait);
-
-    /// @brief Wait until the task fully wakes up.
-    /// @param ticksToWait The number of ticks to wait
-    /// @param taskToWaitFor The task to wait for.
-    void waitForAwake(DVTask* taskToWaitFor, TickType_t ticksToWait);
-
     /// @brief Registers a new message handler.
     /// @tparam MessageType The type that the handler expects.
     /// @param handler The message handler.
     template<typename MessageType>
-    void registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler);
+    MessageHandlerHandle registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler);
 
     /// @brief Registers a new message handler.
     /// @tparam MessageType The message type the handler expects.
     /// @tparam ObjType The type that will be handling the message.
     /// @param handler The message handler.
     template<typename MessageType, typename ObjType>
-    void registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
+    MessageHandlerHandle registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
 
+    /// @brief Unregisteers a message handler.
+    /// @tparam MessageType The type that the handler expects.
+    /// @param handler The message handler.
+    template<typename MessageType>
+    void unregisterMessageHandler(MessageHandlerHandle handler);
+
+    /// @brief Unregisters a message handler.
+    /// @tparam MessageType The message type the handler expects.
+    /// @tparam ObjType The type that will be handling the message.
+    /// @param handler The message handler.
+    template<typename MessageType, typename ObjType>
+    void unregisterMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
+    
     /// @brief Waits until we receive a message of type ResultMessageType.
     /// @tparam ResultMessageType The type of message we're expecting.
     /// @param ticksToWait The maximum amount of time to wait.
@@ -130,6 +130,21 @@ protected:
     /// @brief Task to unconditionally execute each time through the loop. Optional.
     virtual void onTaskTick_();
     
+    /// @brief Commands the task to perform startup actions.
+    /// @param taskToStart The task to start.
+    /// @param ticksToWait The maximum amount of time to wait.
+    void start(DVTask* taskToStart, TickType_t ticksToWait = 0);
+
+    /// @brief Commands the task to perform wakeup actions.
+    /// @param taskToWake The task to wake.
+    /// @param ticksToWait The maximum amount of time to wait.
+    void wake(DVTask* taskToWake, TickType_t ticksToWait = 0);
+
+    /// @brief Commands the task to perform sleep actions.
+    /// @param taskToSleep The task to sleep.
+    /// @param ticksToWait The maximum amount of time to wait.
+    void sleep(DVTask* taskToSleep, TickType_t ticksToWait = 0);
+    
 private:
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
     using EventIdentifierPair = std::pair<DVEventBaseType, int32_t>;
@@ -145,6 +160,23 @@ private:
         DVTask* origin;
         uint32_t size;
         char messageStart; // Placeholder to help write to correct memory location.
+    };
+    
+    class TaskQueueMessage : public DVTaskMessageBase<DVTaskControlMessageTypes::TASK_QUEUE_MSG, TaskQueueMessage>
+    {
+    public:
+        TaskQueueMessage(DVTask* destinationProvided = nullptr, MessageEntry* entryProvided = nullptr)
+            : DVTaskMessageBase<DVTaskControlMessageTypes::TASK_QUEUE_MSG, TaskQueueMessage>(DV_TASK_CONTROL_MESSAGE)
+            , destination(destinationProvided)
+            , entry(entryProvided)
+        {
+            // empty
+        }
+    
+        virtual ~TaskQueueMessage() = default;
+    
+        DVTask* destination;
+        MessageEntry* entry;
     };
 
     std::string taskName_;
@@ -170,6 +202,10 @@ private:
     template<typename ControlMessageType>
     void waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait);
     
+    void singleMessagingLoop_(int64_t ticksRemaining);
+    
+    void onTaskQueueMessage_(DVTask* origin, TaskQueueMessage* message);
+    
     static PublishMap SubscriberTasksByMessageType_;
     static SemaphoreHandle_t SubscriberTasksByMessageTypeSemaphore_;
 
@@ -180,8 +216,8 @@ private:
 };
 
 template<typename MessageType>
-void DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler)
-{
+DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler)
+{    
     std::function<void(DVTask*, MessageType*)>* fnPtr = new std::function<void(DVTask*, MessageType*)>(handler);
 
     // Register task specific handler.
@@ -198,10 +234,12 @@ void DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> h
         std::make_pair(key, this)
     );
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+    
+    return fnPtr;
 }
 
 template<typename MessageType, typename ObjType>
-void DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*))
+DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*))
 {
     auto fn = 
         [taskObj, handler](DVTask* origin, MessageType* message)
@@ -209,7 +247,43 @@ void DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DV
             (*taskObj.*handler)(origin, message);
         };
 
-    registerMessageHandler<MessageType>(fn);
+    return registerMessageHandler<MessageType>(fn);
+}
+
+template<typename MessageType>
+void DVTask::unregisterMessageHandler(MessageHandlerHandle handler)
+{
+    std::function<void(DVTask*, MessageType*)>* handlerPtr = (std::function<void(DVTask*, MessageType*)>*)handler;
+    
+    // Unregister task specific handler.
+    MessageType tmpMessage;
+    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto iter = eventRegistrationMap_.equal_range(key);
+    for (auto i = iter.first; i != iter.second; i++)
+    {
+        if (i->second.second == handlerPtr)
+        {
+            eventRegistrationMap_.erase(i);
+            delete handlerPtr;
+            break;
+        }
+    }
+    
+    // Unregister for use by publish.
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    if (eventRegistrationMap_.count(key) == 0)
+    {
+        auto iter = SubscriberTasksByMessageType_.equal_range(key);
+        for (auto i = iter.first; i != iter.second; i++)
+        {
+            if (i->second == this)
+            {
+                SubscriberTasksByMessageType_.erase(i);
+                break;
+            }
+        }
+    }
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
 
 template<typename MessageType>
@@ -227,88 +301,39 @@ ResultMessageType* DVTask::waitFor(TickType_t ticksToWait, DVTask** origin)
 {
     ResultMessageType* result = nullptr;
 
-    // If we're not already in the publish list, we'll need to add ourselves to it 
-    // for the duration of this call. (We have direct access to the queue so we don't
-    // need to do a full subscription.)
-    ResultMessageType tmpMessage;
-    auto semRv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    assert(semRv == pdTRUE);
-
-    PublishMap::iterator publishIter = SubscriberTasksByMessageType_.end();
-
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
-    auto foundIterRange = SubscriberTasksByMessageType_.equal_range(key);
-    bool found = false;
-
-    for (auto iter = foundIterRange.first; iter != foundIterRange.second; iter++)
+    std::function<void(DVTask*, ResultMessageType*)> tempHandler = [&](DVTask* handlerOrigin, ResultMessageType* message)
     {
-        if (iter->second == this)
+        // Make copy of message for the caller.
+        result = new ResultMessageType();
+        assert(result != nullptr);
+        memcpy((void*)result, (void*)message, message->getSize());
+
+        if (origin)
         {
-            found = true;
-            break;
+            *origin = handlerOrigin;
         }
-    }
-
-    if (!found)
-    {
-        publishIter = SubscriberTasksByMessageType_.insert(std::make_pair(key, this));
-    }
-
-    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+    };
+    auto registrationHandle = registerMessageHandler<ResultMessageType>(tempHandler);
 
     // Receive inbound messages for up to ticksToWait ticks.
     // For each received message in that interval:
     //     1. If the received message is the one we want, stop.
     //     2. Otherwise, hold onto it so we can reinject it into the queue at the end.
     int64_t tickDiff = ticksToWait;
-    MessageEntry* entry = nullptr;
-    std::deque<MessageEntry*> poppedList;
     while (tickDiff >= 0)
     {
         TickType_t beginTicks = xTaskGetTickCount();
-        auto rv = xQueueReceive(taskQueue_, &entry, (TickType_t)tickDiff);
+        singleMessagingLoop_(tickDiff);
         tickDiff -= xTaskGetTickCount() - beginTicks;
 
-        if (rv == pdTRUE)
+        if (result != nullptr)
         {
-            auto rxKey = std::make_pair(entry->eventBase, entry->eventId);
-            if (rxKey == key)
-            {
-                // Make copy of message for the caller.
-                result = new ResultMessageType();
-                assert(result != nullptr);
-                memcpy((void*)result, (void*)&entry->messageStart, tmpMessage.getSize());
-
-                if (origin)
-                {
-                    *origin = entry->origin;
-                }
-
-                delete entry;
-                break;
-            }
-
-            poppedList.push_front(entry);
+            break;
         }
     }
 
-    // Unsubscribe from the publish list if needed.
-    if (!found)
-    {
-        auto semRv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-        assert(semRv == pdTRUE);
-        
-        SubscriberTasksByMessageType_.erase(publishIter);
-        
-        xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
-    }
-
-    // Reinject received messages so the normal message handling can handle them.
-    for (auto& msg : poppedList)
-    {
-        auto rv = xQueueSendToFront(taskQueue_, &msg, 0);
-        assert(rv == pdTRUE);
-    }
+    // Unsubscribe from the requested result message.
+    unregisterMessageHandler<ResultMessageType>(registrationHandle);
 
     return result;
 }
@@ -317,39 +342,33 @@ template<typename ControlMessageType>
 void DVTask::waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait)
 {
     int64_t tickDiff = ticksToWait;
-    MessageEntry* entry = nullptr;
-    std::deque<MessageEntry*> poppedList;
     bool found = false;
 
     while (tickDiff >= 0)
     {
         TickType_t beginTicks = xTaskGetTickCount();
         DVTask* origin = nullptr;
+        
         auto message = waitFor<ControlMessageType>((TickType_t)tickDiff, &origin);
-        assert(message != nullptr);
+        if (message != nullptr)
+        {
+            delete message; // message isn't needed, just the origin
+        }
         
         tickDiff -= xTaskGetTickCount() - beginTicks;
 
         if (taskToWaitFor == origin)
         {
-            delete message;
             found = true;
             break;
         }
-        else
-        {
-            entry = createMessageEntry_(origin, message);
-            poppedList.push_front(entry);
-        }
     }
 
-    // Reinject received messages so the normal message handling can handle them.
-    for (auto& msg : poppedList)
+    if (!found)
     {
-        auto rv = xQueueSendToFront(taskQueue_, &msg, 0);
-        assert(rv == pdTRUE);
+        ESP_LOGE("DVTask", "Was waiting for %s but timed out", taskToWaitFor->taskName_.c_str());
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
-
     assert(found);
 }
 
