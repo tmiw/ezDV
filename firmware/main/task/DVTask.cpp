@@ -214,7 +214,7 @@ void DVTask::publish(DVTaskMessage* message)
     std::vector<DVTask*> tasksToPostTo;
 
     // Get the list of tasks to post to first so we don't deadlock.
-    auto rv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(20));
+    auto rv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
     assert(rv == pdTRUE);
 
     for (auto& taskPair : SubscriberTasksByMessageType_)
