@@ -398,6 +398,11 @@ void FlexVitaTask::onWirelessNetworkStatusMessage_(DVTask* origin, WirelessNetwo
     
         ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
         fcntl (socket_, F_SETFL , O_NONBLOCK);
+
+        const int precedenceVI = 6;
+        const int precedenceOffset = 7;
+        int priority = (precedenceVI << precedenceOffset);
+        setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
     
         packetReadTimer_.start();
     }
