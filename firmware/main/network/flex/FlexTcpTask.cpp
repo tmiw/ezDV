@@ -368,7 +368,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             auto rfFrequency = parameters.find("RF_frequency");
             if (rfFrequency != parameters.end() && activeSlice_ == sliceId)
             {
-                sliceFrequency_ = rfFrequency->second;
+                sliceFrequencies_[sliceId] = rfFrequency->second;
             }
             
             auto mode = parameters.find("mode");
@@ -456,7 +456,7 @@ void FlexTcpTask::onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDV
     if (activeSlice_ >= 0)
     {
         std::stringstream ss;
-        ss << "spot add rx_freq=" << sliceFrequency_ << " callsign=" << message->callsign << " mode=FREEDV timestamp=" << time(NULL); //lifetime_seconds=300";
+        ss << "spot add rx_freq=" << sliceFrequencies_[activeSlice_] << " callsign=" << message->callsign << " mode=FREEDV timestamp=" << time(NULL); //lifetime_seconds=300";
         sendRadioCommand_(ss.str());
     }
 }

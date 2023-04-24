@@ -65,7 +65,8 @@ private:
     int activeSlice_;
     bool isLSB_;
     int txSlice_;
-    std::string sliceFrequency_;
+
+    std::map<int, std::string, std::less<int>, util::PSRamAllocator<std::pair<const int, std::string> > > sliceFrequencies_;
     
     using FilterPair_ = std::pair<int, int>; // Low/high cut in Hz.
     std::vector<FilterPair_, util::PSRamAllocator<FilterPair_> > filterWidths_;
