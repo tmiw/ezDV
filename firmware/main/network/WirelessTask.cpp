@@ -87,7 +87,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
         case WIFI_EVENT_STA_DISCONNECTED:
             obj->onNetworkDisconnected_();
 
-            if (!obj->wifiRunning_)
+            if (obj->wifiRunning_)
             {
                 // Reattempt connection to access point if we couldn't find
                 // it the first time around.
@@ -335,6 +335,7 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
 void WirelessTask::disableWifi_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
+    wifiRunning_ = false;
 
     // Shut down SNTP.
     sntp_stop();
