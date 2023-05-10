@@ -45,6 +45,7 @@ FlexTcpTask::FlexTcpTask()
     , sequenceNumber_(0)
     , activeSlice_(-1)
     , txSlice_(-1)
+    , isTransmitting_(false)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
@@ -366,7 +367,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             }
 
             auto rfFrequency = parameters.find("RF_frequency");
-            if (rfFrequency != parameters.end() && activeSlice_ == sliceId)
+            if (rfFrequency != parameters.end())
             {
                 sliceFrequencies_[sliceId] = rfFrequency->second;
             }
@@ -392,6 +393,10 @@ void FlexTcpTask::processCommand_(std::string& command)
                     tmp << " udpport=4992";
                     sendRadioCommand_(tmp.str());
                 }
+                else
+                {
+                    activeSlice_ = -1;
+                }
             }
         }
         else if (statusName == "interlock")
@@ -407,6 +412,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 // Going into transmit mode
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went into transmit");
+                isTransmitting_ = true;
                 audio::RequestTxMessage message;
                 publish(&message);
             }
@@ -414,6 +420,7 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 // Going back into receive
                 ESP_LOGI(CURRENT_LOG_TAG, "Radio went out of transmit");
+                isTransmitting_ = false;
                 audio::RequestRxMessage message;
                 publish(&message);
             }
@@ -437,16 +444,18 @@ void FlexTcpTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMes
 
 void FlexTcpTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
 {
-    if (activeSlice_ >= 0)
+    if (activeSlice_ >= 0 && !isTransmitting_)
     {
+        isTransmitting_ = true;
         sendRadioCommand_("xmit 1");
     }
 }
 
 void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
 {
-    if (activeSlice_ >= 0)
+    if (activeSlice_ >= 0 && isTransmitting_)
     {
+        isTransmitting_ = false;
         sendRadioCommand_("xmit 0");
     }
 }

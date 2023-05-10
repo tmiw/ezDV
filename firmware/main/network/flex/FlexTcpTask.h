@@ -65,6 +65,7 @@ private:
     int activeSlice_;
     bool isLSB_;
     int txSlice_;
+    bool isTransmitting_;
 
     std::map<int, std::string, std::less<int>, util::PSRamAllocator<std::pair<const int, std::string> > > sliceFrequencies_;
     
