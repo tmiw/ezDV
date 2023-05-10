@@ -72,6 +72,7 @@ private:
     ezdv::audio::AudioInput* audioMixerHandler_; 
     ezdv::audio::VoiceKeyerTask* vkTask_; 
     
+    bool isAwake_;
     bool overrideWifiSettings_;
     bool wifiRunning_;
     bool radioRunning_;

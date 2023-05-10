@@ -87,7 +87,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
         case WIFI_EVENT_STA_DISCONNECTED:
             obj->onNetworkDisconnected_();
 
-            if (obj->wifiRunning_)
+            if (obj->isAwake_)
             {
                 // Reattempt connection to access point if we couldn't find
                 // it the first time around.
@@ -110,6 +110,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , tlv320Handler_(tlv320Handler)
     , audioMixerHandler_(audioMixer)
     , vkTask_(vkTask)
+    , isAwake_(false)
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
     , radioRunning_(false)
@@ -130,6 +131,8 @@ void WirelessTask::setWiFiOverride(bool wifiOverride)
 
 void WirelessTask::onTaskStart_()
 {
+    isAwake_ = true;
+
     icomControlTask_.start();
     icomAudioTask_.start();
     icomCIVTask_.start();
@@ -140,6 +143,8 @@ void WirelessTask::onTaskStart_()
 
 void WirelessTask::onTaskWake_()
 {
+    isAwake_ = true;
+
     icomControlTask_.wake();
     icomAudioTask_.wake();
     icomCIVTask_.wake();
@@ -150,6 +155,8 @@ void WirelessTask::onTaskWake_()
 
 void WirelessTask::onTaskSleep_()
 {
+    isAwake_ = false;
+    
     disableHttp_();
         
     // Audio and CIV need to stop before control
@@ -335,7 +342,6 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
 void WirelessTask::disableWifi_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
-    wifiRunning_ = false;
 
     // Shut down SNTP.
     sntp_stop();
