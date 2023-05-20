@@ -392,15 +392,24 @@ void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMess
 
 void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message)
 {
-    if (!isTransmitting_)
+    if (voiceKeyerRunning_)
     {
-        audio::RequestTxMessage msg;
-        publish(&msg);
+        // Pushing any key stops the voice keyer
+        audio::RequestStartStopKeyerMessage vkRequest(false);
+        post(&vkRequest);
     }
     else
     {
-        audio::RequestRxMessage msg;
-        publish(&msg);
+        if (!isTransmitting_)
+        {
+            audio::RequestTxMessage msg;
+            publish(&msg);
+        }
+        else
+        {
+            audio::RequestRxMessage msg;
+            publish(&msg);
+        }   
     }
 }
 
