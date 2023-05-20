@@ -157,6 +157,11 @@ void IcomStateMachine::openSocket_()
         ESP_LOGE(getName().c_str(), "Got socket error %d (%s) while connecting", err, strerror(err));
     }
     assert(rv != -1);
+    
+    const int precedenceVI = 6;
+    const int precedenceOffset = 7;
+    int priority = (precedenceVI << precedenceOffset);
+    setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
 }
 
 void IcomStateMachine::onTransitionComplete_()

@@ -238,6 +238,7 @@ void DVTask::publish(DVTaskMessage* message)
 
 void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 {
+    vTaskDelay(pdMS_TO_TICKS(10));
     onTaskStart_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_.c_str());
@@ -248,6 +249,7 @@ void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
 
 void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 {    
+    vTaskDelay(pdMS_TO_TICKS(10));
     onTaskWake_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s awake", taskName_.c_str());
@@ -258,6 +260,7 @@ void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
 
 void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 {
+    vTaskDelay(pdMS_TO_TICKS(10));
     onTaskSleep_();
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());

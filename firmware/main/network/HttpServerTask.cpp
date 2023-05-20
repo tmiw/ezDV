@@ -825,7 +825,7 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
             if (channelJSON != nullptr)
             {
                 channel = (int)cJSON_GetNumberValue(channelJSON);
-                settingsValid &= channel >= 1 && channel <= 11;
+                settingsValid &= channel >= 1 && channel <= 13;
             }
         
             auto ssidJSON = cJSON_GetObjectItem(message->request, "ssid");

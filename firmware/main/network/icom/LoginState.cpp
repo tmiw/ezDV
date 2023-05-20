@@ -335,7 +335,7 @@ void LoginState::sendUseRadioPacket_(int radioIndex)
     // CIV/audio local port numbers and latency
     typedPacket->civport = ToBigEndian((uint32_t)civPort_);
     typedPacket->audioport = ToBigEndian((uint32_t)audioPort_);
-    typedPacket->txbuffer = ToBigEndian((uint32_t)160);
+    typedPacket->txbuffer = ToBigEndian((uint32_t)240);
     typedPacket->convert = 1;
     
     sendTracked_(packet);
