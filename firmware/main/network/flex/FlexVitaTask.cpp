@@ -120,12 +120,9 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     
     while(codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
-        if (streamId == txStreamId_)
+        for (int i = 0; i < MAX_VITA_SAMPLES; i++)
         {
-            for (int i = 0; i < MAX_VITA_SAMPLES; i++)
-            {
-                upsamplerInBuf_[FDMDV_OS_TAPS_24_8K + i] *= tx_scale_factor;
-            }
+            upsamplerInBuf_[FDMDV_OS_TAPS_24_8K + i] *= tx_scale_factor;
         }
         
         vita_packet* packet = new vita_packet;
