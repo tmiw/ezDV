@@ -65,6 +65,7 @@ if(${ESP_PLATFORM})
                             #    "codec2.lf"
                             REQUIRES
                                 esp-dsp
+                                socketio-esp-idf
                                 ulp
                                 soc
                                 vfs

@@ -11,7 +11,8 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 # Include ESP-DSP as a component
 set(EXTRA_COMPONENT_DIRS
-         externals/esp-dsp)
+         externals/esp-dsp
+         externals/socketio-esp-idf)
 
 project(ezdv)
 add_subdirectory(externals)    
