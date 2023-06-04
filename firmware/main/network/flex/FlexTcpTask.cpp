@@ -24,6 +24,7 @@
 #include "FlexKeyValueParser.h"
 #include "audio/FreeDVMessage.h"
 #include "network/NetworkMessage.h"
+#include "network/ReportingMessage.h"
 
 #include "esp_log.h"
 
@@ -235,6 +236,10 @@ void FlexTcpTask::cleanupWaveform_()
         ss << "slice set " << activeSlice_ << " mode=";
         if (isLSB_) ss << "LSB";
         else ss << "USB";
+
+        // Ensure that we disconnect from any reporting services as appropriate
+        DisableReportingMessage disableMessage;
+        publish(&disableMessage);
         
         sendRadioCommand_(ss.str().c_str(), [&](unsigned int rv, std::string message) {
             // Recursively call ourselves again to actually remove the waveform
@@ -370,6 +375,17 @@ void FlexTcpTask::processCommand_(std::string& command)
             if (rfFrequency != parameters.end())
             {
                 sliceFrequencies_[sliceId] = rfFrequency->second;
+
+                // Report new frequency to any listening reporters
+                if (activeSlice_ >= 0)
+                {
+                    // Frequency reported by Flex is in MHz but reporters expect
+                    // it in Hz.
+                    uint64_t freqHz = atof(rfFrequency->second.c_str()) * 1000000;
+
+                    ReportFrequencyChangeMessage freqChangeMessage(freqHz);
+                    publish(&freqChangeMessage);
+                }
             }
             
             auto mode = parameters.find("mode");
@@ -392,9 +408,17 @@ void FlexTcpTask::processCommand_(std::string& command)
                     else tmp << "USB";
                     tmp << " udpport=4992";
                     sendRadioCommand_(tmp.str());
+
+                    // Ensure that we connect to any reporting services as appropriate
+                    EnableReportingMessage disableMessage;
+                    publish(&disableMessage);
                 }
                 else
                 {
+                    // Ensure that we disconnect from any reporting services as appropriate
+                    DisableReportingMessage disableMessage;
+                    publish(&disableMessage);
+
                     activeSlice_ = -1;
                 }
             }
