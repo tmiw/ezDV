@@ -156,8 +156,7 @@ IcomPacket IcomPacket::CreateLoginPacket(uint16_t authSeq, uint32_t ourId, uint3
     static_assert(LOGIN_SIZE == sizeof(login_packet));
     
     // Generate random token
-    std::random_device r;
-    std::default_random_engine generator(r());
+    std::minstd_rand generator;
     std::uniform_int_distribution<uint16_t> uniform_dist(0, UINT16_MAX);
     uint16_t tokRequest = uniform_dist(generator);
     
