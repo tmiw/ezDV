@@ -334,8 +334,8 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         ESP_ERROR_CHECK(esp_wifi_start());
         ESP_ERROR_CHECK(esp_wifi_connect());
 
-        sntp_init();
-        sntp_setservername(0, "pool.ntp.org");
+        esp_sntp_init();
+        esp_sntp_setservername(0, "pool.ntp.org");
     }
 }
 
@@ -344,7 +344,7 @@ void WirelessTask::disableWifi_()
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
 
     // Shut down SNTP.
-    sntp_stop();
+    esp_sntp_stop();
     
     esp_event_handler_instance_unregister(WIFI_EVENT,
                                             ESP_EVENT_ANY_ID,

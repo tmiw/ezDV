@@ -254,7 +254,7 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
 
 void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message)
 {
-    if (dv_ != nullptr && message->callsign != nullptr && strlen(message->callsign) > 0)
+    if (dv_ != nullptr && strlen(message->callsign) > 0)
     {
         if (rText_ != nullptr)
         {
