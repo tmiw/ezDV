@@ -56,6 +56,8 @@ private:
     bool isTransmitting_;
     bool isActive_;
 
+    MODEM_STATS* stats_;
+
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
     void onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message);

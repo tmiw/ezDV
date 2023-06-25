@@ -22,6 +22,8 @@
 #define REPORTING_HOSTNAME "qso.freedv.org"
 #define CURRENT_LOG_TAG "FreeDVReporter"
 
+#define SOCKET_IO_TX_PREFIX "42"
+
 extern "C"
 {
     DV_EVENT_DEFINE_BASE(FREEDV_REPORTER_MESSAGE);
@@ -115,16 +117,41 @@ void FreeDVReporterTask::onDisableReportingMessage_(DVTask* origin, DisableRepor
 
 void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message)
 {
-    /*
     if (reportingEnabled_)
     {
-        auto jsonReceiveObj = cJSON_CreateObject();
-        cJSON_AddItemToObject(jsonReceiveObj, "callsign", cJSON_CreateString(message->callsign));
-        cJSON_AddItemToObject(jsonReceiveObj, "mode", cJSON_CreateString(freeDVModeAsString_()));
-        cJSON_AddItemToObject(jsonReceiveObj, "snr", cJSON_CreateNumber(0)); // TBD, need to add this to received message
+        cJSON* outMessage = cJSON_CreateArray();
+        assert(outMessage != nullptr);
 
-        
-    }*/
+        cJSON* messageName = cJSON_CreateString("rx_report");
+        assert(messageName != nullptr);
+        cJSON_AddItemToArray(outMessage, messageName);
+
+        cJSON* messagePayload = cJSON_CreateObject();
+        assert(messagePayload != nullptr);
+
+        cJSON* callsign = cJSON_CreateString(message->callsign);
+        assert(callsign != nullptr);
+        cJSON_AddItemToObject(messagePayload, "callsign", callsign);
+
+        cJSON* snr = cJSON_CreateNumber(message->snr);
+        assert(snr != nullptr);
+        cJSON_AddItemToObject(messagePayload, "snr", snr);
+
+        cJSON* mode = cJSON_CreateString(freeDVModeAsString_());
+        assert(mode != nullptr);
+        cJSON_AddItemToObject(messagePayload, "mode", mode);
+
+        cJSON_AddItemToArray(outMessage, messagePayload);
+
+        auto tmp = cJSON_PrintUnformatted(outMessage);
+
+        std::string messageToSend = SOCKET_IO_TX_PREFIX;
+        messageToSend += tmp;
+        esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
+
+        cJSON_free(tmp);
+        cJSON_Delete(messagePayload);        
+    }
 }
 
 void FreeDVReporterTask::onReportFrequencyChangeMessage_(DVTask* origin, ReportFrequencyChangeMessage* message)
@@ -365,7 +392,7 @@ void FreeDVReporterTask::sendFrequencyUpdate_()
 
     auto tmp = cJSON_PrintUnformatted(message);
 
-    std::string messageToSend = "42";
+    std::string messageToSend = SOCKET_IO_TX_PREFIX;
     messageToSend += tmp;
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
@@ -397,7 +424,7 @@ void FreeDVReporterTask::sendTransmitStateUpdate_()
 
     auto tmp = cJSON_PrintUnformatted(message);
 
-    std::string messageToSend = "42";
+    std::string messageToSend = SOCKET_IO_TX_PREFIX;
     messageToSend += tmp;
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 

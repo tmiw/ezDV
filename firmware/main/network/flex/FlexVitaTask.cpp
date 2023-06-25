@@ -58,13 +58,13 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onSendVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onWirelessNetworkStatusMessage_);
     
-    downsamplerInBuf_ = (float*)heap_caps_malloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K) * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
-    downsamplerOutBuf_ = (short*)heap_caps_malloc(MAX_VITA_SAMPLES * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    downsamplerOutBuf_ = (short*)heap_caps_calloc(MAX_VITA_SAMPLES, sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerOutBuf_ != nullptr);
-    upsamplerInBuf_ = (short*)heap_caps_malloc((MAX_VITA_SAMPLES + FDMDV_OS_TAPS_24_8K) * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    upsamplerInBuf_ = (short*)heap_caps_calloc((MAX_VITA_SAMPLES + FDMDV_OS_TAPS_24_8K), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(upsamplerInBuf_ != nullptr);
-    upsamplerOutBuf_ = (float*)heap_caps_malloc((MAX_VITA_SAMPLES * FDMDV_OS_24) * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    upsamplerOutBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(upsamplerOutBuf_ != nullptr);
 }
 

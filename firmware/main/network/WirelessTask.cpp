@@ -161,26 +161,26 @@ void WirelessTask::onTaskSleep_()
     if (icomAudioTask_ != nullptr)
     {
         sleep(icomAudioTask_, pdMS_TO_TICKS(1000));
-        delete icomAudioTask_;
+        //delete icomAudioTask_;
     }
 
     if (icomCIVTask_ != nullptr)
     {
         sleep(icomCIVTask_, pdMS_TO_TICKS(1000));
-        delete icomCIVTask_;
+        //delete icomCIVTask_;
     }
 
     if (icomControlTask_ != nullptr)
     {
         sleep(icomControlTask_, pdMS_TO_TICKS(1000));
-        delete icomControlTask_;
+        //delete icomControlTask_;
     }
 
     sleep(flexVitaTask_, pdMS_TO_TICKS(1000));
     sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
     
-    delete flexVitaTask_;
-    delete flexTcpTask_;
+    //delete flexVitaTask_;
+    //delete flexTcpTask_;
 
     disableWifi_();
 }
@@ -473,21 +473,21 @@ void WirelessTask::onNetworkDisconnected_()
     if (icomControlTask_ != nullptr)
     {
         icomControlTask_->sleep();
-        delete icomControlTask_;
+        //delete icomControlTask_;
         icomControlTask_ = nullptr;
     }
 
     if (icomAudioTask_ != nullptr)
     {
         icomAudioTask_->sleep();
-        delete icomAudioTask_;
+        //delete icomAudioTask_;
         icomAudioTask_ = nullptr;
     }
 
     if (icomCIVTask_ != nullptr)
     {
         icomCIVTask_->sleep();
-        delete icomCIVTask_;
+        //delete icomCIVTask_;
         icomCIVTask_ = nullptr;
     }
 

@@ -21,6 +21,7 @@
 
 #include "esp_dsp.h"
 #include "codec2_math.h"
+#include "modem_stats.h"
 
 #define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP 160
 #define CURRENT_LOG_TAG ("FreeDV")
@@ -39,6 +40,7 @@ FreeDVTask::FreeDVTask()
     , currentMode_(0)
     , isTransmitting_(false)
     , isActive_(false)
+    , stats_(nullptr)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
     registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
@@ -185,6 +187,9 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
             rText_ = nullptr;
         }
 
+        modem_stats_close(stats_);
+        delete stats_;
+
         freedv_close(dv_);
         dv_ = nullptr;
     }
@@ -238,6 +243,10 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
                 break;
         }
 
+        stats_ = new MODEM_STATS();
+        assert(stats_ != nullptr);
+        modem_stats_open(stats_);
+
         // Note: reliable_text setup is deferred until we know for sure whether
         // we have a valid callsign saved.
         storage::RequestReportingSettingsMessage requestReportingSettings;
@@ -274,12 +283,12 @@ void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSe
 
 void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state)
 {
-    // TBD: just output to console for now. Maybe we want to do something with the received
-    // callsign one day.
-    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s", txt_ptr);
-
+    // Broadcast receipt to other components that may want it (such as FreeDV Reporter).
     FreeDVTask* thisPtr = (FreeDVTask*)state;
-    FreeDVReceivedCallsignMessage message((char*)txt_ptr);
+    float snr = thisPtr->stats_->snr_est;
+    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s at %.1f SNR", txt_ptr, snr);
+
+    FreeDVReceivedCallsignMessage message((char*)txt_ptr, snr);
     thisPtr->publish(&message);
 
     FreeDVTask* task = (FreeDVTask*)state;

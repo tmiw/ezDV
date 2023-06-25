@@ -108,8 +108,9 @@ class FreeDVReceivedCallsignMessage : public DVTaskMessageBase<FREEDV_RX_CALLSIG
 public:
     enum { MAX_STR_SIZE = 16 };
 
-    FreeDVReceivedCallsignMessage(char* callsignProvided = "")
-        : DVTaskMessageBase<FREEDV_RX_CALLSIGN, FreeDVReceivedCallsignMessage>(FREEDV_MESSAGE) 
+    FreeDVReceivedCallsignMessage(char* callsignProvided = "", float snrProvided = 0)
+        : DVTaskMessageBase<FREEDV_RX_CALLSIGN, FreeDVReceivedCallsignMessage>(FREEDV_MESSAGE)
+        , snr(snrProvided)
     { 
         memset(callsign, 0, sizeof(callsign));
         strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
@@ -118,6 +119,7 @@ public:
     virtual ~FreeDVReceivedCallsignMessage() = default;
 
     char callsign[MAX_STR_SIZE];
+    float snr;
 };
 
 }
