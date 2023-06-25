@@ -581,7 +581,7 @@ void SettingsTask::initializeLastMode_()
     }
     
     // Request mode change to previous mode
-    audio::RequestSetFreeDVModeMessage reqMsg((audio::RequestSetFreeDVModeMessage::FreeDVMode)lastMode_);
+    audio::RequestSetFreeDVModeMessage reqMsg((audio::FreeDVMode)lastMode_);
     publish(&reqMsg);
 }
 

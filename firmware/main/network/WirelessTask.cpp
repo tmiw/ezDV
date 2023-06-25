@@ -103,9 +103,9 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 128, pdMS_TO_TICKS(1000))
-    , icomControlTask_(icom::IcomSocketTask::CONTROL_SOCKET)
-    , icomAudioTask_(icom::IcomSocketTask::AUDIO_SOCKET)
-    , icomCIVTask_(icom::IcomSocketTask::CIV_SOCKET)
+    , icomControlTask_(nullptr)
+    , icomAudioTask_(nullptr)
+    , icomCIVTask_(nullptr)
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
     , audioMixerHandler_(audioMixer)
@@ -115,6 +115,9 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , wifiRunning_(false)
     , radioRunning_(false)
 {
+    flexTcpTask_ = new flex::FlexTcpTask();
+    flexVitaTask_ = new flex::FlexVitaTask();
+
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
 }
@@ -132,41 +135,53 @@ void WirelessTask::setWiFiOverride(bool wifiOverride)
 void WirelessTask::onTaskStart_()
 {
     isAwake_ = true;
-
-    icomControlTask_.start();
-    icomAudioTask_.start();
-    icomCIVTask_.start();
     
-    flexTcpTask_.start();
-    flexVitaTask_.start();
+    flexTcpTask_->start();
+    flexVitaTask_->start();
 }
 
 void WirelessTask::onTaskWake_()
 {
     isAwake_ = true;
-
-    icomControlTask_.wake();
-    icomAudioTask_.wake();
-    icomCIVTask_.wake();
     
-    flexTcpTask_.wake();
-    flexVitaTask_.wake();
+    flexTcpTask_->wake();
+    flexVitaTask_->wake();
 }
 
 void WirelessTask::onTaskSleep_()
 {
     isAwake_ = false;
     
+    // Stop reporting
+    sleep(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+
     disableHttp_();
         
     // Audio and CIV need to stop before control
-    sleep(&icomAudioTask_, pdMS_TO_TICKS(1000));
-    sleep(&icomCIVTask_, pdMS_TO_TICKS(1000));
-    sleep(&icomControlTask_, pdMS_TO_TICKS(1000));
+    if (icomAudioTask_ != nullptr)
+    {
+        sleep(icomAudioTask_, pdMS_TO_TICKS(1000));
+        delete icomAudioTask_;
+    }
+
+    if (icomCIVTask_ != nullptr)
+    {
+        sleep(icomCIVTask_, pdMS_TO_TICKS(1000));
+        delete icomCIVTask_;
+    }
+
+    if (icomControlTask_ != nullptr)
+    {
+        sleep(icomControlTask_, pdMS_TO_TICKS(1000));
+        delete icomControlTask_;
+    }
+
+    sleep(flexVitaTask_, pdMS_TO_TICKS(1000));
+    sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
     
-    sleep(&flexVitaTask_, pdMS_TO_TICKS(1000));
-    sleep(&flexTcpTask_, pdMS_TO_TICKS(1000));
-    
+    delete flexVitaTask_;
+    delete flexTcpTask_;
+
     disableWifi_();
 }
 
@@ -385,6 +400,8 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
     // Get the current Icom radio settings
     if (!overrideWifiSettings_)
     {
+        start(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+
         storage::RequestRadioSettingsMessage request;
         publish(&request);
 
@@ -401,6 +418,15 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
                         case 0:
                         {
                             ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
+
+                            icomControlTask_ = new icom::IcomSocketTask(icom::IcomSocketTask::CONTROL_SOCKET);
+                            icomAudioTask_ = new icom::IcomSocketTask(icom::IcomSocketTask::AUDIO_SOCKET);
+                            icomCIVTask_ = new icom::IcomSocketTask(icom::IcomSocketTask::CIV_SOCKET);
+
+                            start(icomControlTask_, pdMS_TO_TICKS(1000));
+                            start(icomAudioTask_, pdMS_TO_TICKS(1000));
+                            start(icomCIVTask_, pdMS_TO_TICKS(1000));
+
                             icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
                             publish(&connectMessage);
 
@@ -410,6 +436,7 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
                         case 1:
                         {
                             ESP_LOGI(CURRENT_LOG_TAG, "Starting FlexRadio connectivity");
+
                             flex::FlexConnectRadioMessage connectMessage(response->host);
                             publish(&connectMessage);
 
@@ -441,10 +468,30 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
 void WirelessTask::onNetworkDisconnected_()
 {
     // Force immediate state transition to idle for the radio tasks.
-    icomControlTask_.sleep();
-    icomAudioTask_.sleep();
-    icomCIVTask_.sleep();
-    flexTcpTask_.sleep();
+    freeDVReporterTask_.sleep();
+
+    if (icomControlTask_ != nullptr)
+    {
+        icomControlTask_->sleep();
+        delete icomControlTask_;
+        icomControlTask_ = nullptr;
+    }
+
+    if (icomAudioTask_ != nullptr)
+    {
+        icomAudioTask_->sleep();
+        delete icomAudioTask_;
+        icomAudioTask_ = nullptr;
+    }
+
+    if (icomCIVTask_ != nullptr)
+    {
+        icomCIVTask_->sleep();
+        delete icomCIVTask_;
+        icomCIVTask_ = nullptr;
+    }
+
+    flexTcpTask_->sleep();
 
     // Shut down HTTP server.
     disableHttp_();
@@ -466,14 +513,14 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
         
         if (radioType_ == 0)
         {
-            icomAudioTask_.setAudioOutput(
+            icomAudioTask_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
                 freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
             );
         
             freedvHandler_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
-                icomAudioTask_.getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
+                icomAudioTask_->getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL)
             );
         }
         else if (radioType_ == 1)
@@ -485,26 +532,26 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             );
             
             // Make sure voice keyer can restore Flex mic device once done.
-            vkTask_->setMicDeviceTask(&flexVitaTask_);
+            vkTask_->setMicDeviceTask(flexVitaTask_);
             
-            flexVitaTask_.setAudioOutput(
+            flexVitaTask_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
                 freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
             );
                 
-            flexVitaTask_.setAudioOutput(
+            flexVitaTask_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::RIGHT_CHANNEL,
                 freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
             );
                 
             freedvHandler_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 
-                flexVitaTask_.getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
+                flexVitaTask_->getAudioInput(audio::AudioInput::ChannelLabel::RADIO_CHANNEL)
             );
                 
             audioMixerHandler_->setAudioOutput(
                 audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
-                flexVitaTask_.getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
+                flexVitaTask_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
             );
         }
     }
@@ -525,10 +572,13 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             freedvHandler_->getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL)
         );
         
-        icomAudioTask_.setAudioOutput(
-            audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
-            nullptr
-        );
+        if (icomAudioTask_ != nullptr)
+        {
+            icomAudioTask_->setAudioOutput(
+                audio::AudioInput::ChannelLabel::LEFT_CHANNEL, 
+                nullptr
+            );
+        }
 
         freedvHandler_->setAudioOutput(
             audio::AudioInput::ChannelLabel::RADIO_CHANNEL, 

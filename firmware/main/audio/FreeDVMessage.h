@@ -56,20 +56,20 @@ public:
     bool syncState;
 };
 
+enum FreeDVMode
+{
+    ANALOG,
+    FREEDV_700D,
+    FREEDV_700E,
+    FREEDV_1600,
+
+    MAX_FREEDV_MODES
+};
+
 template<uint32_t MSG_ID>
 class FreeDVModeMessageCommon : public DVTaskMessageBase<MSG_ID, FreeDVModeMessageCommon<MSG_ID> >
 {
 public:
-    enum FreeDVMode
-    {
-        ANALOG,
-        FREEDV_700D,
-        FREEDV_700E,
-        FREEDV_1600,
-
-        MAX_FREEDV_MODES
-    };
-
     FreeDVModeMessageCommon(FreeDVMode modeProvided = ANALOG)
         : DVTaskMessageBase<MSG_ID, FreeDVModeMessageCommon<MSG_ID> >(FREEDV_MESSAGE)
         , mode(modeProvided)

@@ -25,6 +25,7 @@
 #include "icom/IcomSocketTask.h"
 #include "flex/FlexTcpTask.h"
 #include "flex/FlexVitaTask.h"
+#include "FreeDVReporterTask.h"
 
 #include "audio/AudioInput.h"
 #include "audio/VoiceKeyerTask.h"
@@ -60,11 +61,12 @@ protected:
     
 private:
     HttpServerTask httpServerTask_;
-    icom::IcomSocketTask icomControlTask_;
-    icom::IcomSocketTask icomAudioTask_;
-    icom::IcomSocketTask icomCIVTask_;
-    flex::FlexTcpTask flexTcpTask_;
-    flex::FlexVitaTask flexVitaTask_;
+    icom::IcomSocketTask* icomControlTask_;
+    icom::IcomSocketTask* icomAudioTask_;
+    icom::IcomSocketTask* icomCIVTask_;
+    flex::FlexTcpTask* flexTcpTask_;
+    flex::FlexVitaTask* flexVitaTask_;
+    FreeDVReporterTask freeDVReporterTask_;
     
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;

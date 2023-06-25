@@ -42,6 +42,7 @@ set(SOURCES
     "network/icom/LoginState.cpp"
     "network/icom/StateMachine.cpp"
     "network/icom/TrackedPacketState.cpp"
+    "network/FreeDVReporterTask.cpp"
     "network/HttpServerTask.cpp"
     "network/NetworkMessage.cpp"
     "network/ReportingMessage.cpp"
@@ -66,7 +67,6 @@ if(${ESP_PLATFORM})
                             #    "codec2.lf"
                             REQUIRES
                                 esp-dsp
-                                socketio-esp-idf
                                 ulp
                                 soc
                                 vfs
@@ -77,6 +77,7 @@ if(${ESP_PLATFORM})
                                 esp_netif
                                 esp_timer
                                 esp_wifi
+                                esp_websocket_client
                                 app_update
                                 driver
                                 nvs_flash

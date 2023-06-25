@@ -410,8 +410,12 @@ void FlexTcpTask::processCommand_(std::string& command)
                     sendRadioCommand_(tmp.str());
 
                     // Ensure that we connect to any reporting services as appropriate
-                    EnableReportingMessage disableMessage;
-                    publish(&disableMessage);
+                    uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
+                    ReportFrequencyChangeMessage freqChangeMessage(freqHz);
+                    publish(&freqChangeMessage);
+
+                    EnableReportingMessage enableMessage;
+                    publish(&enableMessage);
                 }
                 else
                 {

@@ -35,18 +35,18 @@ namespace ezdv
 namespace ui
 {
 
-static std::map<audio::SetFreeDVModeMessage::FreeDVMode, std::string> ModeList_ = {
-    { audio::SetFreeDVModeMessage::ANALOG, "  ANA" },
-    { audio::SetFreeDVModeMessage::FREEDV_700D, "  700D" },
-    { audio::SetFreeDVModeMessage::FREEDV_700E, "  700E" },
-    { audio::SetFreeDVModeMessage::FREEDV_1600, "  1600" },
+static std::map<audio::FreeDVMode, std::string> ModeList_ = {
+    { audio::ANALOG, "  ANA" },
+    { audio::FREEDV_700D, "  700D" },
+    { audio::FREEDV_700E, "  700E" },
+    { audio::FREEDV_1600, "  1600" },
 };
 
 UserInterfaceTask::UserInterfaceTask()
     : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(10))
     , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US)
     , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US)
-    , currentMode_(audio::SetFreeDVModeMessage::ANALOG)
+    , currentMode_(audio::ANALOG)
     , isTransmitting_(false)
     , isActive_(false)
     , leftVolume_(0)
@@ -218,12 +218,12 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
                     else
                     {
                         int tmpMode = (int)currentMode_ + 1;
-                        if (tmpMode == audio::SetFreeDVModeMessage::MAX_FREEDV_MODES)
+                        if (tmpMode == audio::MAX_FREEDV_MODES)
                         {
-                            tmpMode = audio::SetFreeDVModeMessage::ANALOG;
+                            tmpMode = audio::ANALOG;
                         }
 
-                        audio::RequestSetFreeDVModeMessage request((audio::RequestSetFreeDVModeMessage::FreeDVMode)tmpMode);
+                        audio::RequestSetFreeDVModeMessage request((audio::FreeDVMode)tmpMode);
                         post(&request);
                     }
                 }
@@ -433,7 +433,7 @@ void UserInterfaceTask::onBatteryStateUpdate_(DVTask* origin, driver::BatterySta
 
 void UserInterfaceTask::onRequestSetFreeDVModeMessage_(DVTask* origin, audio::RequestSetFreeDVModeMessage* message)
 {
-    currentMode_ = (audio::SetFreeDVModeMessage::FreeDVMode)message->mode;
+    currentMode_ = (audio::FreeDVMode)message->mode;
 
     audio::SetFreeDVModeMessage* setModeMessage = new audio::SetFreeDVModeMessage(currentMode_);
     publish(setModeMessage);

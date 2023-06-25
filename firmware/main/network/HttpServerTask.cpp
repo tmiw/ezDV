@@ -1263,7 +1263,7 @@ void HttpServerTask::onSetModeMessage_(DVTask* origin, SetModeMessage* message)
     bool success = false;
     if (settingsValid)
     {
-        audio::RequestSetFreeDVModeMessage request((audio::RequestSetFreeDVModeMessage::FreeDVMode)mode);
+        audio::RequestSetFreeDVModeMessage request((audio::FreeDVMode)mode);
         publish(&request);
     }
 

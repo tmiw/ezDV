@@ -10,8 +10,5 @@
 [submodule "firmware/externals/tinyuntar"]
 	path = firmware/externals/tinyuntar
 	url = https://github.com/tmiw/TinyUntar.git
-[submodule "firmware/externals/socketio-esp-idf"]
-	path = firmware/externals/socketio-esp-idf
-	url = https://github.com/kgrozdanovski/socketio-esp-idf.git
 [submodule "socketio-esp-idf"]
 	url = https://github.com/tmiw/socketio-esp-idf.git

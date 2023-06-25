@@ -189,18 +189,18 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
         dv_ = nullptr;
     }
 
-    if (message->mode != SetFreeDVModeMessage::FreeDVMode::ANALOG)
+    if (message->mode != FreeDVMode::ANALOG)
     {
         int freedvApiMode = 0;
         switch (message->mode)
         {
-            case SetFreeDVModeMessage::FREEDV_700D:
+            case FREEDV_700D:
                 freedvApiMode = FREEDV_MODE_700D;
                 break;
-            case SetFreeDVModeMessage::FREEDV_700E:
+            case FREEDV_700E:
                 freedvApiMode = FREEDV_MODE_700E;
                 break;
-            case SetFreeDVModeMessage::FREEDV_1600:
+            case FREEDV_1600:
                 freedvApiMode = FREEDV_MODE_1600;
                 break;
             default:
@@ -288,7 +288,7 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
 
 void FreeDVTask::onRequestGetFreeDVMode_(DVTask* origin, RequestGetFreeDVModeMessage* message)
 {
-    SetFreeDVModeMessage msg((SetFreeDVModeMessage::FreeDVMode)currentMode_);
+    SetFreeDVModeMessage msg((FreeDVMode)currentMode_);
     origin->post(&msg);
 }
 
