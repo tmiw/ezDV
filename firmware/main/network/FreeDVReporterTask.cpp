@@ -64,7 +64,7 @@ FreeDVReporterTask::~FreeDVReporterTask()
 {
     if (reportingEnabled_)
     {
-        // TBD: no support for disconnecting right now
+        stopSocketIoConnection_();
     }
 }
 
@@ -87,15 +87,25 @@ void FreeDVReporterTask::onTaskWake_()
 
 void FreeDVReporterTask::onTaskSleep_()
 {
-    // TBD: no support for disconnecting right now
+    if (reportingEnabled_)
+    {
+        stopSocketIoConnection_();
+    }
 }
 
 void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::ReportingSettingsMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Got reporting settings update");
+    
+    bool callsignChanged = callsign_ != message->callsign;
     callsign_ = message->callsign;
 
-    // TBD: disconnect and reconnect if there were any changes
+    // Disconnect and reconnect if there were any changes
+    if (reportingEnabled_ && callsignChanged)
+    {
+        stopSocketIoConnection_();
+        startSocketIoConnection_();
+    }
 }
 
 void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message)
@@ -191,29 +201,6 @@ void FreeDVReporterTask::onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMe
 
 void FreeDVReporterTask::onWebsocketConnectedMessage_(DVTask* origin, WebsocketConnectedMessage* message)
 {
-    // Grab the parameters from the server. We only really
-    // care about the ping interval and timeout as those
-    // control whether the connection times out.
-    #if 0
-    auto serverParameters = cJSON_Parse(ptr + 1);
-    if (serverParameters == nullptr)
-    {
-        // TBD: invalid data, disconnect and try again
-    }
-
-    auto pingIntervalJSON = cJSON_GetObjectItem(serverParameters, "pingInterval");
-    auto pingTimeoutJSON = cJSON_GetObjectItem(serverParameters, "pingTimeout");
-    if (pingIntervalJSON == nullptr || pingTimeoutJSON == nullptr)
-    {
-        // TBD: can't find either required element, disconnect and try again
-    }
-
-    // TBD: enable ping timer
-    pingIntervalMs_ = (int)cJSON_GetNumberValue(pingIntervalJSON);
-    pingTimeoutMs_ = (int)cJSON_GetNumberValue(pingTimeoutJSON);
-    cJSON_Delete(serverParameters);
-    #endif
-
     // Send namespace connection request with previously constructed auth data.
     std::string namespaceOpen = "40";
     auto tmp = cJSON_PrintUnformatted(jsonAuthObj_);
@@ -302,7 +289,7 @@ void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
             reportingClientHandle_ = nullptr;
             reportingEnabled_ = false;
 
-            // TBD: start reconnect timer
+            startSocketIoConnection_();
             break;
         }
         case '2':
@@ -311,8 +298,6 @@ void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
 
             // "ping" -- send pong
             esp_websocket_client_send_text(reportingClientHandle_, "3", 1, portMAX_DELAY);
-
-            // TBD: restart ping timer
             break;
         }
         case '4':
@@ -351,7 +336,8 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
         case '4':
         {
             // error connecting to namespace, close connection and retry
-            // TBD
+            stopSocketIoConnection_();
+            startSocketIoConnection_();
             break;
         }
         default:
@@ -449,7 +435,9 @@ void FreeDVReporterTask::WebsocketEventHandler_(void *handler_args, esp_event_ba
         case WEBSOCKET_EVENT_DISCONNECTED:
         {
             ESP_LOGI(CURRENT_LOG_TAG, "WEBSOCKET_EVENT_DISCONNECTED");
-            // TBD -- start reconnect timer
+            
+            // Note: esp-websocket-client has auto-reconnect logic, so we don't
+            // strictly need to do anything here.
             WebsocketDisconnectedMessage disconnMessage;
             thisObj->post(&disconnMessage);
             break;
