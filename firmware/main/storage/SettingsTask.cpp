@@ -208,7 +208,8 @@ void SettingsTask::onRequestReportingSettingsMessage_(DVTask* origin, RequestRep
 {
     // Publish current reporting settings to everyone who may care.
     ReportingSettingsMessage* response = new ReportingSettingsMessage(
-        callsign_
+        callsign_,
+        gridSquare_
     );
 
     assert(response != nullptr);
@@ -538,7 +539,7 @@ void SettingsTask::initializeReporting_()
         ESP_LOGI(CURRENT_LOG_TAG, "callsign: %s", callsign_);
     }
     
-    result = storageHandle_->get_string(REPORTING_GRID_SQUARE_ID, callsign_, ReportingSettingsMessage::MAX_STR_SIZE);
+    result = storageHandle_->get_string(REPORTING_GRID_SQUARE_ID, gridSquare_, ReportingSettingsMessage::MAX_STR_SIZE);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         setReportingSettings_(callsign_, DEFAULT_REPORTING_GRID_SQUARE);

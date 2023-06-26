@@ -33,7 +33,7 @@ namespace audio
 {
 
 FreeDVTask::FreeDVTask()
-    : DVTask("FreeDVTask", 10 /* TBD */, 64000, 1, 10)
+    : DVTask("FreeDVTask", 10 /* TBD */, 64000, 1, pdMS_TO_TICKS(10))
     , AudioInput(2, 2)
     , dv_(nullptr)
     , rText_(nullptr)
@@ -129,6 +129,12 @@ void FreeDVTask::onTaskTick_()
     {
         bool syncLed = false;
 
+        // XXX: there's a bug in ESP-IDF 5.1 that causes the FPU to get wonky on 
+        // context switches. This causes random locations in the Codec2 library
+        // to throw assertion errors. Workaround found at https://github.com/espressif/esp-idf/issues/11690.
+        // This should be removed once Espressif fixes the bug.
+        //vTaskSuspendAll();
+
         if (isTransmitting_)
         {
             int numSpeechSamples = freedv_get_n_speech_samples(dv_);
@@ -140,6 +146,7 @@ void FreeDVTask::onTaskTick_()
             if (rv == 0)
             {
                 //auto timeBegin = esp_timer_get_time();
+
                 freedv_tx(dv_, outputBuf, inputBuf);
                 //auto timeEnd = esp_timer_get_time();
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
@@ -156,7 +163,9 @@ void FreeDVTask::onTaskTick_()
             if (rv == 0)
             {
                 //auto timeBegin = esp_timer_get_time();
+
                 int nout = freedv_rx(dv_, outputBuf, inputBuf);
+
                 //auto timeEnd = esp_timer_get_time();
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
                 codec2_fifo_write(codecOutputFifo, outputBuf, nout);
@@ -165,7 +174,13 @@ void FreeDVTask::onTaskTick_()
         
             syncLed = freedv_get_sync(dv_) > 0;
         }
-        
+
+        // XXX: there's a bug in ESP-IDF 5.1 that causes the FPU to get wonky on 
+        // context switches. This causes random locations in the Codec2 library
+        // to throw assertion errors. Workaround found at https://github.com/espressif/esp-idf/issues/11690.
+        // This should be removed once Espressif fixes the bug.
+        //xTaskResumeAll();
+
         // Broadcast current sync state
         FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
         publish(message);
@@ -265,6 +280,8 @@ void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSe
 {
     if (dv_ != nullptr && strlen(message->callsign) > 0)
     {
+        ESP_LOGI(CURRENT_LOG_TAG, "Registering reliable_text handler");
+
         if (rText_ != nullptr)
         {
             reliable_text_unlink_from_freedv(rText_);

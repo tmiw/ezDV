@@ -635,6 +635,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
             {
                 cJSON_AddStringToObject(root, "type", JSON_REPORTING_STATUS_TYPE);
                 cJSON_AddStringToObject(root, "callsign", response->callsign);
+                cJSON_AddStringToObject(root, "gridSquare", response->gridSquare);
         
                 // Note: below is responsible for cleanup.
                 WebSocketList sockets = { message->fd };
@@ -1100,18 +1101,26 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     
     bool settingsValid = false;
     char* callsign = "";
+    char* gridSquare = "";
     
     auto callsignJSON = cJSON_GetObjectItem(message->request, "callsign");
     if (callsignJSON != nullptr)
     {
         callsign = cJSON_GetStringValue(callsignJSON);
-        settingsValid = true; // empty callsign / N0CALL == disable PSK Reporter
+        settingsValid = true; // empty callsign / N0CALL == disable FreeDV Reporter
     }
     
+    auto gridSquareJSON = cJSON_GetObjectItem(message->request, "gridSquare");
+    if (gridSquareJSON != nullptr)
+    {
+        gridSquare = cJSON_GetStringValue(gridSquareJSON);
+        settingsValid = true; // empty gridsquare / UN00KN == disable FreeDV Reporter
+    }
+
     bool success = false;
     if (settingsValid)
     {
-        storage::SetReportingSettingsMessage request(callsign);
+        storage::SetReportingSettingsMessage request(callsign, gridSquare);
         publish(&request);
     
         auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);

@@ -144,7 +144,7 @@ void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio:
         assert(callsign != nullptr);
         cJSON_AddItemToObject(messagePayload, "callsign", callsign);
 
-        cJSON* snr = cJSON_CreateNumber(message->snr);
+        cJSON* snr = cJSON_CreateNumber((int)message->snr);
         assert(snr != nullptr);
         cJSON_AddItemToObject(messagePayload, "snr", snr);
 
@@ -189,14 +189,7 @@ void FreeDVReporterTask::onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMe
 
     if (reportingEnabled_)
     {
-        if (freeDVMode_ == audio::FreeDVMode::ANALOG)
-        {
-            stopSocketIoConnection_();
-        }
-        else
-        {
-            sendTransmitStateUpdate_();
-        }
+        sendTransmitStateUpdate_();
     }
 }
 
@@ -221,7 +214,7 @@ char* FreeDVReporterTask::freeDVModeAsString_()
     switch (freeDVMode_)
     {
         case audio::FreeDVMode::ANALOG:
-            return "";
+            return "ANALOG";
         case audio::FreeDVMode::FREEDV_700D:
             return "700D";
         case audio::FreeDVMode::FREEDV_700E:

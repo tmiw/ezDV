@@ -479,7 +479,7 @@ $("#reportingSave").click(function()
     {
         "type": "saveReportingInfo",
         "callsign": $("#reportingCallsign").val(),
-        "gridSquare": ${"#reportingGridSquare"}.val()
+        "gridSquare": $("#reportingGridSquare").val()
     };
     
     $("#reportingSuccessAlertRow").hide();
