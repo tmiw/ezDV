@@ -119,6 +119,12 @@
                     <input id="reportingCallsign" value="N0CALL" class="form-control" />
                     </div>
                 </div>
+                <div class="row mb-3 reporting-enable-row">
+                    <label for="reportingGridSquare" class="col-xs-4 col-md-2 col-form-labell">Grid square</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="reportingGridSquare" value="UN00KN" class="form-control" />
+                    </div>
+                </div>
                 <div class="row mb-3">
                     <div class="col-2">&nbsp</div>
                     <div class="col">

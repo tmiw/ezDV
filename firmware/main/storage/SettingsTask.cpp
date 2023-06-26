@@ -42,6 +42,7 @@
 #define VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT ("vkSecWait")
 
 #define REPORTING_CALLSIGN_ID ("repCall")
+#define REPORTING_GRID_SQUARE_ID ("repGrid")
 
 #define LED_DUTY_CYCLE_ID ("ledDtyCyc")
 
@@ -56,6 +57,7 @@
 #define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
 
 #define DEFAULT_REPORTING_CALLSIGN ("")
+#define DEFAULT_REPORTING_GRID_SQUARE ("UN00KN")
 
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
@@ -525,7 +527,7 @@ void SettingsTask::initializeReporting_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Reporting settings not found, will set to defaults");
-        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN);
+        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN, DEFAULT_REPORTING_GRID_SQUARE);
     }
     else if (result != ESP_OK)
     {
@@ -536,9 +538,24 @@ void SettingsTask::initializeReporting_()
         ESP_LOGI(CURRENT_LOG_TAG, "callsign: %s", callsign_);
     }
     
+    result = storageHandle_->get_string(REPORTING_GRID_SQUARE_ID, callsign_, ReportingSettingsMessage::MAX_STR_SIZE);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        setReportingSettings_(callsign_, DEFAULT_REPORTING_GRID_SQUARE);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving grid square: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "gridSquare: %s", gridSquare_);
+    }
+    
     // Publish current reporting settings to everyone who may care.
     ReportingSettingsMessage* message = new ReportingSettingsMessage(
-        callsign_
+        callsign_,
+        gridSquare_
     );
     assert(message != nullptr);
     publish(message);
@@ -849,13 +866,16 @@ void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int
 
 void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSettingsMessage* message)
 {
-    setReportingSettings_(message->callsign);
+    setReportingSettings_(message->callsign, message->gridSquare);
 }
 
-void SettingsTask::setReportingSettings_(char* callsign)
+void SettingsTask::setReportingSettings_(char* callsign, char* gridSquare)
 {
     memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
     strncpy(callsign_, callsign, ReportingSettingsMessage::MAX_STR_SIZE - 1);
+    
+    memset(gridSquare_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
+    strncpy(gridSquare_, gridSquare, ReportingSettingsMessage::MAX_STR_SIZE - 1);
     
     if (storageHandle_)
     {        
@@ -864,13 +884,20 @@ void SettingsTask::setReportingSettings_(char* callsign)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting callsign: %s", esp_err_to_name(result));
         }
+        
+        result = storageHandle_->set_string(REPORTING_GRID_SQUARE_ID, gridSquare_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting gridSquare: %s", esp_err_to_name(result));
+        }
                
         commitTimer_.stop();
         commitTimer_.start(true);
 
         // Publish new Wi-Fi settings to everyone who may care.
         ReportingSettingsMessage* message = new ReportingSettingsMessage(
-            callsign_
+            callsign_,
+            gridSquare_
         );
         assert(message != nullptr);
         publish(message);

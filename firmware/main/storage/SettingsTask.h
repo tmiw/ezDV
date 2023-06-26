@@ -68,6 +68,7 @@ private:
     char radioPassword_[RadioSettingsMessage::MAX_STR_SIZE];
     
     char callsign_[ReportingSettingsMessage::MAX_STR_SIZE];
+    char gridSquare_[ReportingSettingsMessage::MAX_STR_SIZE];
 
     bool enableVoiceKeyer_;
     int voiceKeyerNumberTimesToTransmit_;
@@ -107,7 +108,7 @@ private:
     void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password);
     void setRadioSettings_(bool enabled, int type, char* host, int port, char* username, char* password);
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
-    void setReportingSettings_(char* callsign);
+    void setReportingSettings_(char* callsign, char* gridSquare);
     void setLedBrightness_(int dutyCycle);
     void setLastMode_(int lastMode);
 

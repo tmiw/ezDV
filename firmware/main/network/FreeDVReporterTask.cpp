@@ -97,8 +97,9 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Got reporting settings update");
     
-    bool callsignChanged = callsign_ != message->callsign;
+    bool callsignChanged = callsign_ != message->callsign || gridSquare_ != message->gridSquare;
     callsign_ = message->callsign;
+    gridSquare_ = message->gridSquare;
 
     // Disconnect and reconnect if there were any changes
     if (reportingEnabled_ && callsignChanged)

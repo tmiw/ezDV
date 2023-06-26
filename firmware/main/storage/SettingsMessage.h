@@ -184,16 +184,20 @@ class ReportingSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, Reporti
 public:
     enum { MAX_STR_SIZE = 16 };
 
-    ReportingSettingsMessageCommon(char* callsignProvided = "")
+    ReportingSettingsMessageCommon(char* callsignProvided = "", char* gridSquareProvided = "")
         : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
     { 
         memset(callsign, 0, sizeof(callsign));
         strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
+        
+        memset(gridSquare, 0, sizeof(gridSquare));
+        strncpy(gridSquare, gridSquareProvided, sizeof(gridSquare) - 1);
     }
     
     virtual ~ReportingSettingsMessageCommon() = default;
 
     char callsign[MAX_STR_SIZE];
+    char gridSquare[MAX_STR_SIZE];
 };
 
 using ReportingSettingsMessage = ReportingSettingsMessageCommon<REPORTING_SETTINGS>;

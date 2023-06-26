@@ -253,6 +253,7 @@ function wsConnect()
           $(".reporting-enable-row").show();
           $("#reportingReset").prop("disabled", false);
           $("#reportingCallsign").val(json.callsign);
+          $("#reportingGridSquare").val(json.gridSquare);
       }
       else if (json.type == "reportingSaved")
       {
@@ -477,7 +478,8 @@ $("#reportingSave").click(function()
     var obj = 
     {
         "type": "saveReportingInfo",
-        "callsign": $("#reportingCallsign").val()
+        "callsign": $("#reportingCallsign").val(),
+        "gridSquare": ${"#reportingGridSquare"}.val()
     };
     
     $("#reportingSuccessAlertRow").hide();
