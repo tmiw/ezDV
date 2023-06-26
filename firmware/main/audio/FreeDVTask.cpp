@@ -165,7 +165,7 @@ void FreeDVTask::onTaskTick_()
         
             syncLed = freedv_get_sync(dv_) > 0;
         }
-
+        
         // Broadcast current sync state
         FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
         publish(message);
@@ -285,6 +285,10 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
 {
     // Broadcast receipt to other components that may want it (such as FreeDV Reporter).
     FreeDVTask* thisPtr = (FreeDVTask*)state;
+    
+    // Get stats so we can provide updated SNR.
+    freedv_get_modem_extended_stats(thisPtr->dv_, thisPtr->stats_);
+    
     float snr = thisPtr->stats_->snr_est;
     ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s at %.1f SNR", txt_ptr, snr);
 
