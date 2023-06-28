@@ -68,6 +68,7 @@ private:
     bool isTransmitting_;
 
     std::map<int, std::string, std::less<int>, util::PSRamAllocator<std::pair<const int, std::string> > > sliceFrequencies_;
+    std::map<int, bool, std::less<int>, util::PSRamAllocator<std::pair<const int, bool> > > activeSlices_;
     
     using FilterPair_ = std::pair<int, int>; // Low/high cut in Hz.
     std::vector<FilterPair_, util::PSRamAllocator<FilterPair_> > filterWidths_;

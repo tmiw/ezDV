@@ -388,6 +388,20 @@ void FlexTcpTask::processCommand_(std::string& command)
                 }
             }
             
+            auto isActive = parameters.find("in_use");
+            if (isActive != parameters.end())
+            {
+                activeSlices_[sliceId] = isActive->second == "1" ? true : false;
+                if (sliceId == activeSlice_ && !activeSlices_[sliceId])
+                {
+                    // Ensure that we disconnect from any reporting services as appropriate
+                    DisableReportingMessage disableMessage;
+                    publish(&disableMessage);
+
+                    activeSlice_ = -1;
+                }
+            }
+            
             auto mode = parameters.find("mode");
             if (mode != parameters.end())
             {

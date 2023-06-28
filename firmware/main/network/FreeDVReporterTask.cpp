@@ -114,6 +114,10 @@ void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReporti
     if (callsign_ != "" && gridSquare_ != "" && freeDVMode_ != audio::FreeDVMode::ANALOG)
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Reporting enabled by radio driver, begin connection");
+        if (reportingEnabled_)
+        {
+            stopSocketIoConnection_();
+        }
         startSocketIoConnection_();
     }
 }
