@@ -22,6 +22,7 @@
 #include "FlexKeyValueParser.h"
 
 #include "esp_log.h"
+#include "esp_dsp.h"
 
 #include "codec2_fifo.h"
 #include "codec2_fdmdv.h"
@@ -120,17 +121,22 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     
     while(codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
-        for (int i = 0; i < MAX_VITA_SAMPLES; i++)
-        {
-            upsamplerInBuf_[FDMDV_OS_TAPS_24_8K + i] *= tx_scale_factor;
-        }
-        
         vita_packet* packet = new vita_packet;
         assert(packet != nullptr);
         
         // Upsample to 24K floats.
         fdmdv_8_to_24(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES);
-  
+
+        // Scale output audio as SmartSDR is a lot quieter than expected otherwise.
+        dsps_mulc_f32(
+            upsamplerOutBuf_,
+            upsamplerOutBuf_,
+            MAX_VITA_SAMPLES_TO_SEND,
+            tx_scale_factor,
+            1,
+            1
+        );
+            
         // Fil in packet with data
         packet->packet_type = VITA_PACKET_TYPE_IF_DATA_WITH_STREAM_ID;
         packet->stream_id = streamId;
