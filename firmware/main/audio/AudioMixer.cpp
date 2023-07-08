@@ -85,6 +85,14 @@ void AudioMixer::onTimerTick_()
         // for more info. This is basically (1/sqrt(2)) * (a + b) but done in a way that avoids the use
         // of float or SW division (i.e. multiplies the sum by 724/1024 or ~0.707).
         int32_t addedSample = ((bufLeft + bufRight) * 724) >> 10;
+        if (addedSample >= SHRT_MAX)
+        {
+            addedSample = SHRT_MAX;
+        }
+        else if (addedSample <= SHRT_MIN)
+        {
+            addedSample = SHRT_MIN;
+        }
         short resultShort = (short)addedSample;
         
         codec2_fifo_write(outputFifo, &resultShort, 1);
