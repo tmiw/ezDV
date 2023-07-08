@@ -507,7 +507,24 @@ void HttpServerTask::onTaskSleep_()
         }
         
         ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
-        esp_vfs_spiffs_unregister("http");
+
+        char* partitionLabel = "http_0";
+        auto partition = const_cast<esp_partition_t*>(esp_ota_get_running_partition());
+        if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
+        {
+            partitionLabel = "http_0";
+        }
+        else if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
+        {
+            partitionLabel = "http_1";
+        }
+        else
+        {
+            // Should not reach here.
+            ESP_LOGE(CURRENT_LOG_TAG, "Detected more than two app slots, this is unexpected");
+            assert(false);
+        }
+        esp_vfs_spiffs_unregister(partitionLabel);
 
         isRunning_ = false;
     }
