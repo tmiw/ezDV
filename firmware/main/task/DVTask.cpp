@@ -41,6 +41,7 @@ void DVTask::Initialize()
 
 DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
     : taskName_(taskName)
+    , taskObject_(nullptr)
     , taskQueueSize_(taskQueueSize)
     , taskStackSize_(taskStackSize)
     , taskPriority_(taskPriority)
@@ -187,7 +188,7 @@ void DVTask::post(DVTaskMessage* message)
 
 void DVTask::postISR(DVTaskMessage* message)
 {
-    if (taskQueue_)
+    if (taskQueue_ && isAwake())
     {
         MessageEntry* entry = createMessageEntry_(nullptr, message);
         BaseType_t taskUnblocked = pdFALSE;
@@ -267,11 +268,26 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     TaskAsleepMessage result;
     publish(&result);
+
+    // Clear all remaining items in the queue
+    MessageEntry* entry = nullptr;
+
+    while (xQueueReceive(taskQueue_, &entry, 0) == pdTRUE)
+    {
+        char* entryPtr = (char*)entry;
+        delete[] entryPtr;
+    }
+    vQueueDelete(taskQueue_);
+    taskQueue_ = nullptr;
+
+    // Remove ourselves from FreeRTOS.
+    vTaskDelete(nullptr);
+    taskObject_ = nullptr;
 }
 
 void DVTask::postHelper_(MessageEntry* entry)
 {
-    if (taskQueue_)
+    if (taskQueue_ && isAwake())
     {
         auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
         if (rv == errQUEUE_FULL)
@@ -280,6 +296,12 @@ void DVTask::postHelper_(MessageEntry* entry)
             vTaskDelay(pdMS_TO_TICKS(100));
         }
         assert(rv != errQUEUE_FULL);
+    }
+    else
+    {
+        // Task isn't awake, no use keeping the entry around
+        char* entryPtr = (char*)entry;
+        delete[] entryPtr;
     }
 }
 

@@ -36,6 +36,7 @@ using namespace ezdv::task;
 enum BatteryMessageTypes
 {
     BATTERY_STATE = 1,
+    LOW_POWER_SHUTDOWN = 2,
 };
 
 class BatteryStateMessage : public DVTaskMessageBase<BATTERY_STATE, BatteryStateMessage>
@@ -52,6 +53,15 @@ public:
     float voltage;
     float soc;
     float socChangeRate;
+};
+
+class LowBatteryShutdownMessage : public DVTaskMessageBase<LOW_POWER_SHUTDOWN, BatteryStateMessage>
+{
+public:
+    LowBatteryShutdownMessage() : DVTaskMessageBase<LOW_POWER_SHUTDOWN, BatteryStateMessage>(BATTERY_MESSAGE)
+    {}
+
+    virtual ~LowBatteryShutdownMessage() = default;
 };
 
 }

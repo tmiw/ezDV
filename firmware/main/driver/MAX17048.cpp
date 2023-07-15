@@ -68,7 +68,7 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , adcCalibrationHandle_(nullptr)
     , isLowSoc_(false)
 {
-    // empty
+    registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
 }
 
 void MAX17048::onTaskStart_()
@@ -217,7 +217,10 @@ void MAX17048::onTaskTick_()
         {
             // If battery power is extremely low, immediately force sleep.
             isLowSoc_ = true;
-            StartSleeping();
+
+            // Post 
+            LowBatteryShutdownMessage message;
+            post(&message);
         }
     }
 }
@@ -371,6 +374,18 @@ float MAX17048::temperatureFromADC_()
     
     ESP_LOGI(CURRENT_LOG_TAG, "Thermistor temp: %f C", temp);
     return temp;
+}
+
+void MAX17048::onLowBatteryShutdownMessage_(DVTask* origin, LowBatteryShutdownMessage* message)
+{
+    // Sleep before triggering the shutdown.
+    // This is in case we detected a low battery condition early in startup,
+    // so that the short circuit logic to force shutdown can execute.
+    // Otherwise, the waitFor() logic during wake could end up inadvertently
+    // triggering the full shutdown sequence, potentially causing crashes.
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    StartSleeping();
 }
 
 }

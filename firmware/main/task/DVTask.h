@@ -116,6 +116,10 @@ public:
     template<typename ResultMessageType>
     ResultMessageType* waitFor(TickType_t ticksToWait, DVTask** origin);
 
+    /// @brief Determines whether the task is awake.
+    /// @return true if the task is awake, false otherwise.
+    bool isAwake() const { return taskObject_ != nullptr; }
+
     /// @brief Static initializer, required before using DVTask.
     static void Initialize();
 protected:

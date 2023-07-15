@@ -25,6 +25,7 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 
+#include "BatteryMessage.h"
 #include "task/DVTask.h"
 #include "I2CDevice.h"
 #include "InputGPIO.h"
@@ -71,6 +72,8 @@ private:
     void onInterrupt_(bool val);
     
     float temperatureFromADC_();
+
+    void onLowBatteryShutdownMessage_(DVTask* origin, LowBatteryShutdownMessage* message);
 };
     
 }

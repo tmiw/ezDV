@@ -153,7 +153,10 @@ void WirelessTask::onTaskSleep_()
     isAwake_ = false;
     
     // Stop reporting
-    sleep(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+    if (freeDVReporterTask_.isAwake())
+    {
+        sleep(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+    }
 
     disableHttp_();
         
@@ -359,7 +362,10 @@ void WirelessTask::disableWifi_()
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
 
     // Shut down SNTP.
-    esp_sntp_stop();
+    if (esp_sntp_enabled())
+    {
+        esp_sntp_stop();
+    }
     
     esp_event_handler_instance_unregister(WIFI_EVENT,
                                             ESP_EVENT_ANY_ID,
