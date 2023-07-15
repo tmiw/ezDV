@@ -96,17 +96,8 @@ public:
     MessageHandlerHandle registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
 
     /// @brief Unregisteers a message handler.
-    /// @tparam MessageType The type that the handler expects.
     /// @param handler The message handler.
-    template<typename MessageType>
     void unregisterMessageHandler(MessageHandlerHandle handler);
-
-    /// @brief Unregisters a message handler.
-    /// @tparam MessageType The message type the handler expects.
-    /// @tparam ObjType The type that will be handling the message.
-    /// @param handler The message handler.
-    template<typename MessageType, typename ObjType>
-    void unregisterMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*));
     
     /// @brief Waits until we receive a message of type ResultMessageType.
     /// @tparam ResultMessageType The type of message we're expecting.
@@ -150,10 +141,34 @@ protected:
     void sleep(DVTask* taskToSleep, TickType_t ticksToWait = 0);
     
 private:
+    // Non-template base class to help handle std::function cleanup
+    class FnPtrStorage
+    {
+    public:
+        FnPtrStorage();
+        virtual ~FnPtrStorage() = default;
+    };
+
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
     using EventIdentifierPair = std::pair<DVEventBaseType, int32_t>;
-    using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, void*>>;
+    using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, FnPtrStorage*>>;
     using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
+
+    template<typename MessageType>
+    class MessageFnPtrStorage
+    {
+    public:
+        MessageFnPtrStorage(std::function<void(DVTask*, MessageType*)>* ptrProvided)
+            : ptr(ptrProvided)
+            {}
+
+        virtual ~MessageFnPtrStorage()
+        {
+            delete ptr;
+        }
+
+        std::function<void(DVTask*, MessageType*)>* ptr;
+    };
 
     // Structure to help encode messages for queuing.
     struct MessageEntry
@@ -223,11 +238,15 @@ template<typename MessageType>
 DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler)
 {    
     std::function<void(DVTask*, MessageType*)>* fnPtr = new std::function<void(DVTask*, MessageType*)>(handler);
+    assert(fnPtr != nullptr);
+
+    MessageFnPtrStorage<MessageType>* fnPtrStorage = new MessageFnPtrStorage<MessageType>(fnPtr);
+    assert(fnPtrStorage != nullptr);
 
     // Register task specific handler.
     MessageType tmpMessage;
     auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
-    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, fnPtr);
+    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
     eventRegistrationMap_.insert(
         std::make_pair(key, val)        
     );
@@ -239,7 +258,7 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
     );
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
     
-    return fnPtr;
+    return fnPtrStorage;
 }
 
 template<typename MessageType, typename ObjType>
@@ -255,45 +274,10 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, vo
 }
 
 template<typename MessageType>
-void DVTask::unregisterMessageHandler(MessageHandlerHandle handler)
-{
-    std::function<void(DVTask*, MessageType*)>* handlerPtr = (std::function<void(DVTask*, MessageType*)>*)handler;
-    
-    // Unregister task specific handler.
-    MessageType tmpMessage;
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
-    auto iter = eventRegistrationMap_.equal_range(key);
-    for (auto i = iter.first; i != iter.second; i++)
-    {
-        if (i->second.second == handlerPtr)
-        {
-            eventRegistrationMap_.erase(i);
-            delete handlerPtr;
-            break;
-        }
-    }
-    
-    // Unregister for use by publish.
-    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    if (eventRegistrationMap_.count(key) == 0)
-    {
-        auto iter = SubscriberTasksByMessageType_.equal_range(key);
-        for (auto i = iter.first; i != iter.second; i++)
-        {
-            if (i->second == this)
-            {
-                SubscriberTasksByMessageType_.erase(i);
-                break;
-            }
-        }
-    }
-    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
-}
-
-template<typename MessageType>
 void DVTask::HandleEvent_(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data)
 {
-    std::function<void(DVTask*, MessageType*)>* fnPtr = (std::function<void(DVTask*, MessageType*)>*)event_handler_arg;
+    MessageFnPtrStorage<MessageType>* fnPtrStorage = (MessageFnPtrStorage<MessageType>*)event_handler_arg;
+    std::function<void(DVTask*, MessageType*)>* fnPtr = fnPtrStorage->ptr;
     
     MessageEntry* entry = *(MessageEntry**)event_data;
     MessageType* message = (MessageType*)&entry->messageStart;
@@ -337,7 +321,7 @@ ResultMessageType* DVTask::waitFor(TickType_t ticksToWait, DVTask** origin)
     }
 
     // Unsubscribe from the requested result message.
-    unregisterMessageHandler<ResultMessageType>(registrationHandle);
+    unregisterMessageHandler(registrationHandle);
 
     return result;
 }

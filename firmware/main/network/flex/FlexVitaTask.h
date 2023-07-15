@@ -83,8 +83,6 @@ private:
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* message);
     void onSendVitaMessage_(DVTask* origin, SendVitaMessage* message);
-    
-    void onWirelessNetworkStatusMessage_(DVTask* origin, WirelessNetworkStatusMessage* message);
 };
 
 }

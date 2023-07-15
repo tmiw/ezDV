@@ -480,6 +480,7 @@ void FlexTcpTask::processCommand_(std::string& command)
 
 void FlexTcpTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Received radio connect message");
     ip_ = message->ip;
     connect_();
 }

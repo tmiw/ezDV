@@ -54,8 +54,13 @@ DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStac
 
 DVTask::~DVTask()
 {
-    // We don't currently support killing ourselves.
-    assert(0);
+    assert(taskObject_ == nullptr);
+
+    while (eventRegistrationMap_.size() > 0)
+    {
+        auto iter = eventRegistrationMap_.begin();
+        unregisterMessageHandler(iter->second.second);
+    }
 }
 
 void DVTask::start()
@@ -122,20 +127,58 @@ void DVTask::wake(DVTask* taskToWake, TickType_t ticksToWait)
 
 void DVTask::sleep(DVTask* taskToSleep, TickType_t ticksToWait)
 {
-    TaskSleepMessage sleepMessage;
-        
-    if (ticksToWait > 0)
+    if (taskToSleep != nullptr && taskToSleep->isAwake())
     {
-        auto entry = createMessageEntry_(this, &sleepMessage);
-        TaskQueueMessage message(taskToSleep, entry);
-        post(&message);
-        
-        waitForOurs_<TaskAsleepMessage>(taskToSleep, ticksToWait);
+        TaskSleepMessage sleepMessage;
+            
+        if (ticksToWait > 0)
+        {
+            auto entry = createMessageEntry_(this, &sleepMessage);
+            TaskQueueMessage message(taskToSleep, entry);
+            post(&message);
+            
+            waitForOurs_<TaskAsleepMessage>(taskToSleep, ticksToWait);
+        }
+        else
+        {
+            post(&sleepMessage);
+        }
     }
-    else
+}
+
+void DVTask::unregisterMessageHandler(MessageHandlerHandle handler)
+{
+    FnPtrStorage* handlerPtr = (FnPtrStorage*)handler;
+    
+    // Unregister task specific handler.
+    auto iter = eventRegistrationMap_.begin();
+    EventIdentifierPair key;
+    for (; iter != eventRegistrationMap_.end(); iter++)
     {
-        post(&sleepMessage);
+        if (iter->second.second == handlerPtr)
+        {
+            key = iter->first;
+            eventRegistrationMap_.erase(iter);
+            delete handlerPtr;
+            break;
+        }
     }
+    
+    // Unregister for use by publish.
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    if (eventRegistrationMap_.count(key) == 0)
+    {
+        auto iter = SubscriberTasksByMessageType_.equal_range(key);
+        for (auto i = iter.first; i != iter.second; i++)
+        {
+            if (i->second == this)
+            {
+                SubscriberTasksByMessageType_.erase(i);
+                break;
+            }
+        }
+    }
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
 }
 
 void DVTask::startTask_()
@@ -266,6 +309,8 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());
 
+    taskObject_ = nullptr;
+
     TaskAsleepMessage result;
     publish(&result);
 
@@ -282,7 +327,6 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     // Remove ourselves from FreeRTOS.
     vTaskDelete(nullptr);
-    taskObject_ = nullptr;
 }
 
 void DVTask::postHelper_(MessageEntry* entry)

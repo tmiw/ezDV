@@ -57,7 +57,6 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onSendVitaMessage_);
-    registerMessageHandler(this, &FlexVitaTask::onWirelessNetworkStatusMessage_);
     
     downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
@@ -227,6 +226,41 @@ void FlexVitaTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMe
     radioAddress_.sin_family = AF_INET;
     radioAddress_.sin_port = htons(4993); // hardcoded as per Flex documentation
     
+    // Bind socket so we can at least get discovery packets.
+    socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (socket_ == -1)
+    {
+        auto err = errno;
+        ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while creating socket", err, strerror(err));
+    }
+    assert(socket_ != -1);
+
+    // Listen on our hardcoded VITA port
+    struct sockaddr_in ourSocketAddress;
+    memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
+
+    ourSocketAddress.sin_family = AF_INET;
+    ourSocketAddress.sin_port = htons(VITA_PORT);
+    ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    
+    auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
+    if (rv == -1)
+    {
+        auto err = errno;
+        ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while binding", err, strerror(err));
+    }
+    assert(rv != -1);
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
+    fcntl (socket_, F_SETFL , O_NONBLOCK);
+
+    const int precedenceVI = 6;
+    const int precedenceOffset = 7;
+    int priority = (precedenceVI << precedenceOffset);
+    setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
+
+    packetReadTimer_.start();
+
     ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");    
 }
 
@@ -368,51 +402,6 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
     }
     
     delete packet;
-}
-
-void FlexVitaTask::onWirelessNetworkStatusMessage_(DVTask* origin, WirelessNetworkStatusMessage* message)
-{
-    if (message->state)
-    {
-        // Bind socket so we can at least get discovery packets.
-        socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        if (socket_ == -1)
-        {
-            auto err = errno;
-            ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while creating socket", err, strerror(err));
-        }
-        assert(socket_ != -1);
-
-        // Listen on our hardcoded VITA port
-        struct sockaddr_in ourSocketAddress;
-        memset((char *) &ourSocketAddress, 0, sizeof(ourSocketAddress));
-
-        ourSocketAddress.sin_family = AF_INET;
-        ourSocketAddress.sin_port = htons(VITA_PORT);
-        ourSocketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-        
-        auto rv = bind(socket_, (struct sockaddr*)&ourSocketAddress, sizeof(ourSocketAddress));
-        if (rv == -1)
-        {
-            auto err = errno;
-            ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while binding", err, strerror(err));
-        }
-        assert(rv != -1);
-    
-        ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
-        fcntl (socket_, F_SETFL , O_NONBLOCK);
-
-        const int precedenceVI = 6;
-        const int precedenceOffset = 7;
-        int priority = (precedenceVI << precedenceOffset);
-        setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
-    
-        packetReadTimer_.start();
-    }
-    else
-    {
-        disconnect_();
-    }
 }
     
 }

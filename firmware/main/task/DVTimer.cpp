@@ -54,8 +54,11 @@ DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicrosecon
 
 DVTimer::~DVTimer()
 {
-    // TBD: timer termination
-    assert(0);
+    stop();
+    
+    ESP_ERROR_CHECK(
+        esp_timer_delete(timerHandle_)
+    );
 }
 
 void DVTimer::start(bool once)

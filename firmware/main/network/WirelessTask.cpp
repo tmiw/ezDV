@@ -55,20 +55,23 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
 {
     WirelessTask* obj = (WirelessTask*)event_handler_arg;
     
-    switch(event_id)
+    if (obj->isAwake())
     {
-        case IP_EVENT_AP_STAIPASSIGNED:
+        switch(event_id)
         {
-            ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
-            char buf[32];
-            sprintf(buf, IPSTR, IP2STR(&ipData->ip));
-            obj->onNetworkConnected_(true, buf);
-            break;
+            case IP_EVENT_AP_STAIPASSIGNED:
+            {
+                ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
+                char buf[32];
+                sprintf(buf, IPSTR, IP2STR(&ipData->ip));
+                obj->onNetworkConnected_(true, buf);
+                break;
+            }
+            case IP_EVENT_STA_GOT_IP:
+                obj->onNetworkUp_();
+                obj->onNetworkConnected_(false, "");
+                break;
         }
-        case IP_EVENT_STA_GOT_IP:
-            obj->onNetworkUp_();
-            obj->onNetworkConnected_(false, "");
-            break;
     }
 }
 
@@ -78,26 +81,29 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     
     ESP_LOGI(CURRENT_LOG_TAG, "Wifi event: %ld", event_id);
     
-    switch (event_id)
+    if (obj->isAwake())
     {
-        case WIFI_EVENT_AP_START:
-            obj->onNetworkUp_();
-            break;
-        case WIFI_EVENT_AP_STOP:
-        case WIFI_EVENT_STA_DISCONNECTED:
-            obj->onNetworkDisconnected_();
+        switch (event_id)
+        {
+            case WIFI_EVENT_AP_START:
+                obj->onNetworkUp_();
+                break;
+            case WIFI_EVENT_AP_STOP:
+            case WIFI_EVENT_STA_DISCONNECTED:
+                obj->onNetworkDisconnected_();
 
-            if (obj->isAwake_)
-            {
-                // Reattempt connection to access point if we couldn't find
-                // it the first time around.
-                obj->wifiRunning_ = false;
-                obj->radioRunning_ = false;
-                esp_wifi_disconnect();
-                ESP_ERROR_CHECK(esp_wifi_connect());
-            }
+                if (obj->isAwake_)
+                {
+                    // Reattempt connection to access point if we couldn't find
+                    // it the first time around.
+                    obj->wifiRunning_ = false;
+                    obj->radioRunning_ = false;
+                    esp_wifi_disconnect();
+                    ESP_ERROR_CHECK(esp_wifi_connect());
+                }
 
-            break;
+                break;
+        }
     }
 }
 
@@ -106,6 +112,8 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , icomControlTask_(nullptr)
     , icomAudioTask_(nullptr)
     , icomCIVTask_(nullptr)
+    , flexTcpTask_(nullptr)
+    , flexVitaTask_(nullptr)
     , freedvHandler_(freedvHandler)
     , tlv320Handler_(tlv320Handler)
     , audioMixerHandler_(audioMixer)
@@ -115,9 +123,6 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , wifiRunning_(false)
     , radioRunning_(false)
 {
-    flexTcpTask_ = new flex::FlexTcpTask();
-    flexVitaTask_ = new flex::FlexVitaTask();
-
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
 }
@@ -135,17 +140,11 @@ void WirelessTask::setWiFiOverride(bool wifiOverride)
 void WirelessTask::onTaskStart_()
 {
     isAwake_ = true;
-    
-    flexTcpTask_->start();
-    flexVitaTask_->start();
 }
 
 void WirelessTask::onTaskWake_()
 {
     isAwake_ = true;
-    
-    flexTcpTask_->wake();
-    flexVitaTask_->wake();
 }
 
 void WirelessTask::onTaskSleep_()
@@ -164,27 +163,38 @@ void WirelessTask::onTaskSleep_()
     if (icomAudioTask_ != nullptr)
     {
         sleep(icomAudioTask_, pdMS_TO_TICKS(1000));
-        //delete icomAudioTask_;
+        delete icomAudioTask_;
+        icomAudioTask_ = nullptr;
     }
 
     if (icomCIVTask_ != nullptr)
     {
         sleep(icomCIVTask_, pdMS_TO_TICKS(1000));
-        //delete icomCIVTask_;
+        delete icomCIVTask_;
+        icomCIVTask_ = nullptr;
     }
 
     if (icomControlTask_ != nullptr)
     {
         sleep(icomControlTask_, pdMS_TO_TICKS(1000));
-        //delete icomControlTask_;
+        delete icomControlTask_;
+        icomControlTask_ = nullptr;
     }
 
-    sleep(flexVitaTask_, pdMS_TO_TICKS(1000));
-    sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
-    
-    //delete flexVitaTask_;
-    //delete flexTcpTask_;
+    if (flexVitaTask_ != nullptr)
+    {
+        sleep(flexVitaTask_, pdMS_TO_TICKS(1000));
+        delete flexVitaTask_;
+        flexVitaTask_ = nullptr;
+    }
 
+    if (flexTcpTask_ != nullptr)
+    {
+        sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
+        delete flexTcpTask_;
+        flexTcpTask_ = nullptr;
+    }
+    
     disableWifi_();
 }
 
@@ -402,7 +412,12 @@ void WirelessTask::onNetworkUp_()
 }
 
 void WirelessTask::onNetworkConnected_(bool client, char* ip)
-{    
+{
+    // Start the VITA task here since we need it to be able to 
+    // get UDP broadcasts from the radio.
+    flexVitaTask_ = new flex::FlexVitaTask();
+    start(flexVitaTask_, pdMS_TO_TICKS(1000));
+
     // Get the current Icom radio settings
     if (!overrideWifiSettings_)
     {
@@ -443,6 +458,9 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
                         {
                             ESP_LOGI(CURRENT_LOG_TAG, "Starting FlexRadio connectivity");
 
+                            flexTcpTask_ = new flex::FlexTcpTask();
+                            start(flexTcpTask_, pdMS_TO_TICKS(1000));
+
                             flex::FlexConnectRadioMessage connectMessage(response->host);
                             publish(&connectMessage);
 
@@ -478,26 +496,38 @@ void WirelessTask::onNetworkDisconnected_()
 
     if (icomControlTask_ != nullptr)
     {
-        icomControlTask_->sleep();
-        //delete icomControlTask_;
+        sleep(icomControlTask_, pdMS_TO_TICKS(1000));
+        delete icomControlTask_;
         icomControlTask_ = nullptr;
     }
 
     if (icomAudioTask_ != nullptr)
     {
-        icomAudioTask_->sleep();
-        //delete icomAudioTask_;
+        sleep(icomAudioTask_, pdMS_TO_TICKS(1000));
+        delete icomAudioTask_;
         icomAudioTask_ = nullptr;
     }
 
     if (icomCIVTask_ != nullptr)
     {
-        icomCIVTask_->sleep();
-        //delete icomCIVTask_;
+        sleep(icomCIVTask_, pdMS_TO_TICKS(1000));
+        delete icomCIVTask_;
         icomCIVTask_ = nullptr;
     }
 
-    flexTcpTask_->sleep();
+    if (flexTcpTask_ != nullptr)
+    {
+        sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
+        delete flexTcpTask_;
+        flexTcpTask_ = nullptr;
+    }
+
+    if (flexVitaTask_ != nullptr)
+    {
+        sleep(flexVitaTask_, pdMS_TO_TICKS(1000));
+        delete flexVitaTask_;
+        flexVitaTask_ = nullptr;
+    }
 
     // Shut down HTTP server.
     disableHttp_();
