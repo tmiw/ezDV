@@ -309,21 +309,21 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());
 
+    // Process all remaining messages in message queue in case
+    // there are actions that need to be performed during shutdown.
+    MessageEntry* entry = nullptr;
+    while (taskQueue_ != nullptr && xQueuePeek(taskQueue_, &entry, 0) == pdTRUE)
+    {
+        singleMessagingLoop_(0);
+    }
+
     taskObject_ = nullptr;
+
+    vQueueDelete(taskQueue_);
+    taskQueue_ = nullptr;
 
     TaskAsleepMessage result;
     publish(&result);
-
-    // Clear all remaining items in the queue
-    MessageEntry* entry = nullptr;
-
-    while (xQueueReceive(taskQueue_, &entry, 0) == pdTRUE)
-    {
-        char* entryPtr = (char*)entry;
-        delete[] entryPtr;
-    }
-    vQueueDelete(taskQueue_);
-    taskQueue_ = nullptr;
 
     // Remove ourselves from FreeRTOS.
     vTaskDelete(nullptr);
