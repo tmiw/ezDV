@@ -254,6 +254,7 @@ void FreeDVReporterTask::startSocketIoConnection_()
 
     const esp_websocket_client_config_t ws_cfg = {
         .uri = uri.c_str(),
+        .reconnect_timeout_ms = 60000, // 60 second reconnect timer
     };
 
     ESP_LOGI(CURRENT_LOG_TAG, "init client for %s", ws_cfg.uri);
