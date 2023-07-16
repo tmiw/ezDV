@@ -18,6 +18,7 @@
 #include <functional>
 #include "CIVState.h"
 #include "IcomStateMachine.h"
+#include "network/ReportingMessage.h"
 
 namespace ezdv
 {
@@ -87,12 +88,50 @@ void CIVState::onReceivePacket(IcomPacket& packet)
     {
         civWatchdogTimer_.stop();
         
-        // ignore for now except to get the CI-V ID of the 705. TBD
         ESP_LOGI(parent_->getName().c_str(), "Received CIV packet (from %02x, to %02x, type %02x)", civPacket[3], civPacket[2], civPacket[4]);
         
-        if (civPacket[2] == 0xE0)
+        // Get the current CI-V address of the radio for future use.
+        if (civPacket[2] == 0xE0 && civPacket[4] == 0x19)
         {
             civId_ = civPacket[3];
+
+            // Once we've retrieved the CIV ID, we should retrieve the current frequency
+            // for Reporter support.
+            uint8_t civPacket[] = {
+                0xFE,
+                0xFE,
+                civId_,
+                0xE0,
+                0x03, // Request frequency
+                0xFD
+            };
+
+            sendCIVPacket_(civPacket, sizeof(civPacket));
+        }
+        else if (civPacket[3] == civId_)
+        {
+            if (civPacket[4] == 0x00 || civPacket[4] == 0x03)
+            {
+                // Get frequency data for future FreeDV Reporter support -- TBD
+                // Frequency data is BCD and starts from index 5.
+                uint64_t freqHz = 
+                    (civPacket[5] & 0x0F) +                        // 1 Hz
+                    ((civPacket[5] & 0xF0) >> 4) * 10           +  // 10 Hz
+                    (civPacket[6] & 0x0F) * 100                 +  // 100 Hz
+                    ((civPacket[6] & 0xF0) >> 4) * 1000         +  // 1 KHz
+                    (civPacket[7] & 0x0F) * 10000               +  // 10 KHz
+                    ((civPacket[7] & 0xF0) >> 4) * 100000       +  // 100 KHz
+                    (civPacket[8] & 0x0F) * 1000000             +  // 1 MHz
+                    ((civPacket[8] & 0xF0) >> 4) * 10000000     +  // 10 MHz
+                    (civPacket[9] & 0x0F) * 100000000           +  // 100 MHz
+                    ((civPacket[9] & 0xF0) >> 4) * 1000000000;     // 1 GHz
+
+                ESP_LOGI(parent_->getName().c_str(), "Radio frequency changed to %" PRIu64 " Hz", freqHz);
+
+                // Report frequency change to reporters
+                ReportFrequencyChangeMessage message(freqHz);
+                parent_->getTask()->publish(&message);
+            }
         }
     }
 

@@ -22,6 +22,7 @@
 #include "IcomStateMachine.h"
 #include "RadioPacketDefinitions.h"
 #include "IcomMessage.h"
+#include "network/ReportingMessage.h"
 
 namespace ezdv
 {
@@ -159,6 +160,9 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 ESP_LOGI(parent_->getName().c_str(), "Radio is shutting down!");
                 isDisconnecting_ = true;
 
+                DisableReportingMessage enableReportingMessage;
+                parent_->getTask()->publish(&enableReportingMessage);
+
                 IcomCIVAudioConnectionInfo message(0, 0, 0, 0);
                 parent_->getTask()->publish(&message);
 
@@ -174,6 +178,9 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 
                 IcomCIVAudioConnectionInfo message(civPort_, remoteCivPort, audioPort_, remoteAudioPort);
                 parent_->getTask()->publish(&message);
+
+                EnableReportingMessage enableReportingMessage;
+                parent_->getTask()->publish(&enableReportingMessage);
             }
         }
         else if (connDisconnected)
@@ -182,6 +189,9 @@ void LoginState::onReceivePacket(IcomPacket& packet)
                 parent_->getName().c_str(), 
                 "Disconnected from the radio"
             );
+
+            DisableReportingMessage enableReportingMessage;
+            parent_->getTask()->publish(&enableReportingMessage);
             
             parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
         }
