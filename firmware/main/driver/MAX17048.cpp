@@ -67,6 +67,7 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , adcHandle_(nullptr)
     , adcCalibrationHandle_(nullptr)
     , isLowSoc_(false)
+    , isStarting_(true)
 {
     registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
 }
@@ -127,7 +128,9 @@ void MAX17048::onTaskStart_()
 
     // Perform initial task tick in case we need to immediately force sleep on boot
     // (e.g. very low voltage)
-    onTaskTick_();    
+    onTaskTick_();
+
+    isStarting_ = false;
 }
 
 void MAX17048::onTaskWake_()
@@ -213,7 +216,7 @@ void MAX17048::onTaskTick_()
         
         ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
 
-        if (message.voltage <= 3 || calcSoc <= 5)
+        if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
         {
             // If battery power is extremely low, immediately force sleep.
             isLowSoc_ = true;

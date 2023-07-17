@@ -61,6 +61,7 @@ private:
     adc_oneshot_unit_handle_t adcHandle_;
     adc_cali_handle_t adcCalibrationHandle_;
     bool isLowSoc_;
+    bool isStarting_;
     
     bool writeInt16Reg_(uint8_t reg, uint16_t val);
     bool readInt16Reg_(uint8_t reg, uint16_t* val);
