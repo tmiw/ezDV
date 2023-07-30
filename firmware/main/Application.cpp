@@ -166,6 +166,8 @@ void App::enablePeripheralPower_()
 
 void App::enterDeepSleep_()
 {
+    ulp_power_up_only_for_battery_temp = 0;
+
     /* Initialize mode button GPIO as RTC IO, enable input, enable pullup */
     rtc_gpio_init(GPIO_NUM_5);
     rtc_gpio_set_direction(GPIO_NUM_5, RTC_GPIO_MODE_INPUT_ONLY);
@@ -240,8 +242,9 @@ void App::onTaskStart_()
     // need to immediately sleep due to low power.
     start(&max17048_, pdMS_TO_TICKS(1000));
 
-    if (max17048_.isLowSOC())
+    if (max17048_.isLowSOC() || ulp_power_up_only_for_battery_temp)
     {
+        ulp_power_up_only_for_battery_temp = 0;
         enterDeepSleep_();
     }
 
@@ -300,8 +303,9 @@ void App::onTaskWake_()
     // need to immediately sleep due to low power.
     wake(&max17048_, pdMS_TO_TICKS(1000));
 
-    if (max17048_.isLowSOC())
+    if (max17048_.isLowSOC() || ulp_power_up_only_for_battery_temp)
     {
+        ulp_power_up_only_for_battery_temp = 0;
         enterDeepSleep_();
     }
     
@@ -411,6 +415,7 @@ extern "C" void app_main()
     ulp_riscv_halt();
 
     ulp_num_cycles_with_gpio_on = 0;
+    ulp_num_cycles_between_temp_checks = 0;
 
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
