@@ -407,29 +407,32 @@ void FlexTcpTask::processCommand_(std::string& command)
             {
                 if (mode->second == "FDVU" || mode->second == "FDVL")
                 {
-                    ESP_LOGI(CURRENT_LOG_TAG, "Swtiching slice %d to FreeDV mode", sliceId);
-                    
-                    // User wants to use the waveform.
-                    activeSlice_ = sliceId;
-                    isLSB_ = mode->second == "FDVL";
+                    if (sliceId != activeSlice_)
+                    {
+                        ESP_LOGI(CURRENT_LOG_TAG, "Swtiching slice %d to FreeDV mode", sliceId);
+                        
+                        // User wants to use the waveform.
+                        activeSlice_ = sliceId;
+                        isLSB_ = mode->second == "FDVL";
 
-                    // Set the filter corresponding to the current mode.
-                    setFilter_(currentWidth_.first, currentWidth_.second);
+                        // Set the filter corresponding to the current mode.
+                        setFilter_(currentWidth_.first, currentWidth_.second);
 
-                    std::stringstream tmp;
-                    tmp << "waveform set FreeDV-";
-                    if (isLSB_) tmp << "LSB";
-                    else tmp << "USB";
-                    tmp << " udpport=4992";
-                    sendRadioCommand_(tmp.str());
+                        std::stringstream tmp;
+                        tmp << "waveform set FreeDV-";
+                        if (isLSB_) tmp << "LSB";
+                        else tmp << "USB";
+                        tmp << " udpport=4992";
+                        sendRadioCommand_(tmp.str());
 
-                    // Ensure that we connect to any reporting services as appropriate
-                    uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
-                    ReportFrequencyChangeMessage freqChangeMessage(freqHz);
-                    publish(&freqChangeMessage);
+                        // Ensure that we connect to any reporting services as appropriate
+                        uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
+                        ReportFrequencyChangeMessage freqChangeMessage(freqHz);
+                        publish(&freqChangeMessage);
 
-                    EnableReportingMessage enableMessage;
-                    publish(&enableMessage);
+                        EnableReportingMessage enableMessage;
+                        publish(&enableMessage);
+                    }
                 }
                 else
                 {
