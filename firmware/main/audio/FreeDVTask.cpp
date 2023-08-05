@@ -233,12 +233,14 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
         switch (freedvApiMode)
         {
             case FREEDV_MODE_700D:
+                freedv_set_eq(dv_, 1);
                 freedv_set_clip(dv_, 1);
                 freedv_set_tx_bpf(dv_, 1);
                 freedv_set_squelch_en(dv_, 1);
                 freedv_set_snr_squelch_thresh(dv_, -2.0);  /* squelch at -2.0 dB      */
                 break;
             case FREEDV_MODE_700E:
+                freedv_set_eq(dv_, 1);
                 freedv_set_clip(dv_, 1);
                 freedv_set_tx_bpf(dv_, 1);
                 freedv_set_squelch_en(dv_, 1);
