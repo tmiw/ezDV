@@ -190,7 +190,6 @@ void FreeDVReporterTask::onSetPTTState_(DVTask* origin, audio::FreeDVSetPTTState
 void FreeDVReporterTask::onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message)
 {
     freeDVMode_ = message->mode;
-
     if (reportingEnabled_)
     {
         sendTransmitStateUpdate_();
