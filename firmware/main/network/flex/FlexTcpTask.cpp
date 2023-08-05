@@ -143,20 +143,24 @@ void FlexTcpTask::onTaskTick_()
 void FlexTcpTask::socketFinalCleanup_(bool reconnect)
 {
     // Report disconnection
-    ezdv::network::RadioConnectionStatusMessage response(false);
-    publish(&response);
+    if (socket_ != -1)
+    {
+        ezdv::network::RadioConnectionStatusMessage response(false);
+        publish(&response);
 
-    close(socket_);
-    socket_ = -1;
-    activeSlice_ = -1;
-    isLSB_ = false;
-    txSlice_ = -1;
+        close(socket_);
+        socket_ = -1;
+        activeSlice_ = -1;
+        isLSB_ = false;
+        txSlice_ = -1;
 
-    responseHandlers_.clear();
-    inputBuffer_.clear();
+        responseHandlers_.clear();
+        inputBuffer_.clear();
+    }
     
     // Report sleep
     if (reconnect) reconnectTimer_.start();
+    else reconnectTimer_.stop();
 }
 
 void FlexTcpTask::connect_()
@@ -299,6 +303,10 @@ void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsi
         {
             // We've likely disconnected, do cleanup and re-attempt connection.
             socketFinalCleanup_(true);
+
+            // Call event handler with failure code in case the sender needs to
+            // do any additional actions.
+            fn(0xFFFFFFFF, "");
         }
     }
 }
