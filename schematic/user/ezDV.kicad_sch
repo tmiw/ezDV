@@ -255,6 +255,15 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/ba804e5d-a696-4e59-93af-b8b8186ac08b"
       (reference "#PWR054") (unit 1) (value "GND") (footprint "")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/34b282e0-0a1e-45ef-b5ba-ddc53f65a4fd"
+      (reference "#PWR055") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/84a4cfcb-8ee1-4e45-93f4-2b28db5e5a2f"
+      (reference "#PWR056") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/abbf2068-0dd5-4f26-a45b-960c043b6dc8"
+      (reference "#PWR057") (unit 1) (value "GND") (footprint "")
+    )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/eff218ff-ca0a-4d80-8eee-bec27a140010"
       (reference "#PWR058") (unit 1) (value "GND") (footprint "")
     )
@@ -281,6 +290,18 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/745fb944-3099-4586-aa7f-e1ad522521a4"
       (reference "#PWR066") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/8eaf6501-4243-4b20-ae6c-2a3601f504ee"
+      (reference "#PWR067") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/5e8ead24-354e-48cd-b36c-3307bce5b63d"
+      (reference "#PWR068") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/5ffba94b-f135-429b-a553-435b363646f2"
+      (reference "#PWR069") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/d1aaee30-e005-4a4f-9a5d-e3b6efaf4ba2"
+      (reference "#PWR070") (unit 1) (value "GND") (footprint "")
     )
     (path "/040ca9e4-b957-49bc-90cf-5edfa1dc8d4e/5de17bbe-c54e-4c89-b387-d531ffac65ef"
       (reference "#PWR0101") (unit 1) (value "GND") (footprint "")
@@ -411,6 +432,15 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3fb07317-7c87-45e2-9892-4f463a65021f"
       (reference "C26") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/b2203cb6-ad2b-4175-8bc2-87f0106b5cb9"
+      (reference "C27") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/a0b4a4b4-9dc5-41d4-ac4b-5181fb2f2b6e"
+      (reference "C28") (unit 1) (value "8.2nF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/0ace3a1c-4fb6-419d-85d3-a5d6e9cd3c4e"
+      (reference "C29") (unit 1) (value "10uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
+    )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/36979a11-ecad-416e-b494-2ac8065264f5"
       (reference "C30") (unit 1) (value "0.1uF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
@@ -479,6 +509,9 @@
     )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/8a1c38a2-c10c-413c-9e46-1ffe4fffc7f2"
       (reference "D22") (unit 1) (value "TPD1E10B06DPYR") (footprint "ezDV_production:DIO_TPD1E05U06DPYR")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/d06253bd-3937-4b25-b09d-872424562d95"
+      (reference "D23") (unit 1) (value " B5819W SL") (footprint "Diode_SMD:D_SOD-123")
     )
     (path "/6057082c-f90a-427f-8fdf-e53704ad792d/6de3b7f3-0614-4a95-bbad-0be76c8aec2f"
       (reference "H1") (unit 1) (value "MountingHole_Pad") (footprint "MountingHole:MountingHole_3.2mm_M3_Pad")
@@ -554,6 +587,9 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/cfdc2a72-8f1d-49ef-a893-56a5e9900fe1"
       (reference "R2") (unit 1) (value "5.1K") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/3970403f-6c3d-467e-924c-3e3d8cf5bca9"
+      (reference "R3") (unit 1) (value "1300") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/bda0efee-a2ae-4a5d-a8fe-1d53118fedd5"
       (reference "R4") (unit 1) (value "2.7K") (footprint "Resistor_SMD:R_0402_1005Metric")
@@ -660,6 +696,9 @@
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/0ea241bb-850c-412e-be57-0843abb462c9"
       (reference "R38") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
     )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/582d5405-5dce-4c86-854d-bab711409dd5"
+      (reference "R39") (unit 1) (value "100K") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
     (path "/7890e6de-ac57-4ee1-9a5c-5620f9d87756/6c4d79e6-0e5c-40f5-8090-0752a8ce7b7c"
       (reference "SW1") (unit 1) (value "ESP32S3 Reset") (footprint "Button_Switch_SMD:SW_SPST_TL3342")
     )
@@ -704,6 +743,9 @@
     )
     (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/b3d48296-3efa-4adf-95cb-0a912ea1b881"
       (reference "U7") (unit 1) (value "WUSB3801") (footprint "ezDV_production:QFN1616-12L")
+    )
+    (path "/db5f8640-3f68-45d3-9d98-772c1de4408a/516fb667-dca5-4d3f-9824-51a14a527956"
+      (reference "U8") (unit 1) (value "TPS259533") (footprint "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm_ThermalVias")
     )
   )
 )
