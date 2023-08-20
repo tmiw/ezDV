@@ -442,7 +442,7 @@ void FlexTcpTask::processCommand_(std::string& command)
                         publish(&enableMessage);
                     }
                 }
-                else
+                else if (sliceId == activeSlice_)
                 {
                     // Ensure that we disconnect from any reporting services as appropriate
                     DisableReportingMessage disableMessage;
