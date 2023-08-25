@@ -51,7 +51,7 @@ public:
     /// @param pinnedCoreId  The core that the task should be pinned to (tskNO_AFFINITY to disable).
     /// @param taskQueueSize The maximum number of events that can be queued up at a time.
     /// @param taskTick The amount of time to wait for messages before running "tick" method.
-    DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick = pdMS_TO_TICKS(20));
+    DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick = portMAX_DELAY);
 
     /// @brief Cleans up after the task.
     virtual ~DVTask();

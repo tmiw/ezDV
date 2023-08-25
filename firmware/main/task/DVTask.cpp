@@ -375,16 +375,23 @@ void DVTask::threadEntry_()
     // Run in an infinite loop, continually waiting for messages
     // and processing them.
     for (;;)
-    {        
-        int64_t ticksRemaining = taskTick_;
-        while (ticksRemaining > 0)
+    {
+        if (taskTick_ == portMAX_DELAY)
         {
-            auto tasksBegin = xTaskGetTickCount();
-            singleMessagingLoop_(ticksRemaining);
-            ticksRemaining -= xTaskGetTickCount() - tasksBegin;
+            singleMessagingLoop_(portMAX_DELAY);
         }
+        else
+        {
+            int64_t ticksRemaining = taskTick_;
+            while (ticksRemaining > 0)
+            {
+                auto tasksBegin = xTaskGetTickCount();
+                singleMessagingLoop_(ticksRemaining);
+                ticksRemaining -= xTaskGetTickCount() - tasksBegin;
+            }
 
-        onTaskTick_();
+            onTaskTick_();
+        }
         
         UBaseType_t newStackWaterMark = uxTaskGetStackHighWaterMark(nullptr);
         if (newStackWaterMark < stackWaterMark)

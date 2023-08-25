@@ -36,7 +36,7 @@ namespace network
 {
 
 FreeDVReporterTask::FreeDVReporterTask()
-    : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128, pdMS_TO_TICKS(1000))
+    : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128)
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
     , reportingEnabled_(false)

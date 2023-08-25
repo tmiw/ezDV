@@ -31,7 +31,7 @@ namespace storage
 {
     
 SoftwareUpdateTask::SoftwareUpdateTask()
-    : DVTask("SoftwareUpdateTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
+    : DVTask("SoftwareUpdateTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 256)
     , isRunning_(false)
     , nextAppPartition_(nullptr)
     , nextHttpPartition_(nullptr)
@@ -68,11 +68,6 @@ void SoftwareUpdateTask::onTaskSleep_()
         dataBlockCV_.notify_one();
         updateThread_.join();
     }
-}
-
-void SoftwareUpdateTask::onTaskTick_()
-{
-    // empty
 }
 
 void SoftwareUpdateTask::onStartFirmwareUploadMessage_(DVTask* origin, network::StartFirmwareUploadMessage* message)

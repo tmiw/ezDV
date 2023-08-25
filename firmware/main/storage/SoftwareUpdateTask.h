@@ -54,8 +54,6 @@ protected:
     virtual void onTaskStart_() override;
     virtual void onTaskWake_() override;
     virtual void onTaskSleep_() override;
-
-    virtual void onTaskTick_() override;
     
 private:
     char* uzlibDict_;
