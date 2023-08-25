@@ -49,7 +49,11 @@ DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStac
     , taskQueue_(nullptr)
     , taskTick_(taskTick)
 {
-    // empty
+    // Register task start/wake/sleep handlers.
+    registerMessageHandler(this, &DVTask::onTaskStart_);
+    registerMessageHandler(this, &DVTask::onTaskWake_);
+    registerMessageHandler(this, &DVTask::onTaskSleep_);
+    registerMessageHandler(this, &DVTask::onTaskQueueMessage_);
 }
 
 DVTask::~DVTask()
@@ -186,12 +190,6 @@ void DVTask::startTask_()
     // Create task event queue
     taskQueue_ = xQueueCreate(taskQueueSize_, sizeof(MessageEntry*));
     assert(taskQueue_ != nullptr);
-
-    // Register task start/wake/sleep handlers.
-    registerMessageHandler(this, &DVTask::onTaskStart_);
-    registerMessageHandler(this, &DVTask::onTaskWake_);
-    registerMessageHandler(this, &DVTask::onTaskSleep_);
-    registerMessageHandler(this, &DVTask::onTaskQueueMessage_);
 
     auto returnValue = 
         xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_.c_str(), taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
