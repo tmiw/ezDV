@@ -225,6 +225,8 @@ IcomProtocolState* IcomStateMachine::getProtocolState_()
 
 void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
 {
+    const int MAX_RETRIES = 50;
+    
     auto packet = message->packet;
     assert(packet != nullptr);
 
@@ -232,7 +234,7 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
     {
         int rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
         int tries = 0;
-        while (rv == -1 && tries < 100)
+        while (rv == -1 && tries++ < MAX_RETRIES)
         {
             auto err = errno;
             if (err == ENOMEM)
@@ -253,7 +255,7 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
             }
         }
         
-        if (tries >= 100)
+        if (tries >= MAX_RETRIES)
         {
             ESP_LOGE(getName().c_str(), "Wi-Fi subsystem took too long to become ready, dropping packet");
         }
