@@ -109,6 +109,7 @@ SettingsTask::SettingsTask()
     registerMessageHandler(this, &SettingsTask::onRequestLedBrightness_);
     registerMessageHandler(this, &SettingsTask::onSetLedBrightness_);
     registerMessageHandler(this, &SettingsTask::onChangeFreeDVMode_);
+    registerMessageHandler(this, &SettingsTask::onRequestVolumeSettings_);
 }
 
 void SettingsTask::onTaskStart_()
@@ -971,6 +972,23 @@ void SettingsTask::setLastMode_(int lastMode)
             // in the last used mode on bootup.
         }
     }
+}
+
+void SettingsTask::onRequestVolumeSettings_(DVTask* origin, RequestVolumeSettingsMessage* message)
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "onRequestVolumeSettings_");
+    
+    LeftChannelVolumeMessage* leftMessage = new LeftChannelVolumeMessage();
+    assert(leftMessage != nullptr);
+
+    leftMessage->volume = leftChannelVolume_;
+    publish(leftMessage);
+    
+    RightChannelVolumeMessage* rightMessage = new RightChannelVolumeMessage();
+    assert(rightMessage != nullptr);
+
+    rightMessage->volume = rightChannelVolume_;
+    publish(rightMessage);
 }
 
 }

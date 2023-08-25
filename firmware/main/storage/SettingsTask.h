@@ -100,6 +100,8 @@ private:
     
     void onChangeFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message);
     
+    void onRequestVolumeSettings_(DVTask* origin, RequestVolumeSettingsMessage* message);
+    
     void loadAllSettings_();
     void commit_();
     

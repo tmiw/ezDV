@@ -66,6 +66,8 @@ enum SettingsMessageTypes
     SET_LED_BRIGHTNESS_SETTINGS = 22,
     REQUEST_LED_BRIGHTNESS_SETTINGS = 23,
     LED_BRIGHTNESS_SETTINGS_SAVED = 24,
+    
+    REQUEST_VOLUME_SETTINGS = 25,
 };
 
 template<uint32_t TYPE_ID>
@@ -242,6 +244,8 @@ using ReportingSettingsSavedMessage = RequesSettingsMessageCommon<REPORTING_SETT
 
 using RequestLedBrightnessSettingsMessage = RequesSettingsMessageCommon<REQUEST_LED_BRIGHTNESS_SETTINGS>;
 using LedBrightnessSettingsSavedMessage = RequesSettingsMessageCommon<LED_BRIGHTNESS_SETTINGS_SAVED>;
+
+using RequestVolumeSettingsMessage = RequesSettingsMessageCommon<REQUEST_VOLUME_SETTINGS>;
 
 }
 

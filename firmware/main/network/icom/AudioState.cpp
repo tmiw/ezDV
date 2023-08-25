@@ -58,6 +58,10 @@ void AudioState::onEnterState()
     
     // Start watchdog
     audioWatchdogTimer_.start();
+    
+    // Grab current volumes to make sure we properly recover TX ALC.
+    storage::RequestVolumeSettingsMessage requestMessage;
+    parent_->getTask()->publish(&requestMessage);
 }
 
 void AudioState::onExitState()
