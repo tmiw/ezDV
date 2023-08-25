@@ -278,6 +278,9 @@ void FlexTcpTask::createWaveform_(std::string name, std::string shortName, std::
             sendRadioCommand_(setPrefix + "tx=1");
             sendRadioCommand_(setPrefix + "rx_filter depth=256");
             sendRadioCommand_(setPrefix + "tx_filter depth=256");
+
+            // Link waveform to our UDP audio stream.
+            sendRadioCommand_(setPrefix + "udpport=4992");
         }
     });
 }
@@ -425,13 +428,6 @@ void FlexTcpTask::processCommand_(std::string& command)
 
                         // Set the filter corresponding to the current mode.
                         setFilter_(currentWidth_.first, currentWidth_.second);
-
-                        std::stringstream tmp;
-                        tmp << "waveform set FreeDV-";
-                        if (isLSB_) tmp << "LSB";
-                        else tmp << "USB";
-                        tmp << " udpport=4992";
-                        sendRadioCommand_(tmp.str());
 
                         // Ensure that we connect to any reporting services as appropriate
                         uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
