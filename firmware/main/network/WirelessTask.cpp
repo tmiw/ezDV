@@ -109,6 +109,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 128, pdMS_TO_TICKS(1000))
+    , icomRestartTimer_(this, std::bind(&WirelessTask::restartIcomConnection_, this), 10000000) // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
     , icomAudioTask_(nullptr)
     , icomCIVTask_(nullptr)
@@ -412,7 +413,7 @@ void WirelessTask::onNetworkUp_()
 }
 
 void WirelessTask::onNetworkConnected_(bool client, char* ip)
-{
+{    
     // Start the VITA task here since we need it to be able to 
     // get UDP broadcasts from the radio.
     flexVitaTask_ = new flex::FlexVitaTask();
@@ -444,13 +445,8 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
                             icomAudioTask_ = new icom::IcomSocketTask(icom::IcomSocketTask::AUDIO_SOCKET);
                             icomCIVTask_ = new icom::IcomSocketTask(icom::IcomSocketTask::CIV_SOCKET);
 
-                            start(icomControlTask_, pdMS_TO_TICKS(1000));
-                            start(icomAudioTask_, pdMS_TO_TICKS(1000));
-                            start(icomCIVTask_, pdMS_TO_TICKS(1000));
-
-                            icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
-                            publish(&connectMessage);
-
+                            // Wait a bit, then start the connection.
+                            icomRestartTimer_.start(true);
                             radioRunning_ = true;
                             break;
                         }
@@ -491,6 +487,9 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
 
 void WirelessTask::onNetworkDisconnected_()
 {
+    // Stop Icom reset timer if needed.
+    icomRestartTimer_.stop();
+    
     // Force immediate state transition to idle for the radio tasks.
     freeDVReporterTask_.sleep();
 
@@ -625,6 +624,14 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
             audio::AudioInput::ChannelLabel::LEFT_CHANNEL,
             tlv320Handler_->getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL)
         );
+            
+        if (radioType_ == 0)
+        {
+            // If Icom, we'll need to wake up the process again.
+            // XXX - this is a special case as it puts itself to sleep as part of the
+            // disconnect logic.
+            icomRestartTimer_.start(true);
+        }
     }
 }
 
@@ -644,6 +651,29 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
         {
             enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
         }
+    }
+}
+
+void WirelessTask::restartIcomConnection_()
+{
+    storage::RequestRadioSettingsMessage request;
+    publish(&request);
+    
+    auto response = waitFor<storage::RadioSettingsMessage>(pdMS_TO_TICKS(2000), nullptr);
+    if (response != nullptr)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Starting Icom radio connectivity");
+
+        start(icomControlTask_, pdMS_TO_TICKS(1000));
+        start(icomAudioTask_, pdMS_TO_TICKS(1000));
+        start(icomCIVTask_, pdMS_TO_TICKS(1000));
+
+        icom::IcomConnectRadioMessage connectMessage(response->host, response->port, response->username, response->password);
+        publish(&connectMessage);
+    }
+    else
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not restart Icom processes!");
     }
 }
 

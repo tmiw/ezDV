@@ -60,6 +60,7 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
+    DVTimer icomRestartTimer_;
     HttpServerTask httpServerTask_;
     icom::IcomSocketTask* icomControlTask_;
     icom::IcomSocketTask* icomAudioTask_;
@@ -95,6 +96,8 @@ private:
     
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
     void onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message);
+    
+    void restartIcomConnection_();
     
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
