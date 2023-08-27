@@ -276,8 +276,14 @@ function wsConnect()
       }
       else if (json.type == "voiceKeyerUploadComplete")
       {
-          // TBD: handle errors
-          saveVoiceKeyerSettings();
+          if (json.success)
+          {
+              saveVoiceKeyerSettings();
+          }
+          else
+          {
+              $("#voiceKeyerFailAlertRow").show();
+          }
       }
       else if (json.type == "firmwareUploadComplete")
       {

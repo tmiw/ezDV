@@ -67,10 +67,14 @@ public:
 class FileUploadCompleteMessage : public DVTaskMessageBase<FILE_UPLOAD_COMPLETE, FileUploadCompleteMessage>
 {
 public:
-    FileUploadCompleteMessage()
+    FileUploadCompleteMessage(bool successProvided = true, int errnoProvided = 0)
         : DVTaskMessageBase<FILE_UPLOAD_COMPLETE, FileUploadCompleteMessage>(VOICE_KEYER_MESSAGE)
+        , success(successProvided)
         {}
     virtual ~FileUploadCompleteMessage() = default;
+
+    bool success;
+    int errorNumber;
 };
 
 using StartVoiceKeyerMessage = StartStopCommon<START_KEYER>;

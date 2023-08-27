@@ -1180,7 +1180,8 @@ void HttpServerTask::onFileUploadCompleteMessage_(DVTask* origin, audio::FileUpl
     if (root != nullptr)
     {
         cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_UPLOAD_COMPLETE);
-        cJSON_AddBoolToObject(root, "success", true); // TBD: handle errors
+        cJSON_AddBoolToObject(root, "success", message->success);
+        cJSON_AddNumberToObject(root, "errno", message->errorNumber);
 
         // Note: below is responsible for cleanup.
         sendJSONMessage_(root, activeWebSockets_);

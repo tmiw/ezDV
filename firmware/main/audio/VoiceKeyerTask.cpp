@@ -257,26 +257,39 @@ void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFil
         ESP_LOGE(CURRENT_LOG_TAG, "Cannot open voice keyer file (errno %d)", errno);
         vTaskDelay(pdMS_TO_TICKS(100));
         assert(voiceKeyerFile_ != nullptr);
+
+        FileUploadCompleteMessage response(false, errno);
+        publish(&response);
     }
 }
 
 void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploadDataMessage* message)
 {
-    assert(voiceKeyerFile_ != nullptr);
-
-    ESP_LOGI(CURRENT_LOG_TAG, "Saving %d bytes to %s", message->length, VOICE_KEYER_FILE);
-
-    fwrite(message->buf, 1, message->length, voiceKeyerFile_);
-    bytesToUpload_ -= message->length;
-    heap_caps_free(message->buf);
-
-    if (bytesToUpload_ <= 0)
+    if (voiceKeyerFile_ != nullptr && currentState_ == VoiceKeyerTask::IDLE)
     {
-        fclose(voiceKeyerFile_);
-        voiceKeyerFile_ = nullptr;
+        ESP_LOGI(CURRENT_LOG_TAG, "Saving %d bytes to %s", message->length, VOICE_KEYER_FILE);
 
-        FileUploadCompleteMessage response;
-        publish(&response);
+        auto numWritten = fwrite(message->buf, 1, message->length, voiceKeyerFile_);
+        heap_caps_free(message->buf);
+        bytesToUpload_ -= message->length;
+
+        if (numWritten <= 0)
+        {
+            FileUploadCompleteMessage response(false, errno);
+            publish(&response);
+        }
+        else if (bytesToUpload_ <= 0)
+        {
+            fclose(voiceKeyerFile_);
+            voiceKeyerFile_ = nullptr;
+
+            FileUploadCompleteMessage response(true);
+            publish(&response);
+        }
+    }
+    else
+    {
+        heap_caps_free(message->buf);
     }
 }
 
