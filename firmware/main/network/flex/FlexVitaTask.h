@@ -74,6 +74,7 @@ private:
     short* upsamplerInBuf_;
     float* upsamplerOutBuf_;
     
+    void openSocket_();
     void disconnect_();
     
     void readPendingPackets_();

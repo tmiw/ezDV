@@ -90,7 +90,7 @@ var updateRadioFormState = function()
         
         $.each(flexRadioDictionary, function(val, text) {
             var opt = $('<option></option>').val(val).html(text);
-            if (val in flexRadioDictionary)
+            if (currentIP == val && val in flexRadioDictionary)
             {
                 opt.prop("selected", true);
             }
