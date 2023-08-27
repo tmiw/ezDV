@@ -572,6 +572,9 @@ $("#rebootDevice").click(function()
 
 $("#voiceKeyerSave").click(function()
 {
+    $("#voiceKeyerSuccessAlertRow").hide();
+    $("#voiceKeyerFailAlertRow").hide();
+
     $("#voiceKeyerSave").hide();
     $("#voiceKeyerSaveProgress").show();
 

@@ -286,19 +286,18 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
             wavReader_ = new WAVFileReader(voiceKeyerFile_);
             assert(wavReader_ != nullptr);
 
+            bool success = true;
             if (wavReader_->num_channels() != 1)
             {
                 FileUploadCompleteMessage response(false, FileUploadCompleteMessage::INCORRECT_NUM_CHANNELS);
                 publish(&response);
-
-                unlink(VOICE_KEYER_FILE);
+                success = false;
             }
             else if (wavReader_->sample_rate() != 8000)
             {
                 FileUploadCompleteMessage response(false, FileUploadCompleteMessage::INCORRECT_SAMPLE_RATE);
                 publish(&response);
-
-                unlink(VOICE_KEYER_FILE);
+                success = false;
             }
             else
             {
@@ -311,6 +310,11 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
 
             fclose(voiceKeyerFile_);
             voiceKeyerFile_ = nullptr;
+
+            if (!success)
+            {
+                unlink(VOICE_KEYER_FILE);
+            }
         }
     }
     else
