@@ -37,6 +37,7 @@ enum BatteryMessageTypes
 {
     BATTERY_STATE = 1,
     LOW_POWER_SHUTDOWN = 2,
+    REQUEST_BATTERY_STATE = 3,
 };
 
 class BatteryStateMessage : public DVTaskMessageBase<BATTERY_STATE, BatteryStateMessage>
@@ -62,6 +63,15 @@ public:
     {}
 
     virtual ~LowBatteryShutdownMessage() = default;
+};
+
+class RequestBatteryStateMessage : public DVTaskMessageBase<REQUEST_BATTERY_STATE, RequestBatteryStateMessage>
+{
+public:
+    RequestBatteryStateMessage() : DVTaskMessageBase<REQUEST_BATTERY_STATE, RequestBatteryStateMessage>(BATTERY_MESSAGE)
+    {}
+
+    virtual ~RequestBatteryStateMessage() = default;
 };
 
 }

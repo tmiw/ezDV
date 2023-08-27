@@ -75,6 +75,7 @@ private:
     float temperatureFromADC_();
 
     void onLowBatteryShutdownMessage_(DVTask* origin, LowBatteryShutdownMessage* message);
+    void onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryStateMessage* message);
 };
     
 }

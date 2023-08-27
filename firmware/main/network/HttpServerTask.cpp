@@ -737,6 +737,13 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
         
         // This is asynchronous, so we don't need to handle here.
     }
+
+    {
+        driver::RequestBatteryStateMessage request;
+        publish(&request);
+
+        // This is asynchronous, so we don't need to handle here.
+    }
 }
 
 void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message)
@@ -1106,7 +1113,7 @@ void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyer
                 cJSON_AddNumberToObject(root, "errorType", audio::FileUploadCompleteMessage::UNABLE_SAVE_SETTINGS);
             }
         }
-        
+
         // Note: below is responsible for cleanup.
         WebSocketList list { message->fd };
         sendJSONMessage_(root, list);

@@ -70,6 +70,7 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , isStarting_(true)
 {
     registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
+    registerMessageHandler(this, &MAX17048::onRequestBatteryStateMessage_);
 }
 
 void MAX17048::onTaskStart_()
@@ -151,80 +152,86 @@ void MAX17048::onTaskSleep_()
     assert(rv == true);
 }
 
+void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryStateMessage* reqMessage)
+{
+    // Read current temperature sensor value (in degC) and update RCOMP
+    // based on formula from the datasheet. Note that the ESP32 internal
+    // temperature sensor will read higher than ambient a lot of the time,
+    // but it's likely better to underestimate capacity than overestimate. TBD.
+    uint16_t config = 0;
+    bool success = readInt16Reg_(REG_CONFIG, &config);
+    assert(success);
+    
+    auto degC = temperatureFromADC_();
+            
+    int rcomp = 0x97;
+    if (degC > 20)
+    {
+        rcomp += (degC - 20) * (-0.5); // TempCoUp default
+    }
+    else
+    {
+        rcomp += (degC - 20) * (-5.0); // TempCoDown default
+    }
+    
+    if (rcomp > 255) rcomp = 255;
+    else if (rcomp < 0) rcomp = 0;
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
+    
+    config &= 0x00FF;
+    config = ((uint8_t)rcomp << 8) | config;
+    success = writeInt16Reg_(REG_CONFIG, config);
+    assert(success);
+    
+    // Retrieve voltage, SOC and rate of change
+    uint16_t voltage = 0;
+    uint16_t soc = 0;
+    uint16_t socChangeRate = 0;
+    uint16_t status = 0;
+    
+    success = readInt16Reg_(REG_VCELL, &voltage);
+    success &= readInt16Reg_(REG_SOC, &soc);
+    success &= readInt16Reg_(REG_CRAT, &socChangeRate);
+    success &= readInt16Reg_(REG_STATUS, &status);
+    success &= readInt16Reg_(REG_CONFIG, &config);
+    assert(success);
+    
+    // Publish battery status to all interested parties.
+    // Also clean up the values as returned by the MAX17048
+    // as it can return SOC > 100 or < 0.
+    auto calcSoc = soc / 256.0;
+    if (calcSoc > 100)
+    {
+        calcSoc = 100;
+        socChangeRate = 0;
+    }
+    else if (calcSoc < 0)
+    {
+        calcSoc = 0;
+    }
+    BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208);
+    publish(&message);
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
+
+    if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
+    {
+        // If battery power is extremely low, immediately force sleep.
+        isLowSoc_ = true;
+
+        // Post 
+        LowBatteryShutdownMessage message;
+        post(&message);
+    }
+}
+
 void MAX17048::onTaskTick_()
 {
     if (enabled_)
     {
-        // Read current temperature sensor value (in degC) and update RCOMP
-        // based on formula from the datasheet. Note that the ESP32 internal
-        // temperature sensor will read higher than ambient a lot of the time,
-        // but it's likely better to underestimate capacity than overestimate. TBD.
-        uint16_t config = 0;
-        bool success = readInt16Reg_(REG_CONFIG, &config);
-        assert(success);
-        
-        auto degC = temperatureFromADC_();
-                
-        int rcomp = 0x97;
-        if (degC > 20)
-        {
-            rcomp += (degC - 20) * (-0.5); // TempCoUp default
-        }
-        else
-        {
-            rcomp += (degC - 20) * (-5.0); // TempCoDown default
-        }
-        
-        if (rcomp > 255) rcomp = 255;
-        else if (rcomp < 0) rcomp = 0;
-        
-        ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
-        
-        config &= 0x00FF;
-        config = ((uint8_t)rcomp << 8) | config;
-        success = writeInt16Reg_(REG_CONFIG, config);
-        assert(success);
-        
-        // Retrieve voltage, SOC and rate of change
-        uint16_t voltage = 0;
-        uint16_t soc = 0;
-        uint16_t socChangeRate = 0;
-        uint16_t status = 0;
-        
-        success = readInt16Reg_(REG_VCELL, &voltage);
-        success &= readInt16Reg_(REG_SOC, &soc);
-        success &= readInt16Reg_(REG_CRAT, &socChangeRate);
-        success &= readInt16Reg_(REG_STATUS, &status);
-        success &= readInt16Reg_(REG_CONFIG, &config);
-        assert(success);
-        
-        // Publish battery status to all interested parties.
-        // Also clean up the values as returned by the MAX17048
-        // as it can return SOC > 100 or < 0.
-        auto calcSoc = soc / 256.0;
-        if (calcSoc > 100)
-        {
-            calcSoc = 100;
-            socChangeRate = 0;
-        }
-        else if (calcSoc < 0)
-        {
-            calcSoc = 0;
-        }
-        BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208);
-        publish(&message);
-        
-        ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
-
-        if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
-        {
-            // If battery power is extremely low, immediately force sleep.
-            isLowSoc_ = true;
-
-            // Post 
-            LowBatteryShutdownMessage message;
-            post(&message);
-        }
+        RequestBatteryStateMessage message;
+        post(&message);
     }
 }
 
