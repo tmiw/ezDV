@@ -121,6 +121,17 @@ var saveVoiceKeyerSettings = function() {
     $("#voiceKeyerSuccessAlertRow").hide();
     $("#voiceKeyerFailAlertRow").hide();
     
+    // Use default values that will trigger an error response
+    // if not provided by the user.
+    if (Number.isNaN(obj.secondsToWait))
+    {
+        obj.secondsToWait = 0;
+    }
+    if (Number.isNaN(obj.timesToTransmit))
+    {
+        obj.timesToTransmit = 0;
+    }
+
     // Async send request and wait for response.
     ws.send(JSON.stringify(obj));
 };
@@ -135,6 +146,32 @@ var setFreeDVMode = function(mode) {
     // Async send request and wait for response.
     ws.send(JSON.stringify(obj));
 };
+
+var setVKErrorMessage = function(errorType, errno)
+{
+    switch (errorType)
+    {
+        case 0:
+           $("#vkErrorText").html("Unknown");
+           break;
+        case 1:
+            $("#vkErrorText").html("System error: " + errno.toString());
+           break;
+        case 2:
+            $("#vkErrorText").html("Incorrect sample rate: ezDV only supports .wav files recorded at 8 KHz.");
+            break;
+        case 3:
+            $("#vkErrorText").html("Incorrect number of channels: ezDV only supports .wav files recorded as mono, not stereo.");
+            break;
+        case 4:
+            $("#vkErrorText").html("All fields are required except for the voice keyer file, which can be skipped if not updating.");
+            break;
+        case 5:
+        default:
+            $("#vkErrorText").html("Unexpected error while updating the voice keyer settings.");
+            break;
+    }
+}
 
 //==========================================================================================
 // WebSocket handling
@@ -246,6 +283,7 @@ function wsConnect()
           else
           {
               $("#voiceKeyerFailAlertRow").show();
+              setVKErrorMessage(json.errorType, 0);
           }
       }
       else if (json.type == "reportingInfo")
@@ -283,6 +321,9 @@ function wsConnect()
           else
           {
               $("#voiceKeyerFailAlertRow").show();
+              $("#voiceKeyerSave").show();
+              $("#voiceKeyerSaveProgress").hide();
+              setVKErrorMessage(json.errorType, json.errno);
           }
       }
       else if (json.type == "firmwareUploadComplete")

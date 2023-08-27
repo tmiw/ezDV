@@ -251,14 +251,13 @@ void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFil
     }
 
     unlink(VOICE_KEYER_FILE);
-    voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "wb");
+    voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "w+b");
     if (voiceKeyerFile_ == nullptr)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "Cannot open voice keyer file (errno %d)", errno);
         vTaskDelay(pdMS_TO_TICKS(100));
-        assert(voiceKeyerFile_ != nullptr);
 
-        FileUploadCompleteMessage response(false, errno);
+        FileUploadCompleteMessage response(false, FileUploadCompleteMessage::SYSTEM_ERROR, errno);
         publish(&response);
     }
 }
@@ -275,16 +274,43 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
 
         if (numWritten <= 0)
         {
-            FileUploadCompleteMessage response(false, errno);
+            FileUploadCompleteMessage response(false, FileUploadCompleteMessage::SYSTEM_ERROR, errno);
             publish(&response);
         }
         else if (bytesToUpload_ <= 0)
         {
+            // Make sure the user uploaded something using the 
+            // correct number of channels and sample rate.
+            fseek(voiceKeyerFile_, 0, SEEK_SET);
+
+            wavReader_ = new WAVFileReader(voiceKeyerFile_);
+            assert(wavReader_ != nullptr);
+
+            if (wavReader_->num_channels() != 1)
+            {
+                FileUploadCompleteMessage response(false, FileUploadCompleteMessage::INCORRECT_NUM_CHANNELS);
+                publish(&response);
+
+                unlink(VOICE_KEYER_FILE);
+            }
+            else if (wavReader_->sample_rate() != 8000)
+            {
+                FileUploadCompleteMessage response(false, FileUploadCompleteMessage::INCORRECT_SAMPLE_RATE);
+                publish(&response);
+
+                unlink(VOICE_KEYER_FILE);
+            }
+            else
+            {
+                FileUploadCompleteMessage response(true);
+                publish(&response);
+            }
+
+            delete wavReader_;
+            wavReader_ = nullptr;
+
             fclose(voiceKeyerFile_);
             voiceKeyerFile_ = nullptr;
-
-            FileUploadCompleteMessage response(true);
-            publish(&response);
         }
     }
     else

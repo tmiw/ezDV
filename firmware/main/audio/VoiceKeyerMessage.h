@@ -67,13 +67,26 @@ public:
 class FileUploadCompleteMessage : public DVTaskMessageBase<FILE_UPLOAD_COMPLETE, FileUploadCompleteMessage>
 {
 public:
-    FileUploadCompleteMessage(bool successProvided = true, int errnoProvided = 0)
+    enum ErrorType 
+    {
+        NONE,
+        SYSTEM_ERROR,
+        INCORRECT_SAMPLE_RATE,
+        INCORRECT_NUM_CHANNELS,
+        MISSING_FIELDS,
+        UNABLE_SAVE_SETTINGS,
+    };
+
+    FileUploadCompleteMessage(bool successProvided = true, ErrorType errorTypeProvided = NONE, int errnoProvided = 0)
         : DVTaskMessageBase<FILE_UPLOAD_COMPLETE, FileUploadCompleteMessage>(VOICE_KEYER_MESSAGE)
         , success(successProvided)
+        , errorType(errorTypeProvided)
+        , errorNumber(errnoProvided)
         {}
     virtual ~FileUploadCompleteMessage() = default;
 
     bool success;
+    ErrorType errorType;
     int errorNumber;
 };
 

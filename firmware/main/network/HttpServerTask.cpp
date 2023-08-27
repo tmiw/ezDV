@@ -1094,7 +1094,19 @@ void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyer
     {
         cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_SAVED_TYPE);
         cJSON_AddBoolToObject(root, "success", success);
-
+        
+        if (!success)
+        {
+            if (!settingsValid)
+            {
+                cJSON_AddNumberToObject(root, "errorType", audio::FileUploadCompleteMessage::MISSING_FIELDS);
+            }
+            else
+            {
+                cJSON_AddNumberToObject(root, "errorType", audio::FileUploadCompleteMessage::UNABLE_SAVE_SETTINGS);
+            }
+        }
+        
         // Note: below is responsible for cleanup.
         WebSocketList list { message->fd };
         sendJSONMessage_(root, list);
@@ -1181,6 +1193,7 @@ void HttpServerTask::onFileUploadCompleteMessage_(DVTask* origin, audio::FileUpl
     {
         cJSON_AddStringToObject(root, "type", JSON_VOICE_KEYER_UPLOAD_COMPLETE);
         cJSON_AddBoolToObject(root, "success", message->success);
+        cJSON_AddNumberToObject(root, "errorType", message->errorType);
         cJSON_AddNumberToObject(root, "errno", message->errorNumber);
 
         // Note: below is responsible for cleanup.

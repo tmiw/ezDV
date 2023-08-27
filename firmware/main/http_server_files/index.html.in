@@ -150,7 +150,7 @@
                 <div class="row mb-3" id="voiceKeyerFailAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-danger" role="alert">
-                        Could not save voice keyer configuration. Please verify your settings below and try again.
+                        Could not save voice keyer configuration (<span id="vkErrorText"></span>). Please verify your settings below and try again.
                         </div>
                     </div>
                 </div>
