@@ -75,6 +75,7 @@ public:
         INCORRECT_NUM_CHANNELS,
         MISSING_FIELDS,
         UNABLE_SAVE_SETTINGS,
+        FILE_TOO_LARGE,
     };
 
     FileUploadCompleteMessage(bool successProvided = true, ErrorType errorTypeProvided = NONE, int errnoProvided = 0)

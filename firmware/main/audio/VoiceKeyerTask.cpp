@@ -250,6 +250,16 @@ void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFil
         stopKeyer_();
     }
 
+    // Don't allow files larger than 512KB to avoid crashes.
+    if (bytesToUpload_ >= 512000)
+    {
+        FileUploadCompleteMessage response(false, FileUploadCompleteMessage::FILE_TOO_LARGE);
+        publish(&response);
+
+        bytesToUpload_ = 0;
+        return;
+    }
+
     unlink(VOICE_KEYER_FILE);
     voiceKeyerFile_ = fopen(VOICE_KEYER_FILE, "w+b");
     if (voiceKeyerFile_ == nullptr)
@@ -259,6 +269,8 @@ void VoiceKeyerTask::onStartFileUploadMessage_(DVTask* origin, network::StartFil
 
         FileUploadCompleteMessage response(false, FileUploadCompleteMessage::SYSTEM_ERROR, errno);
         publish(&response);
+
+        bytesToUpload_ = 0;
     }
 }
 
@@ -276,6 +288,8 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
         {
             FileUploadCompleteMessage response(false, FileUploadCompleteMessage::SYSTEM_ERROR, errno);
             publish(&response);
+
+            bytesToUpload_ = 0;
         }
         else if (bytesToUpload_ <= 0)
         {
@@ -315,11 +329,14 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
             {
                 unlink(VOICE_KEYER_FILE);
             }
+
+            bytesToUpload_ = 0;
         }
     }
     else
     {
         heap_caps_free(message->buf);
+        bytesToUpload_ = 0;
     }
 }
 

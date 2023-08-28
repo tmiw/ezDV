@@ -158,17 +158,20 @@ var setVKErrorMessage = function(errorType, errno)
             $("#vkErrorText").html("System error: " + errno.toString());
            break;
         case 2:
-            $("#vkErrorText").html("Incorrect sample rate: ezDV only supports .wav files recorded at 8 KHz.");
+            $("#vkErrorText").html("Incorrect sample rate: ezDV only supports .wav files recorded at 8 KHz");
             break;
         case 3:
-            $("#vkErrorText").html("Incorrect number of channels: ezDV only supports .wav files recorded as mono, not stereo.");
+            $("#vkErrorText").html("Incorrect number of channels: ezDV only supports .wav files recorded as mono, not stereo");
             break;
         case 4:
-            $("#vkErrorText").html("All fields are required except for the voice keyer file, which can be skipped if not updating.");
+            $("#vkErrorText").html("All fields are required except for the voice keyer file, which can be skipped if not updating");
+            break;
+        case 6:
+            $("#vkErrorText").html("Voice keyer files can't be larger than 512 kilobytes (KB)");
             break;
         case 5:
         default:
-            $("#vkErrorText").html("Unexpected error while updating the voice keyer settings.");
+            $("#vkErrorText").html("Unexpected error while updating the voice keyer settings");
             break;
     }
 }
@@ -324,6 +327,8 @@ function wsConnect()
               $("#voiceKeyerSave").show();
               $("#voiceKeyerSaveProgress").hide();
               setVKErrorMessage(json.errorType, json.errno);
+
+              vkReader.abort();
           }
       }
       else if (json.type == "firmwareUploadComplete")
@@ -645,6 +650,7 @@ $("#startVoiceKeyer").click(function() {
     ws.send(JSON.stringify(obj));
 });
 
+var vkReader = new FileReader();
 $("#updateSave").click(function()
 {
     $("#updateSuccessAlertRow").hide();
@@ -661,8 +667,7 @@ $("#updateSave").click(function()
     }
     else
     {
-        var reader = new FileReader();
-        reader.onload = function() 
+        vkReader.onload = function() 
         {
             // read successful, send to server
             var startMessage = {
@@ -672,12 +677,19 @@ $("#updateSave").click(function()
 
             // Send 4K blocks to ezDV so it can better handle
             // them (vs. sending 100K+ at once).
-            for (var size = 0; size < reader.result.byteLength; size += 4096)
+            for (var size = 0; size < vkReader.result.byteLength; size += 4096)
             {
-                ws.send(reader.result.slice(size, size + 4096));
+                if ($("#updateSave").is(":hidden"))
+                {
+                    ws.send(vkReader.result.slice(size, size + 4096));
+                }
+                else
+                {
+                    break;
+                }
             }
         };
-        reader.onerror = function()
+        vkReader.onerror = function()
         {
             alert("Could not open file for upload!");
 
@@ -685,7 +697,7 @@ $("#updateSave").click(function()
             $("#updateSaveProgress").hide();
         };
 
-        reader.readAsArrayBuffer($('#firmwareFile').get(0).files[0]);
+        vkReader.readAsArrayBuffer($('#firmwareFile').get(0).files[0]);
     }
 
 });
