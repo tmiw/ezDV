@@ -92,7 +92,7 @@ private:
     
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
-    void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
+    void onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message);
 
     void onFreeDVModeChange_(DVTask* origin, audio::SetFreeDVModeMessage* message);
     void setFilter_(int low, int high);

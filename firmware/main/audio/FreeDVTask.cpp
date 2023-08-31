@@ -39,6 +39,7 @@ FreeDVTask::FreeDVTask()
     , rText_(nullptr)
     , currentMode_(0)
     , isTransmitting_(false)
+    , isEndingTransmit_(false)
     , isActive_(false)
     , stats_(nullptr)
 {
@@ -151,6 +152,15 @@ void FreeDVTask::onTaskTick_()
                 //auto timeEnd = esp_timer_get_time();
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
                 codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
+            }
+            else if (isEndingTransmit_)
+            {
+                // We've finished processing everything that's left, end TX now.
+                TransmitCompleteMessage message;
+                publish(&message);
+
+                isEndingTransmit_ = false;
+                isTransmitting_ = false;
             }
         }
         else
@@ -275,7 +285,20 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV transmit state to %d", (int)message->pttState);
 
-    isTransmitting_ = message->pttState;
+    if (isTransmitting_ && !message->pttState)
+    {
+        // Delay ending TX until we've processed what's remaining.
+        isEndingTransmit_ = true;
+    }
+    else
+    {
+        isTransmitting_ = message->pttState;
+        if (!isTransmitting_)
+        {
+            TransmitCompleteMessage message;
+            publish(&message);
+        }
+    }
 }
 
 void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message)

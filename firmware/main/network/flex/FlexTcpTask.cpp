@@ -501,7 +501,7 @@ void FlexTcpTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* m
     }
 }
 
-void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
+void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message)
 {
     if (activeSlice_ >= 0 && isTransmitting_)
     {

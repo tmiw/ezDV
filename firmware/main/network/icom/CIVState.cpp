@@ -36,6 +36,7 @@ CIVState::CIVState(IcomStateMachine* parent)
     , civId_(0)
 {
     parent_->getTask()->registerMessageHandler(this, &CIVState::onFreeDVSetPTTStateMessage_);
+    parent_->getTask()->registerMessageHandler(this, &CIVState::onTransmitCompleteMessage_);
 }
 
 void CIVState::onEnterState()
@@ -171,8 +172,9 @@ void CIVState::sendCIVPacket_(uint8_t* civPacket, uint16_t civLength)
 
 void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message)
 {
-    if (civId_ > 0)
+    if (civId_ > 0 && message->pttState)
     {
+        // This only handles the beginning of TX. Ending TX is handled by TransmitCompleteMessage.
         ESP_LOGI(parent_->getName().c_str(), "Sending PTT CIV message (PTT = %d)", message->pttState);
         
         uint8_t civPacket[] = {
@@ -182,7 +184,29 @@ void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSe
             0xE0,
             0x1C, // PTT on/off command/subcommand
             0x00,
-            message->pttState ? (uint8_t)0x01 : (uint8_t)0x00,
+            (uint8_t)0x01, // enable PTT
+            0xFD
+        };
+        
+        sendCIVPacket_(civPacket, sizeof(civPacket));
+    }
+}
+
+void CIVState::onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message)
+{
+    if (civId_ > 0)
+    {
+        // This only handles the beginning of TX. Ending TX is handled by TransmitCompleteMessage.
+        ESP_LOGI(parent_->getName().c_str(), "Sending PTT CIV message (PTT = %d)", 0);
+        
+        uint8_t civPacket[] = {
+            0xFE,
+            0xFE,
+            civId_,
+            0xE0,
+            0x1C, // PTT on/off command/subcommand
+            0x00,
+            (uint8_t)0x00, // disable PTT
             0xFD
         };
         

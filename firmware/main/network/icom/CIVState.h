@@ -56,6 +56,7 @@ private:
 
     void onCIVWatchdog_();
     void onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message);
+    void onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message);
 };
 
 }

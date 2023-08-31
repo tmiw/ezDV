@@ -345,17 +345,21 @@ void UserInterfaceTask::stopTx_()
 {
     isTransmitting_ = false;
 
+    // Switch FreeDV to RX mode. Note that we need to wait for the TransmitComplete message to come back before
+    // we can actually stop the TX LEDs.
+    audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(false);
+    publish(pttStateMessage);
+    delete pttStateMessage;
+
+    auto result = waitFor<audio::TransmitCompleteMessage>(pdMS_TO_TICKS(1000), nullptr);
+    delete result;
+
     // Disable LED and LED NPN so the radio itself stops transmitting
     driver::SetLedStateMessage* ledMessage = new driver::SetLedStateMessage(driver::SetLedStateMessage::PTT_NPN, false);
     publish(ledMessage);
     ledMessage->led = driver::SetLedStateMessage::PTT;
     publish(ledMessage);
     delete ledMessage;
-
-    // Switch FreeDV to RX mode
-    audio::FreeDVSetPTTStateMessage* pttStateMessage = new audio::FreeDVSetPTTStateMessage(false);
-    publish(pttStateMessage);
-    delete pttStateMessage;
 }
 
 void UserInterfaceTask::startTx_()

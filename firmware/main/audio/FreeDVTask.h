@@ -54,6 +54,7 @@ private:
     int currentMode_;
 
     bool isTransmitting_;
+    bool isEndingTransmit_;
     bool isActive_;
 
     MODEM_STATS* stats_;

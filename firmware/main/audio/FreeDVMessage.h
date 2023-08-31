@@ -42,6 +42,10 @@ enum FreeDVMessageTypes
     REQUEST_SET_FREEDV_MODE = 4,
     REQUEST_GET_FREEDV_MODE = 5,
     FREEDV_RX_CALLSIGN = 6,
+
+    // Indicates that we've processed all remaining input and 
+    // PTT can be terminated.
+    TX_COMPLETE = 7,
 };
 
 class FreeDVSyncStateMessage : public DVTaskMessageBase<SYNC_STATE, FreeDVSyncStateMessage>
@@ -120,6 +124,15 @@ public:
 
     char callsign[MAX_STR_SIZE];
     float snr;
+};
+
+class TransmitCompleteMessage : public DVTaskMessageBase<TX_COMPLETE, TransmitCompleteMessage>
+{
+public:
+    TransmitCompleteMessage()
+        : DVTaskMessageBase<TX_COMPLETE, TransmitCompleteMessage>(FREEDV_MESSAGE)
+        {}
+    virtual ~TransmitCompleteMessage() = default;
 };
 
 }
