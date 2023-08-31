@@ -584,6 +584,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
             if (root != nullptr)
             {
                 cJSON_AddStringToObject(root, "type", JSON_RADIO_STATUS_TYPE);
+                cJSON_AddBoolToObject(root, "headsetPtt", response->headsetPtt);
                 cJSON_AddBoolToObject(root, "enabled", response->enabled);
                 cJSON_AddNumberToObject(root, "radioType", response->type);
                 cJSON_AddStringToObject(root, "host", response->host);
@@ -917,6 +918,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Updating radio settings");
     
+    bool headsetPtt = false;
     bool enabled = false;
     int type = 0;
     char* hostname = nullptr;
@@ -925,6 +927,16 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     char* password = nullptr;
     
     bool settingsValid = true;
+
+    auto headsetPttJSON = cJSON_GetObjectItem(message->request, "headsetPtt");
+    if (headsetPttJSON != nullptr)
+    {
+        headsetPtt = cJSON_IsTrue(headsetPttJSON);
+    }
+    else
+    {
+        settingsValid = false;
+    }
     
     auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
     if (enabledJSON != nullptr)
@@ -984,7 +996,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
     bool success = false;
     if (settingsValid)
     {
-        storage::SetRadioSettingsMessage request(enabled, type, hostname, port, username, password);
+        storage::SetRadioSettingsMessage request(headsetPtt, enabled, type, hostname, port, username, password);
         publish(&request);
     
         auto response = waitFor<storage::RadioSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);

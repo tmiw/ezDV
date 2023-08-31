@@ -121,8 +121,9 @@ class RadioSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RadioSettin
 public:
     enum { MAX_STR_SIZE = 32 };
     
-    RadioSettingsMessageCommon(bool enabledProvided = false, int typeProvided = 0, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
+    RadioSettingsMessageCommon(bool headsetPttProvided = false, bool enabledProvided = false, int typeProvided = 0, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
         : DVTaskMessageBase<TYPE_ID, RadioSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+        , headsetPtt(headsetPttProvided)
         , enabled(enabledProvided)
         , type(typeProvided)
         , port(portProvided)
@@ -138,6 +139,7 @@ public:
     
     virtual ~RadioSettingsMessageCommon() = default;
 
+    bool headsetPtt;
     bool enabled;
     int type;
     int port;

@@ -30,6 +30,7 @@
 #define WIFI_SSID_ID ("wifiSsid")
 #define WIFI_PASSWORD_ID ("wifiPass")
 
+#define HEADSET_PTT_ID ("headPtt")
 #define RADIO_ENABLED_ID ("radioEn")
 #define RADIO_TYPE_ID ("radioType")
 #define RADIO_HOSTNAME_ID ("radioHost")
@@ -76,6 +77,7 @@ SettingsTask::SettingsTask()
     , wifiEnabled_(false)
     , wifiMode_(WifiMode::ACCESS_POINT)
     , wifiSecurity_(WifiSecurityMode::NONE)
+    , headsetPtt_(false)
     , radioEnabled_(false)
     , radioType_(0)
     , radioPort_(0)
@@ -174,6 +176,7 @@ void SettingsTask::onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSe
 {
     // Publish current radio settings to everyone who may care.
     RadioSettingsMessage* response = new RadioSettingsMessage(
+        headsetPtt_,
         radioEnabled_,
         radioType_,
         radioHostname_,
@@ -398,7 +401,7 @@ void SettingsTask::initializeRadio_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
-        setRadioSettings_(false, 0, "", 0, "", "");
+        setRadioSettings_(false, false, 0, "", 0, "", "");
     }
     else if (result != ESP_OK)
     {
@@ -407,6 +410,23 @@ void SettingsTask::initializeRadio_()
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "radioEnabled: %d", radioEnabled_);
+    }
+
+    result = storageHandle_->get_item(HEADSET_PTT_ID, headsetPtt_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Headset settings not found, will set to default");
+        storageHandle_->set_item(HEADSET_PTT_ID, true);
+        commitTimer_.stop();
+        commitTimer_.start(true);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving headsetPtt: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "headsetPtt: %d", headsetPtt_);
     }
     
     result = storageHandle_->get_item(RADIO_TYPE_ID, radioType_);
@@ -461,6 +481,7 @@ void SettingsTask::initializeRadio_()
     
     // Publish current Wi-Fi settings to everyone who may care.
     RadioSettingsMessage* message = new RadioSettingsMessage(
+        headsetPtt_,
         radioEnabled_,
         radioType_,
         radioHostname_,
@@ -744,11 +765,12 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
 
 void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMessage* message)
 {
-    setRadioSettings_(message->enabled, message->type, message->host, message->port, message->username, message->password);
+    setRadioSettings_(message->headsetPtt, message->enabled, message->type, message->host, message->port, message->username, message->password);
 }
 
-void SettingsTask::setRadioSettings_(bool enabled, int type, char* host, int port, char* username, char* password)
+void SettingsTask::setRadioSettings_(bool headsetPtt, bool enabled, int type, char* host, int port, char* username, char* password)
 {
+    headsetPtt_ = headsetPtt;
     radioEnabled_ = enabled;
     radioPort_ = port;
     radioType_ = type;
@@ -763,7 +785,12 @@ void SettingsTask::setRadioSettings_(bool enabled, int type, char* host, int por
     
     if (storageHandle_)
     {        
-        esp_err_t result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
+        esp_err_t result = storageHandle_->set_item(HEADSET_PTT_ID, headsetPtt_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting headsetPtt: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
         if (result != ESP_OK)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting radioEnabled: %s", esp_err_to_name(result));
@@ -799,6 +826,7 @@ void SettingsTask::setRadioSettings_(bool enabled, int type, char* host, int por
 
         // Publish new Wi-Fi settings to everyone who may care.
         RadioSettingsMessage* message = new RadioSettingsMessage(
+            headsetPtt_,
             radioEnabled_,
             radioType_,
             radioHostname_,

@@ -62,6 +62,7 @@ private:
     bool voiceKeyerEnabled_;
     int lastBatteryLevel_;
     bool sleepPending_;
+    bool allowHeadsetPtt_;
 
     // Button handling
     void onButtonShortPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
@@ -104,6 +105,9 @@ private:
 
     // Mode handling
     void onRequestSetFreeDVModeMessage_(DVTask* origin, audio::RequestSetFreeDVModeMessage* message);
+
+    // Radio settings handling
+    void onRadioSettingsMessage_(DVTask* origin, storage::RadioSettingsMessage* message);
 };
 
 }

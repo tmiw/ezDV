@@ -58,6 +58,7 @@ UserInterfaceTask::UserInterfaceTask()
     , voiceKeyerEnabled_(false)
     , lastBatteryLevel_(0)
     , sleepPending_(false)
+    , allowHeadsetPtt_(false)
 {
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
@@ -77,6 +78,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onRequestSetFreeDVModeMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRequestStartStopKeyerMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onGetKeyerStateMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onRadioSettingsMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -396,24 +398,27 @@ void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMess
 
 void UserInterfaceTask::onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message)
 {
-    if (voiceKeyerRunning_)
+    if (allowHeadsetPtt_)
     {
-        // Pushing any key stops the voice keyer
-        audio::RequestStartStopKeyerMessage vkRequest(false);
-        post(&vkRequest);
-    }
-    else
-    {
-        if (!isTransmitting_)
+        if (voiceKeyerRunning_)
         {
-            audio::RequestTxMessage msg;
-            publish(&msg);
+            // Pushing any key stops the voice keyer
+            audio::RequestStartStopKeyerMessage vkRequest(false);
+            post(&vkRequest);
         }
         else
         {
-            audio::RequestRxMessage msg;
-            publish(&msg);
-        }   
+            if (!isTransmitting_)
+            {
+                audio::RequestTxMessage msg;
+                publish(&msg);
+            }
+            else
+            {
+                audio::RequestRxMessage msg;
+                publish(&msg);
+            }   
+        }
     }
 }
 
@@ -480,6 +485,20 @@ void UserInterfaceTask::onGetKeyerStateMessage_(DVTask* origin, audio::GetKeyerS
         audio::StopVoiceKeyerMessage vkResponse;
         origin->post(&vkResponse);
     }
+}
+
+void UserInterfaceTask::onRadioSettingsMessage_(DVTask* origin, storage::RadioSettingsMessage* message)
+{
+    if (message->headsetPtt)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Allowing headset button to toggle PTT.");
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Disallowing headset button from toggling PTT.");
+    }
+
+    allowHeadsetPtt_ = message->headsetPtt;
 }
 
 }
