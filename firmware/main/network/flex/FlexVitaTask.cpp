@@ -53,11 +53,14 @@ FlexVitaTask::FlexVitaTask()
     , audioSeqNum_(0)
     , currentTime_(0)
     , timeFracSeq_(0)
+    , audioEnabled_(false)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onSendVitaMessage_);
-    
+    registerMessageHandler(this, &FlexVitaTask::onEnableReportingMessage_);
+    registerMessageHandler(this, &FlexVitaTask::onDisableReportingMessage_);
+
     downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
     downsamplerOutBuf_ = (short*)heap_caps_calloc(MAX_VITA_SAMPLES, sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
@@ -120,6 +123,12 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     
     while(codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
+        if (!audioEnabled_)
+        {
+            // Skip sending audio to SmartSDR if the user isn't using us yet.
+            continue;
+        }
+
         vita_packet* packet = new vita_packet;
         assert(packet != nullptr);
         
@@ -404,6 +413,16 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
     }
     
     delete packet;
+}
+
+void FlexVitaTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message)
+{
+    audioEnabled_ = true;
+}
+
+void FlexVitaTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMessage* message)
+{
+    audioEnabled_ = false;
 }
     
 }

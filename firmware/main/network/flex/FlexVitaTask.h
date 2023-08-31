@@ -24,6 +24,7 @@
 
 #include "audio/AudioInput.h"
 #include "network/NetworkMessage.h"
+#include "network/ReportingMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 #include "util/PSRamAllocator.h"
@@ -67,6 +68,7 @@ private:
     uint32_t audioSeqNum_;
     time_t currentTime_;
     int timeFracSeq_;
+    bool audioEnabled_;
     
     // Resampler buffers
     float* downsamplerInBuf_;
@@ -84,6 +86,13 @@ private:
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* message);
     void onSendVitaMessage_(DVTask* origin, SendVitaMessage* message);
+
+    // Listen to EnableReportingMessage and DisableReportingMessage
+    // so that we can actually start sending audio to SmartSDR.
+    // This is so that users don't end up with old audio being sent to
+    // them as soon as they choose FDVU/FDVL.
+    void onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message);
+    void onDisableReportingMessage_(DVTask* origin, DisableReportingMessage* message);
 };
 
 }
