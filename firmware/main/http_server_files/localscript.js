@@ -227,9 +227,12 @@ function wsConnect()
           $("#radioEnable").prop("disabled", false);
           $("#headsetPtt").prop("disabled", false);
           $("#radioReset").prop("disabled", false);
+          $("#headsetPtt").prop("disabled", false);
+          $("#timeOutTimer").prop("disabled", false);
           $("#radioEnable").prop("checked", json.enabled);
           $("#headsetPtt").prop("checked", json.headsetPtt);
           
+          $("#timeOutTimer").val(json.timeOutTimer);
           $("#radioType").val(json.radioType);
           $("#radioIP").val(json.host);
           $("#radioPort").val(json.port);
@@ -553,6 +556,7 @@ $("#radioSave").click(function()
         "type": "saveRadioInfo",
         "enabled": $("#radioEnable").is(':checked'),
         "headsetPtt": $("#headsetPtt").is(':checked'),
+        "timeOutTimer": parseInt($("#timeOutTimer").val()),
         "radioType": parseInt($("#radioType").val()),
         "host": $("#radioIP").val(),
         "port": parseInt($("#radioPort").val()),
@@ -738,6 +742,7 @@ $( document ).ready(function()
     $(".radio-enable-row").hide();
     $("#radioEnable").prop("disabled", true);
     $("#headsetPtt").prop("disabled", true);
+    $("#timeOutTimer").prop("disabled", true);
     $("#radioReset").prop("disabled", true);
     
     $("radioSave").show();

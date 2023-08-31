@@ -61,6 +61,7 @@ private:
     char wifiPassword_[WifiSettingsMessage::MAX_STR_SIZE];
     
     bool headsetPtt_;
+    int timeOutTimer_;
     bool radioEnabled_;
     int radioType_;
     char radioHostname_[RadioSettingsMessage::MAX_STR_SIZE];
@@ -109,7 +110,7 @@ private:
     void setLeftChannelVolume_(int8_t vol);
     void setRightChannelVolume_(int8_t vol);
     void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password);
-    void setRadioSettings_(bool headsetPtt, bool enabled, int type, char* host, int port, char* username, char* password);
+    void setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, char* host, int port, char* username, char* password);
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
     void setReportingSettings_(char* callsign, char* gridSquare);
     void setLedBrightness_(int dutyCycle);

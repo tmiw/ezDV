@@ -61,6 +61,23 @@ DVTimer::~DVTimer()
     );
 }
 
+void DVTimer::changeInterval(uint64_t intervalInMicroseconds)
+{
+    bool isRunning = running_;
+
+    if (isRunning)
+    {
+        stop();
+    }
+
+    intervalInMicroseconds_ = intervalInMicroseconds;
+
+    if (isRunning)
+    {
+        start(once_);
+    }
+}
+
 void DVTimer::start(bool once)
 {
     if (!running_)

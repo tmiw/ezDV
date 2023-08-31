@@ -50,6 +50,7 @@ protected:
 private:
     DVTimer volHoldTimer_;
     DVTimer networkFlashTimer_;
+    DVTimer timeOutTimer_;
     audio::FreeDVMode currentMode_;
     bool isTransmitting_;
     bool isActive_;

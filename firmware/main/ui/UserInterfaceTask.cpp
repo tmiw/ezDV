@@ -46,6 +46,7 @@ UserInterfaceTask::UserInterfaceTask()
     : DVTask("UserInterfaceTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(10))
     , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US)
     , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US)
+    , timeOutTimer_(this, std::bind(&UserInterfaceTask::stopTx_, this), 1000000 /* placeholder, will be set by user config */)
     , currentMode_(audio::ANALOG)
     , isTransmitting_(false)
     , isActive_(false)
@@ -345,6 +346,9 @@ void UserInterfaceTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::Voic
 
 void UserInterfaceTask::stopTx_()
 {
+    // Stop time out timer (TOT)
+    timeOutTimer_.stop();
+    
     isTransmitting_ = false;
 
     // Switch FreeDV to RX mode. Note that we need to wait for the TransmitComplete message to come back before
@@ -379,6 +383,9 @@ void UserInterfaceTask::startTx_()
     ledMessage->led = driver::SetLedStateMessage::PTT;
     publish(ledMessage);
     delete ledMessage;
+
+    // Start time out timer (TOT)
+    timeOutTimer_.start(true);
 }
 
 void UserInterfaceTask::onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message)
@@ -499,6 +506,9 @@ void UserInterfaceTask::onRadioSettingsMessage_(DVTask* origin, storage::RadioSe
     }
 
     allowHeadsetPtt_ = message->headsetPtt;
+
+    // TOT is configured in seconds, so need to convert to microseconds first.
+    timeOutTimer_.changeInterval(message->timeOutTimer * 1000000);
 }
 
 }

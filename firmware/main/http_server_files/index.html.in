@@ -351,6 +351,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mb-3 radio-enable-row">
+                    <label for="timeOutTimer" class="col-xs-4 col-md-2 col-form-label">Time Out Timer (seconds):</label>
+                    <div class="col-xs-2 col-md-1">
+                    <input id="timeOutTimer" value="120" class="form-control" />
+                    </div>
+                </div>
                 <div class="row mb-3">
                     <div class="col-xs-12 col-md-6">
                         <div class="form-check">

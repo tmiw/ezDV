@@ -31,6 +31,8 @@
 #define WIFI_PASSWORD_ID ("wifiPass")
 
 #define HEADSET_PTT_ID ("headPtt")
+#define TIME_OUT_TIMER_ID ("tot")
+#define DEFAULT_TIME_OUT_TIMER_SEC (120)
 #define RADIO_ENABLED_ID ("radioEn")
 #define RADIO_TYPE_ID ("radioType")
 #define RADIO_HOSTNAME_ID ("radioHost")
@@ -78,6 +80,7 @@ SettingsTask::SettingsTask()
     , wifiMode_(WifiMode::ACCESS_POINT)
     , wifiSecurity_(WifiSecurityMode::NONE)
     , headsetPtt_(false)
+    , timeOutTimer_(0)
     , radioEnabled_(false)
     , radioType_(0)
     , radioPort_(0)
@@ -177,6 +180,7 @@ void SettingsTask::onRequestRadioSettingsMessage_(DVTask* origin, RequestRadioSe
     // Publish current radio settings to everyone who may care.
     RadioSettingsMessage* response = new RadioSettingsMessage(
         headsetPtt_,
+        timeOutTimer_,
         radioEnabled_,
         radioType_,
         radioHostname_,
@@ -401,7 +405,7 @@ void SettingsTask::initializeRadio_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
-        setRadioSettings_(false, false, 0, "", 0, "", "");
+        setRadioSettings_(false, DEFAULT_TIME_OUT_TIMER_SEC, false, 0, "", 0, "", "");
     }
     else if (result != ESP_OK)
     {
@@ -417,6 +421,7 @@ void SettingsTask::initializeRadio_()
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Headset settings not found, will set to default");
         storageHandle_->set_item(HEADSET_PTT_ID, true);
+        headsetPtt_ = true;
         commitTimer_.stop();
         commitTimer_.start(true);
     }
@@ -427,6 +432,24 @@ void SettingsTask::initializeRadio_()
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "headsetPtt: %d", headsetPtt_);
+    }
+
+    result = storageHandle_->get_item(TIME_OUT_TIMER_ID, timeOutTimer_);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "TOT settings not found, will set to default");
+        storageHandle_->set_item(TIME_OUT_TIMER_ID, DEFAULT_TIME_OUT_TIMER_SEC);
+        timeOutTimer_ = DEFAULT_TIME_OUT_TIMER_SEC;
+        commitTimer_.stop();
+        commitTimer_.start(true);
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving timeOutTimer: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "timeOutTimer: %d", timeOutTimer_);
     }
     
     result = storageHandle_->get_item(RADIO_TYPE_ID, radioType_);
@@ -482,6 +505,7 @@ void SettingsTask::initializeRadio_()
     // Publish current Wi-Fi settings to everyone who may care.
     RadioSettingsMessage* message = new RadioSettingsMessage(
         headsetPtt_,
+        timeOutTimer_,
         radioEnabled_,
         radioType_,
         radioHostname_,
@@ -765,12 +789,13 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
 
 void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMessage* message)
 {
-    setRadioSettings_(message->headsetPtt, message->enabled, message->type, message->host, message->port, message->username, message->password);
+    setRadioSettings_(message->headsetPtt, message->timeOutTimer, message->enabled, message->type, message->host, message->port, message->username, message->password);
 }
 
-void SettingsTask::setRadioSettings_(bool headsetPtt, bool enabled, int type, char* host, int port, char* username, char* password)
+void SettingsTask::setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, char* host, int port, char* username, char* password)
 {
     headsetPtt_ = headsetPtt;
+    timeOutTimer_ = timeOutTimer;
     radioEnabled_ = enabled;
     radioPort_ = port;
     radioType_ = type;
@@ -789,6 +814,11 @@ void SettingsTask::setRadioSettings_(bool headsetPtt, bool enabled, int type, ch
         if (result != ESP_OK)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting headsetPtt: %s", esp_err_to_name(result));
+        }
+        result = storageHandle_->set_item(TIME_OUT_TIMER_ID, timeOutTimer_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting timeOutTimer: %s", esp_err_to_name(result));
         }
         result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
         if (result != ESP_OK)
@@ -827,6 +857,7 @@ void SettingsTask::setRadioSettings_(bool headsetPtt, bool enabled, int type, ch
         // Publish new Wi-Fi settings to everyone who may care.
         RadioSettingsMessage* message = new RadioSettingsMessage(
             headsetPtt_,
+            timeOutTimer_,
             radioEnabled_,
             radioType_,
             radioHostname_,

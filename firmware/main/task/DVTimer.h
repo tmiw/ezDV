@@ -48,6 +48,8 @@ public:
     
     void start(bool once = false);
     void stop();
+
+    void changeInterval(uint64_t intervalInMicroseconds);
     
 private:
     class TimerFireMessage : public DVTaskMessageBase<1, TimerFireMessage>
