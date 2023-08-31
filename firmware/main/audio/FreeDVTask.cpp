@@ -130,12 +130,6 @@ void FreeDVTask::onTaskTick_()
     {
         bool syncLed = false;
 
-        // XXX: there's a bug in ESP-IDF 5.1 that causes the FPU to get wonky on 
-        // context switches. This causes random locations in the Codec2 library
-        // to throw assertion errors. Workaround found at https://github.com/espressif/esp-idf/issues/11690.
-        // This should be removed once Espressif fixes the bug.
-        //vTaskSuspendAll();
-
         if (isTransmitting_)
         {
             int numSpeechSamples = freedv_get_n_speech_samples(dv_);
@@ -184,12 +178,6 @@ void FreeDVTask::onTaskTick_()
         
             syncLed = freedv_get_sync(dv_) > 0;
         }
-
-        // XXX: there's a bug in ESP-IDF 5.1 that causes the FPU to get wonky on 
-        // context switches. This causes random locations in the Codec2 library
-        // to throw assertion errors. Workaround found at https://github.com/espressif/esp-idf/issues/11690.
-        // This should be removed once Espressif fixes the bug.
-        //xTaskResumeAll();
 
         // Broadcast current sync state
         FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);

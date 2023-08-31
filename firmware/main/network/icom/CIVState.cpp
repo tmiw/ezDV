@@ -196,7 +196,6 @@ void CIVState::onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitC
 {
     if (civId_ > 0)
     {
-        // This only handles the beginning of TX. Ending TX is handled by TransmitCompleteMessage.
         ESP_LOGI(parent_->getName().c_str(), "Sending PTT CIV message (PTT = %d)", 0);
         
         uint8_t civPacket[] = {
