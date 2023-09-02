@@ -34,6 +34,7 @@
 #include "storage/SettingsTask.h"
 #include "storage/SoftwareUpdateTask.h"
 #include "ui/UserInterfaceTask.h"
+#include "ui/FuelGaugeTask.h"
 #include "ui/RFComplianceTestTask.h"
 
 using namespace ezdv::task;
@@ -74,6 +75,11 @@ private:
     storage::SoftwareUpdateTask softwareUpdateTask_;
     ui::UserInterfaceTask uiTask_;
     ui::RfComplianceTestTask rfComplianceTask_;
+
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    ui::FuelGaugeTask fuelGaugeTask_;
+#endif // 0
+
     audio::VoiceKeyerTask voiceKeyerTask_;
     
     bool rfComplianceEnabled_;

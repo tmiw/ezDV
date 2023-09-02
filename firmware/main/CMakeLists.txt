@@ -54,6 +54,7 @@ set(SOURCES
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp"
+    "ui/FuelGaugeTask.cpp"
     "ui/RFComplianceTestTask.cpp"
     "ui/UserInterfaceTask.cpp"
     "util/SineWaveGenerator.cpp")

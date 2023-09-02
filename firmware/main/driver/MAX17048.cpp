@@ -147,9 +147,27 @@ void MAX17048::onTaskSleep_()
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adcHandle_));
     enabled_ = false;
 
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    // Set overvoltage threshold to the same as current VCELL.
+    // This is needed to allow detection of charging without needing
+    // to be plugged in.
+    uint16_t voltage = 0;
+    readInt16Reg_(REG_VCELL, &voltage);
+    float voltFloat = voltage * 0.000078125;
+    uint16_t voltThresholds = (uint16_t)(voltFloat * 50) + 2; // 50 = 1/0.02
+    writeInt16Reg_(REG_VALRT, voltThresholds); 
+#endif // 0
+
     // Force MAX17048 into hibernate to reduce power consumption.
     bool rv = writeInt16Reg_(REG_HIBRT, 0xFFFF);
     assert(rv == true);
+
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    // Clear ALERT to avoid immediate retriggering of the interrupt.
+    auto val = 0;
+    rv = writeInt16Reg_(REG_STATUS, val);
+    assert(rv == true);
+#endif // 0
 }
 
 void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryStateMessage* reqMessage)
@@ -297,6 +315,12 @@ void MAX17048::configureDevice_()
     val = (EMPTY_ALERT_THRESHOLD << 8);
     rv = writeInt16Reg_(REG_VRESET, val);
     assert(rv == true);
+
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    // Set voltage thresholds back to defaults
+    rv = writeInt16Reg_(REG_VALRT, 0x00FF);
+    assert(rv == true);
+#endif // 0
 
     // Disable hibernate mode. Hibernate will be forced
     // on sleep.

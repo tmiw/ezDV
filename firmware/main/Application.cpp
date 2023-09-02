@@ -166,7 +166,7 @@ void App::enablePeripheralPower_()
 
 void App::enterDeepSleep_()
 {
-    ulp_power_up_only_for_battery_temp = 0;
+    ulp_power_up_mode = 0;
 
     /* Initialize mode button GPIO as RTC IO, enable input, enable pullup */
     rtc_gpio_init(GPIO_NUM_5);
@@ -242,9 +242,9 @@ void App::onTaskStart_()
     // need to immediately sleep due to low power.
     start(&max17048_, pdMS_TO_TICKS(1000));
 
-    if (max17048_.isLowSOC() || ulp_power_up_only_for_battery_temp)
+    if (max17048_.isLowSOC() || ulp_power_up_mode == 1)
     {
-        ulp_power_up_only_for_battery_temp = 0;
+        ulp_power_up_mode = 0;
         enterDeepSleep_();
     }
 
@@ -263,34 +263,45 @@ void App::onTaskStart_()
     }
 
     // Start device drivers
-    start(&tlv320Device_, pdMS_TO_TICKS(10000));
     start(&buttonArray_, pdMS_TO_TICKS(1000));
-    
-    if (!rfComplianceEnabled_)
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    if (ulp_power_up_mode == 0)
+#endif // 0
     {
-        // Start audio processing
-        start(&freedvTask_, pdMS_TO_TICKS(1000));
-        start(&audioMixer_, pdMS_TO_TICKS(1000));
-        start(&beeperTask_, pdMS_TO_TICKS(1000));
-
-        // Start UI
-        start(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-        start(&uiTask_, pdMS_TO_TICKS(1000));
+        start(&tlv320Device_, pdMS_TO_TICKS(10000));
     
-        // Start Wi-Fi
-        start(&wirelessTask_, pdMS_TO_TICKS(5000));
+        if (!rfComplianceEnabled_)
+        {
+            // Start audio processing
+            start(&freedvTask_, pdMS_TO_TICKS(1000));
+            start(&audioMixer_, pdMS_TO_TICKS(1000));
+            start(&beeperTask_, pdMS_TO_TICKS(1000));
 
-        // Start storage handling
-        settingsTask_.start();
-        softwareUpdateTask_.start();
+            // Start UI
+            start(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+            start(&uiTask_, pdMS_TO_TICKS(1000));
         
-        // Mark boot as successful, no need to rollback.
-        esp_ota_mark_app_valid_cancel_rollback();
+            // Start Wi-Fi
+            start(&wirelessTask_, pdMS_TO_TICKS(5000));
+
+            // Start storage handling
+            settingsTask_.start();
+            softwareUpdateTask_.start();
+            
+            // Mark boot as successful, no need to rollback.
+            esp_ota_mark_app_valid_cancel_rollback();
+        }
+        else
+        {
+            start(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        }
     }
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
     else
     {
-        start(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        start(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
     }
+#endif // 0
 }
 
 void App::onTaskWake_()
@@ -303,9 +314,9 @@ void App::onTaskWake_()
     // need to immediately sleep due to low power.
     wake(&max17048_, pdMS_TO_TICKS(1000));
 
-    if (max17048_.isLowSOC() || ulp_power_up_only_for_battery_temp)
+    if (max17048_.isLowSOC() || ulp_power_up_mode == 1)
     {
-        ulp_power_up_only_for_battery_temp = 0;
+        ulp_power_up_mode = 0;
         enterDeepSleep_();
     }
     
@@ -324,36 +335,48 @@ void App::onTaskWake_()
     }
 
     // Wake up device drivers
-    wake(&tlv320Device_, pdMS_TO_TICKS(10000));
     wake(&buttonArray_, pdMS_TO_TICKS(1000));
 
-    if (!rfComplianceEnabled_)
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    if (ulp_power_up_mode == 0)
+#endif // 0
     {
-        // Wake audio processing
-        wake(&freedvTask_, pdMS_TO_TICKS(1000));
-        wake(&audioMixer_, pdMS_TO_TICKS(1000));
-        wake(&beeperTask_, pdMS_TO_TICKS(1000));
+        wake(&tlv320Device_, pdMS_TO_TICKS(10000));
 
-        // Wake UI
-        wake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-        wake(&uiTask_, pdMS_TO_TICKS(1000));
-    
-        // Wake Wi-Fi
-        wake(&wirelessTask_, pdMS_TO_TICKS(5000));
+        if (!rfComplianceEnabled_)
+        {
+            // Wake audio processing
+            wake(&freedvTask_, pdMS_TO_TICKS(1000));
+            wake(&audioMixer_, pdMS_TO_TICKS(1000));
+            wake(&beeperTask_, pdMS_TO_TICKS(1000));
 
-        // Wake storage handling
-        wake(&settingsTask_, pdMS_TO_TICKS(1000));
-
-        // Wake SW update handling
-        wake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+            // Wake UI
+            wake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+            wake(&uiTask_, pdMS_TO_TICKS(1000));
         
-        // Mark boot as successful, no need to rollback.
-        esp_ota_mark_app_valid_cancel_rollback();
+            // Wake Wi-Fi
+            wake(&wirelessTask_, pdMS_TO_TICKS(5000));
+
+            // Wake storage handling
+            wake(&settingsTask_, pdMS_TO_TICKS(1000));
+
+            // Wake SW update handling
+            wake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+            
+            // Mark boot as successful, no need to rollback.
+            esp_ota_mark_app_valid_cancel_rollback();
+        }
+        else
+        {
+            wake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        }
     }
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
     else
     {
-        wake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        wake(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
     }
+#endif // 0
 }
 
 void App::onTaskSleep_()
@@ -363,35 +386,47 @@ void App::onTaskSleep_()
     // Disable buttons
     sleep(&buttonArray_, pdMS_TO_TICKS(1000));
 
-    if (!rfComplianceEnabled_)
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
+    if (ulp_power_up_mode == 0)
+#endif // 0
     {
-        // Sleep Wi-Fi
-        sleep(&wirelessTask_, pdMS_TO_TICKS(5000));
-    
-        // Sleep UI
-        sleep(&uiTask_, pdMS_TO_TICKS(1000));
-        sleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-    
-        // Sleep storage handling
-        sleep(&settingsTask_, pdMS_TO_TICKS(1000));
+        if (!rfComplianceEnabled_)
+        {
+            // Sleep Wi-Fi
+            sleep(&wirelessTask_, pdMS_TO_TICKS(5000));
         
-        // Sleep SW update
-        sleep(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
+            // Sleep UI
+            sleep(&uiTask_, pdMS_TO_TICKS(1000));
+            sleep(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
+        
+            // Sleep storage handling
+            sleep(&settingsTask_, pdMS_TO_TICKS(1000));
+            
+            // Sleep SW update
+            sleep(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
 
-        // Delay a second or two to allow final beeper to play.
-        sleep(&beeperTask_, pdMS_TO_TICKS(7000));
+            // Delay a second or two to allow final beeper to play.
+            sleep(&beeperTask_, pdMS_TO_TICKS(7000));
 
-        // Sleep audio processing
-        sleep(&freedvTask_, pdMS_TO_TICKS(1000));
-        sleep(&audioMixer_, pdMS_TO_TICKS(3000));
+            // Sleep audio processing
+            sleep(&freedvTask_, pdMS_TO_TICKS(1000));
+            sleep(&audioMixer_, pdMS_TO_TICKS(3000));
+        }
+        else
+        {
+            sleep(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        }
+
+        sleep(&tlv320Device_, pdMS_TO_TICKS(2000));
     }
+#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
     else
     {
-        sleep(&rfComplianceTask_, pdMS_TO_TICKS(1000));
+        sleep(&fuelGaugeTask_, pdMS_TO_TICKS(2000));
     }
+#endif // 0
 
     // Sleep device drivers
-    sleep(&tlv320Device_, pdMS_TO_TICKS(2000));
     sleep(&ledArray_, pdMS_TO_TICKS(1000));
     sleep(&max17048_, pdMS_TO_TICKS(1000));
     
