@@ -37,8 +37,10 @@ AudioState::AudioState(IcomStateMachine* parent)
     , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20))
     , audioWatchdogTimer_(parent_->getTask(), std::bind(&AudioState::onAudioWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , audioSequenceNumber_(0)
+    , completingTransmit_(false)
 {
     parent->getTask()->registerMessageHandler(this, &AudioState::onRightChannelVolumeMessage_);
+    parent->getTask()->registerMessageHandler(this, &AudioState::onTransmitCompleteMessage_);
 
     for (int index = 0; index < 160; index++)
     {
@@ -150,6 +152,13 @@ void AudioState::onAudioOutTimer_()
 
         sendTracked_(packet);
     }
+    else if (completingTransmit_)
+    {
+        completingTransmit_ = false;
+        
+        StopTransmitMessage message;
+        parent_->getTask()->publish(&message);
+    }
 }
 
 void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message)
@@ -161,6 +170,13 @@ void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChan
     {
         audioMultiplier_[index] = multiplier;
     }
+}
+
+void AudioState::onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message)
+{
+    // Set completingTransmit_ to true. This will let us know to send the CI-V command to stop
+    // TX as soon as there's nothing left in the TX buffer.
+    completingTransmit_ = true;
 }
 
 }

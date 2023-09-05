@@ -20,6 +20,7 @@
 
 #include "task/DVTimer.h"
 #include "TrackedPacketState.h"
+#include "audio/FreeDVMessage.h"
 #include "storage/SettingsMessage.h"
 
 namespace ezdv
@@ -50,12 +51,14 @@ private:
     DVTimer audioOutTimer_;
     DVTimer audioWatchdogTimer_;
     uint16_t audioSequenceNumber_;
+    bool completingTransmit_;
     float audioMultiplier_[160];
 
     void onAudioOutTimer_();
     void onAudioWatchdog_();
     
     void onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message);
+    void onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message);
 };
 
 }

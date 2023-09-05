@@ -36,7 +36,7 @@ CIVState::CIVState(IcomStateMachine* parent)
     , civId_(0)
 {
     parent_->getTask()->registerMessageHandler(this, &CIVState::onFreeDVSetPTTStateMessage_);
-    parent_->getTask()->registerMessageHandler(this, &CIVState::onTransmitCompleteMessage_);
+    parent_->getTask()->registerMessageHandler(this, &CIVState::onStopTransmitMessage_);
 }
 
 void CIVState::onEnterState()
@@ -192,7 +192,7 @@ void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSe
     }
 }
 
-void CIVState::onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message)
+void CIVState::onStopTransmitMessage_(DVTask* origin, StopTransmitMessage* message)
 {
     if (civId_ > 0)
     {

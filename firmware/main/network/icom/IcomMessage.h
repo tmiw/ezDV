@@ -47,6 +47,7 @@ enum IcomMessageTypes
     SEND_PACKET = 4,
     RECEIVE_PACKET = 5,
     CLOSE_SOCKET = 6,
+    STOP_TRANSMIT = 7,
 };
 
 class IcomCIVAudioConnectionInfo : public DVTaskMessageBase<CIV_AUDIO_CONN_INFO, IcomCIVAudioConnectionInfo>
@@ -155,6 +156,15 @@ public:
         : DVTaskMessageBase<CLOSE_SOCKET, CloseSocketMessage>(ICOM_MESSAGE)
         {}
     virtual ~CloseSocketMessage() = default;
+};
+
+class StopTransmitMessage : public DVTaskMessageBase<STOP_TRANSMIT, StopTransmitMessage>
+{
+public:
+    StopTransmitMessage()
+        : DVTaskMessageBase<STOP_TRANSMIT, StopTransmitMessage>(ICOM_MESSAGE)
+        {}
+    virtual ~StopTransmitMessage() = default;
 };
 
 }

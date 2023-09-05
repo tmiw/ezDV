@@ -275,8 +275,22 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
 
     if (isTransmitting_ && !message->pttState)
     {
-        // Delay ending TX until we've processed what's remaining.
+        // Delay ending TX until we've processed what's remaining. This means we'll need
+        // to add a bit of silence at the end of the transmission as well depending on 
+        // the currently active mode.
         isEndingTransmit_ = true;
+
+        if (dv_ != nullptr)
+        {
+            auto codecInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL);
+            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
+            short* tmpBuffer = new short[numSpeechSamples];
+            assert(tmpBuffer != nullptr);
+
+            memset(tmpBuffer, 0, sizeof(short) * numSpeechSamples);
+            codec2_fifo_write(codecInputFifo, tmpBuffer, numSpeechSamples);
+            delete[] tmpBuffer;
+        }
     }
     else
     {
