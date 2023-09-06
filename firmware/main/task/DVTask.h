@@ -32,6 +32,8 @@
 
 #include "DVTaskControlMessage.h"
 
+using namespace std::placeholders;
+
 namespace ezdv
 {
 
@@ -264,13 +266,7 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
 template<typename MessageType, typename ObjType>
 DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*))
 {
-    auto fn = 
-        [taskObj, handler](DVTask* origin, MessageType* message)
-        {
-            (*taskObj.*handler)(origin, message);
-        };
-
-    return registerMessageHandler<MessageType>(fn);
+    return registerMessageHandler<MessageType>(std::bind(handler, taskObj, _1, _2));
 }
 
 template<typename MessageType>

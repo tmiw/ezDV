@@ -881,8 +881,10 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
     bool success = false;
     if (settingsValid)
     {
-        storage::SetWifiSettingsMessage request(enabled, mode, security, channel, ssid, password);
-        publish(&request);
+        ESP_LOGI(CURRENT_LOG_TAG, "Wi-Fi settings valid, requesting save");
+        
+        storage::SetWifiSettingsMessage* request = new storage::SetWifiSettingsMessage(enabled, mode, security, channel, ssid, password);
+        publish(request);
     
         auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
         if (response)
@@ -893,6 +895,8 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Timed out waiting for Wi-Fi settings to be saved");
         }
+
+        delete request;
     }
 
     // Send response

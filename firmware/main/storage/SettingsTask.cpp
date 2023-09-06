@@ -722,6 +722,7 @@ void SettingsTask::onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMess
 
 void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Saving Wi-Fi settings");
     wifiEnabled_ = enabled;
     wifiMode_ = mode;
     wifiSecurity_ = security;

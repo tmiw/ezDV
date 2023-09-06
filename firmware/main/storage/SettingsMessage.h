@@ -101,8 +101,14 @@ public:
         memset(ssid, 0, MAX_STR_SIZE);
         memset(password, 0, MAX_STR_SIZE);
         
-        strncpy(ssid, ssidProvided, MAX_STR_SIZE - 1);
-        strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+        if (ssidProvided != nullptr)
+        {
+            strncpy(ssid, ssidProvided, MAX_STR_SIZE - 1);
+        }
+        if (passwordProvided != nullptr)
+        {
+            strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+        }
     }
     
     virtual ~WifiSettingsMessageCommon() = default;
@@ -132,10 +138,19 @@ public:
         memset(host, 0, MAX_STR_SIZE);
         memset(username, 0, MAX_STR_SIZE);
         memset(password, 0, MAX_STR_SIZE);
-        
-        strncpy(host, hostProvided, MAX_STR_SIZE - 1);
-        strncpy(username, usernameProvided, MAX_STR_SIZE - 1);
-        strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+
+        if (hostProvided != nullptr)
+        {
+            strncpy(host, hostProvided, MAX_STR_SIZE - 1);
+        }
+        if (usernameProvided != nullptr)
+        {
+            strncpy(username, usernameProvided, MAX_STR_SIZE - 1);
+        }
+        if (passwordProvided != nullptr)
+        {
+            strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+        }
     }
     
     virtual ~RadioSettingsMessageCommon() = default;
@@ -194,10 +209,16 @@ public:
         : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
     { 
         memset(callsign, 0, sizeof(callsign));
-        strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
-        
+        if (callsignProvided != nullptr)
+        {
+            strncpy(callsign, callsignProvided, sizeof(callsign) - 1);
+        }
+
         memset(gridSquare, 0, sizeof(gridSquare));
-        strncpy(gridSquare, gridSquareProvided, sizeof(gridSquare) - 1);
+        if (gridSquareProvided != nullptr)
+        {
+            strncpy(gridSquare, gridSquareProvided, sizeof(gridSquare) - 1);
+        }
     }
     
     virtual ~ReportingSettingsMessageCommon() = default;

@@ -97,7 +97,14 @@ var updateRadioFormState = function()
             radioSelectBox.append(opt);
         });
         
-        $(".flex-radio-config").show();
+        if ($("#radioEnable").is(':checked'))
+        {
+            $(".flex-radio-config").show();
+        }
+        else
+        {
+            $(".flex-radio-config").hide();
+        }
     }
     else
     {
@@ -209,7 +216,7 @@ function wsConnect()
       }
       else if (json.type == "wifiSaved")
       {
-          $("wifiSave").show();
+          $("#wifiSave").show();
           $("#wifiSaveProgress").hide();
 
           if (json.success)
@@ -256,7 +263,7 @@ function wsConnect()
       }
       else if (json.type == "radioSaved")
       {
-          $("radioSave").show();
+          $("#radioSave").show();
           $("#radioSaveProgress").hide();
 
           if (json.success)
