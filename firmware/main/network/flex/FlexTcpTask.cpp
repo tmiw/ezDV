@@ -388,7 +388,7 @@ void FlexTcpTask::processCommand_(std::string& command)
                 sliceFrequencies_[sliceId] = rfFrequency->second;
 
                 // Report new frequency to any listening reporters
-                if (activeSlice_ >= 0)
+                if (activeSlice_ == sliceId)
                 {
                     // Frequency reported by Flex is in MHz but reporters expect
                     // it in Hz.
@@ -422,6 +422,13 @@ void FlexTcpTask::processCommand_(std::string& command)
                     {
                         ESP_LOGI(CURRENT_LOG_TAG, "Swtiching slice %d to FreeDV mode", sliceId);
                         
+                        if (activeSlice_ == -1)
+                        {
+                            // Don't enable reporting if we've already done so.
+                            EnableReportingMessage enableMessage;
+                            publish(&enableMessage);
+                        }
+
                         // User wants to use the waveform.
                         activeSlice_ = sliceId;
                         isLSB_ = mode->second == "FDVL";
@@ -433,9 +440,6 @@ void FlexTcpTask::processCommand_(std::string& command)
                         uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
                         ReportFrequencyChangeMessage freqChangeMessage(freqHz);
                         publish(&freqChangeMessage);
-
-                        EnableReportingMessage enableMessage;
-                        publish(&enableMessage);
                     }
                 }
                 else if (sliceId == activeSlice_)

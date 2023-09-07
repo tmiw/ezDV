@@ -171,6 +171,7 @@ void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio:
 
 void FreeDVReporterTask::onReportFrequencyChangeMessage_(DVTask* origin, ReportFrequencyChangeMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Got frequency update: %" PRIu64, message->frequencyHz);
     frequencyHz_ = message->frequencyHz;
     if (reportingEnabled_)
     {
@@ -180,6 +181,7 @@ void FreeDVReporterTask::onReportFrequencyChangeMessage_(DVTask* origin, ReportF
 
 void FreeDVReporterTask::onSetPTTState_(DVTask* origin, audio::FreeDVSetPTTStateMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Got PTT update: %d", message->pttState);
     pttState_ = message->pttState;
     if (reportingEnabled_)
     {
@@ -189,6 +191,7 @@ void FreeDVReporterTask::onSetPTTState_(DVTask* origin, audio::FreeDVSetPTTState
 
 void FreeDVReporterTask::onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Got mode update: %d", message->mode);
     freeDVMode_ = message->mode;
     if (reportingEnabled_)
     {
@@ -348,6 +351,7 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
 
 void FreeDVReporterTask::stopSocketIoConnection_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "stopping socket.io connection");
     char* engineIoDisconnectMessage = "1";
     esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
     esp_websocket_client_stop(reportingClientHandle_);
@@ -358,6 +362,8 @@ void FreeDVReporterTask::stopSocketIoConnection_()
 
 void FreeDVReporterTask::sendFrequencyUpdate_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Sending frequency update");
+
     cJSON* message = cJSON_CreateArray();
     assert(message != nullptr);
 
@@ -386,6 +392,8 @@ void FreeDVReporterTask::sendFrequencyUpdate_()
 
 void FreeDVReporterTask::sendTransmitStateUpdate_()
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Sending PTT update");
+
     cJSON* message = cJSON_CreateArray();
     assert(message != nullptr);
 
