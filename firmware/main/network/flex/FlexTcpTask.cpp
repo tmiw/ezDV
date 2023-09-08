@@ -208,6 +208,11 @@ void FlexTcpTask::connect_()
         // Report successful connection
         ezdv::network::RadioConnectionStatusMessage response(true);
         publish(&response);
+
+        // Get current FreeDV mode to ensure filters are set properly on
+        // SmartSDR connection.
+        audio::RequestGetFreeDVModeMessage requestGetFreeDVMode;
+        publish(&requestGetFreeDVMode);
     }
 }
 
