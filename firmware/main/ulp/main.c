@@ -50,6 +50,7 @@ int main (void)
             power_up_mode = 0;
             num_cycles_between_temp_checks = 0;
             ulp_riscv_wakeup_main_processor();
+            return 0;
         }
     }
     else
@@ -69,6 +70,7 @@ int main (void)
             num_cycles_between_temp_checks = 0;
             num_cycles_with_usb_gpio_on = 0;
             ulp_riscv_wakeup_main_processor();
+            return 0;
         }
     }
     else
