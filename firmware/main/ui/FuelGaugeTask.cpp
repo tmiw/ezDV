@@ -19,7 +19,6 @@
 #include <cmath>
 
 #include "FuelGaugeTask.h"
-#include "driver/LedMessage.h"
 
 #define CURRENT_LOG_TAG ("FuelGaugeTask")
 
@@ -33,11 +32,20 @@ namespace ezdv
 namespace ui
 {
 
+FuelGaugeTask::ChargeIndicatorConfiguration FuelGaugeTask::IndicatorConfig_[] = {
+    {0, 24, driver::SetLedStateMessage::LedLabel::NETWORK},
+    {25, 49, driver::SetLedStateMessage::LedLabel::OVERLOAD},
+    {50, 74, driver::SetLedStateMessage::LedLabel::SYNC},
+    {75, 99, driver::SetLedStateMessage::LedLabel::PTT},
+};
+
 FuelGaugeTask::FuelGaugeTask()
     : DVTask("FuelGaugeTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(1000))
     , blinkStateCtr_(0)
+    , sentRequest_(false)
 {
     registerMessageHandler(this, &FuelGaugeTask::onButtonLongPressedMessage_);
+    registerMessageHandler(this, &FuelGaugeTask::onButtonPressedMessage_);
     registerMessageHandler(this, &FuelGaugeTask::onBatteryStateMessage_);
 }
 
@@ -71,76 +79,57 @@ void FuelGaugeTask::onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLo
     }
 }
 
+void FuelGaugeTask::onButtonPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message)
+{
+    if (message->button == driver::ButtonLabel::USB_POWER_DETECT)
+    {
+        // We're unplugged, go back to sleep
+        rebootDevice = false;
+        StartSleeping();
+    }
+}
+
 void FuelGaugeTask::onTaskTick_()
 {
     // Request current battery state once a second to ensure we're still charging.
+    sentRequest_ = true;
     driver::RequestBatteryStateMessage message;
     publish(&message);
 }
 
 void FuelGaugeTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message)
 {
-    if (message->socChangeRate < 0)
+    // Ignore the unsolicited status messages to ensure that there aren't any glitches
+    // in the blinking.
+    if (!sentRequest_)
     {
-        // We're likely unplugged, go back to sleep
-        rebootDevice = false;
-        StartSleeping();
+        return;
+    }
+    sentRequest_ = false;
+    
+    for (int index = 0; index < NUM_LEDS; index++)
+    {
+        lightIndicator_(message->soc, &IndicatorConfig_[index]);
     }
 
+    blinkStateCtr_++;
+}
+
+void FuelGaugeTask::lightIndicator_(float chargeLevel, ChargeIndicatorConfiguration* config)
+{
     driver::SetLedStateMessage ledStateMessage;
-    ledStateMessage.led = driver::SetLedStateMessage::LedLabel::NETWORK;
-    if (message->soc >= 25)
-    {
-        ledStateMessage.ledState = true;
-    }
-    else
-    {
-        ledStateMessage.ledState = (blinkStateCtr_++) & 0x1;
-    }
-    publish(&ledStateMessage);
-
-    ledStateMessage.led = driver::SetLedStateMessage::LedLabel::SYNC;
-    if (message->soc >= 50)
-    {
-        ledStateMessage.ledState = true;
-    }
-    else if (message->soc > 25 && message->soc < 50)
-    {
-        ledStateMessage.ledState = (blinkStateCtr_++) & 0x1;
-    }
-    else
+    ledStateMessage.led = config->ledToLight;
+    if (chargeLevel < config->minimumPercentage)
     {
         ledStateMessage.ledState = false;
     }
-    publish(&ledStateMessage);
-
-    ledStateMessage.led = driver::SetLedStateMessage::LedLabel::OVERLOAD;
-    if (message->soc >= 75)
+    else if (chargeLevel >= config->minimumPercentage && chargeLevel <= config->maximumPercentage)
     {
-        ledStateMessage.ledState = true;
-    }
-    else if (message->soc > 50 && message->soc < 75)
-    {
-        ledStateMessage.ledState = (blinkStateCtr_++) & 0x1;
+        ledStateMessage.ledState = (blinkStateCtr_) & 0x1;
     }
     else
     {
-        ledStateMessage.ledState = false;
-    }
-    publish(&ledStateMessage);
-
-    ledStateMessage.led = driver::SetLedStateMessage::LedLabel::PTT;
-    if (message->soc >= 100)
-    {
         ledStateMessage.ledState = true;
-    }
-    else if (message->soc > 75 && message->soc < 100)
-    {
-        ledStateMessage.ledState = (blinkStateCtr_++) & 0x1;
-    }
-    else
-    {
-        ledStateMessage.ledState = false;
     }
     publish(&ledStateMessage);
 }

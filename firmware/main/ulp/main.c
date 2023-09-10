@@ -9,15 +9,16 @@
 #include "ulp_riscv_utils.h"
 #include "ulp_riscv_gpio.h"
 
-volatile int num_cycles_with_gpio_on;
+volatile int num_cycles_with_gpio_on = 0;
+volatile int num_cycles_with_usb_gpio_on = 0;
 
 // Power-up modes:
 // 0: normal bootup
 // 1: temperature check bootup
 // 2: fuel gauge mode
-volatile int power_up_mode;
+volatile int power_up_mode = 0;
 
-volatile int num_cycles_between_temp_checks;
+volatile int num_cycles_between_temp_checks = 0;
 
 #define TURN_ON_GPIO_NUM GPIO_NUM_5
 #define MIN_NUM_CYCLES_BOOTUP (10) /* based on wakeup period (100ms), 10 cycles should result in 1s required for wakeup. */
@@ -25,7 +26,7 @@ volatile int num_cycles_between_temp_checks;
 
 // Settings to allow detection of charging before booting
 // to fuel gauge mode.
-#define FUEL_GAUGE_INTERRUPT_GPIO_NUM 8
+#define FUEL_GAUGE_INTERRUPT_GPIO_NUM 0
 
 int main (void)
 {
@@ -38,7 +39,7 @@ int main (void)
     ulp_riscv_gpio_init(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
     ulp_riscv_gpio_input_enable(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
     ulp_riscv_gpio_output_disable(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
-    ulp_riscv_gpio_pullup(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
+    ulp_riscv_gpio_pullup_disable(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
     ulp_riscv_gpio_pulldown_disable(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
 
     if (!ulp_riscv_gpio_get_level(TURN_ON_GPIO_NUM))
@@ -54,25 +55,27 @@ int main (void)
     else
     {
         num_cycles_with_gpio_on = 0;
-        power_up_mode = 0;
-        num_cycles_between_temp_checks = 0;
     }
 
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    // The fuel gauge chip should only interrupt us in a few instances:
-    //     * Low SOC
-    //     * Percentage change
-    //     * Overvoltage/undervoltage
-    // Unfortunately we don't have I2C available in HW so we can't tell why
-    // unless we force boot. The main firmware should be able to determine
-    // whether we should show the battery gauge or just shut down again.
-    if (!ulp_riscv_gpio_get_level(FUEL_GAUGE_INTERRUPT_GPIO_NUM))
+    // GPIO0 has a resistor divider on the 5V rail intended to help us determine
+    // whether USB power exists. If this becomes 1 for more than 300ms (debounce),
+    // we should boot into battery gauge mode.
+    if (ulp_riscv_gpio_get_level(FUEL_GAUGE_INTERRUPT_GPIO_NUM))
     {
-        power_up_mode = 2;
-        num_cycles_between_temp_checks = 0;
-        ulp_riscv_wakeup_main_processor();
+        num_cycles_with_usb_gpio_on++;
+        if (num_cycles_with_usb_gpio_on >= 3)
+        {
+            power_up_mode = 2;
+            num_cycles_between_temp_checks = 0;
+            num_cycles_with_usb_gpio_on = 0;
+            ulp_riscv_wakeup_main_processor();
+        }
     }
-#endif // 0
+    else
+    {
+        num_cycles_with_usb_gpio_on = 0;
+        power_up_mode = 0;
+    }
 
     /* 
         Normally, temperature checks occur every minute to ensure accurate
@@ -88,6 +91,8 @@ int main (void)
     if (num_cycles_between_temp_checks >= MIN_NUM_CYCLES_TEMP_CHECK)
     {
         num_cycles_between_temp_checks = 0;
+        num_cycles_with_usb_gpio_on = 0;
+        num_cycles_with_gpio_on = 0;
         power_up_mode = 1;
         ulp_riscv_wakeup_main_processor();
     }

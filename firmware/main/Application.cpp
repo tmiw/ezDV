@@ -117,6 +117,14 @@ App::App()
 
 void App::enablePeripheralPower_()
 {
+    // Reset GPIO0 to prevent glitches
+    rtc_gpio_init(GPIO_NUM_0);
+    rtc_gpio_set_direction(GPIO_NUM_0, RTC_GPIO_MODE_INPUT_ONLY);
+    rtc_gpio_set_direction_in_sleep(GPIO_NUM_0, RTC_GPIO_MODE_INPUT_ONLY);
+    rtc_gpio_pulldown_dis(GPIO_NUM_0);
+    rtc_gpio_pullup_dis(GPIO_NUM_0);
+    rtc_gpio_hold_en(GPIO_NUM_0);
+    
     // TLV320 related GPIOs need to be isolated prior to enabling
     // peripheral power. If we don't do this, the following happens
     // the first time after waking up from deep sleep:
@@ -160,6 +168,10 @@ void App::enablePeripheralPower_()
         gpio_reset_pin(gpio);
     }
     
+    rtc_gpio_hold_dis(GPIO_NUM_0);
+    rtc_gpio_deinit(GPIO_NUM_0);
+    gpio_reset_pin(GPIO_NUM_0);
+    
     // Sleep for GPIO reattach to take effect.
     vTaskDelay(pdMS_TO_TICKS(10));
 }
@@ -174,6 +186,13 @@ void App::enterDeepSleep_()
     rtc_gpio_pulldown_dis(GPIO_NUM_5);
     rtc_gpio_pullup_en(GPIO_NUM_5);
     rtc_gpio_hold_en(GPIO_NUM_5);
+    
+    /* Initialize battery detect GPIO (GPIO0) as RTC IO, enable input, enable pulldown */
+    rtc_gpio_init(GPIO_NUM_0);
+    rtc_gpio_set_direction(GPIO_NUM_0, RTC_GPIO_MODE_INPUT_ONLY);
+    rtc_gpio_pulldown_dis(GPIO_NUM_0);
+    rtc_gpio_pullup_dis(GPIO_NUM_0);
+    rtc_gpio_hold_en(GPIO_NUM_0);
     
     // Isolate TLV320 related GPIOs to prevent issues when coming back from sleep
     // (see app_start() for explanation).
@@ -207,11 +226,6 @@ void App::enterDeepSleep_()
 
     esp_err_t err = ulp_riscv_load_binary(ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start));
     ESP_ERROR_CHECK(err);
-
-    /* Start the ULV program */
-    ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 100 * 1000)); // 100 ms * (1000 us/ms)
-    err = ulp_riscv_run();
-    ESP_ERROR_CHECK(err);
     
     // Halt application
     ESP_LOGI(CURRENT_LOG_TAG, "Halting system");
@@ -227,6 +241,11 @@ void App::enterDeepSleep_()
     }
     else
     {
+        /* Start the ULV program */
+        ESP_ERROR_CHECK(ulp_set_wakeup_period(0, 100 * 1000)); // 100 ms * (1000 us/ms)
+        err = ulp_riscv_run();
+        ESP_ERROR_CHECK(err);
+        
         ESP_ERROR_CHECK(esp_sleep_enable_ulp_wakeup());
         esp_deep_sleep_start();    
     }
@@ -251,6 +270,7 @@ void App::onTaskStart_()
     // Initialize LED array early as we want all the LEDs lit during the boot process.
     start(&ledArray_, pdMS_TO_TICKS(1000));
 
+    if (ulp_power_up_mode != 2)
     {
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
         ledArray_.post(&msg);
@@ -264,9 +284,12 @@ void App::onTaskStart_()
 
     // Start device drivers
     start(&buttonArray_, pdMS_TO_TICKS(1000));
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    if (ulp_power_up_mode == 0)
-#endif // 0
+
+    if (ulp_power_up_mode == 2)
+    {
+        start(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
+    }
+    else
     {
         start(&tlv320Device_, pdMS_TO_TICKS(10000));
     
@@ -296,12 +319,6 @@ void App::onTaskStart_()
             start(&rfComplianceTask_, pdMS_TO_TICKS(1000));
         }
     }
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    else
-    {
-        start(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
-    }
-#endif // 0
 }
 
 void App::onTaskWake_()
@@ -323,6 +340,7 @@ void App::onTaskWake_()
     // Initialize LED array early as we want all the LEDs lit during the boot process.
     wake(&ledArray_, pdMS_TO_TICKS(1000));
 
+    if (ulp_power_up_mode != 2)
     {
         ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
         ledArray_.post(&msg);
@@ -337,9 +355,11 @@ void App::onTaskWake_()
     // Wake up device drivers
     wake(&buttonArray_, pdMS_TO_TICKS(1000));
 
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    if (ulp_power_up_mode == 0)
-#endif // 0
+    if (ulp_power_up_mode == 2)
+    {
+        wake(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
+    }
+    else
     {
         wake(&tlv320Device_, pdMS_TO_TICKS(10000));
 
@@ -371,12 +391,6 @@ void App::onTaskWake_()
             wake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
         }
     }
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    else
-    {
-        wake(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
-    }
-#endif // 0
 }
 
 void App::onTaskSleep_()
@@ -386,9 +400,11 @@ void App::onTaskSleep_()
     // Disable buttons
     sleep(&buttonArray_, pdMS_TO_TICKS(1000));
 
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    if (ulp_power_up_mode == 0)
-#endif // 0
+    if (ulp_power_up_mode == 2)
+    {
+        sleep(&fuelGaugeTask_, pdMS_TO_TICKS(2000));
+    }
+    else
     {
         if (!rfComplianceEnabled_)
         {
@@ -419,12 +435,6 @@ void App::onTaskSleep_()
 
         sleep(&tlv320Device_, pdMS_TO_TICKS(2000));
     }
-#if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
-    else
-    {
-        sleep(&fuelGaugeTask_, pdMS_TO_TICKS(2000));
-    }
-#endif // 0
 
     // Sleep device drivers
     sleep(&ledArray_, pdMS_TO_TICKS(1000));
@@ -465,6 +475,9 @@ extern "C" void app_main()
 
     /* not a wakeup from ULP, load the firmware */
     ESP_LOGI(CURRENT_LOG_TAG, "Wakeup reason: %d", cause);
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "Power up mode: %" PRIu32, ulp_power_up_mode);
+    
     /*if (cause != ESP_SLEEP_WAKEUP_ULP) {
         // Perform initial startup actions because we may not be fully ready yet
         app->start();

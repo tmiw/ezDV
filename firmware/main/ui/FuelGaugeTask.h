@@ -22,6 +22,7 @@
 #include "driver/BatteryMessage.h"
 #include "driver/ButtonMessage.h"
 #include "driver/LedArray.h"
+#include "driver/LedMessage.h"
 
 namespace ezdv
 {
@@ -45,13 +46,31 @@ protected:
     virtual void onTaskTick_() override;
 
 private:
+    enum { NUM_LEDS = 4 };
+    
+    struct ChargeIndicatorConfiguration
+    {
+        float minimumPercentage;
+        float maximumPercentage;
+        driver::SetLedStateMessage::LedLabel ledToLight;
+    };
+    
     int blinkStateCtr_;
+    bool sentRequest_;
 
     // Button handling
     void onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message);
 
+    // USB unplug detection
+    void onButtonPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
+    
     // Fuel gauge handling
     void onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message);
+    
+    // Helper to enable correct LED.
+    void lightIndicator_(float chargeLevel, ChargeIndicatorConfiguration* config);
+    
+    static ChargeIndicatorConfiguration IndicatorConfig_[];
 };
 
 }

@@ -28,6 +28,8 @@
 #define GPIO_VOL_UP_BUTTON GPIO_NUM_6
 #define GPIO_VOL_DOWN_BUTTON GPIO_NUM_7
 
+#define GPIO_USB_POWER_DETECT GPIO_NUM_0
+
 namespace ezdv
 {
 
@@ -57,6 +59,7 @@ private:
     InputGPIO<GPIO_MODE_BUTTON> modeButton_;
     InputGPIO<GPIO_VOL_UP_BUTTON> volUpButton_;
     InputGPIO<GPIO_VOL_DOWN_BUTTON> volDownButton_;
+    InputGPIO<GPIO_USB_POWER_DETECT> usbPower_;
 
     void handleButton_(ButtonLabel label, bool val);
     void handleLongPressButton_(ButtonLabel label);
