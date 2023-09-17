@@ -238,6 +238,51 @@ void App::onTaskStart_()
         msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
         ledArray_.post(&msg);
     }
+    else
+    {
+        // Turn on LEDs from bottom to top and then turn off from top to bottom
+        // to indicate that we're booting into battery charge mode.
+        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::NETWORK, true);
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
+        msg.ledState = false;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::SYNC;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
+        ledArray_.post(&msg);
+        
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
 
     // Start device drivers
     start(&buttonArray_, pdMS_TO_TICKS(1000));
