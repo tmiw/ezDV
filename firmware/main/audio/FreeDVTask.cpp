@@ -33,7 +33,7 @@ namespace audio
 {
 
 FreeDVTask::FreeDVTask()
-    : DVTask("FreeDVTask", 10 /* TBD */, 64000, 1, 16, pdMS_TO_TICKS(10))
+    : DVTask("FreeDVTask", 10 /* TBD */, 64000, /*1*/ tskNO_AFFINITY, 16, pdMS_TO_TICKS(10))
     , AudioInput(2, 2)
     , dv_(nullptr)
     , rText_(nullptr)
