@@ -60,7 +60,7 @@ namespace driver
 {
 
 MAX17048::MAX17048(I2CDevice* i2cDevice)
-    : DVTask("MAX17048", 10 /* TBD */, 2870, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10000))
+    : DVTask("MAX17048", 10 /* TBD */, 2870, tskNO_AFFINITY, 10, pdMS_TO_TICKS(60000))
     , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , enabled_(false)
@@ -166,35 +166,40 @@ void MAX17048::onTaskSleep_()
 
 void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryStateMessage* reqMessage)
 {
+    uint16_t config = 0;
+    bool success = true;
+        
     // Read current temperature sensor value (in degC) and update RCOMP
     // based on formula from the datasheet. Note that the ESP32 internal
     // temperature sensor will read higher than ambient a lot of the time,
-    // but it's likely better to underestimate capacity than overestimate. TBD.
-    uint16_t config = 0;
-    bool success = readInt16Reg_(REG_CONFIG, &config);
-    assert(success);
+    // but it's likely better to underestimate capacity than overestimate.
+    if (reqMessage->updateTemp)
+    {
+        success = readInt16Reg_(REG_CONFIG, &config);
+        assert(success);
     
-    auto degC = temperatureFromADC_();
+        auto degC = temperatureFromADC_();
             
-    int rcomp = 0x97;
-    if (degC > 20)
-    {
-        rcomp += (degC - 20) * (-0.5); // TempCoUp default
+        int rcomp = 0x97;
+        if (degC > 20)
+        {
+            rcomp += (degC - 20) * (-0.5); // TempCoUp default
+        }
+        else
+        {
+            rcomp += (degC - 20) * (-5.0); // TempCoDown default
+        }
+    
+        if (rcomp > 255) rcomp = 255;
+        else if (rcomp < 0) rcomp = 0;
+    
+        ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
+    
+        config &= 0x00FF;
+        config = ((uint8_t)rcomp << 8) | config;
+        success = writeInt16Reg_(REG_CONFIG, config);
+        assert(success);
     }
-    else
-    {
-        rcomp += (degC - 20) * (-5.0); // TempCoDown default
-    }
-    
-    if (rcomp > 255) rcomp = 255;
-    else if (rcomp < 0) rcomp = 0;
-    
-    ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
-    
-    config &= 0x00FF;
-    config = ((uint8_t)rcomp << 8) | config;
-    success = writeInt16Reg_(REG_CONFIG, config);
-    assert(success);
     
     // Retrieve voltage, SOC and rate of change
     uint16_t voltage = 0;
@@ -242,7 +247,7 @@ void MAX17048::onTaskTick_()
 {
     if (enabled_)
     {
-        RequestBatteryStateMessage message;
+        RequestBatteryStateMessage message(true);
         post(&message);
     }
 }

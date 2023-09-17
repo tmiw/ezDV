@@ -68,10 +68,14 @@ public:
 class RequestBatteryStateMessage : public DVTaskMessageBase<REQUEST_BATTERY_STATE, RequestBatteryStateMessage>
 {
 public:
-    RequestBatteryStateMessage() : DVTaskMessageBase<REQUEST_BATTERY_STATE, RequestBatteryStateMessage>(BATTERY_MESSAGE)
+    RequestBatteryStateMessage(bool updateTempRequested = false) 
+        : DVTaskMessageBase<REQUEST_BATTERY_STATE, RequestBatteryStateMessage>(BATTERY_MESSAGE)
+        , updateTemp(updateTempRequested)
     {}
 
     virtual ~RequestBatteryStateMessage() = default;
+    
+    bool updateTemp;
 };
 
 }
