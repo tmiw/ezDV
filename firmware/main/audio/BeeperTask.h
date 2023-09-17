@@ -45,7 +45,6 @@ protected:
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message) override;
 
     virtual void onTaskStart_() override;
-    virtual void onTaskWake_() override;
     virtual void onTaskSleep_() override;
 
 private:

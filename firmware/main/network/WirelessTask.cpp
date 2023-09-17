@@ -143,11 +143,6 @@ void WirelessTask::onTaskStart_()
     isAwake_ = true;
 }
 
-void WirelessTask::onTaskWake_()
-{
-    isAwake_ = true;
-}
-
 void WirelessTask::onTaskSleep_()
 {
     isAwake_ = false;

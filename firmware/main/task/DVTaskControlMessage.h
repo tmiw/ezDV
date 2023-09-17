@@ -35,15 +35,12 @@ namespace task
 enum DVTaskControlMessageTypes
 {
     TASK_START = 1,
-    TASK_WAKE = 2,
-    TASK_SLEEP = 3,
-    TASK_SHUTDOWN = 4, // Not currently used, just here for the future
+    TASK_SLEEP = 2,
 
-    TASK_STARTED = 5,
-    TASK_AWAKE = 6,
-    TASK_ASLEEP = 7,
+    TASK_STARTED = 3,
+    TASK_ASLEEP = 4,
     
-    TASK_QUEUE_MSG = 8, // special message so that we can defer sending control messages until waitFor executes
+    TASK_QUEUE_MSG = 5, // special message so that we can defer sending control messages until waitFor executes
                         // or when current handler finishes
 };
 
@@ -57,11 +54,9 @@ public:
 };
 
 using TaskStartMessage = TaskControlCommon<TASK_START>;
-using TaskWakeMessage = TaskControlCommon<TASK_WAKE>;
 using TaskSleepMessage = TaskControlCommon<TASK_SLEEP>;
 
 using TaskStartedMessage = TaskControlCommon<TASK_STARTED>;
-using TaskAwakeMessage = TaskControlCommon<TASK_AWAKE>;
 using TaskAsleepMessage = TaskControlCommon<TASK_ASLEEP>;
 
 }

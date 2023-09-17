@@ -321,78 +321,6 @@ void App::onTaskStart_()
     }
 }
 
-void App::onTaskWake_()
-{
-    ESP_LOGI(CURRENT_LOG_TAG, "onTaskWake_");
-    
-    enablePeripheralPower_();
-
-    // The battery driver should be initialized early in case we
-    // need to immediately sleep due to low power.
-    wake(&max17048_, pdMS_TO_TICKS(1000));
-
-    if (max17048_.isLowSOC() || ulp_power_up_mode == 1)
-    {
-        ulp_power_up_mode = 0;
-        enterDeepSleep_();
-    }
-    
-    // Initialize LED array early as we want all the LEDs lit during the boot process.
-    wake(&ledArray_, pdMS_TO_TICKS(1000));
-
-    if (ulp_power_up_mode != 2)
-    {
-        ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, true);
-        ledArray_.post(&msg);
-        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::OVERLOAD;
-        ledArray_.post(&msg);
-        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::PTT;
-        ledArray_.post(&msg);
-        msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
-        ledArray_.post(&msg);
-    }
-
-    // Wake up device drivers
-    wake(&buttonArray_, pdMS_TO_TICKS(1000));
-
-    if (ulp_power_up_mode == 2)
-    {
-        wake(&fuelGaugeTask_, pdMS_TO_TICKS(1000));
-    }
-    else
-    {
-        wake(&tlv320Device_, pdMS_TO_TICKS(10000));
-
-        if (!rfComplianceEnabled_)
-        {
-            // Wake audio processing
-            wake(&freedvTask_, pdMS_TO_TICKS(1000));
-            wake(&audioMixer_, pdMS_TO_TICKS(1000));
-            wake(&beeperTask_, pdMS_TO_TICKS(1000));
-
-            // Wake UI
-            wake(&voiceKeyerTask_, pdMS_TO_TICKS(1000));
-            wake(&uiTask_, pdMS_TO_TICKS(1000));
-        
-            // Wake Wi-Fi
-            wake(&wirelessTask_, pdMS_TO_TICKS(5000));
-
-            // Wake storage handling
-            wake(&settingsTask_, pdMS_TO_TICKS(1000));
-
-            // Wake SW update handling
-            wake(&softwareUpdateTask_, pdMS_TO_TICKS(1000));
-            
-            // Mark boot as successful, no need to rollback.
-            esp_ota_mark_app_valid_cancel_rollback();
-        }
-        else
-        {
-            wake(&rfComplianceTask_, pdMS_TO_TICKS(1000));
-        }
-    }
-}
-
 void App::onTaskSleep_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "onTaskSleep_");
@@ -490,7 +418,7 @@ extern "C" void app_main()
     else*/
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Woken up via ULP, booting...");
-        app->wake();
+        app->start();
     }
     
 #if 0

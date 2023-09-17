@@ -74,11 +74,6 @@ void FlexTcpTask::onTaskStart_()
     // nothing required, just waiting for a connect request.
 }
 
-void FlexTcpTask::onTaskWake_()
-{
-    // nothing required, just waiting for a connect request.
-}
-
 void FlexTcpTask::onTaskSleep_()
 {
     // empty, we have custom actions for sleep.

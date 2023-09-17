@@ -59,11 +59,6 @@ void FuelGaugeTask::onTaskStart_()
     // empty
 }
 
-void FuelGaugeTask::onTaskWake_()
-{
-    // empty
-}
-
 void FuelGaugeTask::onTaskSleep_()
 {
     // empty

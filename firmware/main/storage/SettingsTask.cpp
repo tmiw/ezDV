@@ -146,11 +146,6 @@ void SettingsTask::onTaskStart_()
     loadAllSettings_();
 }
 
-void SettingsTask::onTaskWake_()
-{
-    onTaskStart_();
-}
-
 void SettingsTask::onTaskSleep_()
 {
     // none

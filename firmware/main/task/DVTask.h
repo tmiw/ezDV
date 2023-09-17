@@ -61,9 +61,6 @@ public:
     /// @brief Commands the task to perform startup actions.
     void start();
 
-    /// @brief Commands the task to perform wakeup actions.
-    void wake();
-
     /// @brief Commands the task to perform sleep actions.
     void sleep();
 
@@ -117,11 +114,9 @@ public:
     static void Initialize();
 protected:
     virtual void onTaskStart_(DVTask* origin, TaskStartMessage* message);
-    virtual void onTaskWake_(DVTask* origin, TaskWakeMessage* message);
     virtual void onTaskSleep_(DVTask* origin, TaskSleepMessage* message);
     
     virtual void onTaskStart_() = 0;
-    virtual void onTaskWake_() = 0;
     virtual void onTaskSleep_() = 0;
 
     /// @brief Task to unconditionally execute each time through the loop. Optional.
@@ -131,11 +126,6 @@ protected:
     /// @param taskToStart The task to start.
     /// @param ticksToWait The maximum amount of time to wait.
     void start(DVTask* taskToStart, TickType_t ticksToWait = 0);
-
-    /// @brief Commands the task to perform wakeup actions.
-    /// @param taskToWake The task to wake.
-    /// @param ticksToWait The maximum amount of time to wait.
-    void wake(DVTask* taskToWake, TickType_t ticksToWait = 0);
 
     /// @brief Commands the task to perform sleep actions.
     /// @param taskToSleep The task to sleep.

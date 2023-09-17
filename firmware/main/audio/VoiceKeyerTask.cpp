@@ -76,12 +76,6 @@ void VoiceKeyerTask::onTaskStart_()
         ));
 }
 
-void VoiceKeyerTask::onTaskWake_()
-{
-    // Same as start.
-    onTaskStart_();
-}
-
 void VoiceKeyerTask::onTaskSleep_()
 {
     if (currentState_ != IDLE)

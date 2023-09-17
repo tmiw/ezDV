@@ -102,11 +102,6 @@ void BeeperTask::onTaskStart_()
     deferShutdown_ = false;
 }
 
-void BeeperTask::onTaskWake_()
-{
-    deferShutdown_ = false;
-}
-
 void BeeperTask::onTaskSleep_()
 {
     beeperTimer_.stop();

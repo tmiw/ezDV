@@ -67,11 +67,6 @@ void IcomSocketTask::onTaskStart_()
     // empty, must wait for outside to tell us to connect
 }
 
-void IcomSocketTask::onTaskWake_()
-{
-    // empty
-}
-
 void IcomSocketTask::onTaskSleep_()
 {
     // empty

@@ -70,11 +70,6 @@ void FreeDVTask::onTaskStart_()
     isActive_ = true;
 }
 
-void FreeDVTask::onTaskWake_()
-{
-    onTaskStart_();
-}
-
 void FreeDVTask::onTaskSleep_()
 {
     isActive_ = false;

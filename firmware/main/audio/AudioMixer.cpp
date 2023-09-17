@@ -44,11 +44,6 @@ void AudioMixer::onTaskStart_()
     mixerTick_.start();
 }
 
-void AudioMixer::onTaskWake_()
-{
-    mixerTick_.start();
-}
-
 void AudioMixer::onTaskSleep_()
 {
     mixerTick_.stop();

@@ -134,12 +134,6 @@ void MAX17048::onTaskStart_()
     isStarting_ = false;
 }
 
-void MAX17048::onTaskWake_()
-{
-    // Doing the same stuff as start.
-    onTaskStart_();
-}
-
 void MAX17048::onTaskSleep_()
 {
     // Stop ADC

@@ -105,14 +105,6 @@ void TLV320::onTaskStart_()
     ESP_LOGI(CURRENT_LOG_TAG, "all audio codec config complete");
 }
 
-void TLV320::onTaskWake_()
-{
-    // TBD: investigate power consumption of using TLV320 sleep
-    // and wakeup vs. simply hard resetting and forcing full
-    // reinitialization.
-    onTaskStart_();
-}
-
 void TLV320::onTaskSleep_()
 {
     // Stop reading from I2S.
@@ -123,9 +115,6 @@ void TLV320::onTaskSleep_()
     i2sRxDevice_ = nullptr;
     i2sTxDevice_ = nullptr;
 
-    // TBD: investigate power consumption of using TLV320 sleep
-    // and wakeup vs. simply hard resetting and forcing full
-    // reinitialization.
     tlv320HardReset_();
 }
 

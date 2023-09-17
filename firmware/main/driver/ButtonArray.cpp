@@ -69,12 +69,6 @@ void ButtonArray::onTaskStart_()
     usbPower_.enableInterrupt(true);
 }
 
-void ButtonArray::onTaskWake_()
-{
-    // Use same actions as start.
-    onTaskStart_();
-}
-
 void ButtonArray::onTaskSleep_()
 {
     pttButton_.enableInterrupt(false);

@@ -86,11 +86,6 @@ void FlexVitaTask::onTaskStart_()
     openSocket_();
 }
 
-void FlexVitaTask::onTaskWake_()
-{
-    openSocket_();
-}
-
 void FlexVitaTask::onTaskSleep_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Sleeping task");

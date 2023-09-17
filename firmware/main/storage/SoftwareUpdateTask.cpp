@@ -54,12 +54,6 @@ void SoftwareUpdateTask::onTaskStart_()
     uzlib_init();
 }
 
-void SoftwareUpdateTask::onTaskWake_()
-{
-    // Same as start.
-    onTaskStart_();
-}
-
 void SoftwareUpdateTask::onTaskSleep_()
 {
     if (updateThread_.joinable())

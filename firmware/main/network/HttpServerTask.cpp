@@ -485,11 +485,6 @@ void HttpServerTask::onTaskStart_()
     }
 }
 
-void HttpServerTask::onTaskWake_()
-{
-    // no specific wake tasks, only start/stop supported
-}
-
 void HttpServerTask::onTaskSleep_()
 {
     if (isRunning_)

@@ -53,11 +53,6 @@ void LedArray::onTaskStart_()
     // empty
 }
 
-void LedArray::onTaskWake_()
-{
-    // empty
-}
-
 void LedArray::onTaskSleep_()
 {
     // empty

@@ -51,7 +51,6 @@ DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStac
 {
     // Register task start/wake/sleep handlers.
     registerMessageHandler(this, &DVTask::onTaskStart_);
-    registerMessageHandler(this, &DVTask::onTaskWake_);
     registerMessageHandler(this, &DVTask::onTaskSleep_);
     registerMessageHandler(this, &DVTask::onTaskQueueMessage_);
 }
@@ -72,14 +71,6 @@ void DVTask::start()
     startTask_();
     
     TaskStartMessage message;
-    post(&message);
-}
-
-void DVTask::wake()
-{
-    startTask_();
-    
-    TaskWakeMessage message;
     post(&message);
 }
 
@@ -106,26 +97,6 @@ void DVTask::start(DVTask* taskToStart, TickType_t ticksToWait)
     else
     {
         post(&startMessage);
-    }
-}
-
-void DVTask::wake(DVTask* taskToWake, TickType_t ticksToWait)
-{
-    TaskWakeMessage wakeMessage;
-    
-    taskToWake->startTask_();
-    
-    if (ticksToWait > 0)
-    {
-        auto entry = createMessageEntry_(this, &wakeMessage);
-        TaskQueueMessage message(taskToWake, entry);
-        post(&message);
-        
-        waitForOurs_<TaskAwakeMessage>(taskToWake, ticksToWait);
-    }
-    else
-    {
-        post(&wakeMessage);
     }
 }
 
@@ -286,17 +257,6 @@ void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_.c_str());
 
     TaskStartedMessage result;
-    publish(&result);
-}
-
-void DVTask::onTaskWake_(DVTask* origin, TaskWakeMessage* message)
-{    
-    vTaskDelay(pdMS_TO_TICKS(10));
-    onTaskWake_();
-
-    ESP_LOGI(CURRENT_LOG_TAG, "Task %s awake", taskName_.c_str());
-
-    TaskAwakeMessage result;
     publish(&result);
 }
 

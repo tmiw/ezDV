@@ -95,11 +95,6 @@ UserInterfaceTask::~UserInterfaceTask()
 void UserInterfaceTask::onTaskStart_()
 {
     isActive_ = true;
-}
-
-void UserInterfaceTask::onTaskWake_()
-{
-    isActive_ = true;
 
     // Disable all LEDs as we're fully up now.
     ezdv::driver::SetLedStateMessage msg(ezdv::driver::SetLedStateMessage::LedLabel::SYNC, false);

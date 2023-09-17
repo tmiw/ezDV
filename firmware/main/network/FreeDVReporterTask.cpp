@@ -79,12 +79,6 @@ void FreeDVReporterTask::onTaskStart_()
     publish(&modeRequest);
 }
 
-void FreeDVReporterTask::onTaskWake_()
-{
-    // Same as start.
-    onTaskStart_();
-}
-
 void FreeDVReporterTask::onTaskSleep_()
 {
     if (reportingEnabled_)

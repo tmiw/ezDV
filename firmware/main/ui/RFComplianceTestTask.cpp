@@ -83,11 +83,6 @@ RfComplianceTestTask::~RfComplianceTestTask()
 void RfComplianceTestTask::onTaskStart_()
 {
     isActive_ = true;
-}
-
-void RfComplianceTestTask::onTaskWake_()
-{
-    isActive_ = true;
     
     // Enable all LEDs with 50% duty cycle
     storage::LedBrightnessSettingsMessage brightnessMessage;
