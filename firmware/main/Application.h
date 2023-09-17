@@ -61,27 +61,29 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
-    audio::AudioMixer audioMixer_;
-    audio::BeeperTask beeperTask_;
-    audio::FreeDVTask freedvTask_;
+    audio::AudioMixer* audioMixer_;
+    audio::BeeperTask* beeperTask_;
+    audio::FreeDVTask* freedvTask_;
     driver::ButtonArray buttonArray_;
     driver::I2CDevice i2cDevice_;
     driver::LedArray ledArray_;
     driver::MAX17048 max17048_;
-    driver::TLV320 tlv320Device_;
-    network::WirelessTask wirelessTask_;
-    storage::SettingsTask settingsTask_;
-    storage::SoftwareUpdateTask softwareUpdateTask_;
-    ui::UserInterfaceTask uiTask_;
-    ui::RfComplianceTestTask rfComplianceTask_;
-    ui::FuelGaugeTask fuelGaugeTask_;
-    audio::VoiceKeyerTask voiceKeyerTask_;
+    driver::TLV320* tlv320Device_;
+    network::WirelessTask* wirelessTask_;
+    storage::SettingsTask* settingsTask_;
+    storage::SoftwareUpdateTask* softwareUpdateTask_;
+    ui::UserInterfaceTask* uiTask_;
+    ui::RfComplianceTestTask* rfComplianceTask_;
+    ui::FuelGaugeTask* fuelGaugeTask_;
+    audio::VoiceKeyerTask* voiceKeyerTask_;
     
     bool rfComplianceEnabled_;
+    bool wifiOverrideEnabled_;
 
     void enablePeripheralPower_();
     void enterDeepSleep_();
     
+    void checkOverrides_();
 };
 
 }
