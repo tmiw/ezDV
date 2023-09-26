@@ -18,7 +18,7 @@
 #include <cstring>
 #include <cmath>
 
-#include "RfComplianceTestTask.h"
+#include "RFComplianceTestTask.h"
 #include "driver/LedMessage.h"
 
 #define CURRENT_LOG_TAG ("RfComplianceTestTask")
