@@ -43,6 +43,7 @@ FuelGaugeTask::FuelGaugeTask()
     : DVTask("FuelGaugeTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(1000))
     , blinkStateCtr_(0)
     , sentRequest_(false)
+    , socChangeRate_(0)
 {
     registerMessageHandler(this, &FuelGaugeTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &FuelGaugeTask::onButtonPressedMessage_);
@@ -101,7 +102,11 @@ void FuelGaugeTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateM
         return;
     }
     sentRequest_ = false;
-    
+
+    // Store off charging rate so we don't unnecessarily blink when charging
+    // is complete.
+    socChangeRate_ = message->socChangeRate;
+
     for (int index = 0; index < NUM_LEDS; index++)
     {
         lightIndicator_(message->soc, &IndicatorConfig_[index]);
@@ -118,7 +123,8 @@ void FuelGaugeTask::lightIndicator_(float chargeLevel, ChargeIndicatorConfigurat
     {
         ledStateMessage.ledState = false;
     }
-    else if (chargeLevel >= config->minimumPercentage && chargeLevel <= config->maximumPercentage)
+    else if (socChangeRate_ > 0 && 
+             chargeLevel >= config->minimumPercentage && chargeLevel <= config->maximumPercentage)
     {
         ledStateMessage.ledState = (blinkStateCtr_) & 0x1;
     }
