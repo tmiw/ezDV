@@ -2,45 +2,21 @@
 $fa = 1;
 $fs = 0.4;
 
-/*
-// Outside case dimensions
-width = 72.64;
-height = 87.38;
-caseThickness = 1;
-totalHeight = 18;
+// BEGIN configuration
 
-// Locations of mounting hole centers
-mountingHoleCenters = [
-    [ 4.32, 4.32 ],
-    [ 68.58, 4.57 ],
-    [ 4.32, 83.31 ],
-    [ 68.58, 83.31 ]
-];
-
-// M3 flat screw
-mountingHoleDiameter = 3;
-mountngHoleHeadDiameter = 5.45;
-
-difference() {
-    // Overall area
-    cube([width + caseThickness, height + caseThickness, totalHeight - 1]);
-    
-    // Subtract inner case volume
-    translate([caseThickness, caseThickness, caseThickness]) cube([width - caseThickness*2, height - caseThickness*2, totalHeight - 1]);
-    
-    // Subtract mounting holes
-    for (holeLocation = mountingHoleCenters) {
-        translate([holeLocation.x + caseThickness, holeLocation.y + caseThickness, -0.1]) cylinder(caseThickness + 0.2, d1 = mountngHoleHeadDiameter, d2 = mountingHoleDiameter);
-    }
-}
-*/
+// Whether to print a taller enclosure to fit e.g. pin headers.
+// Note: this weirdly has to be above the include line for some reason.
+printTallerEnclosure = false;
 
 include <../library/YAPP_Box/library/YAPPgenerator_v14.scad>
 
+// Which sides to print. Base = bottom, lid = top.
+// One or the other can be disabled to print on smaller print beds.
 printBaseShell      = false;
 printLidShell       = true;
 
-// Edit these parameters for your own board dimensions
+// END configuration
+
 wallThickness       = 2.0;
 basePlaneThickness  = 2.0;
 lidPlaneThickness   = 1.0;
@@ -49,7 +25,9 @@ lidPlaneThickness   = 1.0;
 //                     + baseWallHeight + lidWallHeight
 
 baseWallHeight      = 14.5;
-lidWallHeight       = 3.5;
+lidWallHeight = (printTallerEnclosure) ? 14.5 : 3.5;
+echo(lidWallHeight);
+echo(printTallerEnclosure);
 
 pcbLength           = 69.85;
 pcbWidth            = 64.70;
@@ -80,10 +58,10 @@ pcbStands = [
     [ 66.04, 5.08, yappBoth, yappPin ],
     [ 66.04, 60.96, yappBoth, yappPin ]
 ];
-     
+
 cutoutsFront = [
-    [14.97, 2.5, 7, 7, 0, yappCircle, yappCenter ],
-    [48.26, 2.5, 7, 7, 0, yappCircle, yappCenter ],
+    [14.97, 2.5, 7.5, 7, 0, yappCircle, yappCenter ],
+    [48.26, 2.5, 7.5, 7, 0, yappCircle, yappCenter ],
     [21.75, -1.5, 12.5, 7, 0, yappRectangle ],
     [37.56, -0.5, 2, 1, 0, yappRectangle ]
 ];
