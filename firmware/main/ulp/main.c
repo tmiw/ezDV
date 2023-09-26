@@ -79,6 +79,7 @@ int main (void)
         power_up_mode = 0;
     }
 
+#if 0
     /* 
         Normally, temperature checks occur every minute to ensure accurate
         battery fuel gauge calculations. However, to minimize power
@@ -98,6 +99,7 @@ int main (void)
         power_up_mode = 1;
         ulp_riscv_wakeup_main_processor();
     }
+#endif // 0
 
     /* ulp_riscv_halt() is called automatically when main exits */
     return 0;

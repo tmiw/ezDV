@@ -56,6 +56,7 @@ private:
     
     int blinkStateCtr_;
     bool sentRequest_;
+    float socChangeRate_;
 
     // Button handling
     void onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message);
