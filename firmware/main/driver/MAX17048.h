@@ -46,6 +46,7 @@ public:
     virtual ~MAX17048() = default;
 
     bool isLowSOC() const { return isLowSoc_; }
+    void suppressForcedSleep(bool val) { suppressForcedSleep_ = val; }
     
 protected:
     virtual void onTaskStart_() override;
@@ -61,6 +62,7 @@ private:
     adc_cali_handle_t adcCalibrationHandle_;
     bool isLowSoc_;
     bool isStarting_;
+    bool suppressForcedSleep_;
     
     bool writeInt16Reg_(uint8_t reg, uint16_t val);
     bool readInt16Reg_(uint8_t reg, uint16_t* val);

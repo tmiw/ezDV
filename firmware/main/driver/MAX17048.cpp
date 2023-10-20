@@ -68,6 +68,7 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     , adcCalibrationHandle_(nullptr)
     , isLowSoc_(false)
     , isStarting_(true)
+    , suppressForcedSleep_(false)
 {
     registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
     registerMessageHandler(this, &MAX17048::onRequestBatteryStateMessage_);
@@ -232,14 +233,17 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
     
     ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
 
-    if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
+    if (!suppressForcedSleep_)
     {
-        // If battery power is extremely low, immediately force sleep.
-        isLowSoc_ = true;
+        if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
+        {
+            // If battery power is extremely low, immediately force sleep.
+            isLowSoc_ = true;
 
-        // Post 
-        LowBatteryShutdownMessage message;
-        post(&message);
+            // Post 
+            LowBatteryShutdownMessage message;
+            post(&message);
+        }
     }
 }
 

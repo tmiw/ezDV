@@ -31,7 +31,18 @@ namespace ezdv
 {
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
+    , audioMixer_(nullptr)
+    , beeperTask_(nullptr)
+    , freedvTask_(nullptr)
     , max17048_(&i2cDevice_)
+    , tlv320Device_(nullptr)
+    , wirelessTask_(nullptr)
+    , settingsTask_(nullptr)
+    , softwareUpdateTask_(nullptr)
+    , uiTask_(nullptr)
+    , rfComplianceTask_(nullptr)
+    , fuelGaugeTask_(nullptr)
+    , voiceKeyerTask_(nullptr)
     , rfComplianceEnabled_(false)
     , wifiOverrideEnabled_(false)
 {
@@ -216,6 +227,7 @@ void App::onTaskStart_()
 
     // The battery driver should also be initialized early in case we
     // need to immediately sleep due to low power.
+    max17048_.suppressForcedSleep(ulp_power_up_mode == 2);
     start(&max17048_, pdMS_TO_TICKS(1000));
 
     if (max17048_.isLowSOC() || ulp_power_up_mode == 1)
@@ -410,40 +422,75 @@ void App::onTaskSleep_()
 
     if (ulp_power_up_mode == 2)
     {
-        sleep(fuelGaugeTask_, pdMS_TO_TICKS(2000));
+        if (fuelGaugeTask_ != nullptr)
+        {
+            sleep(fuelGaugeTask_, pdMS_TO_TICKS(2000));
+        }
     }
     else
     {
         if (!rfComplianceEnabled_)
         {
             // Sleep Wi-Fi
-            sleep(wirelessTask_, pdMS_TO_TICKS(5000));
-        
+            if (wirelessTask_ != nullptr)
+            {
+                sleep(wirelessTask_, pdMS_TO_TICKS(5000));
+            }
+            
             // Sleep UI
-            sleep(uiTask_, pdMS_TO_TICKS(1000));
-            sleep(voiceKeyerTask_, pdMS_TO_TICKS(1000));
-        
+            if (uiTask_ != nullptr)
+            {
+                sleep(uiTask_, pdMS_TO_TICKS(1000));
+            }
+            
+            if (voiceKeyerTask_ != nullptr)
+            {
+                sleep(voiceKeyerTask_, pdMS_TO_TICKS(1000));
+            }
+            
             // Sleep storage handling
-            sleep(settingsTask_, pdMS_TO_TICKS(1000));
+            if (settingsTask_ != nullptr)
+            {
+                sleep(settingsTask_, pdMS_TO_TICKS(1000));
+            }
             
             // Sleep SW update
-            sleep(softwareUpdateTask_, pdMS_TO_TICKS(1000));
-
+            if (softwareUpdateTask_ != nullptr)
+            {
+                sleep(softwareUpdateTask_, pdMS_TO_TICKS(1000));
+            }
+            
             // Delay a second or two to allow final beeper to play.
-            sleep(beeperTask_, pdMS_TO_TICKS(7000));
-
+            if (beeperTask_ != nullptr)
+            {
+                sleep(beeperTask_, pdMS_TO_TICKS(7000));
+            }
+            
             // Sleep audio processing
-            sleep(freedvTask_, pdMS_TO_TICKS(1000));
-            sleep(audioMixer_, pdMS_TO_TICKS(3000));
+            if (freedvTask_ != nullptr)
+            {
+                sleep(freedvTask_, pdMS_TO_TICKS(1000));
+            }
+            
+            if (audioMixer_ != nullptr)
+            {
+                sleep(audioMixer_, pdMS_TO_TICKS(3000));
+            }
         }
         else
         {
-            sleep(rfComplianceTask_, pdMS_TO_TICKS(1000));
+            if (rfComplianceTask_ != nullptr)
+            {
+                sleep(rfComplianceTask_, pdMS_TO_TICKS(1000));
+            }
         }
-
-        sleep(tlv320Device_, pdMS_TO_TICKS(2000));
+        
+        if (tlv320Device_ != nullptr)
+        {
+            sleep(tlv320Device_, pdMS_TO_TICKS(2000));
+        }
     }
-
+    
     // Sleep device drivers
     sleep(&ledArray_, pdMS_TO_TICKS(1000));
     sleep(&max17048_, pdMS_TO_TICKS(1000));
