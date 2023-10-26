@@ -411,9 +411,12 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
 {    
     // Start the VITA task here since we need it to be able to 
     // get UDP broadcasts from the radio.
-    flexVitaTask_ = new flex::FlexVitaTask();
-    start(flexVitaTask_, pdMS_TO_TICKS(1000));
-
+    if (flexVitaTask_ == nullptr)
+    {
+        flexVitaTask_ = new flex::FlexVitaTask();
+        start(flexVitaTask_, pdMS_TO_TICKS(1000));
+    }
+    
     // Get the current Icom radio settings
     if (!overrideWifiSettings_)
     {
