@@ -140,7 +140,6 @@ void MAX17048::onTaskSleep_()
     // Stop ADC
     ESP_ERROR_CHECK(adc_cali_delete_scheme_curve_fitting(adcCalibrationHandle_));
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adcHandle_));
-    enabled_ = false;
 
 #if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
     // Set overvoltage threshold to the same as current VCELL.
@@ -154,9 +153,13 @@ void MAX17048::onTaskSleep_()
 #endif // 0
 
     // Force MAX17048 into hibernate to reduce power consumption.
-    bool rv = writeInt16Reg_(REG_HIBRT, 0xFFFF);
-    assert(rv == true);
-
+    if (enabled_)
+    {
+        bool rv = writeInt16Reg_(REG_HIBRT, 0xFFFF);
+        assert(rv == true);
+    }
+    enabled_ = false;
+    
 #if 0 /* XXX HW changes are required to fully enable fuel gauge support. */
     // Clear ALERT to avoid immediate retriggering of the interrupt.
     auto val = 0;
@@ -170,6 +173,11 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
     uint16_t config = 0;
     bool success = true;
         
+    if (!enabled_)
+    {
+        return;
+    }
+    
     // Read current temperature sensor value (in degC) and update RCOMP
     // based on formula from the datasheet. Note that the ESP32 internal
     // temperature sensor will read higher than ambient a lot of the time,
