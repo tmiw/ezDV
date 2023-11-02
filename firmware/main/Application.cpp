@@ -228,7 +228,7 @@ void App::onTaskStart_()
     // The battery driver should also be initialized early in case we
     // need to immediately sleep due to low power.
     max17048_.suppressForcedSleep(ulp_power_up_mode == 2);
-    start(&max17048_, pdMS_TO_TICKS(1000));
+    start(&max17048_, pdMS_TO_TICKS(2000));
 
     if (max17048_.isLowSOC() || ulp_power_up_mode == 1)
     {
