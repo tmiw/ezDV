@@ -101,6 +101,9 @@ int main (void)
     }
 #endif // 0
 
+    // Reinit GPIO0 to default settings to avoid high power consumption while in ULP.
+    ulp_riscv_gpio_init(FUEL_GAUGE_INTERRUPT_GPIO_NUM);
+    
     /* ulp_riscv_halt() is called automatically when main exits */
     return 0;
 }
