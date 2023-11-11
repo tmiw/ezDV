@@ -14,7 +14,7 @@ body:
       attributes:
           label: Contact Details
           description: How many people want the feature? Please supply contacts details for at least 3 of them.
-          placeholder: ex: email@example.com or GitHub usernames
+          placeholder: "ex: email@example.com or GitHub usernames"
       validations:
     - type: textarea
       id: feature-for-this-project
