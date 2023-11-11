@@ -32,8 +32,6 @@ body:
           options:
               - Yes
               - No
-          validations:
-              required: true
     - type: dropdown
       id: deprecated
       attributes:
@@ -42,8 +40,6 @@ body:
           options:
               - Yes
               - No
-          validations:
-              required: true
     - type: dropdown
       id: standard-compiler
       attributes:
@@ -52,8 +48,6 @@ body:
           options:
               - Yes
               - No
-          validations:
-              required: true
     - type: dropdown
       id: feature-legal
       attributes:
@@ -62,8 +56,6 @@ body:
           options:
               - Yes
               - No
-          validations:
-              required: true
     - type: textarea
       id: feature-impl-help
       attributes:
