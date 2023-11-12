@@ -238,6 +238,7 @@ void FreeDVReporterTask::startSocketIoConnection_()
     cJSON_AddItemToObject(jsonAuthObj_, "callsign", cJSON_CreateString(callsign_.c_str()));
     cJSON_AddItemToObject(jsonAuthObj_, "grid_square", cJSON_CreateString(gridSquare_.c_str()));
     cJSON_AddItemToObject(jsonAuthObj_, "role", cJSON_CreateString("report_wo"));
+    cJSON_AddItemToObject(jsonAuthObj_, "os", cJSON_CreateString("other"));
 
     auto verObj = esp_app_get_description();
     std::string versionString = "ezDV ";
