@@ -550,6 +550,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddNumberToObject(root, "channel", response->channel);
                 cJSON_AddStringToObject(root, "ssid", response->ssid);
                 cJSON_AddStringToObject(root, "password", response->password);
+                cJSON_AddStringToObject(root, "hostname", response->hostname);
         
                 // Note: below is responsible for cleanup.
                 WebSocketList sockets = { message->fd };
@@ -812,6 +813,7 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
     int channel = 1;
     char *ssid = nullptr;
     char *password = nullptr;
+    char *hostname = nullptr;
     
     bool settingsValid = true;
     
@@ -821,6 +823,17 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
         enabled = cJSON_IsTrue(enabledJSON);
         if (enabled)
         {
+            auto hostnameJSON = cJSON_GetObjectItem(message->request, "hostname");
+            if (hostnameJSON != nullptr)
+            {
+                hostname = cJSON_GetStringValue(hostnameJSON);
+                settingsValid &= strlen(hostname) > 0;
+            }
+            else
+            {
+                settingsValid = false;
+            }
+
             auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
             if (modeJSON != nullptr)
             {
@@ -878,7 +891,10 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Wi-Fi settings valid, requesting save");
         
-        storage::SetWifiSettingsMessage* request = new storage::SetWifiSettingsMessage(enabled, mode, security, channel, ssid, password);
+        storage::SetWifiSettingsMessage* request = 
+            new storage::SetWifiSettingsMessage(
+                enabled, mode, security, channel,
+                ssid, password, hostname);
         publish(request);
     
         auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);

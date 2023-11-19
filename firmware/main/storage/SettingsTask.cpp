@@ -29,6 +29,7 @@
 #define WIFI_CHANNEL_ID ("wifiChan")
 #define WIFI_SSID_ID ("wifiSsid")
 #define WIFI_PASSWORD_ID ("wifiPass")
+#define WIFI_HOSTNAME_ID ("wifiHost")
 
 #define HEADSET_PTT_ID ("headPtt")
 #define TIME_OUT_TIMER_ID ("tot")
@@ -55,6 +56,7 @@
 #define DEFAULT_WIFI_CHANNEL (1)
 #define DEFAULT_WIFI_SSID ("")
 #define DEFAULT_WIFI_PASSWORD ("")
+#define DEFAULT_WIFI_HOSTNAME ("ezdv")
 
 #define DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT (10)
 #define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
@@ -93,6 +95,7 @@ SettingsTask::SettingsTask()
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    memset(wifiHostname_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     
     memset(radioHostname_, 0, RadioSettingsMessage::MAX_STR_SIZE);
     memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
@@ -160,7 +163,8 @@ void SettingsTask::onRequestWifiSettingsMessage_(DVTask* origin, RequestWifiSett
         wifiSecurity_,
         wifiChannel_,
         wifiSsid_,
-        wifiPassword_
+        wifiPassword_,
+        wifiHostname_
     );
     assert(response != nullptr);
     if (origin != nullptr)
@@ -319,7 +323,8 @@ void SettingsTask::initializeWifi_()
         ESP_LOGW(CURRENT_LOG_TAG, "Wi-Fi settings not found, will set to defaults");
         setWifiSettings_(
             DEFAULT_WIFI_ENABLED, DEFAULT_WIFI_MODE, DEFAULT_WIFI_SECURITY, 
-            DEFAULT_WIFI_CHANNEL, DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
+            DEFAULT_WIFI_CHANNEL, DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD,
+            DEFAULT_WIFI_HOSTNAME);
     }
     else if (result != ESP_OK)
     {
@@ -379,6 +384,34 @@ void SettingsTask::initializeWifi_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "wifiPassword: ********");
     }
+
+    result = storageHandle_->get_string(WIFI_HOSTNAME_ID, wifiHostname_, WifiSettingsMessage::MAX_STR_SIZE);
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Setting default hostname for Wi-Fi");
+
+        memset(wifiHostname_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+        strncpy(wifiHostname_, DEFAULT_WIFI_HOSTNAME, WifiSettingsMessage::MAX_STR_SIZE - 1);
+
+        result = storageHandle_->set_string(WIFI_HOSTNAME_ID, wifiHostname_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiHostname: %s", esp_err_to_name(result));
+        }
+        else
+        {
+            commitTimer_.stop();
+            commitTimer_.start(true);
+        }
+    }
+    else if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiHostname: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "wifiHostname: %s", wifiHostname_);
+    }
     
     // Publish current Wi-Fi settings to everyone who may care.
     WifiSettingsMessage* message = new WifiSettingsMessage(
@@ -387,7 +420,8 @@ void SettingsTask::initializeWifi_()
         wifiSecurity_,
         wifiChannel_,
         wifiSsid_,
-        wifiPassword_
+        wifiPassword_,
+        wifiHostname_
     );
     assert(message != nullptr);
     publish(message);
@@ -712,10 +746,14 @@ void SettingsTask::setRightChannelVolume_(int8_t vol)
 
 void SettingsTask::onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMessage* message)
 {
-    setWifiSettings_(message->enabled, message->mode, message->security, message->channel, message->ssid, message->password);
+    setWifiSettings_(
+        message->enabled, message->mode, message->security, message->channel, message->ssid, 
+        message->password, message->hostname);
 }
 
-void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid, char* password)
+void SettingsTask::setWifiSettings_(
+    bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid,
+    char* password, char* hostname)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Saving Wi-Fi settings");
     wifiEnabled_ = enabled;
@@ -725,10 +763,12 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
     
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+    memset(wifiHostname_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     
     strncpy(wifiSsid_, ssid, WifiSettingsMessage::MAX_STR_SIZE - 1);
     strncpy(wifiPassword_, password, WifiSettingsMessage::MAX_STR_SIZE - 1);
-    
+    strncpy(wifiHostname_, hostname, WifiSettingsMessage::MAX_STR_SIZE - 1);
+
     if (storageHandle_)
     {        
         esp_err_t result = storageHandle_->set_item(WIFI_ENABLED_ID, wifiEnabled_);
@@ -761,6 +801,11 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting wifPassword: %s", esp_err_to_name(result));
         }
+        result = storageHandle_->set_string(WIFI_HOSTNAME_ID, wifiHostname_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiHostname: %s", esp_err_to_name(result));
+        }
                
         commitTimer_.stop();
         commitTimer_.start(true);
@@ -772,7 +817,8 @@ void SettingsTask::setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMod
             wifiSecurity_,
             wifiChannel_,
             wifiSsid_,
-            wifiPassword_
+            wifiPassword_,
+            wifiHostname_
         );
         assert(message != nullptr);
         publish(message);

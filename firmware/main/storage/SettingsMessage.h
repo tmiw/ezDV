@@ -91,7 +91,14 @@ class WifiSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, WifiSettings
 public:
     enum { MAX_STR_SIZE = 32 };
     
-    WifiSettingsMessageCommon(bool enabledProvided = false, WifiMode modeProvided = ACCESS_POINT, WifiSecurityMode securityProvided = NONE, int channelProvided = 0, char* ssidProvided = "", char* passwordProvided = "")
+    WifiSettingsMessageCommon(
+        bool enabledProvided = false, 
+        WifiMode modeProvided = ACCESS_POINT, 
+        WifiSecurityMode securityProvided = NONE, 
+        int channelProvided = 0, 
+        char* ssidProvided = "", 
+        char* passwordProvided = "",
+        char* hostnameProvided = "")
         : DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
         , enabled(enabledProvided)
         , mode(modeProvided)
@@ -100,6 +107,7 @@ public:
     { 
         memset(ssid, 0, MAX_STR_SIZE);
         memset(password, 0, MAX_STR_SIZE);
+        memset(hostname, 0, MAX_STR_SIZE);
         
         if (ssidProvided != nullptr)
         {
@@ -108,6 +116,10 @@ public:
         if (passwordProvided != nullptr)
         {
             strncpy(password, passwordProvided, MAX_STR_SIZE - 1);
+        }
+        if (hostnameProvided != nullptr)
+        {
+            strncpy(hostname, hostnameProvided, MAX_STR_SIZE - 1);
         }
     }
     
@@ -119,6 +131,7 @@ public:
     int channel; // ignored if not access point
     char ssid[MAX_STR_SIZE];
     char password[MAX_STR_SIZE];
+    char hostname[MAX_STR_SIZE];
 };
 
 template<uint32_t TYPE_ID>

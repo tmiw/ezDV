@@ -210,7 +210,8 @@ function wsConnect()
           $("#wifiSecurityType").val(json.security);
           $("#wifiChannel").val(json.channel);
           $("#wifiSSID").val(json.ssid);
-          $("#wifiPassword").val(json.password);      
+          $("#wifiPassword").val(json.password);    
+          $("#wifiHostname").val(json.hostname);  
           
           updateWifiFormState();    
       }
@@ -524,7 +525,8 @@ $("#wifiSave").click(function()
         "security": parseInt($("#wifiSecurityType").val()),
         "channel": parseInt($("#wifiChannel").val()),
         "ssid": $("#wifiSSID").val(),
-        "password": $("#wifiPassword").val()
+        "password": $("#wifiPassword").val(),
+        "hostname": $("#wifiHostname").val()
     };
     
     $("#wifiSuccessAlertRow").hide();

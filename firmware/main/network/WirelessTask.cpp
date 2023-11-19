@@ -240,24 +240,34 @@ void WirelessTask::enableDefaultWifi_()
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
-void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password)
+void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname)
 {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     
+    esp_netif_t* netif = nullptr;
     if (mode == storage::WifiMode::ACCESS_POINT)
     {
-        esp_netif_create_default_wifi_ap();
+        netif = esp_netif_create_default_wifi_ap();
     }
     else if (mode == storage::WifiMode::CLIENT)
     {
-         esp_netif_create_default_wifi_sta();
+        netif = esp_netif_create_default_wifi_sta();
     }
     else
     {
         assert(0);
     }
-    
+
+    // Set hostname as configured by the user
+    if (hostname != nullptr && strlen(hostname) > 0)
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV hostname to %s", hostname);
+        ESP_ERROR_CHECK(esp_netif_set_hostname(netif, hostname));
+    }
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV SSID to %s", ssid);
+
     // Register event handler so we can notify the user on network
     // status changes.
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
@@ -647,7 +657,7 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
         }
         else if (message->enabled)
         {
-            enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password);
+            enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password, message->hostname);
         }
     }
 }

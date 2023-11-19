@@ -258,6 +258,12 @@
                     </div>
                 </div>
                 <div class="row mb-3 wifi-enable-row">
+                    <label for="wifiHostname" class="col-xs-4 col-md-2 col-form-label">Hostname</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="wifiHostname" type="text" value="ezdv" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3 wifi-enable-row">
                     <label for="wifiMode" class="col-xs-4 col-md-2 col-form-label">Wireless Mode</label>
                     <div class="col-xs-8 col-md-4">
                     <select id="wifiMode" class="form-control">
