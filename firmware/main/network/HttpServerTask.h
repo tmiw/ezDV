@@ -29,7 +29,7 @@
 #include "audio/VoiceKeyerMessage.h"
 #include "driver/BatteryMessage.h"
 #include "storage/SoftwareUpdateMessage.h"
-
+#include "network/NetworkMessage.h"
 #include "network/flex/FlexMessage.h"
 
 extern "C"
@@ -71,6 +71,8 @@ private:
         SET_MODE = 9,
         START_STOP_VOICE_KEYER = 10,
         REBOOT_DEVICE = 11,
+        START_WIFI_SCAN = 12,
+        STOP_WIFI_SCAN = 13,
     };
     
     template<uint32_t MSG_ID>
@@ -114,6 +116,8 @@ private:
     using SetModeMessage = HttpRequestMessageCommon<SET_MODE>;
     using StartStopVoiceKeyerMessage = HttpRequestMessageCommon<START_STOP_VOICE_KEYER>;
     using RebootDeviceMessage = HttpRequestMessageCommon<REBOOT_DEVICE>;
+    using StartWifiScanMessage = HttpRequestMessageCommon<START_WIFI_SCAN>;
+    using StopWifiScanMessage = HttpRequestMessageCommon<STOP_WIFI_SCAN>;
     
     using WebSocketList = std::vector<int>;
     
@@ -146,6 +150,10 @@ private:
     void onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex::FlexRadioDiscoveredMessage* message);
     
     void onRebootDeviceMessage_(DVTask* origin, RebootDeviceMessage* message);
+
+    void onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessage* message);
+    void onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message);
+    void onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     

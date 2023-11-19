@@ -39,12 +39,14 @@ var updateWifiFormState = function()
         // AP mode
         $("#wifiSecurityType").prop("disabled", false);
         $("#wifiChannel").prop("disabled", false);
+        $("#wifiNetworkList").prop("disabled", true);
     }
     else
     {
         // client mode
         $("#wifiSecurityType").prop("disabled", true);
         $("#wifiChannel").prop("disabled", true);
+        $("#wifiNetworkList").prop("disabled", false);
     }
     
     if ($("#wifiMode").val() == 0 && $("#wifiSecurityType").val() == 0)
@@ -57,6 +59,27 @@ var updateWifiFormState = function()
         // Mode that requires encryption
         $("#wifiPassword").prop("disabled", false);
     }
+
+    // Update Wi-Fi network list
+    var currentSSID = $("#wifiSSID").val();
+    var wifiSelectBox = $("#wifiNetworkList");
+    wifiSelectBox.find('option').remove().end();
+
+    var opt = $('<option></option>').val("").html("(other)");
+    if (wifiNetworkList.indexOf(currentSSID) == -1)
+    {
+        opt.prop("selected", true);
+    }
+    wifiSelectBox.append(opt);
+    
+    $.each(wifiNetworkList, function(val, text) {
+        var opt = $('<option></option>').val(text).html(text);
+        if (currentSSID == text && wifiNetworkList.indexOf(text) >= 0)
+        {
+            opt.prop("selected", true);
+        }
+        wifiSelectBox.append(opt);
+    });
 };
 
 var updateRadioFormState = function()
@@ -154,6 +177,16 @@ var setFreeDVMode = function(mode) {
     ws.send(JSON.stringify(obj));
 };
 
+var startStopWifiScan = function(start) {
+    var obj =
+    {
+        "type": start ? "startWifiScan" : "stopWifiScan"
+    };
+
+     // Async send request and wait for response.
+     ws.send(JSON.stringify(obj));
+}
+
 var setVKErrorMessage = function(errorType, errno)
 {
     switch (errorType)
@@ -214,6 +247,12 @@ function wsConnect()
           $("#wifiHostname").val(json.hostname);  
           
           updateWifiFormState();    
+      }
+      else if (json.type == "wifiScanResults")
+      {
+          // Save the current list of Wi-Fi networks and update the form state.
+          wifiNetworkList = json.networkList;
+          updateWifiFormState();
       }
       else if (json.type == "wifiSaved")
       {
@@ -463,6 +502,11 @@ function wsConnect()
     ws.close();
   };
 }
+
+$("#wifiNetworkList").change(function()
+{
+    $("#wifiSSID").val($("#wifiNetworkList").val());
+});
 
 $("#radioEnable").change(function()
 {
@@ -732,6 +776,9 @@ $(document).on('input', '#ledBrightness', function() {
 // Initialize radio dictionary (Flex). This is global to everything in this file.
 flexRadioDictionary = {};
 
+// Initialize Wi-Fi network list. This is global to everything in this file.
+wifiNetworkList = [];
+
 //==========================================================================================
 // Disable all form elements on page load. Connect to WebSocket and wait for initial messages.
 // These messages will trigger prefilling and reenabling of the form.
@@ -785,6 +832,16 @@ $( document ).ready(function()
     $("#updateFailAlertRow").hide();
     
     $(".general-enable-row").hide();
+
+    // Code to trigger Wi-Fi scans as we don't want ezDV to do them
+    // unless the user is actually on the Wifi tab.
+    var tabEl = document.querySelector('button[id="wifiTab"]');
+    tabEl.addEventListener('show.bs.tab', function (event) {
+        startStopWifiScan(true);
+    });
+    tabEl.addEventListener('hide.bs.tab', function (event) {
+        startStopWifiScan(false);
+    });
     
     wsConnect();
 });

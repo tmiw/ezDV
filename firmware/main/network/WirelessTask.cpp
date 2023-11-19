@@ -85,6 +85,9 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
     {
         switch (event_id)
         {
+            case WIFI_EVENT_SCAN_DONE:
+                obj->onWifiScanComplete_();
+                break;
             case WIFI_EVENT_AP_START:
                 obj->onNetworkUp_();
                 break;
@@ -109,6 +112,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 128)
+    , wifiScanTimer_(this, std::bind(&WirelessTask::triggerWifiScan_, this), 5000000) // 5 seconds between Wi-Fi scans
     , icomRestartTimer_(this, std::bind(&WirelessTask::restartIcomConnection_, this), 10000000) // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
     , icomAudioTask_(nullptr)
@@ -126,6 +130,9 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
+
+    registerMessageHandler(this, &WirelessTask::onWifiScanStartMessage_);
+    registerMessageHandler(this, &WirelessTask::onWifiScanStopMessage_);
 }
 
 WirelessTask::~WirelessTask()
@@ -683,6 +690,51 @@ void WirelessTask::restartIcomConnection_()
     {
         ESP_LOGE(CURRENT_LOG_TAG, "Could not restart Icom processes!");
     }
+}
+
+void WirelessTask::triggerWifiScan_()
+{
+    // Start Wi-Fi scan using default config. A WIFI_EVENT_SCAN_DONE event
+    // will be fired by ESP-IDF once the scan is done.
+    ESP_ERROR_CHECK(esp_wifi_scan_start(nullptr, false));
+}
+
+void WirelessTask::onWifiScanComplete_()
+{
+    // Get the number of Wi-Fi networks found. We'll need to use
+    // this to allocate the correct amount of RAM to store the Wi-Fi APs found.
+    uint16_t numNetworks = 0;
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numNetworks));
+
+    // Always ensure we can allocate at least one AP record. This is to 
+    // ensure the Wi-Fi code always frees up whatever it allocates to 
+    // perform the scan, even if it doesn't find any other networks.
+    numNetworks++;
+
+    // Allocate the necessary memory to grab the AP list.
+    wifi_ap_record_t* apRecords = (wifi_ap_record_t*)calloc(numNetworks, sizeof(wifi_ap_record_t));
+    assert(apRecords != nullptr);
+
+    // Grab the list of access points found.
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&numNetworks, apRecords));
+
+    // Publish list of Wi-Fi networks to interested parties.
+    WifiNetworkListMessage message(numNetworks, apRecords);
+    publish(&message);
+
+    // Restart Wi-Fi scan after a predefined time interval.
+    wifiScanTimer_.start(true);
+}
+
+void WirelessTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message)
+{
+    wifiScanTimer_.stop();
+    triggerWifiScan_();
+}
+
+void WirelessTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message)
+{
+    wifiScanTimer_.stop();
 }
 
 }

@@ -70,6 +70,8 @@ extern "C"
 
 #define JSON_FLEX_RADIO_DISCOVERED_TYPE "flexRadioDiscovered"
 
+#define JSON_WIFI_SCAN_RESULTS_TYPE "wifiScanResults"
+
 extern void StartSleeping();
 
 namespace ezdv
@@ -111,6 +113,10 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onFlexRadioDiscoveredMessage_);
     
     registerMessageHandler(this, &HttpServerTask::onRebootDeviceMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onStartWifiScanMessage_);
+    registerMessageHandler(this, &HttpServerTask::onStopWifiScanMessage_);
+    registerMessageHandler(this, &HttpServerTask::onWifiNetworkListMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -392,6 +398,16 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                 else if (!strcmp(type, "rebootDevice"))
                 {
                     RebootDeviceMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "startWifiScan"))
+                {
+                    StartWifiScanMessage message(fd, jsonMessage);
+                    thisObj->post(&message);
+                }
+                else if (!strcmp(type, "stopWifiScan"))
+                {
+                    StopWifiScanMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
             }
@@ -1426,6 +1442,42 @@ void HttpServerTask::onStopVoiceKeyerMessage_(DVTask* origin, audio::StopVoiceKe
 void HttpServerTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::VoiceKeyerCompleteMessage* message)
 {
     sendVoiceKeyerExecutionState_(false);
+}
+
+void HttpServerTask::onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessage* message)
+{
+    ezdv::network::StartWifiScanMessage request;
+    publish(&request);
+}
+
+void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message)
+{
+    ezdv::network::StopWifiScanMessage request;
+    publish(&request);
+}
+
+void HttpServerTask::onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message)
+{
+    cJSON* root = cJSON_CreateObject();
+    if (root != nullptr)
+    {
+        cJSON_AddStringToObject(root, "type", JSON_WIFI_SCAN_RESULTS_TYPE);
+        cJSON* networkList = cJSON_AddArrayToObject(root, "networkList");
+        
+        if (networkList != nullptr)
+        {
+            for (int index = 0; index < message->numRecords; index++)
+            {
+                cJSON_AddItemToArray(networkList, cJSON_CreateString((const char*)message->records[index].ssid));
+            }
+        }
+        
+        // Note: below is responsible for cleanup.
+        sendJSONMessage_(root, activeWebSockets_);
+    }
+
+    // Free list of APs when we're done.
+    free(message->records);
 }
 
 void HttpServerTask::onFlexRadioDiscoveredMessage_(DVTask* origin, network::flex::FlexRadioDiscoveredMessage* message)

@@ -19,6 +19,7 @@
 #define NETWORK_MESSAGE_H
 
 #include "task/DVTaskMessage.h"
+#include "esp_wifi.h"
 
 extern "C"
 {
@@ -41,6 +42,9 @@ enum NetworkMessageTypes
     FILE_UPLOAD_DATA = 4,
     START_FIRMWARE_UPLOAD = 5,
     FIRMWARE_UPLOAD_DATA = 6,
+    WIFI_NETWORK_LIST = 7,
+    WIFI_SCAN_START = 8,
+    WIFI_SCAN_STOP = 9,
 };
 
 template<uint32_t MSG_ID>
@@ -107,6 +111,36 @@ public:
     char *buf;
     int length;
 };
+
+class WifiNetworkListMessage : public DVTaskMessageBase<WIFI_NETWORK_LIST, WifiNetworkListMessage>
+{
+public:
+    WifiNetworkListMessage(uint16_t numRecordsProvided = 0, wifi_ap_record_t* recordsProvided = nullptr)
+        : DVTaskMessageBase<WIFI_NETWORK_LIST, WifiNetworkListMessage>(NETWORK_MESSAGE)
+        , numRecords(numRecordsProvided)
+        , records(recordsProvided)
+        {}
+    virtual ~WifiNetworkListMessage() = default;
+
+    uint16_t numRecords;
+
+    // Note: ownership transfers to receiving component, which is responsible for
+    // deleting the memory associated with this object.
+    wifi_ap_record_t* records;
+};
+
+template<uint32_t MSG_ID>
+class EnableDisableMessageCommon : public DVTaskMessageBase<MSG_ID, EnableDisableMessageCommon<MSG_ID>>
+{
+    public:
+        EnableDisableMessageCommon()
+            : DVTaskMessageBase<MSG_ID, EnableDisableMessageCommon<MSG_ID>>(NETWORK_MESSAGE)
+            {}
+        virtual ~EnableDisableMessageCommon() = default;
+};
+
+using StartWifiScanMessage = EnableDisableMessageCommon<WIFI_SCAN_START>;
+using StopWifiScanMessage = EnableDisableMessageCommon<WIFI_SCAN_STOP>;
 
 }
 
