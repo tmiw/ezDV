@@ -275,7 +275,7 @@
                 <div class="row mb-3 wifi-enable-row">
                     <label for="wifiNetworkList" class="col-xs-4 col-md-2 col-form-labell">Network Name</label>
                     <div class="col-xs-8 col-md-4">
-                        <select id="wifiNetworkList" class="form-control" size="5">
+                        <select id="wifiNetworkList" class="form-control" size="5" style="resize: both;">
                             <option value="">(other)</option>
                         </select>
                     </div>
