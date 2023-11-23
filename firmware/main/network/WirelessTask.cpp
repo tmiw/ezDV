@@ -242,7 +242,7 @@ void WirelessTask::enableDefaultWifi_()
     
     sprintf((char*)wifi_config.ap.password, "%s", "");
     
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 }
@@ -342,7 +342,7 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         sprintf((char*)wifi_config.ap.ssid, "%s", ssid);
         sprintf((char*)wifi_config.ap.password, "%s", password);
         
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
 
         // Force to HT20 mode to better handle congested airspace
