@@ -767,6 +767,12 @@ void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWeb
     {
         activeWebSockets_.erase(iter);
     }
+    
+    if (activeWebSockets_.size() == 0)
+    {
+        StopWifiScanMessage request;
+        publish(&request);
+    }
 }
 
 void HttpServerTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message)
