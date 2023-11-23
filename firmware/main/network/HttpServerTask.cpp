@@ -506,8 +506,16 @@ void HttpServerTask::onTaskSleep_()
     if (isRunning_)
     {
         // Close all active web sockets
-        for (auto& sock : activeWebSockets_)
+        int numWifiScansInProgress = 0;
+        for (auto& kvp : activeWebSockets_)
         {
+            auto sock = kvp.first;
+
+            if (kvp.second)
+            {
+                numWifiScansInProgress++;
+            }
+
             httpd_ws_frame_t wsPkt;
             memset(&wsPkt, 0, sizeof(httpd_ws_frame_t));
             wsPkt.payload = nullptr;
@@ -518,6 +526,12 @@ void HttpServerTask::onTaskSleep_()
         }
         
         ESP_ERROR_CHECK(httpd_stop(configServerHandle_));
+
+        if (numWifiScansInProgress > 0)
+        {
+            StopWifiScanMessage request;
+            publish(&request);
+        }
 
         char* partitionLabel = "http_0";
         auto partition = const_cast<esp_partition_t*>(esp_ota_get_running_partition());
@@ -543,9 +557,9 @@ void HttpServerTask::onTaskSleep_()
 
 void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message)
 {
-    if (std::find(activeWebSockets_.begin(), activeWebSockets_.end(), message->fd) == activeWebSockets_.end())
+    if (!activeWebSockets_.contains(message->fd))
     {
-        activeWebSockets_.push_back(message->fd);
+        activeWebSockets_[message->fd] = false;
     }
 
     // Request current settings.
@@ -569,7 +583,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddStringToObject(root, "hostname", response->hostname);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -606,7 +621,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddStringToObject(root, "password", response->password);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -638,7 +654,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddNumberToObject(root, "timesToTransmit", response->timesToTransmit);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -669,7 +686,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddStringToObject(root, "gridSquare", response->gridSquare);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -699,7 +717,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddNumberToObject(root, "dutyCycle", response->dutyCycle);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -729,7 +748,8 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddNumberToObject(root, "currentMode", (int)response->mode);
         
                 // Note: below is responsible for cleanup.
-                WebSocketList sockets = { message->fd };
+                WebSocketList sockets;
+                sockets[message->fd] = false;
                 sendJSONMessage_(root, sockets);
                 delete response;
             }
@@ -762,13 +782,21 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
 
 void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message)
 {
-    auto iter = std::find(activeWebSockets_.begin(), activeWebSockets_.end(), message->fd);
-    if (iter != activeWebSockets_.end())
+    if (activeWebSockets_.contains(message->fd))
     {
-        activeWebSockets_.erase(iter);
+        activeWebSockets_.erase(message->fd);
     }
     
-    if (activeWebSockets_.size() == 0)
+    int numWifiScansInProgress = 0;
+    for (auto& kvp : activeWebSockets_)
+    {
+        if (kvp.second)
+        {
+            numWifiScansInProgress++;
+        }
+    }
+
+    if (numWifiScansInProgress == 0)
     {
         StopWifiScanMessage request;
         publish(&request);
@@ -804,8 +832,10 @@ void HttpServerTask::sendJSONMessage_(cJSON* message, WebSocketList& socketList)
     wsPkt.type = HTTPD_WS_TYPE_TEXT;
     
     // Send to all sockets in list
-    for (auto& fd : socketList)
+    for (auto& kvp : socketList)
     {
+        auto fd = kvp.first;
+
         ESP_LOGI(CURRENT_LOG_TAG, "Sending JSON message to socket %d", fd);
             
         if (httpd_ws_send_data(configServerHandle_, fd, &wsPkt) != ESP_OK)
@@ -940,8 +970,9 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
         cJSON_AddBoolToObject(root, "success", success);
 
         // Note: below is responsible for cleanup.
-        WebSocketList list { message->fd };
-        sendJSONMessage_(root, list);
+        WebSocketList sockets;
+        sockets[message->fd] = false;
+        sendJSONMessage_(root, sockets);
     }
     else
     {
@@ -1068,8 +1099,9 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
         cJSON_AddBoolToObject(root, "success", success);
 
         // Note: below is responsible for cleanup.
-        WebSocketList list { message->fd };
-        sendJSONMessage_(root, list);
+        WebSocketList sockets;
+        sockets[message->fd] = false;
+        sendJSONMessage_(root, sockets);
     }
     else
     {
@@ -1177,8 +1209,9 @@ void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyer
         }
 
         // Note: below is responsible for cleanup.
-        WebSocketList list { message->fd };
-        sendJSONMessage_(root, list);
+        WebSocketList sockets;
+        sockets[message->fd] = false;
+        sendJSONMessage_(root, sockets);
     }
     else
     {
@@ -1240,8 +1273,9 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
         cJSON_AddBoolToObject(root, "success", success);
 
         // Note: below is responsible for cleanup.
-        WebSocketList list { message->fd };
-        sendJSONMessage_(root, list);
+        WebSocketList sockets;
+        sockets[message->fd] = false;
+        sendJSONMessage_(root, sockets);
     }
     else
     {
@@ -1339,8 +1373,9 @@ void HttpServerTask::onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrig
         cJSON_AddBoolToObject(root, "success", success);
 
         // Note: below is responsible for cleanup.
-        WebSocketList list { message->fd };
-        sendJSONMessage_(root, list);
+        WebSocketList sockets;
+        sockets[message->fd] = false;
+        sendJSONMessage_(root, sockets);
     }
     else
     {
@@ -1454,12 +1489,27 @@ void HttpServerTask::onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessag
 {
     ezdv::network::StartWifiScanMessage request;
     publish(&request);
+
+    activeWebSockets_[message->fd] = true;
 }
 
 void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message)
 {
-    ezdv::network::StopWifiScanMessage request;
-    publish(&request);
+    int numWifiScansInProgress = 0;
+
+    for (auto& kvp : activeWebSockets_)
+    {
+        if (kvp.second)
+        {
+            numWifiScansInProgress++;
+        }
+    }
+
+    if (numWifiScansInProgress == 0)
+    {
+        ezdv::network::StopWifiScanMessage request;
+        publish(&request);
+    }
 }
 
 void HttpServerTask::onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message)

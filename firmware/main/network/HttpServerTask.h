@@ -119,7 +119,7 @@ private:
     using StartWifiScanMessage = HttpRequestMessageCommon<START_WIFI_SCAN>;
     using StopWifiScanMessage = HttpRequestMessageCommon<STOP_WIFI_SCAN>;
     
-    using WebSocketList = std::vector<int>;
+    using WebSocketList = std::map<int, bool>; // int = socket ID, bool = currently scanning Wi-Fi networks
     
     httpd_handle_t configServerHandle_;
     WebSocketList activeWebSockets_;
