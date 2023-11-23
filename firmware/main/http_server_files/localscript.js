@@ -60,26 +60,54 @@ var updateWifiFormState = function()
         $("#wifiPassword").prop("disabled", false);
     }
 
-    // Update Wi-Fi network list
+    // Update Wi-Fi network list, but only if it's open
+    // (as DOM updates in this area will force it to collapse).
     var currentSSID = $("#wifiSSID").val();
     var wifiSelectBox = $("#wifiNetworkList");
-    wifiSelectBox.find('option').remove().end();
+    var wifiNetworkRemoves = [];
 
-    var opt = $('<option></option>').val("").html("(other)");
-    if (wifiNetworkList.indexOf(currentSSID) == -1)
-    {
-        opt.prop("selected", true);
-    }
-    wifiSelectBox.append(opt);
-    
+    $.each(wifiSelectBox.find('option'), function() {
+        if (wifiNetworkList.indexOf(this.val) == -1)
+        {
+            wifiNetworkRemoves.push(this);
+        }
+    });
+
     $.each(wifiNetworkList, function(val, text) {
-        var opt = $('<option></option>').val(text).html(text);
-        if (currentSSID == text && wifiNetworkList.indexOf(text) >= 0)
+        var result = wifiSelectBox.find('option:contains(' + text + ")");
+        if (result.length == 0)
+        {
+            var opt = $('<option></option>').val(text).html(text);
+            if (currentSSID == text && wifiNetworkList.indexOf(text) >= 0)
+            {
+                opt.prop("selected", true);
+            }
+            wifiSelectBox.append(opt);
+        }
+    });
+
+    // Remove HTML for all networks not in list.
+    $.each(wifiNetworkRemoves, function(val) {
+        val.remove();
+    });
+
+    var result = wifiSelectBox.find('option:contains(' + text + ")");
+    if (result.length == 0)
+    {
+        var opt = $('<option></option>').val("").html("(other)");
+        wifiSelectBox.append(opt);
+        if (wifiNetworkList.indexOf(currentSSID) == -1)
         {
             opt.prop("selected", true);
         }
-        wifiSelectBox.append(opt);
-    });
+    }
+    else
+    {
+        if (wifiNetworkList.indexOf(currentSSID) == -1)
+        {
+            result.prop("selected", true);
+        }
+    }
 };
 
 var updateRadioFormState = function()
