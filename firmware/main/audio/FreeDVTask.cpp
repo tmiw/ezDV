@@ -120,6 +120,16 @@ void FreeDVTask::onTaskTick_()
             codec2_fifo_read(codecInputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
             codec2_fifo_write(codecOutputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
         }
+
+        if (isTransmitting_ && isEndingTransmit_)
+        {
+            // We've finished processing everything that's left, end TX now.
+            TransmitCompleteMessage message;
+            publish(&message);
+
+            isEndingTransmit_ = false;
+            isTransmitting_ = false;
+        }
     }
     else
     {
