@@ -684,7 +684,9 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddStringToObject(root, "type", JSON_REPORTING_STATUS_TYPE);
                 cJSON_AddStringToObject(root, "callsign", response->callsign);
                 cJSON_AddStringToObject(root, "gridSquare", response->gridSquare);
-        
+                cJSON_AddBoolToObject(root, "forceReporting", response->forceReporting);
+                cJSON_AddNumberToObject(root, "reportingFrequency", response->freqHz);
+
                 // Note: below is responsible for cleanup.
                 WebSocketList sockets;
                 sockets[message->fd] = false;

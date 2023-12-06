@@ -87,11 +87,11 @@ var updateWifiFormState = function()
     });
 
     // Remove HTML for all networks not in list.
-    $.each(wifiNetworkRemoves, function(val) {
+    wifiNetworkRemoves.forEach(function(val) {
         val.remove();
     });
 
-    var result = wifiSelectBox.find('option:contains(' + text + ")");
+    var result = wifiSelectBox.find('option:contains("(other)")');
     if (result.length == 0)
     {
         var opt = $('<option></option>').val("").html("(other)");
@@ -380,7 +380,7 @@ function wsConnect()
           $("#reportingReset").prop("disabled", false);
           $("#reportingCallsign").val(json.callsign);
           $("#reportingGridSquare").val(json.gridSquare);
-          $("#reportingForceEnable").val(json.forceReporting);
+          $("#reportingForceEnable").prop("checked", json.forceReporting);
           
           var reportingFrequencyHz = json.reportingFrequency;
           var reportingFrequencyMHz = reportingFrequencyHz / 1000 / 1000;

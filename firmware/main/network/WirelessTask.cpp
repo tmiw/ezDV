@@ -454,7 +454,7 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
         {
             if (response->enabled && !radioRunning_)
             {
-                if (!client || !strcmp(response->host, ip))
+                if (client || !strcmp(response->host, ip))
                 {
                     radioType_ = response->type;
                     switch (response->type)
