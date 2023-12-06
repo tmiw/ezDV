@@ -120,9 +120,25 @@
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
-                    <label for="reportingGridSquare" class="col-xs-4 col-md-2 col-form-labell">Grid square</label>
+                    <label for="reportingGridSquare" class="col-xs-4 col-md-2 col-form-labell">Grid square/locator</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="reportingGridSquare" value="UN00KN" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3 reporting-enable-row">
+                    <div class="col-xs-12 col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" id="reportingForceEnable" class="form-check-input" />
+                            <label for="reportingForceEnable" class="form-check-label">
+                                Force reporting without radio connection
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 reporting-enable-row">
+                    <label for="reportingFrequency" class="col-xs-4 col-md-2 col-form-labell">Current frequency (MHz)</label>
+                    <div class="col-xs-8 col-md-4">
+                        <input id="reportingFrequency" value="14.2360" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3">

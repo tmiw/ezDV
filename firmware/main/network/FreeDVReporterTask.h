@@ -86,6 +86,8 @@ private:
     bool pttState_;
     audio::FreeDVMode freeDVMode_;
     uint64_t frequencyHz_;
+    bool forceReporting_;
+    int reportingRefCount_;
 
     int pingIntervalMs_;
     int pingTimeoutMs_;

@@ -45,6 +45,8 @@ FreeDVReporterTask::FreeDVReporterTask()
     , pttState_(false)
     , freeDVMode_(audio::ANALOG)
     , frequencyHz_(0)
+    , forceReporting_(false)
+    , reportingRefCount_(0)
     , pingIntervalMs_(0)
     , pingTimeoutMs_(0)
 {
@@ -92,14 +94,42 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
     ESP_LOGI(CURRENT_LOG_TAG, "Got reporting settings update");
     
     bool callsignChanged = callsign_ != message->callsign || gridSquare_ != message->gridSquare;
+    bool forcedReportingChanged = forceReporting_ != message->forceReporting;
+    
     callsign_ = message->callsign;
     gridSquare_ = message->gridSquare;
-
+    forceReporting_ = message->forceReporting;
+    
     // Disconnect and reconnect if there were any changes
     if (reportingEnabled_ && callsignChanged)
     {
         stopSocketIoConnection_();
         startSocketIoConnection_();
+    }
+    
+    // If forced reporting has changed, trigger disconnect or connect
+    // as appropriate.
+    if (forcedReportingChanged)
+    {
+        if (forceReporting_)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Forcing reporting to go live");
+            EnableReportingMessage request;
+            post(&request);
+        }
+        else
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Undoing forced reporting");
+            DisableReportingMessage request;
+            post(&request);
+        }
+    }
+    
+    // If reporting is forced, unconditionally send frequency update.
+    if (forceReporting_)
+    {
+        ReportFrequencyChangeMessage request(message->freqHz);
+        post(&request);
     }
 }
 
@@ -107,6 +137,8 @@ void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReporti
 {
     if (callsign_ != "" && gridSquare_ != "" && freeDVMode_ != audio::FreeDVMode::ANALOG)
     {
+        reportingRefCount_++;
+        
         ESP_LOGI(CURRENT_LOG_TAG, "Reporting enabled by radio driver, begin connection");
         if (reportingEnabled_)
         {
@@ -120,7 +152,12 @@ void FreeDVReporterTask::onDisableReportingMessage_(DVTask* origin, DisableRepor
 {
     if (reportingEnabled_)
     {
-        stopSocketIoConnection_();
+        reportingRefCount_--;
+        
+        if (reportingRefCount_ == 0)
+        {
+            stopSocketIoConnection_();
+        }
     }
 }
 

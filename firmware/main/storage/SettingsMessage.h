@@ -218,8 +218,10 @@ class ReportingSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, Reporti
 public:
     enum { MAX_STR_SIZE = 16 };
 
-    ReportingSettingsMessageCommon(char* callsignProvided = "", char* gridSquareProvided = "")
-        : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
+    ReportingSettingsMessageCommon(char* callsignProvided = "", char* gridSquareProvided = "", bool forceReportingProvided = false, uint64_t freqHzProvided = 0)
+        : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE)
+        , forceReporting(forceReportingProvided)
+        , freqHz(freqHzProvided)
     { 
         memset(callsign, 0, sizeof(callsign));
         if (callsignProvided != nullptr)
@@ -238,6 +240,8 @@ public:
 
     char callsign[MAX_STR_SIZE];
     char gridSquare[MAX_STR_SIZE];
+    bool forceReporting;
+    uint64_t freqHz;
 };
 
 using ReportingSettingsMessage = ReportingSettingsMessageCommon<REPORTING_SETTINGS>;

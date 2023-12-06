@@ -380,6 +380,11 @@ function wsConnect()
           $("#reportingReset").prop("disabled", false);
           $("#reportingCallsign").val(json.callsign);
           $("#reportingGridSquare").val(json.gridSquare);
+          $("#reportingForceEnable").val(json.forceReporting);
+          
+          var reportingFrequencyHz = json.reportingFrequency;
+          var reportingFrequencyMHz = reportingFrequencyHz / 1000 / 1000;
+          $("#reportingFrequency").val(reportingFrequencyMHz.toFixed(4));
       }
       else if (json.type == "reportingSaved")
       {
@@ -622,7 +627,9 @@ $("#reportingSave").click(function()
     {
         "type": "saveReportingInfo",
         "callsign": $("#reportingCallsign").val(),
-        "gridSquare": $("#reportingGridSquare").val()
+        "gridSquare": $("#reportingGridSquare").val(),
+        "forceEnable": $("#reportingForceEnable").is(':checked'),
+        "frequency": parseFloat($("#reportingFrequency").val()) * 1000 * 1000
     };
     
     $("#reportingSuccessAlertRow").hide();

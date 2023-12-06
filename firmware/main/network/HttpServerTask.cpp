@@ -1233,6 +1233,8 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     bool settingsValid = false;
     char* callsign = "";
     char* gridSquare = "";
+    bool forceReporting = false;
+    uint64_t freqHz = 0;
     
     auto callsignJSON = cJSON_GetObjectItem(message->request, "callsign");
     if (callsignJSON != nullptr)
@@ -1247,11 +1249,24 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
         gridSquare = cJSON_GetStringValue(gridSquareJSON);
         settingsValid = true; // empty gridsquare / UN00KN == disable FreeDV Reporter
     }
+    
+    auto forceReportingJSON = cJSON_GetObjectItem(message->request, "forceEnable");
+    settingsValid &= forceReportingJSON != nullptr;
+    if (settingsValid)
+    {
+        forceReporting = cJSON_IsTrue(forceReportingJSON);
+        
+        auto freqHzJSON = cJSON_GetObjectItem(message->request, "frequency");
+        if (freqHzJSON != nullptr)
+        {
+            freqHz = (uint64_t)cJSON_GetNumberValue(freqHzJSON);
+        }
+    }
 
     bool success = false;
     if (settingsValid)
     {
-        storage::SetReportingSettingsMessage request(callsign, gridSquare);
+        storage::SetReportingSettingsMessage request(callsign, gridSquare, forceReporting, freqHz);
         publish(&request);
     
         auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
