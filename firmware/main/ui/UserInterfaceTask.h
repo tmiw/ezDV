@@ -108,6 +108,9 @@ private:
 
     // Radio settings handling
     void onRadioSettingsMessage_(DVTask* origin, storage::RadioSettingsMessage* message);
+    
+    // IP address assignment handling
+    void onIpAddressAssignedMessage_(DVTask* origin, network::IpAddressAssignedMessage* message);
 };
 
 }

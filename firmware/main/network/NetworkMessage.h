@@ -18,6 +18,8 @@
 #ifndef NETWORK_MESSAGE_H
 #define NETWORK_MESSAGE_H
 
+#include <cstring>
+
 #include "task/DVTaskMessage.h"
 #include "esp_wifi.h"
 
@@ -45,6 +47,7 @@ enum NetworkMessageTypes
     WIFI_NETWORK_LIST = 7,
     WIFI_SCAN_START = 8,
     WIFI_SCAN_STOP = 9,
+    IP_ASSIGNED = 10,
 };
 
 template<uint32_t MSG_ID>
@@ -141,6 +144,27 @@ class EnableDisableMessageCommon : public DVTaskMessageBase<MSG_ID, EnableDisabl
 
 using StartWifiScanMessage = EnableDisableMessageCommon<WIFI_SCAN_START>;
 using StopWifiScanMessage = EnableDisableMessageCommon<WIFI_SCAN_STOP>;
+
+class IpAddressAssignedMessage : public DVTaskMessageBase<IP_ASSIGNED, IpAddressAssignedMessage>
+{
+public:
+    enum { MAX_STR_SIZE = 32 };
+    
+    IpAddressAssignedMessage(char* ipProvided = nullptr)
+        : DVTaskMessageBase<IP_ASSIGNED, IpAddressAssignedMessage>(NETWORK_MESSAGE)
+    {
+        memset(ip, 0, MAX_STR_SIZE);
+        
+        if (ipProvided != nullptr)
+        {
+            strncpy(ip, ipProvided, MAX_STR_SIZE - 1);
+        }
+    }
+    
+    virtual ~IpAddressAssignedMessage() = default;
+    
+    char ip[MAX_STR_SIZE];
+};
 
 }
 

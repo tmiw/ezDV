@@ -61,16 +61,19 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
         {
             case IP_EVENT_AP_STAIPASSIGNED:
             {
-                ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
-                char buf[32];
-                sprintf(buf, IPSTR, IP2STR(&ipData->ip));
-                obj->onNetworkConnected_(true, buf);
+                obj->onNetworkConnected_(false, "");
                 break;
             }
             case IP_EVENT_STA_GOT_IP:
+            {
+                ip_event_got_ip_t* ipData = (ip_event_got_ip_t*)event_data;
+                char buf[32];
+                sprintf(buf, "IP " IPSTR, IP2STR(&ipData->ip_info.ip));
+            
                 obj->onNetworkUp_();
-                obj->onNetworkConnected_(false, "");
+                obj->onNetworkConnected_(true, buf);
                 break;
+            }
         }
     }
 }
@@ -425,7 +428,11 @@ void WirelessTask::onNetworkUp_()
 }
 
 void WirelessTask::onNetworkConnected_(bool client, char* ip)
-{    
+{
+    // Broadcast our current IP address if available.
+    IpAddressAssignedMessage ipAssigned(ip);
+    publish(&ipAssigned);
+        
     // Start the VITA task here since we need it to be able to 
     // get UDP broadcasts from the radio.
     if (flexVitaTask_ == nullptr)

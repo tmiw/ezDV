@@ -80,6 +80,7 @@ UserInterfaceTask::UserInterfaceTask()
     registerMessageHandler(this, &UserInterfaceTask::onRequestStartStopKeyerMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onGetKeyerStateMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onRadioSettingsMessage_);
+    registerMessageHandler(this, &UserInterfaceTask::onIpAddressAssignedMessage_);
 }
 
 UserInterfaceTask::~UserInterfaceTask()
@@ -105,12 +106,6 @@ void UserInterfaceTask::onTaskStart_()
     publish(&msg);
     msg.led = ezdv::driver::SetLedStateMessage::LedLabel::NETWORK;
     publish(&msg);
-
-    // Send welcome message to beeper
-    ESP_LOGI(CURRENT_LOG_TAG, "Sending welcome message to beeper");
-    audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
-    publish(beeperMessage);
-    delete beeperMessage;
 }
 
 void UserInterfaceTask::onTaskSleep_()
@@ -510,6 +505,28 @@ void UserInterfaceTask::onRadioSettingsMessage_(DVTask* origin, storage::RadioSe
 
     // TOT is configured in seconds, so need to convert to microseconds first.
     timeOutTimer_.changeInterval(message->timeOutTimer * 1000000);
+}
+
+void UserInterfaceTask::onIpAddressAssignedMessage_(DVTask* origin, network::IpAddressAssignedMessage* message)
+{
+    if (strlen(message->ip) == 0)
+    {
+        // Just say "N" indicating that the network is up.
+        audio::SetBeeperTextMessage beeperMsg("N");
+        publish(&beeperMsg);
+    }
+    else
+    {
+        // Extract the last octet of the IP address.
+        std::string ip = message->ip;
+        std::string lastOctet = ip.substr(ip.rfind(".") + 1);
+        int lastOctetNum = atoi(lastOctet.c_str());
+        char buf[6];
+        sprintf(buf, " N%03d", lastOctetNum);
+        
+        audio::SetBeeperTextMessage beeperMsg(buf);
+        publish(&beeperMsg);
+    }
 }
 
 }

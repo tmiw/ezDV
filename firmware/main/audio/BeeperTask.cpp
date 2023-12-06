@@ -129,7 +129,6 @@ void BeeperTask::onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message)
 
     beeperTimer_.stop();
 
-    beeperList_.clear();
     sineCounter_ = 0;
     stringToBeeperScript_(message->text);
 
