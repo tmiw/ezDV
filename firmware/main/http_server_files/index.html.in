@@ -404,19 +404,19 @@
                     <input id="radioIP" value="192.168.1.2" class="form-control" />
                     </div>
                 </div>
-                <div class="row mb-3 radio-enable-row">
+                <div class="row mb-3 radio-enable-row icom-config-row">
                     <label for="radioPort" class="col-xs-4 col-md-2 col-form-label">Port</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="radioPort" value="50001" class="form-control" />
                     </div>
                 </div>
-                <div class="row mb-3 radio-enable-row">
+                <div class="row mb-3 radio-enable-row icom-config-row">
                     <label for="radioUsername" class="col-xs-4 col-md-2 col-form-label">Username</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="radioUsername" value="KA6ABC" class="form-control" />
                     </div>
                 </div>
-                <div class="row mb-3 radio-enable-row">
+                <div class="row mb-3 radio-enable-row icom-config-row">
                     <label for="radioPassword" class="col-xs-4 col-md-2 col-form-label">Password</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="radioPassword" type="password" value="this is a test" class="form-control" />

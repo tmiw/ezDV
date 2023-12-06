@@ -162,9 +162,14 @@ var updateRadioFormState = function()
         $(".flex-radio-config").hide();
     }
     
-    $("#radioPort").prop( "disabled", disabled );
-    $("#radioUsername").prop( "disabled", disabled );
-    $("#radioPassword").prop( "disabled", disabled );
+    if (disabled)
+    {
+        $(".icom-config-row").hide();
+    }
+    else
+    {
+        $(".icom-config-row").show();
+    }
 };
 
 var saveVoiceKeyerSettings = function() {
