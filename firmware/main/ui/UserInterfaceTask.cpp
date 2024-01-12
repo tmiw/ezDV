@@ -126,6 +126,10 @@ void UserInterfaceTask::onTaskSleep_()
     
     // Send goodbye message to beeper. The extra spaces are to give a bit more timing
     // so the beeper doesn't step on itself.
+    audio::ClearBeeperTextMessage* clearBeeperMessage = new audio::ClearBeeperTextMessage();
+    publish(clearBeeperMessage);
+    delete clearBeeperMessage;
+    
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("  73  ");
     publish(beeperMessage);
     delete beeperMessage;
