@@ -129,7 +129,7 @@ void UserInterfaceTask::onTaskSleep_()
     audio::ClearBeeperTextMessage* clearBeeperMessage = new audio::ClearBeeperTextMessage();
     publish(clearBeeperMessage);
     delete clearBeeperMessage;
-    
+
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage("  73  ");
     publish(beeperMessage);
     delete beeperMessage;
@@ -455,7 +455,12 @@ void UserInterfaceTask::onRequestSetFreeDVModeMessage_(DVTask* origin, audio::Re
     publish(setModeMessage);
     delete setModeMessage;
 
-    // Send new mode to beeper
+    // Send new mode to beeper. Clear any pending beeper messages to avoid having to wait
+    // a while before hearing the latest mode.
+    audio::ClearBeeperTextMessage* clearBeeperMessage = new audio::ClearBeeperTextMessage();
+    publish(clearBeeperMessage);
+    delete clearBeeperMessage;
+    
     audio::SetBeeperTextMessage* beeperMessage = new audio::SetBeeperTextMessage(ModeList_[currentMode_].c_str());
     publish(beeperMessage);
     delete beeperMessage;
