@@ -41,7 +41,6 @@ FuelGaugeTask::ChargeIndicatorConfiguration FuelGaugeTask::IndicatorConfig_[] = 
 
 FuelGaugeTask::FuelGaugeTask()
     : DVTask("FuelGaugeTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(1000))
-    , blinkStateCtr_(0)
     , sentRequest_(false)
     , socChangeRate_(0)
 {
@@ -111,8 +110,6 @@ void FuelGaugeTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateM
     {
         lightIndicator_(message->soc, &IndicatorConfig_[index]);
     }
-
-    blinkStateCtr_++;
 }
 
 void FuelGaugeTask::lightIndicator_(float chargeLevel, ChargeIndicatorConfiguration* config)
@@ -122,11 +119,6 @@ void FuelGaugeTask::lightIndicator_(float chargeLevel, ChargeIndicatorConfigurat
     if (chargeLevel < config->minimumPercentage)
     {
         ledStateMessage.ledState = false;
-    }
-    else if (socChangeRate_ > 0 && 
-             chargeLevel >= config->minimumPercentage && chargeLevel <= config->maximumPercentage)
-    {
-        ledStateMessage.ledState = (blinkStateCtr_) & 0x1;
     }
     else
     {

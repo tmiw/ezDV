@@ -54,7 +54,6 @@ private:
         driver::SetLedStateMessage::LedLabel ledToLight;
     };
     
-    int blinkStateCtr_;
     bool sentRequest_;
     float socChangeRate_;
 
