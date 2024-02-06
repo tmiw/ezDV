@@ -506,8 +506,8 @@ void TLV320::tlv320ConfigureRoutingDAC_()
 void TLV320::tlv320ConfigureAGC_()
 {
     uint8_t agcConfig[] = {
-        // Enable AGC, -10dB target, gain hysteresis disabled
-        (1 << 7) | (0b010 << 4) | (0b00 << 0),  
+        // Enable AGC, -16dB target, gain hysteresis disabled
+        (1 << 7) | (0b101 << 4) | (0b00 << 0),  
         
         // Hysteresis 2dB, -90dB noise threshold
         (0b01 << 6) | (0b11111 << 1),
