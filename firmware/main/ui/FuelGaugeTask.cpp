@@ -45,7 +45,6 @@ FuelGaugeTask::FuelGaugeTask()
     , socChangeRate_(0)
 {
     registerMessageHandler(this, &FuelGaugeTask::onButtonLongPressedMessage_);
-    registerMessageHandler(this, &FuelGaugeTask::onButtonPressedMessage_);
     registerMessageHandler(this, &FuelGaugeTask::onBatteryStateMessage_);
 }
 
@@ -74,16 +73,6 @@ void FuelGaugeTask::onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLo
     }
 }
 
-void FuelGaugeTask::onButtonPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message)
-{
-    if (message->button == driver::ButtonLabel::USB_POWER_DETECT)
-    {
-        // We're unplugged, go back to sleep
-        rebootDevice = false;
-        StartSleeping();
-    }
-}
-
 void FuelGaugeTask::onTaskTick_()
 {
     // Request current battery state once a second to ensure we're still charging.
@@ -94,6 +83,15 @@ void FuelGaugeTask::onTaskTick_()
 
 void FuelGaugeTask::onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message)
 {
+    // We could get an unsolicited message due to the USB cable being disconnected.
+    // Shut down when this occurs.
+    if (!message->usbPowerEnabled)
+    {
+        // We're unplugged, go back to sleep
+        rebootDevice = false;
+        StartSleeping();
+    }
+
     // Ignore the unsolicited status messages to ensure that there aren't any glitches
     // in the blinking.
     if (!sentRequest_)

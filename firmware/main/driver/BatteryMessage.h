@@ -43,17 +43,19 @@ enum BatteryMessageTypes
 class BatteryStateMessage : public DVTaskMessageBase<BATTERY_STATE, BatteryStateMessage>
 {
 public:
-    BatteryStateMessage(float voltageProvided = 0, float socProvided = 0, float socChangeRateProvided = 0)
+    BatteryStateMessage(float voltageProvided = 0, float socProvided = 0, float socChangeRateProvided = 0, bool usbPowerProvided = false)
         : DVTaskMessageBase<BATTERY_STATE, BatteryStateMessage>(BATTERY_MESSAGE)
         , voltage(voltageProvided)
         , soc(socProvided)
         , socChangeRate(socChangeRateProvided)
+        , usbPowerEnabled(usbPowerProvided)
         {}
     virtual ~BatteryStateMessage() = default;
 
     float voltage;
     float soc;
     float socChangeRate;
+    bool usbPowerEnabled;
 };
 
 class LowBatteryShutdownMessage : public DVTaskMessageBase<LOW_POWER_SHUTDOWN, BatteryStateMessage>

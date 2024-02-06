@@ -41,7 +41,6 @@ ButtonArray::ButtonArray()
     , modeButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::MODE, _2))
     , volUpButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_UP, _2))
     , volDownButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_DOWN, _2))
-    , usbPower_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::USB_POWER_DETECT, _2), false, false)
 {
     // empty
 }
@@ -64,9 +63,6 @@ void ButtonArray::onTaskStart_()
     
     volDownButton_.start();
     volDownButton_.enableInterrupt(true);
-    
-    usbPower_.start();
-    usbPower_.enableInterrupt(true);
 }
 
 void ButtonArray::onTaskSleep_()
@@ -101,9 +97,6 @@ void ButtonArray::handleButton_(ButtonLabel label, bool val)
         case ButtonLabel::VOL_DOWN:
             buttonName = "VolDown";
             timerToSet = &volDownButtonTimer_;
-            break;
-        case ButtonLabel::USB_POWER_DETECT:
-            buttonName = "UsbPower";
             break;
         default:
             assert(0);

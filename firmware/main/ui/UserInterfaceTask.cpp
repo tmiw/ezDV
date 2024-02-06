@@ -167,9 +167,6 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
                 volIncrement_ = -1;
                 updateVolumeCommon_();
                 break;
-            case driver::ButtonLabel::USB_POWER_DETECT:
-                // Ignore USB power detection for now.
-                break;
             default:
                 assert(0);
         }
@@ -231,9 +228,6 @@ void UserInterfaceTask::onButtonReleasedMessage_(DVTask* origin, driver::ButtonR
             case driver::ButtonLabel::VOL_UP:
             case driver::ButtonLabel::VOL_DOWN:
                 volHoldTimer_.stop();
-                break;
-            case driver::ButtonLabel::USB_POWER_DETECT:
-                // Ignore USB power detection for now.
                 break;
             default:
                 assert(0);

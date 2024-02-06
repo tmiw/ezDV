@@ -33,6 +33,9 @@
 // Interrupt GPIO for battery alerts
 #define BAT_ALERT_GPIO GPIO_NUM_8
 
+// Interrupt GPIO for USB power detection
+#define GPIO_USB_POWER_DETECT GPIO_NUM_0
+
 namespace ezdv
 {
 
@@ -57,6 +60,7 @@ protected:
 private:
     I2CDevice* i2cDevice_;
     InputGPIO<BAT_ALERT_GPIO> batAlertGpio_;
+    InputGPIO<GPIO_USB_POWER_DETECT> usbPower_;
     bool enabled_;
     adc_oneshot_unit_handle_t adcHandle_;
     adc_cali_handle_t adcCalibrationHandle_;

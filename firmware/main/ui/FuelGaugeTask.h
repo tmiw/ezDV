@@ -60,9 +60,6 @@ private:
     // Button handling
     void onButtonLongPressedMessage_(DVTask* origin, driver::ButtonLongPressedMessage* message);
 
-    // USB unplug detection
-    void onButtonPressedMessage_(DVTask* origin, driver::ButtonShortPressedMessage* message);
-    
     // Fuel gauge handling
     void onBatteryStateMessage_(DVTask* origin, driver::BatteryStateMessage* message);
     

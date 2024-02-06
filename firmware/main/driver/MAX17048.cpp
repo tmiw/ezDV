@@ -63,6 +63,7 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
     : DVTask("MAX17048", 10 /* TBD */, 2870, tskNO_AFFINITY, 10, pdMS_TO_TICKS(60000))
     , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
+    , usbPower_(this, std::bind(&MAX17048::onTaskTick_, this), false, false)
     , enabled_(false)
     , adcHandle_(nullptr)
     , adcCalibrationHandle_(nullptr)
@@ -76,6 +77,9 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
 
 void MAX17048::onTaskStart_()
 {
+    usbPower_.start();
+    usbPower_.enableInterrupt(true);
+
     ESP_LOGI(CURRENT_LOG_TAG, "Checking for device...");
     
     if (deviceExists_())
@@ -236,7 +240,7 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
     {
         calcSoc = 0;
     }
-    BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208);
+    BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208, usbPower_.getCurrentValue());
     publish(&message);
     
     ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);

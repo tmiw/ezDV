@@ -47,7 +47,6 @@ enum ButtonLabel
     MODE,
     VOL_UP,
     VOL_DOWN,
-    USB_POWER_DETECT,
 };
 
 template<uint32_t MSG_TYPE>
