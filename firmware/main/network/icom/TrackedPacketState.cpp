@@ -34,6 +34,7 @@ TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD))
     , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD))
     , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
+    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(50))
     , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD))
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
@@ -64,6 +65,7 @@ void TrackedPacketState::onEnterState()
     idleTimer_.start();
     retransmitRequestTimer_.start();
     cleanupTimer_.start();
+    txRetransmitTimer_.start();
 }
 
 void TrackedPacketState::onExitState()
@@ -85,6 +87,7 @@ void TrackedPacketState::onExitState()
     idleTimer_.stop();
     retransmitRequestTimer_.stop();
     cleanupTimer_.stop();
+    txRetransmitTimer_.stop();
 }
 
 void TrackedPacketState::onReceivePacket(IcomPacket& packet)
@@ -115,7 +118,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
         ESP_LOGI(parent_->getName().c_str(), "Received retransmit packet (currSendSeq: %d)", sendSequenceNumber_);
         for (auto packetId : retryPackets)
         {
-            retransmitPacket_(packetId);
+            txRetryPacketIds_[packetId] = 1;
         }
     }
     else
@@ -242,6 +245,16 @@ void TrackedPacketState::onIdleTimer_()
     parent_->sendUntracked(packet);
 }
 
+void TrackedPacketState::onTxRetransmitTimer_()
+{
+    for (auto& kvp : txRetryPacketIds_)
+    {
+        retransmitPacket_(kvp.first);
+    }
+    
+    txRetryPacketIds_.clear();
+}
+    
 void TrackedPacketState::onRetransmitTimer_()
 {
     if (rxMissingPacketIds_.size() == 0)

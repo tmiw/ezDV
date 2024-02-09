@@ -49,6 +49,7 @@ protected:
     DVTimer pingTimer_;
     DVTimer idleTimer_;
     DVTimer retransmitRequestTimer_;
+    DVTimer txRetransmitTimer_;
 
     void sendTracked_(IcomPacket& packet);
 
@@ -69,6 +70,16 @@ private:
             >
         > > sentPackets_;
     std::vector<uint16_t, util::PSRamAllocator<uint16_t>> rxPacketIds_;
+    std::map<
+        uint16_t, 
+        uint16_t,
+        std::less<uint16_t>, 
+        util::PSRamAllocator<
+            std::pair<
+                const uint16_t, 
+                uint16_t
+            >
+        > > txRetryPacketIds_;
     std::map<uint16_t, int, std::less<uint16_t>, util::PSRamAllocator<std::pair<const uint16_t, int>>> rxMissingPacketIds_;
     
     void sendPing_();
@@ -77,6 +88,7 @@ private:
     void onPingTimer_();
     void onIdleTimer_();
     void onRetransmitTimer_();
+    void onTxRetransmitTimer_();
     void onCleanupTimer_();
 
     void incrementPingSequence_(uint16_t pingSeq);
