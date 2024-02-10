@@ -115,7 +115,8 @@ void FreeDVTask::onTaskTick_()
         short inputBuf[FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
         memset(inputBuf, 0, sizeof(inputBuf));
         
-        while (codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
+        while (!(isTransmitting_ && isEndingTransmit_) && 
+               codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
         {
             codec2_fifo_read(codecInputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
             codec2_fifo_write(codecOutputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
