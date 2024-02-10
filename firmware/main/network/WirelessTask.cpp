@@ -754,12 +754,16 @@ void WirelessTask::onWifiScanComplete_()
 
 void WirelessTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Starting Wi-Fi scan");
+    
     wifiScanTimer_.stop();
     triggerWifiScan_();
 }
 
 void WirelessTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "Stopping Wi-Fi scan");
+    
     wifiScanTimer_.stop();
 }
 

@@ -151,8 +151,8 @@ private:
     
     void onRebootDeviceMessage_(DVTask* origin, RebootDeviceMessage* message);
 
-    void onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessage* message);
-    void onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message);
+    void onStartWifiScanMessage_(DVTask* origin, HttpServerTask::StartWifiScanMessage* message);
+    void onStopWifiScanMessage_(DVTask* origin, HttpServerTask::StopWifiScanMessage* message);
     void onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);

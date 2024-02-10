@@ -407,6 +407,8 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                 }
                 else if (!strcmp(type, "stopWifiScan"))
                 {
+                    thisObj->activeWebSockets_[fd] = false;
+                    
                     StopWifiScanMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
@@ -1510,7 +1512,7 @@ void HttpServerTask::onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessag
     activeWebSockets_[message->fd] = true;
 }
 
-void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message)
+void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, HttpServerTask::StopWifiScanMessage* message)
 {
     int numWifiScansInProgress = 0;
 
