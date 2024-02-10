@@ -37,6 +37,8 @@
 #define AREYOUTHERE_PERIOD 500
 #define WATCHDOG_PERIOD 500             
 #define RETRANSMIT_PERIOD 100           // How often to attempt retransmit
+#define TX_RETRANSMIT_PERIOD 10         // Time period to wait before retransmiting requested packets 
+                                        // (to avoid retransmitting more than needed)
 #define LOCK_PERIOD 10                  // How long to try to lock mutex (ms)
 #define STALE_CONNECTION 15             // Not heard from in this many seconds
 #define BUFSIZE 500 // Number of packets to buffer

@@ -34,7 +34,7 @@ TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD))
     , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD))
     , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
-    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(50))
+    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(TX_RETRANSMIT_PERIOD))
     , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD))
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
@@ -65,7 +65,6 @@ void TrackedPacketState::onEnterState()
     idleTimer_.start();
     retransmitRequestTimer_.start();
     cleanupTimer_.start();
-    txRetransmitTimer_.start();
 }
 
 void TrackedPacketState::onExitState()
@@ -120,6 +119,8 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
         {
             txRetryPacketIds_[packetId] = 1;
         }
+        
+        txRetransmitTimer_.start(true);
     }
     else
     {
