@@ -366,20 +366,25 @@ cleanup:
 
 void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
 {
+    const int MAX_RETRY_TIME_MS = 50;
+    
     auto packet = message->packet;
     assert(packet != nullptr);
 
     if (socket_ > 0)
     {
+        auto startTime = esp_timer_get_time();
+        int tries = 1;
         int rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
-        int tries = 0;
-        while (rv == -1 && tries < 100)
+        auto totalTimeMs = (esp_timer_get_time() - startTime)/1000;
+        while (rv == -1 && totalTimeMs < MAX_RETRY_TIME_MS)
         {
             auto err = errno;
             if (err == ENOMEM)
             {
                 // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
                 vTaskDelay(1);
+                tries++;
                 rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
                 continue;
             }
@@ -394,11 +399,11 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
             }
         }
         
-        if (tries >= 100)
+        if (totalTimeMs >= MAX_RETRY_TIME_MS)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Wi-Fi subsystem took too long to become ready, dropping packet");
         }
-        else if (tries > 0)
+        else if (tries > 1)
         {
             ESP_LOGW(CURRENT_LOG_TAG, "Needed %d tries to send a packet", tries++);
         }
