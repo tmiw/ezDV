@@ -434,6 +434,12 @@ void WirelessTask::onNetworkUp_()
 
 void WirelessTask::onNetworkConnected_(bool client, char* ip)
 {
+    if (radioRunning_)
+    {
+        // Don't reexecute if the radio is already running.
+        return;
+    }
+    
     // Broadcast our current IP address if available.
     if (client)
     {
