@@ -20,6 +20,7 @@
 
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "driver/gpio_filter.h"
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
@@ -70,6 +71,7 @@ private:
     bool currentState_;
     bool enablePullup_;
     bool enablePulldown_;
+    gpio_glitch_filter_handle_t glitchFilterHandle_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
     void onDebounceTimerFire_();
@@ -86,6 +88,7 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enableP
     , currentState_(false)
     , enablePullup_(enablePullup)
     , enablePulldown_(enablePulldown)
+    , glitchFilterHandle_(nullptr)
 {
     // empty
 }
@@ -124,6 +127,13 @@ void InputGPIO<NumGPIO>::start()
         ESP_ERROR_CHECK(gpio_pullup_dis(NumGPIO));
     }
     enableInterrupt(false);
+    
+    gpio_pin_glitch_filter_config_t glitchConfig = {
+        .clk_src = GLITCH_FILTER_CLK_SRC_DEFAULT,
+        .gpio_num = NumGPIO
+    };
+    ESP_ERROR_CHECK(gpio_new_pin_glitch_filter(&glitchConfig, &glitchFilterHandle_));
+    ESP_ERROR_CHECK(gpio_glitch_filter_enable(glitchFilterHandle_));
     
     currentState_ = gpio_get_level(NumGPIO) == 1;
 
