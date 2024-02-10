@@ -225,22 +225,25 @@ IcomProtocolState* IcomStateMachine::getProtocolState_()
 
 void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
 {
-    const int MAX_RETRIES = 50;
+    const int MAX_RETRY_TIME_MS = 50;
     
     auto packet = message->packet;
     assert(packet != nullptr);
 
     if (socket_ > 0)
     {
+        auto startTime = esp_timer_get_time();
+        int tries = 1;
         int rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
-        int tries = 0;
-        while (rv == -1 && tries++ < MAX_RETRIES)
+        auto totalTimeMs = (esp_timer_get_time() - startTime)/1000;
+        while (rv == -1 && totalTimeMs < MAX_RETRY_TIME_MS)
         {
             auto err = errno;
             if (err == ENOMEM)
             {
                 // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
                 vTaskDelay(1);
+                tries++;
                 rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
                 continue;
             }
@@ -255,13 +258,13 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
             }
         }
         
-        if (tries >= MAX_RETRIES)
+        if (totalTimeMs >= MAX_RETRY_TIME_MS)
         {
             ESP_LOGE(getName().c_str(), "Wi-Fi subsystem took too long to become ready, dropping packet");
         }
-        else if (tries > 0)
+        else if (tries > 1)
         {
-            ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries++);
+            ESP_LOGW(getName().c_str(), "Needed %d tries to send a packet", tries);
         }
 
         // Read any packets that are available from the radio
