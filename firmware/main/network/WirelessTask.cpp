@@ -53,6 +53,8 @@ namespace network
 
 void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
+    ESP_LOGI(CURRENT_LOG_TAG, "IP event: %ld", event_id);
+    
     WirelessTask* obj = (WirelessTask*)event_handler_arg;
     
     if (obj->isAwake())
@@ -66,7 +68,7 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
                 sprintf(buf, IPSTR, IP2STR(&ipData->ip));
                 
                 ESP_LOGI(CURRENT_LOG_TAG, "Assigned IP %s to client", buf);
-                obj->onNetworkConnected_(false, buf);
+                obj->onNetworkConnected_(false, buf, ipData->mac);
                 break;
             }
             case IP_EVENT_STA_GOT_IP:
@@ -76,7 +78,7 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
                 sprintf(buf, "IP " IPSTR, IP2STR(&ipData->ip_info.ip));
             
                 obj->onNetworkUp_();
-                obj->onNetworkConnected_(true, buf);
+                obj->onNetworkConnected_(true, buf, nullptr);
                 break;
             }
         }
@@ -87,7 +89,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 {
     WirelessTask* obj = (WirelessTask*)event_handler_arg;
     
-    ESP_LOGI(CURRENT_LOG_TAG, "Wifi event: %ld", event_id);
+    ESP_LOGI(CURRENT_LOG_TAG, "Wi-Fi event: %ld", event_id);
     
     if (obj->isAwake())
     {
@@ -113,6 +115,16 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
                     ESP_ERROR_CHECK(esp_wifi_connect());
                 }
 
+                break;
+            case WIFI_EVENT_AP_STADISCONNECTED:
+                // Prevent attempted reconnection of radio if that's the device
+                // that disconnected.
+                wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*)event_data;
+                if (memcmp(event->mac, obj->radioMac, sizeof(obj->radioMac)) == 0)
+                {
+                    obj->icomRestartTimer_.stop();
+                    obj->radioRunning_ = false;
+                }
                 break;
         }
     }
@@ -432,7 +444,7 @@ void WirelessTask::onNetworkUp_()
     enableHttp_();
 }
 
-void WirelessTask::onNetworkConnected_(bool client, char* ip)
+void WirelessTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddress)
 {
     if (radioRunning_)
     {
@@ -463,8 +475,11 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
     // Get the current Icom radio settings
     if (!overrideWifiSettings_)
     {
-        start(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
-
+        if (!freeDVReporterTask_.isAwake())
+        {
+            start(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+        }
+        
         storage::RequestRadioSettingsMessage request;
         publish(&request);
 
@@ -475,6 +490,13 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip)
             {
                 if (client || !strcmp(response->host, ip))
                 {
+                    // Grab MAC address for later use when disconnecting
+                    // (to prevent reconnection when the radio is obviously offline).
+                    if (macAddress != nullptr)
+                    {
+                        memcpy(radioMac, macAddress, sizeof(radioMac));
+                    }
+                    
                     radioType_ = response->type;
                     switch (response->type)
                     {

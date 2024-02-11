@@ -82,6 +82,7 @@ private:
     int radioType_;
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
+    uint8_t radioMac[6];
         
     void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname);
     void enableDefaultWifi_();
@@ -91,7 +92,7 @@ private:
     void disableHttp_();
     
     void onNetworkUp_();
-    void onNetworkConnected_(bool client, char* ip);
+    void onNetworkConnected_(bool client, char* ip, uint8_t* macAddress);
     void onNetworkDisconnected_();
     
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
