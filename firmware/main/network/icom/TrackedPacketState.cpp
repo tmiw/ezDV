@@ -120,6 +120,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
             txRetryPacketIds_[packetId] = 1;
         }
         
+        txRetransmitTimer_.stop();
         txRetransmitTimer_.start(true);
     }
     else

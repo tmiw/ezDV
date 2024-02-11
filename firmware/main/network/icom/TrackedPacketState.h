@@ -55,6 +55,7 @@ protected:
 
 private:
     DVTimer cleanupTimer_;
+    
     uint16_t pingSequenceNumber_;
     uint16_t sendSequenceNumber_;
     uint32_t numSavedBytesInPacketQueue_;
