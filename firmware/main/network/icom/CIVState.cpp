@@ -34,6 +34,7 @@ CIVState::CIVState(IcomStateMachine* parent)
     , civWatchdogTimer_(parent_->getTask(), std::bind(&CIVState::onCIVWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
     , civSequenceNumber_(0)
     , civId_(0)
+    , currentPttState_(false)
 {
     parent_->getTask()->registerMessageHandler(this, &CIVState::onFreeDVSetPTTStateMessage_);
     parent_->getTask()->registerMessageHandler(this, &CIVState::onStopTransmitMessage_);
@@ -108,6 +109,23 @@ void CIVState::onReceivePacket(IcomPacket& packet)
             };
 
             sendCIVPacket_(civPacket, sizeof(civPacket));
+            
+            // We should also reset the PTT state in case we lost connection during a state
+            // change.
+            ESP_LOGI(parent_->getName().c_str(), "Sending PTT CIV message (PTT = %d)", currentPttState_ ? 1 : 0);
+        
+            uint8_t civPttPacket[] = {
+                0xFE,
+                0xFE,
+                civId_,
+                0xE0,
+                0x1C, // PTT on/off command/subcommand
+                0x00,
+                (uint8_t)(currentPttState_ ? 0x01 : 0x00), // enable PTT
+                0xFD
+            };
+        
+            sendCIVPacket_(civPttPacket, sizeof(civPttPacket));
         }
         else if (civPacket[3] == civId_)
         {
@@ -189,6 +207,8 @@ void CIVState::onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSe
         };
         
         sendCIVPacket_(civPacket, sizeof(civPacket));
+        
+        currentPttState_ = true;
     }
 }
 
@@ -210,6 +230,8 @@ void CIVState::onStopTransmitMessage_(DVTask* origin, StopTransmitMessage* messa
         };
         
         sendCIVPacket_(civPacket, sizeof(civPacket));
+        
+        currentPttState_ = false;
     }
 }
 

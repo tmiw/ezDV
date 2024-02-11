@@ -50,6 +50,7 @@ private:
     DVTimer civWatchdogTimer_;
     uint16_t civSequenceNumber_;
     uint8_t civId_;
+    bool currentPttState_;
     
     void sendCIVOpenPacket_();
     void sendCIVClosePacket_();
