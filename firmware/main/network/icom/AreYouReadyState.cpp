@@ -66,6 +66,11 @@ void AreYouReadyState::onReceivePacket(IcomPacket& packet)
 
         areYouReadyTimer_.stop();
     }
+    else
+    {
+        // Received unexpected packet. Start over from beginning.
+        parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
+    }
 }
 
 void AreYouReadyState::onAreYouReadyTimer_()
