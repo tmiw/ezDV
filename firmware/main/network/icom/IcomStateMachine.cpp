@@ -246,7 +246,7 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
                 vTaskDelay(5);
                 tries++;
                 rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
-                continue;
+                totalTimeMs = (esp_timer_get_time() - startTime)/1000;
             }
             else
             {
