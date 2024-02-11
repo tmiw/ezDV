@@ -225,12 +225,13 @@ IcomProtocolState* IcomStateMachine::getProtocolState_()
 
 void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
 {
-    const int MAX_RETRY_TIME_MS = 50;
+    const int MAX_RETRY_TIME_MS = 25;
+    const int EXPIRE_TIME_MS = 500;
     
     auto packet = message->packet;
     assert(packet != nullptr);
 
-    if (socket_ > 0)
+    if (socket_ > 0 && (esp_timer_get_time() - message->sendTime)/1000 <= EXPIRE_TIME_MS)
     {
         auto startTime = esp_timer_get_time();
         int tries = 1;
@@ -242,7 +243,7 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
             if (err == ENOMEM)
             {
                 // Wait a bit and try again; the Wi-Fi subsystem isn't ready yet.
-                vTaskDelay(1);
+                vTaskDelay(5);
                 tries++;
                 rv = send(socket_, packet->getData(), packet->getSendLength(), 0);
                 continue;
