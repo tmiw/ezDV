@@ -132,6 +132,7 @@ target_include_directories(${COMPONENT_LIB} PUBLIC
 target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections -O2 -fsingle-precision-constant -Wdouble-promotion)
 
 # Generate HTML with correct version number
+string(TIMESTAMP PROJECT_YEAR "%Y")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/http_server_files/index.html.in ${CMAKE_CURRENT_SOURCE_DIR}/http_server_files/index.html)
 
 # RISC-V ULP setup 

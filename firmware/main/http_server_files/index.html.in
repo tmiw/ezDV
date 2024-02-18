@@ -455,7 +455,7 @@
         </div>
         <div class="row page-footer">
             <div class="col-xs-12 col-md-12">
-                Copyright &copy; 2023 Mooneer Salem. <a href="https://github.com/tmiw/ezDV" target="_blank">Source code</a>
+                Copyright &copy; @PROJECT_YEAR@ Mooneer Salem. <a href="https://github.com/tmiw/ezDV" target="_blank">Source code</a>
             </div>
         </div>
     </div>
