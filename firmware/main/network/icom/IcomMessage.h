@@ -20,6 +20,7 @@
 
 #include <cstring>
 #include "task/DVTaskMessage.h"
+#include "esp_timer.h"
 
 extern "C"
 {
@@ -131,10 +132,12 @@ public:
     SendPacketMessage(IcomPacket* packetProvided = nullptr)
         : DVTaskMessageBase<SEND_PACKET, SendPacketMessage>(ICOM_MESSAGE)
         , packet(packetProvided)
+        , sendTime(esp_timer_get_time())
         {}
     virtual ~SendPacketMessage() = default;
 
     IcomPacket* packet;
+    int64_t sendTime;
 };
 
 class ReceivePacketMessage : public DVTaskMessageBase<RECEIVE_PACKET, ReceivePacketMessage>

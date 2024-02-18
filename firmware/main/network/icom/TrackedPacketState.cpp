@@ -120,6 +120,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
             txRetryPacketIds_[packetId] = 1;
         }
         
+        txRetransmitTimer_.stop();
         txRetransmitTimer_.start(true);
     }
     else
@@ -182,12 +183,16 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
                     {
                         if (rxSeq > (lastSeqInBuffer + 1))
                         {
-                            // Detected missing packets! Insert into missing list for later request.
+                            // Detected missing packets!
                             ESP_LOGW(parent_->getName().c_str(), "Detected missing packets from seq = %d to %d", lastSeqInBuffer + 1, rxSeq);
-                            for (int id = lastSeqInBuffer + 1; id < rxSeq; id++)
+                            
+                            // Don't add to the missing packets list. Because of the way ezDV works,
+                            // we wouldn't be able to incorporate these retransmitted packets into e.g.
+                            // any audio being fed to higher layers.
+                            /*for (int id = lastSeqInBuffer + 1; id < rxSeq; id++)
                             {
                                 rxMissingPacketIds_[id] = 1;
-                            }
+                            }*/
                         }
                     }
                 }

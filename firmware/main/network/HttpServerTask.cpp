@@ -407,6 +407,8 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
                 }
                 else if (!strcmp(type, "stopWifiScan"))
                 {
+                    thisObj->activeWebSockets_[fd] = false;
+                    
                     StopWifiScanMessage message(fd, jsonMessage);
                     thisObj->post(&message);
                 }
@@ -1510,7 +1512,7 @@ void HttpServerTask::onStartWifiScanMessage_(DVTask* origin, StartWifiScanMessag
     activeWebSockets_[message->fd] = true;
 }
 
-void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, StopWifiScanMessage* message)
+void HttpServerTask::onStopWifiScanMessage_(DVTask* origin, HttpServerTask::StopWifiScanMessage* message)
 {
     int numWifiScansInProgress = 0;
 
@@ -1539,9 +1541,16 @@ void HttpServerTask::onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMe
         
         if (networkList != nullptr)
         {
+            // The logic below prevents duplicate SSIDs from being sent over.
+            std::map<std::string, bool> ssidList;
             for (int index = 0; index < message->numRecords; index++)
             {
-                cJSON_AddItemToArray(networkList, cJSON_CreateString((const char*)message->records[index].ssid));
+                ssidList[(const char*)message->records[index].ssid] = true;
+            }
+            
+            for (auto& ssid : ssidList)
+            {
+                cJSON_AddItemToArray(networkList, cJSON_CreateString(ssid.first.c_str()));
             }
         }
         

@@ -1,3 +1,5 @@
+var refreshOnReconnect = false;
+
 //==========================================================================================
 // Form state change
 //==========================================================================================
@@ -259,7 +261,14 @@ function wsConnect()
   ws.binaryType = "arraybuffer";
   ws.onopen = function()
   {
-      $(".modal").hide();
+      if (refreshOnReconnect)
+      {
+          window.location.reload();
+      }
+      else
+      {
+          $(".modal").hide();
+      }
   };
   ws.onmessage = function(e) 
   {
@@ -529,6 +538,7 @@ function wsConnect()
   {
     console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
     $(".modal").show();
+    refreshOnReconnect = true; // force page refresh on reconnect (in case new FW changes HTML/JS)
     setTimeout(function() {
         wsConnect();
     }, 1000);
