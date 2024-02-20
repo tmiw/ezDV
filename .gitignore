@@ -7,3 +7,4 @@ managed_components
 schematic/*-bak
 firmware/build
 firmware/sdkconfig.old
+firmware/main/http_server_files/index.html
