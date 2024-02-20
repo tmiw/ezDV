@@ -18,6 +18,10 @@
 #ifndef SAMPLE_RATE_CONVERTER_H
 #define SAMPLE_RATE_CONVERTER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 /* 8 to 24 kHz sample rate conversion */
 
 #define FDMDV_OS_24             3                               /* oversampling rate                   */
@@ -31,5 +35,9 @@
    also have code to convert between those formats. */
 void           fdmdv_8_to_24(float out24k[], short in8k[], int n);
 void           fdmdv_24_to_8(short out8k[], float in24k[], int n);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // SAMPLE_RATE_CONVERTER_H
