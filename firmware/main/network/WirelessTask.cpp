@@ -506,7 +506,7 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddres
                     // (to prevent reconnection when the radio is obviously offline).
                     if (macAddress != nullptr)
                     {
-                        memcpy(radioMac, macAddress, sizeof(radioMac));
+                        memcpy(radioMac_, macAddress, sizeof(radioMac_));
                     }
                     
                     radioType_ = response->type;
@@ -841,7 +841,7 @@ void WirelessTask::onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnect
 {
     // Prevent attempted reconnection of radio if that's the device
     // that disconnected.
-    if (memcmp(message->macAddress, radioMac, sizeof(radioMac)) == 0)
+    if (memcmp(message->macAddress, radioMac_, sizeof(radioMac_)) == 0)
     {
         icomRestartTimer_.stop();
         radioRunning_ = false;
