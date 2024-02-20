@@ -114,6 +114,7 @@ void MAX17048::onTaskStart_()
     
     adc_oneshot_unit_init_cfg_t adcConfig = {
         .unit_id = adcUnit, // GPIO 18
+        .clk_src = (adc_oneshot_clk_src_t)ADC_DIGI_CLK_SRC_DEFAULT, // default clock source
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&adcConfig, &adcHandle_));
@@ -127,6 +128,7 @@ void MAX17048::onTaskStart_()
     // Configure ADC calibrator to get voltages
     adc_cali_curve_fitting_config_t calibrationConfig = {
         .unit_id = adcUnit,
+        .chan = (adc_channel_t)0, // not currently used
         .atten = ADC_ATTEN_DB_11,
         .bitwidth = ADC_BITWIDTH_12,
     };

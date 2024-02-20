@@ -71,7 +71,10 @@ OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm, bool fade)
             .intr_type      = fade_ ? LEDC_INTR_FADE_END : LEDC_INTR_DISABLE,
             .timer_sel      = LEDC_TIMER_0,
             .duty           = 0, // Set duty to 0%
-            .hpoint         = 0
+            .hpoint         = 0,
+            .flags          = {
+                .output_invert = 0
+            }
         };
         ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
     }
