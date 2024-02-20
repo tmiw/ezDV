@@ -68,6 +68,8 @@
 #define DEFAULT_REPORTING_FORCE (false)
 #define DEFAULT_REPORTING_FREQ (14236000)
 
+#define DEFAULT_RADIO_PORT (50001)
+
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
 #define LAST_MODE_ID ("lastMode")
@@ -442,7 +444,7 @@ void SettingsTask::initializeRadio_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
-        setRadioSettings_(false, DEFAULT_TIME_OUT_TIMER_SEC, false, 0, "", 0, "", "");
+        setRadioSettings_(false, DEFAULT_TIME_OUT_TIMER_SEC, false, 0, "", DEFAULT_RADIO_PORT, "", "");
     }
     else if (result != ESP_OK)
     {
@@ -516,6 +518,17 @@ void SettingsTask::initializeRadio_()
     }
     else
     {
+        if (radioPort_ == 0)
+        {
+            // We shouldn't use 0 for the default port as most IC-705s
+            // will default to 50001.
+            radioPort_ = DEFAULT_RADIO_PORT;
+            result = storageHandle_->set_item(RADIO_PORT_ID, radioPort_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPort: %s", esp_err_to_name(result));
+            }
+        }
         ESP_LOGI(CURRENT_LOG_TAG, "radioPort: %d", radioPort_);
     }
     
