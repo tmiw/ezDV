@@ -35,6 +35,11 @@
 
 #include "HttpServerTask.h"
 
+extern "C"
+{
+    DV_EVENT_DECLARE_BASE(WIRELESS_TASK_MESSAGE);
+}
+
 namespace ezdv
 {
 
@@ -59,6 +64,92 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
+    enum WirelessTaskRequestId 
+    {
+        AP_ASSIGNED_IP = 1,
+        STA_ASSIGNED_IP = 2,
+        WIFI_SCAN_COMPLETED = 3,
+        AP_STARTED = 4,
+        NETWORK_DOWN = 5,
+        DEVICE_DISCONNECTED = 6,
+    };
+
+    class ApAssignedIpMessage : public DVTaskMessageBase<AP_ASSIGNED_IP, ApAssignedIpMessage>
+    {
+    public:
+        ApAssignedIpMessage(char* ipStringProvided = nullptr, uint8_t* macProvided = nullptr)
+            : DVTaskMessageBase<AP_ASSIGNED_IP, ApAssignedIpMessage>(WIRELESS_TASK_MESSAGE)
+        {
+            memset(ipString, 0, sizeof(ipString));
+            memset(macAddress, 0, sizeof(macAddress));
+
+            if (ipStringProvided != nullptr)
+            {
+                strncpy(ipString, ipStringProvided, sizeof(ipString) - 1);
+            }
+
+            if (macProvided != nullptr)
+            {
+                memcpy(macAddress, macProvided, sizeof(macAddress));
+            }
+        }
+        virtual ~ApAssignedIpMessage() = default;
+
+        char ipString[32];
+        uint8_t macAddress[6];
+    };
+
+    class StaAssignedIpMessage : public DVTaskMessageBase<STA_ASSIGNED_IP, StaAssignedIpMessage>
+    {
+    public:
+        StaAssignedIpMessage(char* ipStringProvided = nullptr)
+            : DVTaskMessageBase<STA_ASSIGNED_IP, StaAssignedIpMessage>(WIRELESS_TASK_MESSAGE)
+        {
+            memset(ipString, 0, sizeof(ipString));
+
+            if (ipStringProvided != nullptr)
+            {
+                strncpy(ipString, ipStringProvided, sizeof(ipString) - 1);
+            }
+        }
+        virtual ~StaAssignedIpMessage() = default;
+
+        char ipString[32];
+    };
+
+    template<uint32_t MSG_ID>
+    class ZeroArgumentMessageCommon : public DVTaskMessageBase<MSG_ID, ZeroArgumentMessageCommon<MSG_ID> >
+    {
+    public:
+        ZeroArgumentMessageCommon()
+            : DVTaskMessageBase<MSG_ID, ZeroArgumentMessageCommon<MSG_ID> >(WIRELESS_TASK_MESSAGE)
+        {
+        }
+        virtual ~ZeroArgumentMessageCommon() = default;
+    };
+
+    using WifiScanCompletedMessage = ZeroArgumentMessageCommon<WIFI_SCAN_COMPLETED>;
+    using ApStartedMessage = ZeroArgumentMessageCommon<AP_STARTED>;
+    using NetworkDownMessage = ZeroArgumentMessageCommon<NETWORK_DOWN>;
+
+    class DeviceDisconnectedMessage : public DVTaskMessageBase<DEVICE_DISCONNECTED, DeviceDisconnectedMessage>
+    {
+    public:
+        DeviceDisconnectedMessage(uint8_t* macProvided = nullptr)
+            : DVTaskMessageBase<DEVICE_DISCONNECTED, DeviceDisconnectedMessage>(WIRELESS_TASK_MESSAGE)
+        {
+            memset(macAddress, 0, sizeof(macAddress));
+
+            if (macProvided != nullptr)
+            {
+                memcpy(macAddress, macProvided, sizeof(macAddress));
+            }
+        }
+        virtual ~DeviceDisconnectedMessage() = default;
+
+        uint8_t macAddress[6];
+    };
+
     DVTimer wifiScanTimer_;
     DVTimer icomRestartTimer_;
     HttpServerTask httpServerTask_;
@@ -104,6 +195,13 @@ private:
     void triggerWifiScan_();
     void onWifiScanComplete_();
     
+    void onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message);
+    void onStaAssignedIpMessage_(DVTask* origin, StaAssignedIpMessage* message);
+    void onWifiScanCompletedMessage_(DVTask* origin, WifiScanCompletedMessage* message);
+    void onApStartedMessage_(DVTask* origin, ApStartedMessage* message);
+    void onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message);
+    void onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message);
+
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 };

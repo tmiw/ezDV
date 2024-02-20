@@ -45,6 +45,11 @@
 #define SCRATCH_BUFSIZE 256
 #define CURRENT_LOG_TAG "WirelessTask"
 
+extern "C"
+{
+    DV_EVENT_DEFINE_BASE(WIRELESS_TASK_MESSAGE);
+}
+
 namespace ezdv
 {
 
@@ -68,7 +73,9 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
                 sprintf(buf, IPSTR, IP2STR(&ipData->ip));
                 
                 ESP_LOGI(CURRENT_LOG_TAG, "Assigned IP %s to client", buf);
-                obj->onNetworkConnected_(false, buf, ipData->mac);
+                ApAssignedIpMessage message(buf, ipData->mac);
+                obj->post(&message);
+
                 break;
             }
             case IP_EVENT_STA_GOT_IP:
@@ -77,8 +84,9 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
                 char buf[32];
                 sprintf(buf, "IP " IPSTR, IP2STR(&ipData->ip_info.ip));
             
-                obj->onNetworkUp_();
-                obj->onNetworkConnected_(true, buf, nullptr);
+                StaAssignedIpMessage message(buf);
+                obj->post(&message);
+
                 break;
             }
         }
@@ -96,36 +104,31 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
         switch (event_id)
         {
             case WIFI_EVENT_SCAN_DONE:
-                obj->onWifiScanComplete_();
+            {
+                WifiScanCompletedMessage message;
+                obj->post(&message);
                 break;
+            }
             case WIFI_EVENT_AP_START:
-                obj->onNetworkUp_();
+            {
+                ApStartedMessage message;
+                obj->post(&message);
                 break;
+            }
             case WIFI_EVENT_AP_STOP:
             case WIFI_EVENT_STA_DISCONNECTED:
-                obj->onNetworkDisconnected_();
-
-                if (obj->isAwake_)
-                {
-                    // Reattempt connection to access point if we couldn't find
-                    // it the first time around.
-                    obj->wifiRunning_ = false;
-                    obj->radioRunning_ = false;
-                    esp_wifi_disconnect();
-                    ESP_ERROR_CHECK(esp_wifi_connect());
-                }
-
+            {
+                NetworkDownMessage message;
+                obj->post(&message);
                 break;
+            }
             case WIFI_EVENT_AP_STADISCONNECTED:
-                // Prevent attempted reconnection of radio if that's the device
-                // that disconnected.
+            {
                 wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*)event_data;
-                if (memcmp(event->mac, obj->radioMac, sizeof(obj->radioMac)) == 0)
-                {
-                    obj->icomRestartTimer_.stop();
-                    obj->radioRunning_ = false;
-                }
+                DeviceDisconnectedMessage message(event->mac);
+                obj->post(&message);
                 break;
+            }
         }
     }
 }
@@ -153,6 +156,15 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
 
     registerMessageHandler(this, &WirelessTask::onWifiScanStartMessage_);
     registerMessageHandler(this, &WirelessTask::onWifiScanStopMessage_);
+
+    // Handlers for internal messages (intended to make events that happen
+    // on ESP-IDF tasks happen on this one instead).
+    registerMessageHandler(this, &WirelessTask::onApAssignedIpMessage_);
+    registerMessageHandler(this, &WirelessTask::onStaAssignedIpMessage_);
+    registerMessageHandler(this, &WirelessTask::onWifiScanCompletedMessage_);
+    registerMessageHandler(this, &WirelessTask::onApStartedMessage_);
+    registerMessageHandler(this, &WirelessTask::onNetworkDownMessage_);
+    registerMessageHandler(this, &WirelessTask::onDeviceDisconnectedMessage_);
 }
 
 WirelessTask::~WirelessTask()
@@ -787,6 +799,53 @@ void WirelessTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* m
     ESP_LOGI(CURRENT_LOG_TAG, "Stopping Wi-Fi scan");
     
     wifiScanTimer_.stop();
+}
+
+void WirelessTask::onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message)
+{
+    onNetworkConnected_(false, message->ipString, message->macAddress);
+}
+
+void WirelessTask::onStaAssignedIpMessage_(DVTask* origin, StaAssignedIpMessage* message)
+{
+    onNetworkUp_();
+    onNetworkConnected_(true, message->ipString, nullptr);
+}
+
+void WirelessTask::onWifiScanCompletedMessage_(DVTask* origin, WifiScanCompletedMessage* message)
+{
+    onWifiScanComplete_();
+}
+
+void WirelessTask::onApStartedMessage_(DVTask* origin, ApStartedMessage* message)
+{
+    onNetworkUp_();
+}
+
+void WirelessTask::onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message)
+{
+    onNetworkDisconnected_();
+
+    if (isAwake_)
+    {
+        // Reattempt connection to access point if we couldn't find
+        // it the first time around.
+        wifiRunning_ = false;
+        radioRunning_ = false;
+        esp_wifi_disconnect();
+        ESP_ERROR_CHECK(esp_wifi_connect());
+    }
+}
+
+void WirelessTask::onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message)
+{
+    // Prevent attempted reconnection of radio if that's the device
+    // that disconnected.
+    if (memcmp(message->macAddress, radioMac, sizeof(radioMac)) == 0)
+    {
+        icomRestartTimer_.stop();
+        radioRunning_ = false;
+    }
 }
 
 }
