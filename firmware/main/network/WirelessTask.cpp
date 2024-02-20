@@ -764,7 +764,17 @@ void WirelessTask::onWifiScanComplete_()
     // Get the number of Wi-Fi networks found. We'll need to use
     // this to allocate the correct amount of RAM to store the Wi-Fi APs found.
     uint16_t numNetworks = 0;
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numNetworks));
+    auto result = esp_wifi_scan_get_ap_num(&numNetworks);
+    if (result != ESP_OK && result != ESP_ERR_WIFI_NOT_STARTED)
+    {
+        // Force a crash.
+        ESP_ERROR_CHECK(result);
+    }
+    else if (result == ESP_ERR_WIFI_NOT_STARTED)
+    {
+        // If Wi-Fi is not running, there's no point in continuing.
+        return;
+    }
 
     // Always ensure we can allocate at least one AP record. This is to 
     // ensure the Wi-Fi code always frees up whatever it allocates to 
