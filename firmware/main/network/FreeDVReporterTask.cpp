@@ -282,10 +282,11 @@ void FreeDVReporterTask::startSocketIoConnection_()
     uri += REPORTING_HOSTNAME;
     uri += "/socket.io/?EIO=4&transport=websocket";
 
-    const esp_websocket_client_config_t ws_cfg = {
-        .uri = uri.c_str(),
-        .reconnect_timeout_ms = 60000, // 60 second reconnect timer
-    };
+    esp_websocket_client_config_t ws_cfg;
+    memset(&ws_cfg, 0, sizeof(ws_cfg));
+
+    ws_cfg.uri = uri.c_str();
+    ws_cfg.reconnect_timeout_ms = 60000; // 60 second reconnect timer
 
     ESP_LOGI(CURRENT_LOG_TAG, "init client for %s", ws_cfg.uri);
     reportingClientHandle_ = esp_websocket_client_init(&ws_cfg);
