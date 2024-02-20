@@ -103,7 +103,7 @@ private:
     void onWebsocketConnectedMessage_(DVTask* origin, WebsocketConnectedMessage* message);
     void onWebsocketDataMessage_(DVTask* origin, WebsocketDataMessage* message);
 
-    char* freeDVModeAsString_();
+    const char* freeDVModeAsString_();
 
     void startSocketIoConnection_();
     void stopSocketIoConnection_();

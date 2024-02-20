@@ -803,8 +803,8 @@ void SettingsTask::onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMess
 }
 
 void SettingsTask::setWifiSettings_(
-    bool enabled, WifiMode mode, WifiSecurityMode security, int channel, char* ssid,
-    char* password, char* hostname)
+    bool enabled, WifiMode mode, WifiSecurityMode security, int channel, const char* ssid,
+    const char* password, const char* hostname)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Saving Wi-Fi settings");
     wifiEnabled_ = enabled;
@@ -885,7 +885,10 @@ void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMe
     setRadioSettings_(message->headsetPtt, message->timeOutTimer, message->enabled, message->type, message->host, message->port, message->username, message->password);
 }
 
-void SettingsTask::setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, char* host, int port, char* username, char* password)
+void SettingsTask::setRadioSettings_(
+    bool headsetPtt, int timeOutTimer, bool enabled, int type, 
+    const char* host, int port, 
+    const char* username, const char* password)
 {
     headsetPtt_ = headsetPtt;
     timeOutTimer_ = timeOutTimer;
@@ -1023,7 +1026,8 @@ void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSe
     setReportingSettings_(message->callsign, message->gridSquare, message->forceReporting, message->freqHz);
 }
 
-void SettingsTask::setReportingSettings_(char* callsign, char* gridSquare, bool forceReporting, uint64_t freqHz)
+void SettingsTask::setReportingSettings_(
+    const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz)
 {
     memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
     strncpy(callsign_, callsign, ReportingSettingsMessage::MAX_STR_SIZE - 1);

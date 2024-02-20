@@ -246,21 +246,17 @@ void FreeDVReporterTask::onWebsocketDataMessage_(DVTask* origin, WebsocketDataMe
     delete message->str;
 }
 
-char* FreeDVReporterTask::freeDVModeAsString_()
+static const char* FreeDVModeString_[] = {
+    "ANALOG",
+    "700D",
+    "700E",
+    "1600"
+};
+
+const char* FreeDVReporterTask::freeDVModeAsString_()
 {
-    switch (freeDVMode_)
-    {
-        case audio::FreeDVMode::ANALOG:
-            return "ANALOG";
-        case audio::FreeDVMode::FREEDV_700D:
-            return "700D";
-        case audio::FreeDVMode::FREEDV_700E:
-            return "700E";
-        case audio::FreeDVMode::FREEDV_1600:
-            return "1600";
-        default:
-            assert(0);
-    }
+    return FreeDVModeString_[freeDVMode_];
+
 }
 
 void FreeDVReporterTask::startSocketIoConnection_()
@@ -384,7 +380,7 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
 void FreeDVReporterTask::stopSocketIoConnection_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "stopping socket.io connection");
-    char* engineIoDisconnectMessage = "1";
+    const char* engineIoDisconnectMessage = "1";
     esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
     esp_websocket_client_stop(reportingClientHandle_);
     esp_websocket_client_destroy(reportingClientHandle_);

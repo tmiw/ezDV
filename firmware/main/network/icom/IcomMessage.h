@@ -79,10 +79,10 @@ public:
     static const int STR_SIZE = 32;
     
     IcomConnectRadioMessage(
-        char* ipProvided = nullptr,
+        const char* ipProvided = nullptr,
         int portProvided = 0,
-        char* usernameProvided = nullptr,
-        char* passwordProvided = nullptr)
+        const char* usernameProvided = nullptr,
+        const char* passwordProvided = nullptr)
         : DVTaskMessageBase<CONNECT_RADIO, IcomConnectRadioMessage>(ICOM_MESSAGE)
         , port(portProvided)
     {

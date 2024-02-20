@@ -443,27 +443,24 @@ static const httpd_uri_t rootPage =
     .user_ctx = nullptr
 };
 
+static const char* HttpPartitionLabels_[] = {
+    "http_0",
+    "http_1"
+};
 
 void HttpServerTask::onTaskStart_()
 {
     if (!isRunning_)
     {
-        char* partitionLabel = "http_0";
         auto partition = const_cast<esp_partition_t*>(esp_ota_get_running_partition());
-        if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
-        {
-            partitionLabel = "http_0";
-        }
-        else if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
-        {
-            partitionLabel = "http_1";
-        }
-        else
+        if (partition->subtype != ESP_PARTITION_SUBTYPE_APP_OTA_0 &&
+            partition->subtype != ESP_PARTITION_SUBTYPE_APP_OTA_1)
         {
             // Should not reach here.
             ESP_LOGE(CURRENT_LOG_TAG, "Detected more than two app slots, this is unexpected");
             assert(false);
         }
+        const char* partitionLabel = HttpPartitionLabels_[partition->subtype - ESP_PARTITION_SUBTYPE_APP_OTA_0];
         ESP_LOGI(CURRENT_LOG_TAG, "Using partition %s for HTTP server.", partitionLabel);
         
         esp_vfs_spiffs_conf_t conf = {
@@ -535,22 +532,15 @@ void HttpServerTask::onTaskSleep_()
             publish(&request);
         }
 
-        char* partitionLabel = "http_0";
         auto partition = const_cast<esp_partition_t*>(esp_ota_get_running_partition());
-        if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_0)
-        {
-            partitionLabel = "http_0";
-        }
-        else if (partition->subtype == ESP_PARTITION_SUBTYPE_APP_OTA_1)
-        {
-            partitionLabel = "http_1";
-        }
-        else
+        if (partition->subtype != ESP_PARTITION_SUBTYPE_APP_OTA_0 &&
+            partition->subtype != ESP_PARTITION_SUBTYPE_APP_OTA_1)
         {
             // Should not reach here.
             ESP_LOGE(CURRENT_LOG_TAG, "Detected more than two app slots, this is unexpected");
             assert(false);
         }
+        const char* partitionLabel = HttpPartitionLabels_[partition->subtype - ESP_PARTITION_SUBTYPE_APP_OTA_0];
         esp_vfs_spiffs_unregister(partitionLabel);
 
         isRunning_ = false;
@@ -1230,13 +1220,9 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Updating reporting settings");
     
-    bool enabled = false;
-    int secondsToWait = 0;
-    int timesToTransmit = 0;
-    
     bool settingsValid = false;
-    char* callsign = "";
-    char* gridSquare = "";
+    char* callsign = nullptr;
+    char* gridSquare = nullptr;
     bool forceReporting = false;
     uint64_t freqHz = 0;
     
@@ -1244,6 +1230,7 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     if (callsignJSON != nullptr)
     {
         callsign = cJSON_GetStringValue(callsignJSON);
+        assert(callsign != nullptr);
         settingsValid = true; // empty callsign / N0CALL == disable FreeDV Reporter
     }
     
@@ -1251,6 +1238,7 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     if (gridSquareJSON != nullptr)
     {
         gridSquare = cJSON_GetStringValue(gridSquareJSON);
+        assert(gridSquare != nullptr);
         settingsValid = true; // empty gridsquare / UN00KN == disable FreeDV Reporter
     }
     
@@ -1423,7 +1411,6 @@ void HttpServerTask::onSetModeMessage_(DVTask* origin, SetModeMessage* message)
         settingsValid = false;
     }
     
-    bool success = false;
     if (settingsValid)
     {
         audio::RequestSetFreeDVModeMessage request((audio::FreeDVMode)mode);

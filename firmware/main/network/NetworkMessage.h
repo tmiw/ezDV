@@ -150,7 +150,7 @@ class IpAddressAssignedMessage : public DVTaskMessageBase<IP_ASSIGNED, IpAddress
 public:
     enum { MAX_STR_SIZE = 32 };
     
-    IpAddressAssignedMessage(char* ipProvided = nullptr)
+    IpAddressAssignedMessage(const char* ipProvided = nullptr)
         : DVTaskMessageBase<IP_ASSIGNED, IpAddressAssignedMessage>(NETWORK_MESSAGE)
     {
         memset(ip, 0, MAX_STR_SIZE);

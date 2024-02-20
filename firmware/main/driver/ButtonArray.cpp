@@ -73,36 +73,38 @@ void ButtonArray::onTaskSleep_()
     volDownButton_.enableInterrupt(false);
 }
 
+static const char* ButtonLabelStrings_[] = {
+    "None",
+    "PTT",
+    "Mode",
+    "VolUp",
+    "VolDown"
+};
+
 void ButtonArray::handleButton_(ButtonLabel label, bool val)
 {
     DVTimer* timerToSet = nullptr;
     bool buttonPressed = !val;
 
-    char* buttonName = "";
-
     switch(label)
     {
         case ButtonLabel::PTT:
-            buttonName = "PTT";
             timerToSet = &pttButtonTimer_;
             break;
         case ButtonLabel::MODE:
-            buttonName = "Mode";
             timerToSet = &modeButtonTimer_;
             break;
         case ButtonLabel::VOL_UP:
-            buttonName = "VolUp";
             timerToSet = &volUpButtonTimer_;
             break;
         case ButtonLabel::VOL_DOWN:
-            buttonName = "VolDown";
             timerToSet = &volDownButtonTimer_;
             break;
         default:
             assert(0);
     }
 
-    ESP_LOGI("ButtonArray", "Button %s now %d", buttonName, (int)buttonPressed);
+    ESP_LOGI("ButtonArray", "Button %s now %d", ButtonLabelStrings_[label], (int)buttonPressed);
 
     // Start long press timer
     if (buttonPressed)
@@ -132,27 +134,7 @@ void ButtonArray::handleButton_(ButtonLabel label, bool val)
 
 void ButtonArray::handleLongPressButton_(ButtonLabel label)
 {
-    char* buttonName = "";
-
-    switch(label)
-    {
-        case ButtonLabel::PTT:
-            buttonName = "PTT";
-            break;
-        case ButtonLabel::MODE:
-            buttonName = "Mode";
-            break;
-        case ButtonLabel::VOL_UP:
-            buttonName = "VolUp";
-            break;
-        case ButtonLabel::VOL_DOWN:
-            buttonName = "VolDown";
-            break;
-        default:
-            assert(0);
-    }
-
-    ESP_LOGI("ButtonArray", "Button %s long pressed", buttonName);
+    ESP_LOGI("ButtonArray", "Button %s long pressed", ButtonLabelStrings_[label]);
 
     ButtonLongPressedMessage* message = new ButtonLongPressedMessage(label);
     publish(message);

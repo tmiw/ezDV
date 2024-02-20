@@ -112,7 +112,7 @@ class FreeDVReceivedCallsignMessage : public DVTaskMessageBase<FREEDV_RX_CALLSIG
 public:
     enum { MAX_STR_SIZE = 16 };
 
-    FreeDVReceivedCallsignMessage(char* callsignProvided = "", float snrProvided = 0)
+    FreeDVReceivedCallsignMessage(const char* callsignProvided = "", float snrProvided = 0)
         : DVTaskMessageBase<FREEDV_RX_CALLSIGN, FreeDVReceivedCallsignMessage>(FREEDV_MESSAGE)
         , snr(snrProvided)
     { 

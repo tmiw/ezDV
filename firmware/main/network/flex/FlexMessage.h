@@ -53,7 +53,7 @@ public:
     static const int STR_SIZE = 32;
     
     FlexConnectRadioMessage(
-        char* ipProvided = nullptr)
+        const char* ipProvided = nullptr)
         : DVTaskMessageBase<CONNECT_RADIO, FlexConnectRadioMessage>(FLEX_MESSAGE)
     {
         memset(ip, 0, STR_SIZE);
@@ -76,8 +76,8 @@ public:
     static const int STR_SIZE = 32;
     
     FlexRadioDiscoveredMessage(
-        char* descProvided = nullptr,
-        char* ipProvided = nullptr)
+        const char* descProvided = nullptr,
+        const char* ipProvided = nullptr)
         : DVTaskMessageBase<DISCOVERED_RADIO, FlexRadioDiscoveredMessage>(FLEX_MESSAGE)
     {
         memset(desc, 0, STR_SIZE);

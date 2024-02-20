@@ -96,9 +96,9 @@ public:
         WifiMode modeProvided = ACCESS_POINT, 
         WifiSecurityMode securityProvided = NONE, 
         int channelProvided = 0, 
-        char* ssidProvided = "", 
-        char* passwordProvided = "",
-        char* hostnameProvided = "")
+        const char* ssidProvided = "", 
+        const char* passwordProvided = "",
+        const char* hostnameProvided = "")
         : DVTaskMessageBase<TYPE_ID, WifiSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
         , enabled(enabledProvided)
         , mode(modeProvided)
@@ -140,7 +140,15 @@ class RadioSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, RadioSettin
 public:
     enum { MAX_STR_SIZE = 32 };
     
-    RadioSettingsMessageCommon(bool headsetPttProvided = false, int timeOutTimerProvided = 0, bool enabledProvided = false, int typeProvided = 0, char* hostProvided = "", int portProvided = 0, char* usernameProvided = "", char* passwordProvided = "")
+    RadioSettingsMessageCommon(
+        bool headsetPttProvided = false, 
+        int timeOutTimerProvided = 0, 
+        bool enabledProvided = false, 
+        int typeProvided = 0, 
+        const char* hostProvided = "", 
+        int portProvided = 0, 
+        const char* usernameProvided = "", 
+        const char* passwordProvided = "")
         : DVTaskMessageBase<TYPE_ID, RadioSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
         , headsetPtt(headsetPttProvided)
         , timeOutTimer(timeOutTimerProvided)
@@ -193,7 +201,10 @@ template<uint32_t TYPE_ID>
 class VoiceKeyerSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, VoiceKeyerSettingsMessageCommon<TYPE_ID>>
 {
 public:
-    VoiceKeyerSettingsMessageCommon(bool enabledProvided = false, int timesToTransmitProvided = 0, int secondsToWaitProvided = 0)
+    VoiceKeyerSettingsMessageCommon(
+        bool enabledProvided = false, 
+        int timesToTransmitProvided = 0,
+        int secondsToWaitProvided = 0)
         : DVTaskMessageBase<TYPE_ID, VoiceKeyerSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE) 
         , enabled(enabledProvided)
         , timesToTransmit(timesToTransmitProvided)
@@ -218,7 +229,11 @@ class ReportingSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, Reporti
 public:
     enum { MAX_STR_SIZE = 16 };
 
-    ReportingSettingsMessageCommon(char* callsignProvided = "", char* gridSquareProvided = "", bool forceReportingProvided = false, uint64_t freqHzProvided = 0)
+    ReportingSettingsMessageCommon(
+        const char* callsignProvided = "", 
+        const char* gridSquareProvided = "", 
+        bool forceReportingProvided = false, 
+        uint64_t freqHzProvided = 0)
         : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE)
         , forceReporting(forceReportingProvided)
         , freqHz(freqHzProvided)

@@ -77,7 +77,7 @@ private:
     class ApAssignedIpMessage : public DVTaskMessageBase<AP_ASSIGNED_IP, ApAssignedIpMessage>
     {
     public:
-        ApAssignedIpMessage(char* ipStringProvided = nullptr, uint8_t* macProvided = nullptr)
+        ApAssignedIpMessage(const char* ipStringProvided = nullptr, uint8_t* macProvided = nullptr)
             : DVTaskMessageBase<AP_ASSIGNED_IP, ApAssignedIpMessage>(WIRELESS_TASK_MESSAGE)
         {
             memset(ipString, 0, sizeof(ipString));
@@ -102,7 +102,7 @@ private:
     class StaAssignedIpMessage : public DVTaskMessageBase<STA_ASSIGNED_IP, StaAssignedIpMessage>
     {
     public:
-        StaAssignedIpMessage(char* ipStringProvided = nullptr)
+        StaAssignedIpMessage(const char* ipStringProvided = nullptr)
             : DVTaskMessageBase<STA_ASSIGNED_IP, StaAssignedIpMessage>(WIRELESS_TASK_MESSAGE)
         {
             memset(ipString, 0, sizeof(ipString));
