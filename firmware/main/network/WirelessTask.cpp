@@ -255,17 +255,14 @@ void WirelessTask::enableDefaultWifi_()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    wifi_config_t wifi_config = {
-        .ap = {
-            .ssid_len = 0, // Will auto-determine length on start.
-            .channel = DEFAULT_AP_CHANNEL,
-            .authmode = WIFI_AUTH_OPEN,
-            .max_connection = MAX_AP_CONNECTIONS,
-            .pmf_cfg = {
-                    .required = false,
-            },
-        }
-    };
+    wifi_config_t wifi_config;
+    memset(&wifi_config, 0, sizeof(wifi_config_t));
+
+    wifi_config.ap.ssid_len = 0; // Will auto-determine length on start.
+    wifi_config.ap.channel = DEFAULT_AP_CHANNEL;
+    wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    wifi_config.ap.max_connection = MAX_AP_CONNECTIONS;
+    wifi_config.ap.pmf_cfg.required = false;
     
     // Append last two bytes of MAC address to default SSID.
     uint8_t mac[6];
@@ -359,17 +356,15 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
                 assert(0);
                 break;
         }
-        wifi_config_t wifi_config = {
-            .ap = {
-                .ssid_len = 0, // Will auto-determine length on start.
-                .channel = (uint8_t)channel,
-                .authmode = auth_mode,
-                .max_connection = MAX_AP_CONNECTIONS,
-                .pmf_cfg = {
-                        .required = false,
-                },
-            }
-        };
+        
+        wifi_config_t wifi_config;
+        memset(&wifi_config, 0, sizeof(wifi_config_t));
+
+        wifi_config.ap.ssid_len = 0; // Will auto-determine length on start.
+        wifi_config.ap.channel = (uint8_t)channel;
+        wifi_config.ap.authmode = auth_mode;
+        wifi_config.ap.max_connection = MAX_AP_CONNECTIONS;
+        wifi_config.ap.pmf_cfg.required = false;
         
         sprintf((char*)wifi_config.ap.ssid, "%s", ssid);
         sprintf((char*)wifi_config.ap.password, "%s", password);
@@ -384,16 +379,15 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
     }
     else
     {
-        wifi_config_t wifi_config = {
-            .sta = {
-                .scan_method = WIFI_FAST_SCAN,
-                .bssid_set = false,
-                .bssid = "",
-                .channel = 0,
-                .listen_interval = 0,
-                .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-            }
-        };
+        wifi_config_t wifi_config;
+        memset(&wifi_config, 0, sizeof(wifi_config_t));
+
+        wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+        wifi_config.sta.bssid_set = false;
+        memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
+        wifi_config.sta.channel = 0;
+        wifi_config.sta.listen_interval = 0;
+        wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
         
         sprintf((char*)wifi_config.sta.ssid, "%s", ssid);
         sprintf((char*)wifi_config.sta.password, "%s", password);
