@@ -440,7 +440,10 @@ static const httpd_uri_t rootPage =
     .uri = "/*",
     .method = HTTP_GET,
     .handler = &ServeStaticPage,
-    .user_ctx = nullptr
+    .user_ctx = nullptr,
+    .is_websocket = false,
+    .handle_ws_control_frames = false,
+    .supported_subprotocol = nullptr
 };
 
 static const char* HttpPartitionLabels_[] = {
@@ -487,11 +490,13 @@ void HttpServerTask::onTaskStart_()
         
         // Configure URL handlers.
         httpd_uri_t webSocketPage = {
-                .uri        = "/ws",
-                .method     = HTTP_GET,
-                .handler    = &ServeWebsocketPage_,
-                .user_ctx   = this,
-                .is_websocket = true
+            .uri        = "/ws",
+            .method     = HTTP_GET,
+            .handler    = &ServeWebsocketPage_,
+            .user_ctx   = this,
+            .is_websocket = true,
+            .handle_ws_control_frames = false,
+            .supported_subprotocol = nullptr
         };
         httpd_register_uri_handler(configServerHandle_, &webSocketPage);
         httpd_register_uri_handler(configServerHandle_, &rootPage);
