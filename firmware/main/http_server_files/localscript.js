@@ -68,13 +68,6 @@ var updateWifiFormState = function()
     var wifiSelectBox = $("#wifiNetworkList");
     var wifiNetworkRemoves = [];
 
-    $.each(wifiSelectBox.find('option'), function() {
-        if (wifiNetworkList.indexOf(this.val) == -1)
-        {
-            wifiNetworkRemoves.push(this);
-        }
-    });
-
     $.each(wifiNetworkList, function(val, text) {
         var result = wifiSelectBox.find('option:contains(' + text + ")");
         if (result.length == 0)
@@ -86,11 +79,6 @@ var updateWifiFormState = function()
             }
             wifiSelectBox.append(opt);
         }
-    });
-
-    // Remove HTML for all networks not in list.
-    wifiNetworkRemoves.forEach(function(val) {
-        val.remove();
     });
 
     var result = wifiSelectBox.find('option:contains("(other)")');
