@@ -27,6 +27,8 @@
 #include "codec2_fifo.h"
 #include "codec2_fdmdv.h"
 
+#include "SampleRateConverter.h"
+
 #define MAX_VITA_SAMPLES (42)
 #define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* XXX: SmartSDR crashes if I try to send all 180. */
 
