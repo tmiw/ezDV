@@ -528,9 +528,15 @@ void TLV320::tlv320ConfigureAGC_()
         0x06,
     };
     
-    // Set AGC configuration for both channels (page 0, register 86 for left, register 94 for right)
-    setConfigurationOptionMultiple_(0, 86, agcConfig, sizeof(agcConfig));
+    // Set AGC configuration for both channels (page 0, register 86 for left, register 94 for right).
     setConfigurationOptionMultiple_(0, 94, agcConfig, sizeof(agcConfig));
+
+    // Left channel: Enable AGC, -5.5dB target, gain hysteresis disabled, max gain 58dB,
+    // Here, we want a higher AGC target and max gain to make sure Codec2 
+    // has enough audio.
+    agcConfig[0] = (1 << 7) | (0b000 << 4) | (0b00 << 0);
+    agcConfig[2] = 0b1110100;
+    setConfigurationOptionMultiple_(0, 86, agcConfig, sizeof(agcConfig));
 }
 
 void TLV320::tlv320ConfigureInterrupts_()
