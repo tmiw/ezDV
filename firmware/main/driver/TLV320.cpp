@@ -607,7 +607,7 @@ void TLV320::onInterrupt1Fire_(bool state)
 }
 
 void TLV320::onInterrupt2Fire_(bool state)
-{
+{   
     if (state)
     {
         // Page 0, register 44, bit D5 contains the status of the headset button

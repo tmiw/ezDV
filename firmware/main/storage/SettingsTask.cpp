@@ -99,7 +99,7 @@ SettingsTask::SettingsTask()
     , voiceKeyerSecondsToWaitAfterTransmit_(0)
     , ledDutyCycle_(0)
     , lastMode_(0)
-    , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000)
+    , commitTimer_(this, [this](DVTimer*) { commit_(); }, 1000000, "SettingsCommitTimer")
 {
     memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
     memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);

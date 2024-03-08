@@ -39,7 +39,7 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , theirIdentifier_(0)
     , port_(0)
     , localPort_(0)
-    , packetReadTimer_(owner, std::bind(&IcomStateMachine::readPendingPackets_, this), MS_TO_US(10))
+    , packetReadTimer_(owner, std::bind(&IcomStateMachine::readPendingPackets_, this), MS_TO_US(10), "IcomPacketReadTimer")
 {
     owner->registerMessageHandler(this, &IcomStateMachine::onSendPacket_);
     owner->registerMessageHandler(this, &IcomStateMachine::onReceivePacket_);

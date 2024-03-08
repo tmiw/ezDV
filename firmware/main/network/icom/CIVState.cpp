@@ -31,7 +31,7 @@ namespace icom
 
 CIVState::CIVState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , civWatchdogTimer_(parent_->getTask(), std::bind(&CIVState::onCIVWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD))
+    , civWatchdogTimer_(parent_->getTask(), std::bind(&CIVState::onCIVWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD), "IcomCivWatchdog")
     , civSequenceNumber_(0)
     , civId_(0)
     , currentPttState_(false)

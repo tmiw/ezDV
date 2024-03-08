@@ -31,11 +31,11 @@ namespace icom
 
 TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD))
-    , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD))
-    , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
-    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(TX_RETRANSMIT_PERIOD))
-    , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD))
+    , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD), "IcomPingTimer")
+    , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD), "IcomIdleTimer")
+    , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD), "IcomRetransmitRequestTimer")
+    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(TX_RETRANSMIT_PERIOD), "IcomTxRetransmitTimer")
+    , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD), "IcomCleanupTimer")
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
     , numSavedBytesInPacketQueue_(0)

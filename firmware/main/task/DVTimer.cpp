@@ -28,7 +28,7 @@ namespace ezdv
 namespace task
 {
     
-DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds)
+DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds, const char* timerName)
     : owner_(owner)
     , fn_(fn)
     , intervalInMicroseconds_(intervalInMicroseconds)
@@ -42,6 +42,11 @@ DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicrosecon
         .name = "DVTimer",
         .skip_unhandled_events = true,
     };
+    
+    if (timerName != nullptr)
+    {
+        args.name = timerName;
+    }
     
     ESP_ERROR_CHECK(
         esp_timer_create(

@@ -48,7 +48,7 @@ static float tx_scale_factor = exp(6.0f/20.0f * log(10.0f));
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 11 /* TBD */, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), 5000)
+    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), 5000, "FlexVitaPacketReadTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)

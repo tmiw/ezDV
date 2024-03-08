@@ -43,7 +43,7 @@ class DVTimer
 public:
     using TimerHandlerFn = std::function<void(DVTimer*)>;
     
-    DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds);
+    DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds, const char* timerName);
     virtual ~DVTimer();
     
     void start(bool once = false);

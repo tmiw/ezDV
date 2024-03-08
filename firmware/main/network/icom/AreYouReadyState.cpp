@@ -30,7 +30,7 @@ namespace icom
 
 AreYouReadyState::AreYouReadyState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , areYouReadyTimer_(parent->getTask(), std::bind(&AreYouReadyState::onAreYouReadyTimer_, this), MS_TO_US(RETRANSMIT_PERIOD))
+    , areYouReadyTimer_(parent->getTask(), std::bind(&AreYouReadyState::onAreYouReadyTimer_, this), MS_TO_US(RETRANSMIT_PERIOD), "IcomAreYouReadyTimer")
 {
     // empty
 }

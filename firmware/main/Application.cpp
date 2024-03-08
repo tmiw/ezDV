@@ -548,7 +548,7 @@ extern "C" void app_main()
         app->start();
     }
     
-#if 0
+#if 1
     // infinite loop to track heap use
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
     bool ptt = false;
@@ -559,13 +559,14 @@ extern "C" void app_main()
     {
         vTaskDelay(pdMS_TO_TICKS(5000));
         
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+        /*ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+        ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
 
+        esp_timer_dump(stdout);
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
         ptt = !ptt;
 

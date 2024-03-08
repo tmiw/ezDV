@@ -30,7 +30,7 @@ namespace icom
 
 AreYouThereState::AreYouThereState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , resendTimer_(parent_->getTask(), std::bind(&AreYouThereState::retrySend_, this), MS_TO_US(AREYOUTHERE_PERIOD))
+    , resendTimer_(parent_->getTask(), std::bind(&AreYouThereState::retrySend_, this), MS_TO_US(AREYOUTHERE_PERIOD), "IcomResendTimer")
 {
     // empty
 }
