@@ -59,8 +59,8 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
     , i2sTxDevice_(nullptr)
     , i2sRxDevice_(nullptr)
-    , int1Gpio_(this, std::bind(&TLV320::onInterrupt1Fire_, this, _2), false, true)
-    , int2Gpio_(this, std::bind(&TLV320::onInterrupt2Fire_, this, _2), false, true)
+    , int1Gpio_(this, std::bind(&TLV320::onInterrupt1Fire_, this, _2), false, true, false)
+    , int2Gpio_(this, std::bind(&TLV320::onInterrupt2Fire_, this, _2), false, true, false)
 {
     // Register message handlers
     registerMessageHandler<storage::LeftChannelVolumeMessage>(this, &TLV320::onLeftChannelVolume_);

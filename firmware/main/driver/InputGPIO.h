@@ -46,7 +46,7 @@ class InputGPIO
 public:
     using GPIOChangeFn = std::function<void(InputGPIO<NumGPIO>*, bool)>;
 
-    InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup = true, bool enablePulldown = false);
+    InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup = true, bool enablePulldown = false, bool enableDebounce = true);
     virtual ~InputGPIO();
     
     void start();
@@ -71,6 +71,7 @@ private:
     bool currentState_;
     bool enablePullup_;
     bool enablePulldown_;
+    bool enableDebounce_;
     gpio_glitch_filter_handle_t glitchFilterHandle_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
@@ -93,7 +94,7 @@ const char* InputGPIO<NumGPIO>::GetTimerName_()
 }
 
 template<gpio_num_t NumGPIO>
-InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup, bool enablePulldown)
+InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup, bool enablePulldown, bool enableDebounce)
     : debounceTimer_(owner, std::bind(&InputGPIO<NumGPIO>::onDebounceTimerFire_, this), DEBOUNCE_TIMER_US, GetTimerName_())
     , owner_(owner)
     , onStateChange_(onChange)
@@ -101,6 +102,7 @@ InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enableP
     , currentState_(false)
     , enablePullup_(enablePullup)
     , enablePulldown_(enablePulldown)
+    , enableDebounce_(enableDebounce)
     , glitchFilterHandle_(nullptr)
 {
     // empty
@@ -180,11 +182,24 @@ bool InputGPIO<NumGPIO>::getCurrentValue()
 template<gpio_num_t NumGPIO>
 void InputGPIO<NumGPIO>::onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message)
 {
-    // Temporarily disable the interrupt until after debounce checking finishes.
-    enableInterrupt(false);
+    if (enableDebounce_)
+    {
+        // Temporarily disable the interrupt until after debounce checking finishes.
+        enableInterrupt(false);
 
-    // Start debounce timer.
-    debounceTimer_.start(true);
+        // Start debounce timer.
+        debounceTimer_.start(true);
+    }
+    else
+    {
+        auto pendingCurrent = getCurrentValue();
+        if (pendingCurrent != currentState_)
+        {
+            // Suppress callbacks if there hasn't actually been a change in value.
+            currentState_ = pendingCurrent;
+            onStateChange_(this, currentState_);
+        }
+    }
 }
 
 template<gpio_num_t NumGPIO>
