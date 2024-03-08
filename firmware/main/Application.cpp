@@ -548,7 +548,7 @@ extern "C" void app_main()
         app->start();
     }
     
-#if 1
+#if 0
     // infinite loop to track heap use
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
     bool ptt = false;
@@ -566,7 +566,7 @@ extern "C" void app_main()
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
 
-        esp_timer_dump(stdout);
+        //esp_timer_dump(stdout);
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
         ptt = !ptt;
 
