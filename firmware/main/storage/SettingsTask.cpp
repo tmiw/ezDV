@@ -270,9 +270,9 @@ void SettingsTask::loadAllSettings_()
         initializeWifi_();
         initializeRadio_();
         initialzeVoiceKeyer_();
-        initializeReporting_();
         initializeLedBrightness_();
         initializeLastMode_();
+        initializeReporting_();
     }
 }
 
