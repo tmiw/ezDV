@@ -60,6 +60,7 @@ FreeDVReporterTask::FreeDVReporterTask()
 
     registerMessageHandler(this, &FreeDVReporterTask::onWebsocketDataMessage_);
     registerMessageHandler(this, &FreeDVReporterTask::onWebsocketConnectedMessage_);
+    registerMessageHandler(this, &FreeDVReporterTask::onWebsocketDisconnectedMessage_);
 }
 
 FreeDVReporterTask::~FreeDVReporterTask()
@@ -238,6 +239,16 @@ void FreeDVReporterTask::onWebsocketConnectedMessage_(DVTask* origin, WebsocketC
     namespaceOpen += tmp;
     cJSON_free(tmp);
     esp_websocket_client_send_text(reportingClientHandle_, namespaceOpen.c_str(), namespaceOpen.length(), portMAX_DELAY);
+}
+
+void FreeDVReporterTask::onWebsocketDisconnectedMessage_(DVTask* origin, WebsocketDisconnectedMessage* message)
+{
+    if (reportingEnabled_)
+    {
+        // Retry connection if reporting is enabled (i.e. we lost connection).
+        stopSocketIoConnection_();
+        startSocketIoConnection_();
+    }
 }
 
 void FreeDVReporterTask::onWebsocketDataMessage_(DVTask* origin, WebsocketDataMessage* message)
@@ -470,9 +481,6 @@ void FreeDVReporterTask::WebsocketEventHandler_(void *handler_args, esp_event_ba
         case WEBSOCKET_EVENT_DISCONNECTED:
         {
             ESP_LOGI(CURRENT_LOG_TAG, "WEBSOCKET_EVENT_DISCONNECTED");
-            
-            // Note: esp-websocket-client has auto-reconnect logic, so we don't
-            // strictly need to do anything here.
             WebsocketDisconnectedMessage disconnMessage;
             thisObj->post(&disconnMessage);
             break;

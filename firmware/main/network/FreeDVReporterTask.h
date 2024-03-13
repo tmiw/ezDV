@@ -101,6 +101,7 @@ private:
     void onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMessage* message);
 
     void onWebsocketConnectedMessage_(DVTask* origin, WebsocketConnectedMessage* message);
+    void onWebsocketDisconnectedMessage_(DVTask* origin, WebsocketDisconnectedMessage* message);
     void onWebsocketDataMessage_(DVTask* origin, WebsocketDataMessage* message);
 
     const char* freeDVModeAsString_();
