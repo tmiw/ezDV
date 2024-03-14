@@ -100,7 +100,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
     {
         // Respond to ping requests        
         //ESP_LOGI(sm_.get_name().c_str(), "Got ping, seq %d", ctr, pingSequence);
-        auto packet = std::move(IcomPacket::CreatePingAckPacket(pingSequence, parent_->getOurIdentifier(), parent_->getTheirIdentifier()));
+        auto packet = IcomPacket::CreatePingAckPacket(pingSequence, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
         parent_->sendUntracked(packet);
         packetSent = true;
     }
