@@ -21,6 +21,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fcntl.h>
 
 #include "esp_err.h"
 #include "esp_vfs.h"
@@ -117,6 +118,8 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onStartWifiScanMessage_);
     registerMessageHandler(this, &HttpServerTask::onStopWifiScanMessage_);
     registerMessageHandler(this, &HttpServerTask::onWifiNetworkListMessage_);
+
+    registerMessageHandler(this, &HttpServerTask::onHttpServeStaticFileMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -203,11 +206,57 @@ static char* get_path_from_uri(char *dest, const char *base_path, const char *ur
     return dest + base_pathlen;
 }
 
-static esp_err_t ServeStaticPage(httpd_req_t *req)
+void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStaticFileMessage* message)
 {
-    char scratchBuf[SCRATCH_BUFSIZE];
+    // Get path again for debug output
     char filepath[FILE_PATH_MAX];
-    FILE *fd = NULL;
+    char *filename = get_path_from_uri(filepath, "/http",
+                                             message->request->uri, sizeof(filepath));
+
+    char scratchBuf[SCRATCH_BUFSIZE];
+    char *chunk = scratchBuf;
+    size_t chunksize = read(message->fd, chunk, SCRATCH_BUFSIZE);
+
+    if (chunksize > 0) 
+    {
+        /* Send the buffer contents as HTTP response chunk */
+        if (httpd_resp_send_chunk(message->request, chunk, chunksize) != ESP_OK) 
+        {
+            close(message->fd);
+            ESP_LOGE(CURRENT_LOG_TAG, "Sending %s failed!", filepath);
+
+            /* Abort sending file */
+            httpd_resp_sendstr_chunk(message->request, NULL);
+
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(message->request, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
+
+            /* Close connection. */
+            ESP_ERROR_CHECK(httpd_req_async_handler_complete(message->request));
+            return;
+        }
+
+        /* Repost event to be processed again. */
+        post(message);
+    }
+    else
+    {
+        /* Close file after sending complete */
+        close(message->fd);
+        ESP_LOGI(CURRENT_LOG_TAG, "Sending %s complete", filepath);
+
+        /* Respond with an empty chunk to signal HTTP response completion */
+        httpd_resp_send_chunk(message->request, NULL, 0);
+
+        /* Close connection. */
+        ESP_ERROR_CHECK(httpd_req_async_handler_complete(message->request));
+    }
+}
+
+esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
+{
+    char filepath[FILE_PATH_MAX];
+    int fd = -1;
     struct stat file_stat;
 
     char *filename = get_path_from_uri(filepath, "/http",
@@ -234,8 +283,8 @@ static esp_err_t ServeStaticPage(httpd_req_t *req)
         return ESP_FAIL;
     }
     
-    fd = fopen(filepath, "r");
-    if (!fd) 
+    fd = open(filepath, O_RDONLY);
+    if (fd < 0) 
     {
         ESP_LOGE(CURRENT_LOG_TAG, "Failed to read existing file : %s", filepath);
         /* Respond with 500 Internal Server Error */
@@ -246,39 +295,29 @@ static esp_err_t ServeStaticPage(httpd_req_t *req)
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
 
-    /* Retrieve the pointer to scratch buffer for temporary storage */
+    // XXX - Send first chunk to make sure headers get sent. Otherwise, we'll crash in httpd_resp_send_chunk
+    // in HttpServerTask.
+    char scratchBuf[SCRATCH_BUFSIZE];
     char *chunk = scratchBuf;
-    size_t chunksize;
-    do 
+    size_t chunksize = read(fd, chunk, SCRATCH_BUFSIZE);
+
+    if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) 
     {
-        /* Read file in chunks into the scratch buffer */
-        chunksize = fread(chunk, 1, SCRATCH_BUFSIZE, fd);
+        close(fd);
+        return ESP_FAIL;
+    }
 
-        if (chunksize > 0) 
-        {
-            /* Send the buffer contents as HTTP response chunk */
-            if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) 
-            {
-                fclose(fd);
-                ESP_LOGE(CURRENT_LOG_TAG, "File sending failed!");
-                /* Abort sending file */
-                httpd_resp_sendstr_chunk(req, NULL);
-                /* Respond with 500 Internal Server Error */
-                httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
-               return ESP_FAIL;
-           }
-        }
+    httpd_req_t* asyncReq;
+    esp_err_t err = httpd_req_async_handler_begin(req, &asyncReq);
+    if (err == ESP_OK)
+    {
+        /* Let associated DVTask handle sending the file to free up the HTTP task. */
+        auto thisObj = (HttpServerTask*)req->user_ctx;
+        HttpServerTask::HttpServeStaticFileMessage message(fd, asyncReq);
+        thisObj->post(&message);
+    }
 
-        /* Keep looping till the whole file is sent */
-    } while (chunksize != 0);
-
-    /* Close file after sending complete */
-    fclose(fd);
-    ESP_LOGI(CURRENT_LOG_TAG, "File sending complete");
-
-    /* Respond with an empty chunk to signal HTTP response completion */
-    httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+    return err;
 }
 
 esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
@@ -435,17 +474,6 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t rootPage = 
-{
-    .uri = "/*",
-    .method = HTTP_GET,
-    .handler = &ServeStaticPage,
-    .user_ctx = nullptr,
-    .is_websocket = false,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = nullptr
-};
-
 static const char* HttpPartitionLabels_[] = {
     "http_0",
     "http_1"
@@ -479,7 +507,10 @@ void HttpServerTask::onTaskStart_()
         
         // Generate default configuration
         httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-        
+
+        // Allow HTTP server to auto-purge old connections.
+        config.lru_purge_enable = true;
+
         /* Use the URI wildcard matching function in order to
         * allow the same handler to respond to multiple different
         * target URIs which match the wildcard scheme */
@@ -496,9 +527,20 @@ void HttpServerTask::onTaskStart_()
             .user_ctx   = this,
             .is_websocket = true,
             .handle_ws_control_frames = false,
-            .supported_subprotocol = nullptr
+            .supported_subprotocol = nullptr,
         };
         httpd_register_uri_handler(configServerHandle_, &webSocketPage);
+
+        httpd_uri_t rootPage = 
+        {
+            .uri = "/*",
+            .method = HTTP_GET,
+            .handler = &ServeStaticPage_,
+            .user_ctx = this,
+            .is_websocket = false,
+            .handle_ws_control_frames = false,
+            .supported_subprotocol = nullptr
+        };
         httpd_register_uri_handler(configServerHandle_, &rootPage);
 
         isRunning_ = true;

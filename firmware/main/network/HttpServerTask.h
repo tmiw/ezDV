@@ -73,6 +73,7 @@ private:
         REBOOT_DEVICE = 11,
         START_WIFI_SCAN = 12,
         STOP_WIFI_SCAN = 13,
+        SERVE_STATIC_FILE = 14,
     };
     
     template<uint32_t MSG_ID>
@@ -104,6 +105,20 @@ private:
 
         int fd;
         cJSON* request;
+    };
+
+    class HttpServeStaticFileMessage : public DVTaskMessageBase<SERVE_STATIC_FILE, HttpServeStaticFileMessage>
+    {
+    public:
+        HttpServeStaticFileMessage(int fdProvided = 0, httpd_req_t* reqProvided = nullptr)
+            : DVTaskMessageBase<SERVE_STATIC_FILE, HttpServeStaticFileMessage>(HTTP_SERVER_MESSAGE)
+            , fd(fdProvided)
+            , request(reqProvided)
+            {}
+        virtual ~HttpServeStaticFileMessage() = default;
+
+        int fd;
+        httpd_req_t* request;
     };
     
     // Internal messages for handling requests
@@ -154,10 +169,14 @@ private:
     void onStartWifiScanMessage_(DVTask* origin, HttpServerTask::StartWifiScanMessage* message);
     void onStopWifiScanMessage_(DVTask* origin, HttpServerTask::StopWifiScanMessage* message);
     void onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message);
+
+    // Helper to asynchronously serve static files.
+    void onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStaticFileMessage* message);
     
     void sendJSONMessage_(cJSON* message, WebSocketList& socketList);
     
     static esp_err_t ServeWebsocketPage_(httpd_req_t *req);
+    static esp_err_t ServeStaticPage_(httpd_req_t *req);
 };
 
 }
