@@ -210,8 +210,7 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
 {
     // Get path again for debug output
     char filepath[FILE_PATH_MAX];
-    char *filename = get_path_from_uri(filepath, "/http",
-                                             message->request->uri, sizeof(filepath));
+    get_path_from_uri(filepath, "/http", message->request->uri, sizeof(filepath));
 
     char scratchBuf[SCRATCH_BUFSIZE];
     char *chunk = scratchBuf;

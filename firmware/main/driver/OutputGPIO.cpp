@@ -59,7 +59,8 @@ OutputGPIO::OutputGPIO(gpio_num_t gpio, bool pwm, bool fade)
             .duty_resolution  = LED_DUTY_RESOLUTION,
             .timer_num        = LEDC_TIMER_0,
             .freq_hz          = LED_PWM_FREQUENCY,
-            .clk_cfg          = LEDC_AUTO_CLK
+            .clk_cfg          = LEDC_AUTO_CLK,
+            .deconfigure      = false
         };
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 

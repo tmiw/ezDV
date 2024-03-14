@@ -120,7 +120,7 @@ void MAX17048::onTaskStart_()
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&adcConfig, &adcHandle_));
     
     adc_oneshot_chan_cfg_t oneshotConfig = {
-        .atten = ADC_ATTEN_DB_11,
+        .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_12,
     };
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adcHandle_, adcChannel, &oneshotConfig));
@@ -129,7 +129,7 @@ void MAX17048::onTaskStart_()
     adc_cali_curve_fitting_config_t calibrationConfig = {
         .unit_id = adcUnit,
         .chan = (adc_channel_t)0, // not currently used
-        .atten = ADC_ATTEN_DB_11,
+        .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_12,
     };
     ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&calibrationConfig, &adcCalibrationHandle_));
