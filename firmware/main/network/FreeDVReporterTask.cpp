@@ -95,11 +95,13 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
     ESP_LOGI(CURRENT_LOG_TAG, "Got reporting settings update");
     
     bool callsignChanged = callsign_ != message->callsign || gridSquare_ != message->gridSquare;
+    bool messageChanged = message_ != message->message;
     bool forcedReportingChanged = forceReporting_ != message->forceReporting;
     
     callsign_ = message->callsign;
     gridSquare_ = message->gridSquare;
     forceReporting_ = message->forceReporting;
+    message_ = message->message;
     
     // Disconnect and reconnect if there were any changes
     if (reportingEnabled_ && callsignChanged)
@@ -131,6 +133,12 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
     {
         ReportFrequencyChangeMessage request(message->freqHz);
         post(&request);
+    }
+
+    // If connected and the reporting message has changed, send that.
+    if (reportingEnabled_ && messageChanged)
+    {
+        sendReportingMessageUpdate_();
     }
 }
 
@@ -365,6 +373,7 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
             reportingEnabled_ = true;
             sendFrequencyUpdate_();
             sendTransmitStateUpdate_();
+            sendReportingMessageUpdate_();
             break;
         }
         case '2':
@@ -398,6 +407,36 @@ void FreeDVReporterTask::stopSocketIoConnection_()
     esp_websocket_client_destroy(reportingClientHandle_);
     reportingClientHandle_ = nullptr;
     reportingEnabled_ = false;
+}
+
+void FreeDVReporterTask::sendReportingMessageUpdate_()
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Sending reporting message update");
+
+    cJSON* message = cJSON_CreateArray();
+    assert(message != nullptr);
+
+    cJSON* messageName = cJSON_CreateString("message_update");
+    assert(messageName != nullptr);
+    cJSON_AddItemToArray(message, messageName);
+
+    cJSON* messagePayload = cJSON_CreateObject();
+    assert(messagePayload != nullptr);
+
+    cJSON* reportingMessage = cJSON_CreateString(message_.c_str());
+    assert(reportingMessage != nullptr);
+    cJSON_AddItemToObject(messagePayload, "message", reportingMessage);
+
+    cJSON_AddItemToArray(message, messagePayload);
+
+    auto tmp = cJSON_PrintUnformatted(message);
+
+    std::string messageToSend = SOCKET_IO_TX_PREFIX;
+    messageToSend += tmp;
+    esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
+
+    cJSON_free(tmp);
+    cJSON_Delete(messagePayload);
 }
 
 void FreeDVReporterTask::sendFrequencyUpdate_()

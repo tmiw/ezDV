@@ -71,6 +71,7 @@ private:
     
     char callsign_[ReportingSettingsMessage::MAX_STR_SIZE];
     char gridSquare_[ReportingSettingsMessage::MAX_STR_SIZE];
+    char message_[ReportingSettingsMessage::MAX_MSG_SIZE];
     bool forceReporting_;
     uint64_t freqHz_;
 
@@ -114,7 +115,7 @@ private:
     void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, const char* ssid, const char* password, const char* hostname);
     void setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, const char* host, int port, const char* username, const char* password);
     void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
-    void setReportingSettings_(const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz);
+    void setReportingSettings_(const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message);
     void setLedBrightness_(int dutyCycle);
     void setLastMode_(int lastMode);
 

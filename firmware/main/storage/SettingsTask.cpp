@@ -49,6 +49,7 @@
 #define REPORTING_GRID_SQUARE_ID ("repGrid")
 #define REPORTING_FORCE_ID ("repForce")
 #define REPORTING_FREQ_ID ("repFreq")
+#define REPORTING_MSG_ID ("repMsg")
 
 #define LED_DUTY_CYCLE_ID ("ledDtyCyc")
 
@@ -67,6 +68,7 @@
 #define DEFAULT_REPORTING_GRID_SQUARE ("UN00KN")
 #define DEFAULT_REPORTING_FORCE (false)
 #define DEFAULT_REPORTING_FREQ (14236000)
+#define DEFAULT_REPORTING_MSG ("")
 
 #define DEFAULT_RADIO_PORT (50001)
 
@@ -226,7 +228,8 @@ void SettingsTask::onRequestReportingSettingsMessage_(DVTask* origin, RequestRep
         callsign_,
         gridSquare_,
         forceReporting_,
-        freqHz_
+        freqHz_,
+        message_
     );
 
     assert(response != nullptr);
@@ -624,7 +627,7 @@ void SettingsTask::initializeReporting_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Reporting settings not found, will set to defaults");
-        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN, DEFAULT_REPORTING_GRID_SQUARE, DEFAULT_REPORTING_FORCE, DEFAULT_REPORTING_FREQ);
+        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN, DEFAULT_REPORTING_GRID_SQUARE, DEFAULT_REPORTING_FORCE, DEFAULT_REPORTING_FREQ, DEFAULT_REPORTING_MSG);
     }
     else if (result != ESP_OK)
     {
@@ -636,11 +639,7 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_string(REPORTING_GRID_SQUARE_ID, gridSquare_, ReportingSettingsMessage::MAX_STR_SIZE);
-    if (result == ESP_ERR_NVS_NOT_FOUND)
-    {
-        setReportingSettings_(callsign_, DEFAULT_REPORTING_GRID_SQUARE, DEFAULT_REPORTING_FORCE, DEFAULT_REPORTING_FREQ);
-    }
-    else if (result != ESP_OK)
+    if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving grid square: %s", esp_err_to_name(result));
     }
@@ -650,11 +649,7 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_item(REPORTING_FORCE_ID, forceReporting_);
-    if (result == ESP_ERR_NVS_NOT_FOUND)
-    {
-        setReportingSettings_(callsign_, gridSquare_, DEFAULT_REPORTING_FORCE, DEFAULT_REPORTING_FREQ);
-    }
-    else if (result != ESP_OK)
+    if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving force reporting value: %s", esp_err_to_name(result));
     }
@@ -664,11 +659,7 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_item(REPORTING_FREQ_ID, freqHz_);
-    if (result == ESP_ERR_NVS_NOT_FOUND)
-    {
-        setReportingSettings_(callsign_, gridSquare_, forceReporting_, DEFAULT_REPORTING_FREQ);
-    }
-    else if (result != ESP_OK)
+    if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving reporting frequency: %s", esp_err_to_name(result));
     }
@@ -676,13 +667,24 @@ void SettingsTask::initializeReporting_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "freqHz: %" PRIu64, freqHz_);
     }
+
+    result = storageHandle_->get_string(REPORTING_MSG_ID, message_, ReportingSettingsMessage::MAX_MSG_SIZE);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "error retrieving reporting message: %s", esp_err_to_name(result));
+    }
+    else
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "reportMsg: %s", message_);
+    }
     
     // Publish current reporting settings to everyone who may care.
     ReportingSettingsMessage* message = new ReportingSettingsMessage(
         callsign_,
         gridSquare_,
         forceReporting_,
-        freqHz_
+        freqHz_,
+        message_
     );
     assert(message != nullptr);
     publish(message);
@@ -1023,11 +1025,11 @@ void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int
 
 void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSettingsMessage* message)
 {
-    setReportingSettings_(message->callsign, message->gridSquare, message->forceReporting, message->freqHz);
+    setReportingSettings_(message->callsign, message->gridSquare, message->forceReporting, message->freqHz, message->message);
 }
 
 void SettingsTask::setReportingSettings_(
-    const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz)
+    const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message)
 {
     memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
     strncpy(callsign_, callsign, ReportingSettingsMessage::MAX_STR_SIZE - 1);
@@ -1035,6 +1037,9 @@ void SettingsTask::setReportingSettings_(
     memset(gridSquare_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
     strncpy(gridSquare_, gridSquare, ReportingSettingsMessage::MAX_STR_SIZE - 1);
     
+    memset(message_, 0, ReportingSettingsMessage::MAX_MSG_SIZE);
+    strncpy(message_, message, ReportingSettingsMessage::MAX_MSG_SIZE - 1);
+
     forceReporting_ = forceReporting;
     freqHz_ = freqHz;
     
@@ -1063,6 +1068,12 @@ void SettingsTask::setReportingSettings_(
         {
             ESP_LOGE(CURRENT_LOG_TAG, "error setting freqHz: %s", esp_err_to_name(result));
         }
+
+        result = storageHandle_->set_string(REPORTING_MSG_ID, message_);
+        if (result != ESP_OK)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "error setting reporting message: %s", esp_err_to_name(result));
+        }
               
         commitTimer_.stop();
         commitTimer_.start(true);
@@ -1072,7 +1083,8 @@ void SettingsTask::setReportingSettings_(
             callsign_,
             gridSquare_,
             forceReporting_,
-            freqHz_
+            freqHz_,
+            message_
         );
         assert(message != nullptr);
         publish(message);

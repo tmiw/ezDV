@@ -227,13 +227,17 @@ template<uint32_t TYPE_ID>
 class ReportingSettingsMessageCommon : public DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>
 {
 public:
-    enum { MAX_STR_SIZE = 16 };
+    enum { 
+        MAX_STR_SIZE = 16,
+        MAX_MSG_SIZE = 128
+    };
 
     ReportingSettingsMessageCommon(
         const char* callsignProvided = "", 
         const char* gridSquareProvided = "", 
         bool forceReportingProvided = false, 
-        uint64_t freqHzProvided = 0)
+        uint64_t freqHzProvided = 0,
+        const char* msgProvided = "")
         : DVTaskMessageBase<TYPE_ID, ReportingSettingsMessageCommon<TYPE_ID>>(SETTINGS_MESSAGE)
         , forceReporting(forceReportingProvided)
         , freqHz(freqHzProvided)
@@ -249,12 +253,19 @@ public:
         {
             strncpy(gridSquare, gridSquareProvided, sizeof(gridSquare) - 1);
         }
+
+        memset(message, 0, sizeof(message));
+        if (msgProvided != nullptr)
+        {
+            strncpy(message, msgProvided, sizeof(message) - 1);
+        }
     }
     
     virtual ~ReportingSettingsMessageCommon() = default;
 
     char callsign[MAX_STR_SIZE];
     char gridSquare[MAX_STR_SIZE];
+    char message[MAX_MSG_SIZE];
     bool forceReporting;
     uint64_t freqHz;
 };

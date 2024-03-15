@@ -378,6 +378,7 @@ function wsConnect()
           $("#reportingCallsign").val(json.callsign);
           $("#reportingGridSquare").val(json.gridSquare);
           $("#reportingForceEnable").prop("checked", json.forceReporting);
+          $("#reportingMessage").val(json.reportingMessage);
           
           var reportingFrequencyHz = json.reportingFrequency;
           var reportingFrequencyMHz = reportingFrequencyHz / 1000 / 1000;
@@ -627,7 +628,8 @@ $("#reportingSave").click(function()
         "callsign": $("#reportingCallsign").val(),
         "gridSquare": $("#reportingGridSquare").val(),
         "forceEnable": $("#reportingForceEnable").is(':checked'),
-        "frequency": parseFloat($("#reportingFrequency").val()) * 1000 * 1000
+        "frequency": parseFloat($("#reportingFrequency").val()) * 1000 * 1000,
+        "reportingMessage": $("#reportingMessage").val()
     };
     
     $("#reportingSuccessAlertRow").hide();

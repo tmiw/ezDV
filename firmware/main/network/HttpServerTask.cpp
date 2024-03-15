@@ -724,6 +724,7 @@ void HttpServerTask::onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsoc
                 cJSON_AddStringToObject(root, "gridSquare", response->gridSquare);
                 cJSON_AddBoolToObject(root, "forceReporting", response->forceReporting);
                 cJSON_AddNumberToObject(root, "reportingFrequency", response->freqHz);
+                cJSON_AddStringToObject(root, "reportingMessage", response->message);
 
                 // Note: below is responsible for cleanup.
                 WebSocketList sockets;
@@ -1269,6 +1270,7 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     bool settingsValid = false;
     char* callsign = nullptr;
     char* gridSquare = nullptr;
+    char* reportingMessage = nullptr;
     bool forceReporting = false;
     uint64_t freqHz = 0;
     
@@ -1287,6 +1289,13 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
         assert(gridSquare != nullptr);
         settingsValid = true; // empty gridsquare / UN00KN == disable FreeDV Reporter
     }
+
+    auto reportingMessageJSON = cJSON_GetObjectItem(message->request, "reportingMessage");
+    if (reportingMessageJSON != nullptr)
+    {
+        reportingMessage = cJSON_GetStringValue(reportingMessageJSON);
+        assert(reportingMessage != nullptr);
+    }
     
     auto forceReportingJSON = cJSON_GetObjectItem(message->request, "forceEnable");
     settingsValid &= forceReportingJSON != nullptr;
@@ -1304,7 +1313,7 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
     bool success = false;
     if (settingsValid)
     {
-        storage::SetReportingSettingsMessage request(callsign, gridSquare, forceReporting, freqHz);
+        storage::SetReportingSettingsMessage request(callsign, gridSquare, forceReporting, freqHz, reportingMessage);
         publish(&request);
     
         auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);

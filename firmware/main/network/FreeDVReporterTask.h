@@ -83,6 +83,7 @@ private:
     bool reportingEnabled_;
     std::string callsign_;
     std::string gridSquare_;
+    std::string message_;
     bool pttState_;
     audio::FreeDVMode freeDVMode_;
     uint64_t frequencyHz_;
@@ -113,6 +114,7 @@ private:
 
     void sendFrequencyUpdate_();
     void sendTransmitStateUpdate_();
+    void sendReportingMessageUpdate_();
 
     static void WebsocketEventHandler_(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data);
 };

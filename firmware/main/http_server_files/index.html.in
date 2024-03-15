@@ -126,6 +126,12 @@
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
+                    <label for="reportingMessage" class="col-xs-4 col-md-2 col-form-labell">Message</label>
+                    <div class="col-xs-8 col-md-4">
+                        <input id="reportingMessage" value="" class="form-control" />
+                    </div>
+                </div>
+                <div class="row mb-3 reporting-enable-row">
                     <div class="col-xs-12 col-md-6">
                         <div class="form-check">
                             <input type="checkbox" id="reportingForceEnable" class="form-check-input" />
