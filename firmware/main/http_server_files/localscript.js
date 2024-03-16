@@ -633,7 +633,7 @@ $("#reportingSave").click(function()
     };
     
     $("#reportingSuccessAlertRow").hide();
-    $("reportingFailAlertRow").hide();
+    $("#reportingFailAlertRow").hide();
     
     // Async send request and wait for response.
     ws.send(JSON.stringify(obj));
@@ -641,7 +641,7 @@ $("#reportingSave").click(function()
 
 $("#radioSave").click(function()
 {
-    $("radioSave").hide();
+    $("#radioSave").hide();
     $("#radioSaveProgress").show();
 
     var obj = 
