@@ -16,7 +16,9 @@ jobs:
 
     - name: Install packages
       shell: bash
-      run: sudo apt-get install texlive texlive-latex-extra texlive-fonts-extra texlive-lang-german texlive-lang-english lmodern texlive-latex-recommended
+      run: |
+          sudo apt-get update
+          sudo apt-get install texlive texlive-latex-extra texlive-fonts-extra texlive-lang-english lmodern texlive-latex-recommended
 
     # Note: this is adapted from https://github.com/LibreSolar/md-manual-template/blob/master/.travis.yml
     - name: Generate manual
