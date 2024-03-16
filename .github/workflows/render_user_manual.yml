@@ -35,12 +35,12 @@ jobs:
       shell: bash
       run: |
           export git_hash=$(git describe --always HEAD)
-          mv manual/build tmp
-          git checkout gh-pages
-          git rm -rf `ls | grep -v tmp`
-          rm -rf `ls | grep -v tmp`
-          mv tmp/* .
-          rm -rf tmp
+          git clone -b gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY website
+          cd website
+          git rm -rf * && rm -rf *
+          cd ..
+          mv manual/build/* website
+          cd website
           git config --local user.email "$(git log --format='%ae' HEAD^!)"
           git config --local user.name "$(git log --format='%an' HEAD^!)"
           git add *
