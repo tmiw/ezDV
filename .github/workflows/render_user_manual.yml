@@ -31,8 +31,6 @@ jobs:
     - name: Push to github.io
       shell: bash
       run: |
-          git config --local user.email "$(git log --format='%ae' HEAD^!)"
-          git config --local user.name "$(git log --format='%an' HEAD^!)"
           export git_hash=$(git describe --always HEAD)
           git clone -b gh-pages `git remote get-url origin` website
           cd website
@@ -40,6 +38,8 @@ jobs:
           cd ..
           mv manual/build/* website
           cd website
+          git config --local user.email "$(git log --format='%ae' HEAD^!)"
+          git config --local user.name "$(git log --format='%an' HEAD^!)"
           git add *
           git commit -am "Generated user manual from Git commit ${git_hash}"
           git push
