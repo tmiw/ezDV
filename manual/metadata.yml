@@ -1,17 +1,15 @@
 ---
 title: "ezDV"
-title-prefix: "User Manual"
-subtitle: "User Manual"
+title-prefix: "User's Guide"
+subtitle: "User's Guide"
 author: [Mooneer Salem]
 date: "2024-03-15"
 subject: "Markdown"
-keywords: [Markdown, Example]
+keywords: [ezDV, FreeDV, digital voice, amateur radio, ham radio]
 lang: "en"
 titlepage: true
 titlepage-text-color: "005e85"
 titlepage-rule-color: "005e85"
 titlepage-rule-height: 2
-logo: "images/libresolar-logo-lateral.pdf"
-logo-width: 200
 toc-own-page: true
 ...
