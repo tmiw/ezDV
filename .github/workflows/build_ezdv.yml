@@ -1,0 +1,32 @@
+name: Build ezDV
+
+on:
+  push
+#paths:
+#  - firmware/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install prerequisite packages
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+      - name: Install ESP-IDF
+        shell: bash
+        run: |
+          git clone -b v5.2.1 --recursive https://github.com/espressif/esp-idf.git
+          cd esp-idf
+          ./install.sh all
+
+      - name: Build project
+        run: |
+          . ./esp-idf/export.sh
+          cd firmware
+          idf.py fullclean build
