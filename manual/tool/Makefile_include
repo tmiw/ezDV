@@ -19,6 +19,7 @@ pdf:: metadata.yml *.md
 		--listings \
 		--number-sections \
 		--table-of-contents \
+		--toc-depth=5 \
 		--metadata date="`date -u '+%Y-%m-%d'`"
 
 html:: metadata.yml *.md
@@ -30,7 +31,7 @@ html:: metadata.yml *.md
 		--listings \
 		--number-sections \
 		--table-of-contents \
-		--toc-depth=2 \
+		--toc-depth=5 \
 		--katex \
 		--metadata date="`date -u '+%Y-%m-%d'`"
 
