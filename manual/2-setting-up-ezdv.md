@@ -60,7 +60,7 @@ This setup will look like the following when plugged in:
 ### Radios with Wi-Fi support
 
 If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio
-over Wi-Fi. Currently this is supported only for the [FlexRadio][https://www.flexradio.com/] 6000 series radios 
+over Wi-Fi. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 6000 series radios 
 and the Icom IC-705.
 
 #### Flex 6000 series radios
