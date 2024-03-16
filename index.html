@@ -74,11 +74,14 @@
     <nav id="sidebar" class="sidebar" aria-label="Table of contents">
         <div class="toc">
             <ul>
-            <li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
+            <li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+            <li><a href="#setting-up-ezdv"><span class="toc-section-number">2</span> Setting Up ezDV</a>
             <ul>
-            <li><a href="#initial-assembly"><span class="toc-section-number">1.1</span> Initial Assembly</a></li>
-            <li><a href="#radio-configuration"><span class="toc-section-number">1.2</span> Radio Configuration</a></li>
+            <li><a href="#initial-assembly"><span class="toc-section-number">2.1</span> Initial Assembly</a></li>
+            <li><a href="#radio-configuration"><span class="toc-section-number">2.2</span> Radio Configuration</a></li>
+            <li><a href="#initial-configuration"><span class="toc-section-number">2.3</span> Initial Configuration</a></li>
             </ul></li>
+            <li><a href="#basic-usage"><span class="toc-section-number">3</span> Basic Usage</a></li>
             </ul>
         </div>
     </nav>
@@ -114,15 +117,19 @@
 <h1 data-number="1" id="introduction"><span class="header-section-number">1</span> Introduction</h1>
 <p>ezDV is a handheld hardware device that allows easy use of <a href="https://freedv.org">FreeDV</a>, whether on the go or at home. Powered by an ESP32-S3 microcontroller, its built-in Wi-Fi support allows completely wireless setup (with supported radios) along with enabling more modern functionality such as FreeDV Reporter reporting and wireless firmware updates.</p>
 <p>For those radios without network capability, interfacing them with ezDV is straightforward through the use of the industry standard 3.5mm TRRS audio jack. This jack is configured similarly to what is used with wired headsets for mobile phones. Analog audio is also passed in and out from/to your wired headset using a second 3.5mm audio jack.</p>
-<p>This document describes the configuration and recommended usage of the ezDV device for maximum enjoyment and minimal frustration. Hope to hear you on the air! # Setting Up ezDV</p>
+<p>This document describes the configuration and recommended usage of the ezDV device for maximum enjoyment and minimal frustration. Hope to hear you on the air!</p>
+<h1 data-number="2" id="setting-up-ezdv"><span class="header-section-number">2</span> Setting Up ezDV</h1>
 <p>There are several steps required to get ezDV up and running with your radio.</p>
-<h2 data-number="1.1" id="initial-assembly"><span class="header-section-number">1.1</span> Initial Assembly</h2>
+<h2 data-number="2.1" id="initial-assembly"><span class="header-section-number">2.1</span> Initial Assembly</h2>
 <p>If ezDV did not already come with a battery, you will need to obtain a 3.7V lithium polymer (LiPo) battery. One recommended battery can be purchased <a href="https://www.amazon.com/gp/product/B08214DJLJ/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&amp;psc=1">from Amazon</a>.</p>
 <p><em>WARNING: Do not puncture or otherwise damage lithium batteries as injury and/or property damage could result! Neither the project nor its creator take responsibility for any damage or injury due to misuse of batteries. A battery with a protection module (such as the one linked above) is highly recommended.</em></p>
 <p>The battery should be plugged into the BT1 connector on the bottom of the ezDV circuit board, which is the circled connector below:</p>
 <figure>
 <img src="images/2-setup-battery-location.jpg" alt="" /><figcaption>The back of the ezDV circuit board with BT1 circled</figcaption>
 </figure>
+<p>Once a battery is attached, you should flip the switch to the right of the BT1 connector upwards (towards the back of the ezDV board) to connect the battery to the rest of the board. This switch is designed to allow for long-term storage or shipping of ezDV without discharging the battery. Note that ezDV may power on immediately after flipping this switch; you can power it down by pushing and holding the Mode button (second button from the top when looking downward) until red lights turn on on the right-hand side.</p>
+<p><em>Note: it is not recommended to use this switch for normal operation of ezDV. Some features require an orderly shutdown of ezDV (which is accomplished by using the Mode button) and may not function properly if power is suddenly lost.</em></p>
+<p>Next, plug ezDV into a USB-C charger (similar to what would be done to charge a cell phone or portable power bank). A red LED may light on the bottom of ezDV indicating that the battery is charging as well as some or all of the LEDs on the right hand side (indicating its current state of charge in 25% increments). When ezDV is done charging, a green LED will turn on and the red LED will turn off. This may take several hours or more depending on the state of the battery.</p>
 <p>Finally, plug in a wired headset on the TRRS jack located on the right side of the ezDV board (when looking from above). This headset should be wired for compatibility with Android phones, which is as follows:</p>
 <ul>
 <li>Tip: RX audio from ezDV</li>
@@ -134,8 +141,8 @@
 <figure>
 <img src="images/2-setup-headset-location.jpg" alt="" /><figcaption>ezDV with headset attached</figcaption>
 </figure>
-<h2 data-number="1.2" id="radio-configuration"><span class="header-section-number">1.2</span> Radio Configuration</h2>
-<h3 data-number="1.2.1" id="radios-without-wi-fi-support"><span class="header-section-number">1.2.1</span> Radios without Wi-Fi support</h3>
+<h2 data-number="2.2" id="radio-configuration"><span class="header-section-number">2.2</span> Radio Configuration</h2>
+<h3 data-number="2.2.1" id="radios-without-wi-fi-support"><span class="header-section-number">2.2.1</span> Radios without Wi-Fi support</h3>
 <p>Radios without Wi-Fi support will need an interface cable. One end of this cable should be a male 3.5mm four conductor (TRRS) with the following pinout:</p>
 <ul>
 <li>Tip: TX audio from ezDV to your radio</li>
@@ -144,18 +151,19 @@
 <li>Shield: RX audio from your radio to ezDV</li>
 </ul>
 <p>There is also silkscreen labeling on the back of the board corresponding to the location of the radio jack that indicates the pinout. This jack is on the left hand side of ezDV when looking downward at the front of the device.</p>
+<h4 data-number="2.2.1.1" id="example-wiring-configurations"><span class="header-section-number">2.2.1.1</span> Example Wiring Configurations</h4>
 <p>Some example configurations are below.</p>
-<h4 data-number="1.2.1.1" id="elecraft-kx3"><span class="header-section-number">1.2.1.1</span> Elecraft KX3</h4>
+<h5 data-number="2.2.1.1.1" id="elecraft-kx3"><span class="header-section-number">2.2.1.1.1</span> Elecraft KX3</h5>
 <p>If you have an Elecraft KX3, you can use off the shelf parts for your interface cable (no soldering required). These parts consist of a <a href="https://www.amazon.com/Headphone-Splitter-KOOPAO-Microphone-Earphones/dp/B084V3TRTV/ref=sr_1_3?crid=2V0WV9A8JJMW9&amp;keywords=headset%2Bsplitter&amp;qid=1671701520&amp;sprefix=headset%2Bsplitte%2Caps%2C136&amp;sr=8-3&amp;th=1">3.5mm splitter</a> and a <a href="https://www.amazon.com/gp/product/B07PJW6RQ7/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&amp;psc=1">3.5mm TRRS cable</a>. The microphone connector on the splitter should be plugged into PHONES on the KX3 while the speaker connector should be plugged into MIC.</p>
 <p>This setup will look like the following when plugged in:</p>
 <figure>
 <img src="images/2-setup-radio-kx3.jpg" alt="" /><figcaption>ezDV plugged into an Elecraft KX3</figcaption>
 </figure>
-<h3 data-number="1.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">1.2.2</span> Radios with Wi-Fi support</h3>
+<h3 data-number="2.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">2.2.2</span> Radios with Wi-Fi support</h3>
 <p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi. Currently this is supported only for the <a href="https://www.flexradio.com/">FlexRadio</a> 6000 series radios and the Icom IC-705.</p>
-<h4 data-number="1.2.2.1" id="flex-6000-series-radios"><span class="header-section-number">1.2.2.1</span> Flex 6000 series radios</h4>
+<h4 data-number="2.2.2.1" id="flex-6000-series-radios"><span class="header-section-number">2.2.2.1</span> Flex 6000 series radios</h4>
 <p>Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. <em>not</em> using SmartLink). Once this is confirmed, skip to TBD.</p>
-<h4 data-number="1.2.2.2" id="icom-ic-705"><span class="header-section-number">1.2.2.2</span> Icom IC-705</h4>
+<h4 data-number="2.2.2.2" id="icom-ic-705"><span class="header-section-number">2.2.2.2</span> Icom IC-705</h4>
 <p>Several settings will need to be adjusted in the IC-705 before it can be used with ezDV. First, you will need to decide whether you want to join your IC-705 to an existing Wi-Fi network or whether you want to configure ezDV to use the IC-705’s built-in access point.</p>
 <p><em>Note: it is recommended to join your IC-705 to an existing Wi-Fi network in order to be able to access ezDV’s Web interface (and to take advantage of certain features if an Internet connection is available).</em></p>
 <p>Next, you’ll need to turn on your radio and push the Menu button. This will bring up the following screen:</p>
@@ -173,14 +181,14 @@
 <figure>
 <img src="images/2-setup-radio-ic705-connection-type.jpg" alt="" /><figcaption>Icom IC-705 displaying Connection Type menu</figcaption>
 </figure>
-<h5 data-number="1.2.2.2.1" id="configuring-wi-fi-on-the-ic-705"><span class="header-section-number">1.2.2.2.1</span> Configuring Wi-Fi on the IC-705</h5>
-<h6 data-number="1.2.2.2.1.1" id="using-the-ic-705s-built-in-access-point"><span class="header-section-number">1.2.2.2.1.1</span> Using the IC-705’s built-in access point</h6>
+<h5 data-number="2.2.2.2.1" id="configuring-wi-fi-on-the-ic-705"><span class="header-section-number">2.2.2.2.1</span> Configuring Wi-Fi on the IC-705</h5>
+<h6 data-number="2.2.2.2.1.1" id="using-the-ic-705s-built-in-access-point"><span class="header-section-number">2.2.2.2.1.1</span> Using the IC-705’s built-in access point</h6>
 <p>If you’re using the IC-705’s Access Point mode, it is a good idea to double-check your radio’s SSID (aka Wi-Fi network name) and Wi-Fi password by tapping “Connection Settings (Access Point)” and then tapping each option as shown below, updating them as needed:</p>
 <figure>
 <img src="images/2-setup-radio-ic705-connection-settings-ap.jpg" alt="" /><figcaption>Icom IC-705 displaying Access Point settings</figcaption>
 </figure>
 <p>Also, note the IP address that your IC-705 is using on this page as you will need it for later configuration of ezDV. Once the settings here are satisfactory, tap the Back button on the lower right hand corner of the screen, tap the WLAN option and then change it to ON.</p>
-<h6 data-number="1.2.2.2.1.2" id="connecting-the-ic-705-to-an-existing-network"><span class="header-section-number">1.2.2.2.1.2</span> Connecting the IC-705 to an existing network</h6>
+<h6 data-number="2.2.2.2.1.2" id="connecting-the-ic-705-to-an-existing-network"><span class="header-section-number">2.2.2.2.1.2</span> Connecting the IC-705 to an existing network</h6>
 <p>First, tap the WLAN option on the WLAN Set page and change it to ON. This is needed in order to turn on the Wi-Fi radio in the IC-705 and allow it to scan for networks.</p>
 <p>Next, tap “Connection Settings (Station)”. You will see the following page on the IC-705:</p>
 <figure>
@@ -203,8 +211,125 @@
 <img src="images/2-setup-radio-ic705-connection-settings-sta-with-ip.jpg" alt="" /><figcaption>Icom IC-705 displaying an IP address</figcaption>
 </figure>
 <p>Note this address as it will be needed for later configuration of ezDV.</p>
-<h5 data-number="1.2.2.2.2" id="configuring-the-radio-user"><span class="header-section-number">1.2.2.2.2</span> Configuring the Radio User</h5>
-<p>The IC-705 requires a username and password to connect to the radio. If this is not already set up, you will need to do so now before continuing with ezDV setup. TBD</p>
+<h5 data-number="2.2.2.2.2" id="configuring-the-radio-user"><span class="header-section-number">2.2.2.2.2</span> Configuring the Radio User</h5>
+<p>The IC-705 requires a username and password to connect to the radio. If this is not already set up, you will need to do so now before continuing with ezDV setup. First, ensure that you’re on the “WLAN Set” page and then go to the second page of options. You will see a “Remote Settings” option:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-wlan-set-2.jpg" alt="" /><figcaption>Icom IC-705 displaying the Remote Settings option</figcaption>
+</figure>
+<p>Tap on “Remote Settings” and then tap on “Network User1”:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-remote-settings.jpg" alt="" /><figcaption>Icom IC-705 displaying the “Network User1” option.</figcaption>
+</figure>
+<p>The following page should appear. Tap on “Network User1 ID” and “Network User1 Password” and enter a username and password (if not already saved). Make a note of these as you’ll need them later. Additionally, make sure “Network User1 Administrator” is set to “YES”.</p>
+<figure>
+<img src="images/2-setup-radio-ic705-network-user1.jpg" alt="" /><figcaption>Icom IC-705 displaying the “Network User1” settings.</figcaption>
+</figure>
+<p>Tap the Back button until you reach the Set menu.</p>
+<h5 data-number="2.2.2.2.3" id="configuring-audio"><span class="header-section-number">2.2.2.2.3</span> Configuring Audio</h5>
+<p>The IC-705 must be configured to accept transmit audio from the Wi-Fi interface in order for transmit with ezDV to work properly. From the Set menu, select “Connectors” as shown below:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-setmode-2.jpg" alt="" /><figcaption>Icom IC-705 displaying the “Connectors” option.</figcaption>
+</figure>
+<p>Next, scroll until you find the “MOD Input” option and then tap it to continue:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connectors-2.jpg" alt="" /><figcaption>Icom IC-705 displaying the “MOD Input” option.</figcaption>
+</figure>
+<p>Finally, tap the “DATA MOD” option and ensure that it is set to “WLAN”:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-mod-input.jpg" alt="" /><figcaption>Icom IC-705 displaying the “MOD Input” menu.</figcaption>
+</figure>
+<figure>
+<img src="images/2-setup-radio-ic705-data-mod.jpg" alt="" /><figcaption>List of valid “DATA MOD” options.</figcaption>
+</figure>
+<p><em>Note: if you share the IC-705 with other data mode applications over USB (for example, WSJT-X for FT8), make sure that “DATA MOD” is set to one of the “USB” options above when done using ezDV.</em></p>
+<h2 data-number="2.3" id="initial-configuration"><span class="header-section-number">2.3</span> Initial Configuration</h2>
+<p>To perform initial configuration of ezDV, push and hold both the Mode and Volume Down buttons at the same time until all four of the LEDs on the right hand side of ezDV turn on.</p>
+<figure>
+<img src="images/2-setup-power-on.jpg" alt="" /><figcaption>ezDV showing the buttons to push and hold (red circles) and the location of the LEDs (pink circle)</figcaption>
+</figure>
+<p>Once the LEDs turn off, go to your PC or cell phone’s Wi-Fi configuration and join a network named “ezDV xxxx”, where “xxxx” is the last few alphanumeric digits of its MAC address (a unique identifier for each network device). Once joined, open your Web browser and navigate to http://192.168.4.1/. You should see a page similar to the following:</p>
+<figure>
+<img src="images/2-setup-webpage-general.png" alt="" /><figcaption>Screenshot showing ezDV’s main Web page</figcaption>
+</figure>
+<h3 data-number="2.3.1" id="transmit-audio-levels-except-flex-6000-series"><span class="header-section-number">2.3.1</span> Transmit Audio Levels (except Flex 6000 series)</h3>
+<p><em>Note: for the Icom IC-705, this can only be done after configuring Wi-Fi and the radio connection.</em></p>
+<p>ezDV’s transmit audio levels will need to be adjusted to ensure that your radio does not indicate too much ALC, similar to other HF digital modes. Push the Mode button once; you should hear “700D” in Morse Code in your headset within a second after releasing the button. After doing so, you can adjust the transmit audio by pushing the Volume Up or Volume Down buttons while holding the PTT button as indicated below:</p>
+<figure>
+<img src="images/2-setup-tx-audio-levels.jpg" alt="" /><figcaption>ezDV showing the PTT button (red circle) and the Volume Up/Down buttons (pink circle)</figcaption>
+</figure>
+<p>For most radios, ezDV’s transmit level should be such that little to no ALC is indicated on the radio display (or alternatively, until power output just starts dropping from the level set in the radio). The specific ALC level required depends on the radio, so your radio’s user manual is the best source for determining this.</p>
+<h3 data-number="2.3.2" id="wi-fi-configuration"><span class="header-section-number">2.3.2</span> Wi-Fi Configuration</h3>
+<p><em>Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features (such as reporting to <a href="https://qso.freedv.org/">FreeDV Reporter</a>).</em></p>
+<p>Click or tap on the “Wi-Fi” tab and check the “Enable Wi-Fi” checkbox. You’ll see something similar to the following:</p>
+<figure>
+<img src="images/2-setup-webpage-wifi.png" alt="" /><figcaption>ezDV showing the Wi-Fi tab</figcaption>
+</figure>
+<p>To connect ezDV to the network that your radio is on, select “Client” for “Wireless Mode”. Select your Wi-Fi network from the list that appears (which may take a few seconds while ezDV scans for your network) and enter its password (if required). If desired, you can also change ezDV’s name by modifying the “Hostname” field; this may allow you to access ezDV later by entering this name instead of trying to find its IP address. Click or tap Save to save your Wi-Fi settings.</p>
+<h3 data-number="2.3.3" id="radio-connection"><span class="header-section-number">2.3.3</span> Radio Connection</h3>
+<p><em>Note: this is optional unless you are using a radio with Wi-Fi support.</em></p>
+<p>Click on the “Radio” tab and check the “Use Wi-Fi Network for Radio RX/TX” checkbox. Select your radio model in the “Radio Type” drop-down list, which will bring up different fields depending on the radio being configured.</p>
+<h4 data-number="2.3.3.1" id="flex-6000-series"><span class="header-section-number">2.3.3.1</span> Flex 6000 series</h4>
+<p>Select the name of your radio from the “Radio” drop-down list as shown below. Your radio’s IP address should automatically be filled in the “IP Address” field:</p>
+<figure>
+<img src="images/2-setup-webpage-radio-flex.png" alt="" /><figcaption>ezDV showing a FlexRadio configuration</figcaption>
+</figure>
+<p>Click or tap Save to save the radio configuration.</p>
+<h4 data-number="2.3.3.2" id="icom-ic-705-1"><span class="header-section-number">2.3.3.2</span> Icom IC-705</h4>
+<p>Enter your radio’s IP address, username and password that you saved when you configured Wi-Fi on the IC-705:</p>
+<figure>
+<img src="images/2-setup-webpage-radio-icom.png" alt="" /><figcaption>ezDV showing a Icom IC-705 configuration</figcaption>
+</figure>
+<p>Click or tap Save to save the radio configuration.</p>
+<h3 data-number="2.3.4" id="reporting-configuration"><span class="header-section-number">2.3.4</span> Reporting Configuration</h3>
+<p>It is highly recommended to configure your callsign and grid square. This has several benefits:</p>
+<ol type="1">
+<li>If ezDV is lost or stolen, someone can access its Web page and use callsign databases like <a href="https://www.qrz.com">QRZ</a> to find a way to get it back to you.</li>
+<li>Other users will be able to decode your callsign and report spots on <a href="https://qso.freedv.org">FreeDV Reporter</a>.</li>
+<li>If ezDV has Internet access, it will also be able to decode callsigns from received signals and report them itself to FreeDV Reporter.</li>
+</ol>
+<p>To do this, click or tap on the “Reporting” tab and enter your callsign and grid square where prompted:</p>
+<figure>
+<img src="images/2-setup-webpage-reporting.png" alt="" /><figcaption>ezDV showing a sample reporting configuration</figcaption>
+</figure>
+<p>If desired, you can also enter a short message that will appear on FreeDV Reporter. This message is transmitted solely over the Internet, not over RF.</p>
+<p>Once done, click or tap Save to save the reporting configuration.</p>
+<h3 data-number="2.3.5" id="final-setup"><span class="header-section-number">2.3.5</span> Final Setup</h3>
+<p>After your radio, Wi-Fi and reporting configuration are complete, simply click or tap on the General tab and then click or tap on the Reboot button. ezDV will first show two red LEDs on the right hand side for a few seconds, then show all four LEDs for a few seconds, then turn them all off. If you’re using a wired connection to ezDV, it is now ready for use.</p>
+<p>If you configured a Wi-Fi network and radio for ezDV to connect to, ezDV should then begin blinking a blue LED (indicating that it is connected to the Wi-Fi network) followed by showing a solid blue LED if it’s able to connect to the radio. On the IC-705, a WLAN indicator will appear if ezDV is connected to the radio as shown below:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connected.jpg" alt="" /><figcaption>Icom IC-705 properly connected to ezDV (WLAN indicator at the top of the screen)</figcaption>
+</figure>
+<p>For Flex 6000 series radios, opening the SmartSDR software will show a “FDVU” (for upper sideband) and “FDVL” (for lower sideband) if ezDV is properly connected to the radio:</p>
+<figure>
+<img src="images/2-setup-radio-flex-connected.png" alt="" /><figcaption>Flex 6300 properly connected to ezDV (existence of FDVU/FDVL modes)</figcaption>
+</figure>
+<h1 data-number="3" id="basic-usage"><span class="header-section-number">3</span> Basic Usage</h1>
+<p>ezDV has four buttons on the left, in order from top to bottom:</p>
+<ul>
+<li>PTT</li>
+<li>Mode</li>
+<li>Volume Up</li>
+<li>Volume Down</li>
+</ul>
+<p>as well as four status LEDs on the right hand side (again from top to bottom):</p>
+<ul>
+<li>PTT (red; on if transmitting)</li>
+<li>Sync (green; on if ezDV can decode an incoming FreeDV signal)</li>
+<li>Overload (red; on if the incoming RX/TX audio is clipping)</li>
+<li>Network (blue; will blink if it has a network connection and will be solid if connected to the radio)</li>
+</ul>
+<p>To turn on ezDV, press and hold the Mode button for &gt;= 1 second. All four LEDs on the right hand side of the board should light briefly and then extinguish. You will also hear the last used mode in Morse Code on your wired headset. (On first start, this will be “ANA”, which corresponds to analog passthrough mode.) Holding this button again for &gt;= 1 second will result in ezDV turning off (with “73” also being piped through the headset in Morse Code, corresponding to the well-known ham radio term for “goodbye”).</p>
+<p>If Wi-Fi is enabled on ezDV, you will additionally hear the letter “N” emitted in Morse Code once the network interface comes up. If ezDV is configured to connect to an existing wireless network, you will hear the last octet of the IP address immediately afterward. For example, if your router assigns the IP address “192.168.1.100” to ezDV, you will hear “N100” in the headset.</p>
+<p>(Note: if your wireless network is configured with a “netmask” other than “255.255.255.0”, you may need to load your router’s configuration to obtain the rest of ezDV’s IP address. Otherwise, you can typically replace the last octet of your computer’s IP address with the number after the “N” when accessing ezDV with a web browser; see “Web based configuration” for more information.)</p>
+<p>Pushing the Mode button briefly while in receive will cycle through the following modes:</p>
+<ul>
+<li>FreeDV 700D (“700D” will beep in Morse code)</li>
+<li>FreeDV 700E (“700E” will beep in Morse code)</li>
+<li>FreeDV 1600 (“1600” will beep in Morse code)</li>
+<li>Analog passthrough (“ANA” will beep in Morse code)</li>
+</ul>
+<p>Additionally, if you hold down PTT and then push Mode briefly, the voice keyer function will activate. This requires additional configuration to use (see “Web based configuration” below). Pressing any button after doing this will stop the voice keyer.</p>
+<p>The Volume Up and Down buttons adjust the receive and transmit audio depending on if the PTT button is also held. For best results, transmit audio should be adjusted while in 700D/700E/1600 mode such that the ALC indicator on your radio is just barely showing (similar to how to configure data modes).</p>
                 </main>
 
                 <nav class="nav-wrapper" aria-label="Page navigation">
