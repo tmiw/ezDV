@@ -1,0 +1,33 @@
+name: Render User Manual
+
+on:
+  push
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install packages
+      shell: bash
+      run: sudo apt-get install texlive texlive-latex-extra texlive-fonts-extra texlive-lang-german texlive-lang-english lmodern latex-xcolor
+
+    # Note: this is adapted from https://github.com/LibreSolar/md-manual-template/blob/master/.travis.yml
+    - name: Generate manual
+      shell: bash
+      run: |
+          pandoc_version=`wget -O - --max-redirect 0 https://github.com/jgm/pandoc/releases/latest 2>&1 | grep "Location:" | sed 's/.*\/tag\/\([^ "]*\).*/\1/'`
+          pandoc_deb="pandoc-${pandoc_version}-1-amd64.deb"
+          wget "https://github.com/jgm/pandoc/releases/download/${pandoc_version}/${pandoc_deb}"
+          sudo dpkg -i ${pandoc_deb}
+          rm ${pandoc_deb}
+          pandoc -v
+          cd manual
+          make dist
+        
