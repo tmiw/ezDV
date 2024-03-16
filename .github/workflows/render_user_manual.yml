@@ -33,6 +33,7 @@ jobs:
 
     - name: Push to github.io
       shell: bash
+      if: ${{ github.ref_name == "main" }}
       run: |
           export git_hash=$(git describe --always HEAD)
           git clone -b gh-pages https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY website
