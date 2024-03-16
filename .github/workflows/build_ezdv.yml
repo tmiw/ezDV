@@ -2,8 +2,6 @@ name: Build ezDV
 
 on:
   push
-#paths:
-#  - firmware/**
 
 jobs:
   build:
