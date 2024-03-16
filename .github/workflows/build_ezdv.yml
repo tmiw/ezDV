@@ -49,38 +49,12 @@ jobs:
           cp ../partition_table/partition-table.bin .
           tar cvzf ezdv-$GITHUB_REF_NAME-full.tar.gz *.bin
 
-      - name: Create release
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           draft: true
-          prerelease: false
-
-      - name: Upload OTA release asset
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./firmware/build/release/ezdv-${{ github.ref_name }}-ota.tar.gz
-          asset_name: ezdv-${{ github.ref_name }}-ota.tar.gz
-          asset_content_type: application/x-gzip
-
-      - name: Upload full release asset
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./firmware/build/release/ezdv-${{ github.ref_name }}-full.tar.gz
-          asset_name: ezdv-${{ github.ref_name }}-full.tar.gz
-          asset_content_type: application/x-gzip
+          prerelease: true
+          files: |
+            ./firmware/build/release/ezdv-${{ github.ref_name }}-ota.tar.gz
+            ./firmware/build/release/ezdv-${{ github.ref_name }}-full.tar.gz
