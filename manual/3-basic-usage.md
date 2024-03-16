@@ -46,3 +46,4 @@ The Volume Up and Down buttons adjust the receive audio by default. If the PTT b
 pushing Volume Up or Volume Down, the transmit audio level is adjusted instead. For best results, transmit 
 audio should be adjusted while in 700D/700E/1600 mode such that the ALC indicator on your radio is just barely
 showing (similar to how to configure data modes).
+
