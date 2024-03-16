@@ -40,8 +40,8 @@ jobs:
           cd firmware/build
           mkdir release
           cd release
-          cp ../ezdv.bin release
-          cp ../http_0.bin release/http.bin
+          cp ../ezdv.bin .
+          cp ../http_0.bin http.bin
           tar cvzf ezdv-$GITHUB_REF_NAME-ota.tar.gz *.bin
           mv http.bin http_0.bin
           cp ../bootloader/bootloader.bin .
