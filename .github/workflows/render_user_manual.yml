@@ -1,7 +1,9 @@
 name: Render User Manual
 
 on:
-  push
+  push:
+    paths:
+      - manual/**
 
 permissions:
   contents: write
