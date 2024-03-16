@@ -77,6 +77,7 @@
             <li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
             <ul>
             <li><a href="#initial-assembly"><span class="toc-section-number">1.1</span> Initial Assembly</a></li>
+            <li><a href="#radio-configuration"><span class="toc-section-number">1.2</span> Radio Configuration</a></li>
             </ul></li>
             </ul>
         </div>
@@ -112,12 +113,13 @@
                 <main>
 <h1 data-number="1" id="introduction"><span class="header-section-number">1</span> Introduction</h1>
 <p>ezDV is a handheld device based on the ESP32-S3 microcontroller. # Setting Up ezDV</p>
+<p>There are several steps required to get ezDV up and running with your radio.</p>
 <h2 data-number="1.1" id="initial-assembly"><span class="header-section-number">1.1</span> Initial Assembly</h2>
 <p>If ezDV did not already come with a battery, you will need to obtain a 3.7V lithium polymer (LiPo) battery. One recommended battery can be purchased <a href="https://www.amazon.com/gp/product/B08214DJLJ/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&amp;psc=1">from Amazon</a>.</p>
 <p><em>WARNING: Do not puncture or otherwise damage lithium batteries as injury and/or property damage could result! Neither the project nor its creator take responsibility for any damage or injury due to misuse of batteries. A battery with a protection module (such as the one linked above) is highly recommended.</em></p>
 <p>The battery should be plugged into the BT1 connector on the bottom of the ezDV circuit board, which is the circled connector below:</p>
 <figure>
-<img src="images/2-setup-battery-location.jpg" alt="" /><figcaption>Location of BT1 on the board</figcaption>
+<img src="images/2-setup-battery-location.jpg" alt="" /><figcaption>The back of the ezDV circuit board with BT1 circled</figcaption>
 </figure>
 <p>Finally, plug in a wired headset on the TRRS jack located on the right side of the ezDV board (when looking from above). This headset should be wired for compatibility with Android phones, which is as follows:</p>
 <ul>
@@ -130,7 +132,8 @@
 <figure>
 <img src="images/2-setup-headset-location.jpg" alt="" /><figcaption>ezDV with headset attached</figcaption>
 </figure>
-<h3 data-number="1.1.1" id="radios-without-wi-fi-support"><span class="header-section-number">1.1.1</span> Radios without Wi-Fi support</h3>
+<h2 data-number="1.2" id="radio-configuration"><span class="header-section-number">1.2</span> Radio Configuration</h2>
+<h3 data-number="1.2.1" id="radios-without-wi-fi-support"><span class="header-section-number">1.2.1</span> Radios without Wi-Fi support</h3>
 <p>Radios without Wi-Fi support will need an interface cable. One end of this cable should be a male 3.5mm four conductor (TRRS) with the following pinout:</p>
 <ul>
 <li>Tip: TX audio from ezDV to your radio</li>
@@ -138,8 +141,68 @@
 <li>Ring 2: GND</li>
 <li>Shield: RX audio from your radio to ezDV</li>
 </ul>
+<p>There is also silkscreen labeling on the back of the board corresponding to the location of the radio jack that indicates the pinout. This jack is on the left hand side of ezDV when looking downward at the front of the device.</p>
+<p>Some example configurations are below.</p>
+<h4 data-number="1.2.1.1" id="elecraft-kx3"><span class="header-section-number">1.2.1.1</span> Elecraft KX3</h4>
 <p>If you have an Elecraft KX3, you can use off the shelf parts for your interface cable (no soldering required). These parts consist of a <a href="https://www.amazon.com/Headphone-Splitter-KOOPAO-Microphone-Earphones/dp/B084V3TRTV/ref=sr_1_3?crid=2V0WV9A8JJMW9&amp;keywords=headset%2Bsplitter&amp;qid=1671701520&amp;sprefix=headset%2Bsplitte%2Caps%2C136&amp;sr=8-3&amp;th=1">3.5mm splitter</a> and a <a href="https://www.amazon.com/gp/product/B07PJW6RQ7/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&amp;psc=1">3.5mm TRRS cable</a>. The microphone connector on the splitter should be plugged into PHONES on the KX3 while the speaker connector should be plugged into MIC.</p>
-<p>Once you’ve built or purchased an interface cable, you should plug this cable into the 3.5mm jack on the left hand side of the ezDV board (when looking upward). There is also silkscreen labeling on the back of the board corresponding to the location of the radio jack.</p>
+<p>This setup will look like the following when plugged in:</p>
+<figure>
+<img src="images/2-setup-radio-kx3.jpg" alt="" /><figcaption>ezDV plugged into an Elecraft KX3</figcaption>
+</figure>
+<h3 data-number="1.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">1.2.2</span> Radios with Wi-Fi support</h3>
+<p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi. Currently this is supported only for the [FlexRadio][https://www.flexradio.com/] 6000 series radios and the Icom IC-705.</p>
+<h4 data-number="1.2.2.1" id="flex-6000-series-radios"><span class="header-section-number">1.2.2.1</span> Flex 6000 series radios</h4>
+<p>Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. <em>not</em> using SmartLink). Once this is confirmed, skip to TBD.</p>
+<h4 data-number="1.2.2.2" id="icom-ic-705"><span class="header-section-number">1.2.2.2</span> Icom IC-705</h4>
+<p>Several settings will need to be adjusted in the IC-705 before it can be used with ezDV. First, you will need to decide whether you want to join your IC-705 to an existing Wi-Fi network or whether you want to configure ezDV to use the IC-705’s built-in access point.</p>
+<p><em>Note: it is recommended to join your IC-705 to an existing Wi-Fi network in order to be able to access ezDV’s Web interface (and to take advantage of certain features if an Internet connection is available).</em></p>
+<p>Next, you’ll need to turn on your radio and push the Menu button. This will bring up the following screen:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-mainmenu.jpg" alt="" /><figcaption>Icom IC-705 on menu screen</figcaption>
+</figure>
+<p>Tap the Set button on the lower-right corner of the display and then select “WLAN Set” as shown below:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-setmode-3.jpg" alt="" /><figcaption>Icom IC-705 with WLAN Set selected</figcaption>
+</figure>
+<p>Next, tap the WLAN option on the first page and turn it OFF. Once switched OFF, tap the Connection Type setting and tap either Station (for connecting to an existing Wi-Fi network) or Access Point (for connecting ezDV to the IC-705’s access point):</p>
+<figure>
+<img src="images/2-setup-radio-ic705-wlan-set-1.jpg" alt="" /><figcaption>Icom IC-705 displaying WLAN Set options</figcaption>
+</figure>
+<figure>
+<img src="images/2-setup-radio-ic705-connection-type.jpg" alt="" /><figcaption>Icom IC-705 displaying Connection Type menu</figcaption>
+</figure>
+<h5 data-number="1.2.2.2.1" id="configuring-wi-fi-on-the-ic-705"><span class="header-section-number">1.2.2.2.1</span> Configuring Wi-Fi on the IC-705</h5>
+<h6 data-number="1.2.2.2.1.1" id="using-the-ic-705s-built-in-access-point"><span class="header-section-number">1.2.2.2.1.1</span> Using the IC-705’s built-in access point</h6>
+<p>If you’re using the IC-705’s Access Point mode, it is a good idea to double-check your radio’s SSID (aka Wi-Fi network name) and Wi-Fi password by tapping “Connection Settings (Access Point)” and then tapping each option as shown below, updating them as needed:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connection-settings-ap.jpg" alt="" /><figcaption>Icom IC-705 displaying Access Point settings</figcaption>
+</figure>
+<p>Also, note the IP address that your IC-705 is using on this page as you will need it for later configuration of ezDV. Once the settings here are satisfactory, tap the Back button on the lower right hand corner of the screen, tap the WLAN option and then change it to ON.</p>
+<h6 data-number="1.2.2.2.1.2" id="connecting-the-ic-705-to-an-existing-network"><span class="header-section-number">1.2.2.2.1.2</span> Connecting the IC-705 to an existing network</h6>
+<p>First, tap the WLAN option on the WLAN Set page and change it to ON. This is needed in order to turn on the Wi-Fi radio in the IC-705 and allow it to scan for networks.</p>
+<p>Next, tap “Connection Settings (Station)”. You will see the following page on the IC-705:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connection-settings-sta.jpg" alt="" /><figcaption>Icom IC-705 displaying the Connection Settings (Station) page</figcaption>
+</figure>
+<p>From here, you can either tap “Access Point” to select your network from a list or “Manual Connect” if it’s not broadcasting its name. Tapping “Access Point” will bring up a page similar to the following:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-access-point.jpg" alt="" /><figcaption>Icom IC-705 displaying a list of Wi-Fi networks</figcaption>
+</figure>
+<p>Tap your preferred network from the list that appears. If it’s not already saved in the IC-705, you may see a page similar to the following:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connect.jpg" alt="" /><figcaption>Icom IC-705 displaying the Connect page</figcaption>
+</figure>
+<p>Tapping Password will display the following page that will allow you to enter your Wi-Fi network’s password:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-password.jpg" alt="" /><figcaption>Icom IC-705 displaying the Password page</figcaption>
+</figure>
+<p>Once entered, tap the ENT button to save it, then tap the Connect option to connect to the network. If successful, the Access Point page will show “Connected” below your network’s name. Tap the Back button until you return to the “Connection Settings (Station)” page and make sure you see an IP address under “DHCP (Valid After Restart)”:</p>
+<figure>
+<img src="images/2-setup-radio-ic705-connection-settings-sta-with-ip.jpg" alt="" /><figcaption>Icom IC-705 displaying an IP address</figcaption>
+</figure>
+<p>Note this address as it will be needed for later configuration of ezDV.</p>
+<h5 data-number="1.2.2.2.2" id="configuring-the-radio-user"><span class="header-section-number">1.2.2.2.2</span> Configuring the Radio User</h5>
+<p>The IC-705 requires a username and password to connect to the radio. If this is not already set up, you will need to do so now before continuing with ezDV setup. TBD</p>
                 </main>
 
                 <nav class="nav-wrapper" aria-label="Page navigation">
