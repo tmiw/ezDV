@@ -990,7 +990,7 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
                 ssid, password, hostname);
         publish(request);
     
-        auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        auto response = waitFor<storage::WifiSettingsSavedMessage>(pdMS_TO_TICKS(5000), NULL);
         if (response)
         {
             success = true;
@@ -1121,7 +1121,7 @@ void HttpServerTask::onUpdateRadioMessage_(DVTask* origin, UpdateRadioMessage* m
         storage::SetRadioSettingsMessage request(headsetPtt, timeOutTimer, enabled, type, hostname, port, username, password);
         publish(&request);
     
-        auto response = waitFor<storage::RadioSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        auto response = waitFor<storage::RadioSettingsSavedMessage>(pdMS_TO_TICKS(5000), NULL);
         if (response)
         {
             success = true;
@@ -1219,7 +1219,7 @@ void HttpServerTask::onUpdateVoiceKeyerMessage_(DVTask* origin, UpdateVoiceKeyer
         storage::SetVoiceKeyerSettingsMessage request(enabled, timesToTransmit, secondsToWait);
         publish(&request);
     
-        auto response = waitFor<storage::VoiceKeyerSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        auto response = waitFor<storage::VoiceKeyerSettingsSavedMessage>(pdMS_TO_TICKS(5000), NULL);
         if (response)
         {
             success = true;
@@ -1316,7 +1316,7 @@ void HttpServerTask::onUpdateReportingMessage_(DVTask* origin, UpdateReportingMe
         storage::SetReportingSettingsMessage request(callsign, gridSquare, forceReporting, freqHz, reportingMessage);
         publish(&request);
     
-        auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        auto response = waitFor<storage::ReportingSettingsSavedMessage>(pdMS_TO_TICKS(5000), NULL);
         if (response)
         {
             success = true;
@@ -1416,7 +1416,7 @@ void HttpServerTask::onUpdateLedBrightnessMessage_(DVTask* origin, UpdateLedBrig
         storage::SetLedBrightnessSettingsMessage request(dutyCycle);
         publish(&request);
     
-        auto response = waitFor<storage::LedBrightnessSettingsSavedMessage>(pdMS_TO_TICKS(1000), NULL);
+        auto response = waitFor<storage::LedBrightnessSettingsSavedMessage>(pdMS_TO_TICKS(5000), NULL);
         if (response)
         {
             success = true;
