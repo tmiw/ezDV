@@ -747,18 +747,24 @@ void SettingsTask::setLeftChannelVolume_(int8_t vol)
     if (vol <= -127) vol = -127;
     else if (vol >= 48) vol = 48;
     
+    bool valueChanged = vol != leftChannelVolume_;
     leftChannelVolume_ = vol;
     
     if (storageHandle_)
     {
-        esp_err_t result = storageHandle_->set_item(LEFT_CHAN_VOL_ID, vol);
-        if (result != ESP_OK)
+        if (valueChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting leftChannelVolume: %s", esp_err_to_name(result));
+            esp_err_t result = storageHandle_->set_item(LEFT_CHAN_VOL_ID, vol);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting leftChannelVolume: %s", esp_err_to_name(result));
+            }
+            else
+            {
+                commitTimer_.stop();
+                commitTimer_.start(true);
+            }
         }
-
-        commitTimer_.stop();
-        commitTimer_.start(true);
 
         // Publish new volume setting to everyone who may care.
         LeftChannelVolumeMessage* message = new LeftChannelVolumeMessage();
@@ -775,17 +781,21 @@ void SettingsTask::setRightChannelVolume_(int8_t vol)
     if (vol <= -127) vol = -127;
     else if (vol >= 48) vol = 48;
     
+    bool valueChanged = vol != rightChannelVolume_;
     rightChannelVolume_ = vol;
     
     if (storageHandle_)
     {
-        esp_err_t result = storageHandle_->set_item(RIGHT_CHAN_VOL_ID, vol);
-        if (result != ESP_OK)
+        if (valueChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting rightChannelVolume: %s", esp_err_to_name(result));
+            esp_err_t result = storageHandle_->set_item(RIGHT_CHAN_VOL_ID, vol);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting rightChannelVolume: %s", esp_err_to_name(result));
+            }
+            commitTimer_.stop();
+            commitTimer_.start(true);
         }
-        commitTimer_.stop();
-        commitTimer_.start(true);
 
         // Publish new volume setting to everyone who may care.
         RightChannelVolumeMessage* message = new RightChannelVolumeMessage();
@@ -809,6 +819,16 @@ void SettingsTask::setWifiSettings_(
     const char* password, const char* hostname)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Saving Wi-Fi settings");
+
+    bool valuesChanged =
+        wifiEnabled_ != enabled ||
+        wifiMode_ != mode ||
+        wifiSecurity_ != security ||
+        wifiChannel_ != channel ||
+        (strcmp(wifiSsid_, ssid) != 0) ||
+        (strcmp(wifiPassword_, password) != 0) ||
+        (strcmp(wifiHostname_, hostname) != 0);
+
     wifiEnabled_ = enabled;
     wifiMode_ = mode;
     wifiSecurity_ = security;
@@ -823,45 +843,48 @@ void SettingsTask::setWifiSettings_(
     strncpy(wifiHostname_, hostname, WifiSettingsMessage::MAX_STR_SIZE - 1);
 
     if (storageHandle_)
-    {        
-        esp_err_t result = storageHandle_->set_item(WIFI_ENABLED_ID, wifiEnabled_);
-        if (result != ESP_OK)
+    {
+        if (valuesChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiEnabled: %s", esp_err_to_name(result));
+            esp_err_t result = storageHandle_->set_item(WIFI_ENABLED_ID, wifiEnabled_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiEnabled: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(WIFI_MODE_ID, wifiMode_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiMode: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(WIFI_SECURITY_ID, wifiSecurity_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSecurity: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(WIFI_CHANNEL_ID, wifiChannel_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiChannel: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(WIFI_SSID_ID, wifiSsid_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSsid: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(WIFI_PASSWORD_ID, wifiPassword_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifPassword: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(WIFI_HOSTNAME_ID, wifiHostname_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiHostname: %s", esp_err_to_name(result));
+            }
+                
+            commitTimer_.stop();
+            commitTimer_.start(true);
         }
-        result = storageHandle_->set_item(WIFI_MODE_ID, wifiMode_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiMode: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(WIFI_SECURITY_ID, wifiSecurity_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSecurity: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(WIFI_CHANNEL_ID, wifiChannel_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiChannel: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(WIFI_SSID_ID, wifiSsid_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiSsid: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(WIFI_PASSWORD_ID, wifiPassword_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifPassword: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(WIFI_HOSTNAME_ID, wifiHostname_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiHostname: %s", esp_err_to_name(result));
-        }
-               
-        commitTimer_.stop();
-        commitTimer_.start(true);
 
         // Publish new Wi-Fi settings to everyone who may care.
         WifiSettingsMessage* message = new WifiSettingsMessage(
@@ -892,6 +915,16 @@ void SettingsTask::setRadioSettings_(
     const char* host, int port, 
     const char* username, const char* password)
 {
+    bool valuesChanged = 
+        headsetPtt_ != headsetPtt ||
+        timeOutTimer_ != timeOutTimer ||
+        radioEnabled_ != enabled ||
+        radioPort_ != port ||
+        radioType_ != type ||
+        (strcmp(radioHostname_, host) != 0) ||
+        (strcmp(radioUsername_, username) != 0) ||
+        (strcmp(radioPassword_, password) != 0);
+
     headsetPtt_ = headsetPtt;
     timeOutTimer_ = timeOutTimer;
     radioEnabled_ = enabled;
@@ -907,50 +940,53 @@ void SettingsTask::setRadioSettings_(
     strncpy(radioPassword_, password, RadioSettingsMessage::MAX_STR_SIZE - 1);
     
     if (storageHandle_)
-    {        
-        esp_err_t result = storageHandle_->set_item(HEADSET_PTT_ID, headsetPtt_);
-        if (result != ESP_OK)
+    {
+        if (valuesChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting headsetPtt: %s", esp_err_to_name(result));
+            esp_err_t result = storageHandle_->set_item(HEADSET_PTT_ID, headsetPtt_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting headsetPtt: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(TIME_OUT_TIMER_ID, timeOutTimer_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting timeOutTimer: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioEnabled: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(RADIO_TYPE_ID, radioType_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioType: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(RADIO_HOSTNAME_ID, radioHostname_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioHostname: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(RADIO_PORT_ID, radioPort_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPort: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(RADIO_USERNAME_ID, radioUsername_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioUsername: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_string(RADIO_PASSWORD_ID, radioPassword_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPassword: %s", esp_err_to_name(result));
+            }
+                
+            commitTimer_.stop();
+            commitTimer_.start(true);
         }
-        result = storageHandle_->set_item(TIME_OUT_TIMER_ID, timeOutTimer_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting timeOutTimer: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(RADIO_ENABLED_ID, radioEnabled_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioEnabled: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(RADIO_TYPE_ID, radioType_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioType: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(RADIO_HOSTNAME_ID, radioHostname_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioHostname: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(RADIO_PORT_ID, radioPort_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPort: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(RADIO_USERNAME_ID, radioUsername_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioUsername: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_string(RADIO_PASSWORD_ID, radioPassword_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPassword: %s", esp_err_to_name(result));
-        }
-               
-        commitTimer_.stop();
-        commitTimer_.start(true);
 
         // Publish new Wi-Fi settings to everyone who may care.
         RadioSettingsMessage* message = new RadioSettingsMessage(
@@ -983,30 +1019,38 @@ void SettingsTask::onSetVoiceKeyerSettingsMessage_(DVTask* origin, SetVoiceKeyer
 
 void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait)
 {
+    bool valuesChanged =
+        enableVoiceKeyer_ != enabled ||
+        voiceKeyerNumberTimesToTransmit_ != timesToTransmit ||
+        voiceKeyerSecondsToWaitAfterTransmit_ != secondsToWait;
+
     enableVoiceKeyer_ = enabled;
     voiceKeyerNumberTimesToTransmit_ = timesToTransmit;
     voiceKeyerSecondsToWaitAfterTransmit_ = secondsToWait;
     
     if (storageHandle_)
-    {        
-        esp_err_t result = storageHandle_->set_item(VOICE_KEYER_ENABLED_ID, enableVoiceKeyer_);
-        if (result != ESP_OK)
+    {
+        if (valuesChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting enableVoiceKeyer: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(VOICE_KEYER_TIMES_TO_TRANSMIT, voiceKeyerNumberTimesToTransmit_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerNumberTimesToTransmit: %s", esp_err_to_name(result));
-        }
-        result = storageHandle_->set_item(VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT, voiceKeyerSecondsToWaitAfterTransmit_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerSecondsToWaitAfterTransmit: %s", esp_err_to_name(result));
-        }
+            esp_err_t result = storageHandle_->set_item(VOICE_KEYER_ENABLED_ID, enableVoiceKeyer_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting enableVoiceKeyer: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(VOICE_KEYER_TIMES_TO_TRANSMIT, voiceKeyerNumberTimesToTransmit_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerNumberTimesToTransmit: %s", esp_err_to_name(result));
+            }
+            result = storageHandle_->set_item(VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT, voiceKeyerSecondsToWaitAfterTransmit_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting voiceKeyerSecondsToWaitAfterTransmit: %s", esp_err_to_name(result));
+            }
 
-        commitTimer_.stop();
-        commitTimer_.start(true);
+            commitTimer_.stop();
+            commitTimer_.start(true);
+        }
 
         // Publish new voice keyer settings to everyone who may care.
         VoiceKeyerSettingsMessage* message = new VoiceKeyerSettingsMessage(
@@ -1031,6 +1075,13 @@ void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSe
 void SettingsTask::setReportingSettings_(
     const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message)
 {
+    bool valuesChanged = 
+        (strcmp(callsign_, callsign) != 0) ||
+        (strcmp(gridSquare_, gridSquare) != 0) ||
+        (strcmp(message_, message) != 0) ||
+        forceReporting_ != forceReporting ||
+        freqHz_ != freqHz;
+
     memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);    
     strncpy(callsign_, callsign, ReportingSettingsMessage::MAX_STR_SIZE - 1);
     
@@ -1044,39 +1095,42 @@ void SettingsTask::setReportingSettings_(
     freqHz_ = freqHz;
     
     if (storageHandle_)
-    {        
-        esp_err_t result = storageHandle_->set_string(REPORTING_CALLSIGN_ID, callsign_);
-        if (result != ESP_OK)
+    {
+        if (valuesChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting callsign: %s", esp_err_to_name(result));
-        }
-        
-        result = storageHandle_->set_string(REPORTING_GRID_SQUARE_ID, gridSquare_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting gridSquare: %s", esp_err_to_name(result));
-        }
-        
-        result = storageHandle_->set_item(REPORTING_FORCE_ID, forceReporting_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting forceReporting: %s", esp_err_to_name(result));
-        }
-        
-        result = storageHandle_->set_item(REPORTING_FREQ_ID, freqHz_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting freqHz: %s", esp_err_to_name(result));
-        }
+            esp_err_t result = storageHandle_->set_string(REPORTING_CALLSIGN_ID, callsign_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting callsign: %s", esp_err_to_name(result));
+            }
+            
+            result = storageHandle_->set_string(REPORTING_GRID_SQUARE_ID, gridSquare_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting gridSquare: %s", esp_err_to_name(result));
+            }
+            
+            result = storageHandle_->set_item(REPORTING_FORCE_ID, forceReporting_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting forceReporting: %s", esp_err_to_name(result));
+            }
+            
+            result = storageHandle_->set_item(REPORTING_FREQ_ID, freqHz_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting freqHz: %s", esp_err_to_name(result));
+            }
 
-        result = storageHandle_->set_string(REPORTING_MSG_ID, message_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting reporting message: %s", esp_err_to_name(result));
+            result = storageHandle_->set_string(REPORTING_MSG_ID, message_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting reporting message: %s", esp_err_to_name(result));
+            }
+                
+            commitTimer_.stop();
+            commitTimer_.start(true);
         }
-              
-        commitTimer_.stop();
-        commitTimer_.start(true);
 
         // Publish new Wi-Fi settings to everyone who may care.
         ReportingSettingsMessage* message = new ReportingSettingsMessage(
@@ -1106,18 +1160,23 @@ void SettingsTask::onSetLedBrightness_(DVTask* origin, SetLedBrightnessSettingsM
 
 void SettingsTask::setLedBrightness_(int dutyCycle)
 {
+    bool valueChanged = ledDutyCycle_ != dutyCycle;
+
     ledDutyCycle_ = dutyCycle;
     
     if (storageHandle_)
     {        
-        esp_err_t result = storageHandle_->set_item(LED_DUTY_CYCLE_ID, ledDutyCycle_);
-        if (result != ESP_OK)
+        if (valueChanged)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting ledDutyCycle: %s", esp_err_to_name(result));
-        }
+            esp_err_t result = storageHandle_->set_item(LED_DUTY_CYCLE_ID, ledDutyCycle_);
+            if (result != ESP_OK)
+            {
+                ESP_LOGE(CURRENT_LOG_TAG, "error setting ledDutyCycle: %s", esp_err_to_name(result));
+            }
 
-        commitTimer_.stop();
-        commitTimer_.start(true);
+            commitTimer_.stop();
+            commitTimer_.start(true);
+        }
 
         // Publish new voice keyer settings to everyone who may care.
         LedBrightnessSettingsMessage* message = new LedBrightnessSettingsMessage(
