@@ -42,6 +42,7 @@ Additionally, if you hold down PTT and then push Mode briefly, the voice keyer f
 requires additional configuration to use (see "Web based configuration" below). Pressing any button after
 doing this will stop the voice keyer.
 
-The Volume Up and Down buttons adjust the receive and transmit audio depending on if the PTT button is
-also held. For best results, transmit audio should be adjusted while in 700D/700E/1600 mode such that
-the ALC indicator on your radio is just barely showing (similar to how to configure data modes). 
+The Volume Up and Down buttons adjust the receive audio by default. If the PTT button is also held while
+pushing Volume Up or Volume Down, the transmit audio level is adjusted instead. For best results, transmit 
+audio should be adjusted while in 700D/700E/1600 mode such that the ALC indicator on your radio is just barely
+showing (similar to how to configure data modes).

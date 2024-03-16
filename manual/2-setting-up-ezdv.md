@@ -41,7 +41,7 @@ Once attached, ezDV will appear as follows:
 
 ![ezDV with headset attached](images/2-setup-headset-location.jpg)
 
-## Radio Configuration
+## Radio Wiring
 
 ### Radios without Wi-Fi support
 
@@ -81,7 +81,7 @@ and the Icom IC-705.
 #### Flex 6000 series radios
 
 Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. *not* using SmartLink).
-Once this is confirmed, skip to TBD.
+Once this is confirmed, skip to [Initial Configuration](#initial-configuration).
 
 #### Icom IC-705
 
