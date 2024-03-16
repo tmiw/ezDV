@@ -27,3 +27,16 @@ jobs:
           pandoc -v
           cd manual
           make dist
+
+    - name: Push to github.io
+      shell: bash
+      run: |
+          mv manual/build tmp
+          git config --local user.email "$(git log --format='%ae' HEAD^!)"
+          git config --local user.name "$(git log --format='%an' HEAD^!)"
+          export git_hash=$(git describe --always HEAD)
+          git checkout gh-pages
+          mv tmp/* .
+          rm -rf tmp
+          git commit -am "Generated user manual from Git commit ${git_hash}"
+          git push
