@@ -78,7 +78,7 @@
             <li><a href="#setting-up-ezdv"><span class="toc-section-number">2</span> Setting Up ezDV</a>
             <ul>
             <li><a href="#initial-assembly"><span class="toc-section-number">2.1</span> Initial Assembly</a></li>
-            <li><a href="#radio-configuration"><span class="toc-section-number">2.2</span> Radio Configuration</a></li>
+            <li><a href="#radio-wiring"><span class="toc-section-number">2.2</span> Radio Wiring</a></li>
             <li><a href="#initial-configuration"><span class="toc-section-number">2.3</span> Initial Configuration</a></li>
             </ul></li>
             <li><a href="#basic-usage"><span class="toc-section-number">3</span> Basic Usage</a></li>
@@ -141,7 +141,7 @@
 <figure>
 <img src="images/2-setup-headset-location.jpg" alt="" /><figcaption>ezDV with headset attached</figcaption>
 </figure>
-<h2 data-number="2.2" id="radio-configuration"><span class="header-section-number">2.2</span> Radio Configuration</h2>
+<h2 data-number="2.2" id="radio-wiring"><span class="header-section-number">2.2</span> Radio Wiring</h2>
 <h3 data-number="2.2.1" id="radios-without-wi-fi-support"><span class="header-section-number">2.2.1</span> Radios without Wi-Fi support</h3>
 <p>Radios without Wi-Fi support will need an interface cable. One end of this cable should be a male 3.5mm four conductor (TRRS) with the following pinout:</p>
 <ul>
@@ -162,7 +162,7 @@
 <h3 data-number="2.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">2.2.2</span> Radios with Wi-Fi support</h3>
 <p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi. Currently this is supported only for the <a href="https://www.flexradio.com/">FlexRadio</a> 6000 series radios and the Icom IC-705.</p>
 <h4 data-number="2.2.2.1" id="flex-6000-series-radios"><span class="header-section-number">2.2.2.1</span> Flex 6000 series radios</h4>
-<p>Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. <em>not</em> using SmartLink). Once this is confirmed, skip to TBD.</p>
+<p>Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. <em>not</em> using SmartLink). Once this is confirmed, skip to <a href="#initial-configuration">Initial Configuration</a>.</p>
 <h4 data-number="2.2.2.2" id="icom-ic-705"><span class="header-section-number">2.2.2.2</span> Icom IC-705</h4>
 <p>Several settings will need to be adjusted in the IC-705 before it can be used with ezDV. First, you will need to decide whether you want to join your IC-705 to an existing Wi-Fi network or whether you want to configure ezDV to use the IC-705’s built-in access point.</p>
 <p><em>Note: it is recommended to join your IC-705 to an existing Wi-Fi network in order to be able to access ezDV’s Web interface (and to take advantage of certain features if an Internet connection is available).</em></p>
@@ -329,7 +329,7 @@
 <li>Analog passthrough (“ANA” will beep in Morse code)</li>
 </ul>
 <p>Additionally, if you hold down PTT and then push Mode briefly, the voice keyer function will activate. This requires additional configuration to use (see “Web based configuration” below). Pressing any button after doing this will stop the voice keyer.</p>
-<p>The Volume Up and Down buttons adjust the receive and transmit audio depending on if the PTT button is also held. For best results, transmit audio should be adjusted while in 700D/700E/1600 mode such that the ALC indicator on your radio is just barely showing (similar to how to configure data modes).</p>
+<p>The Volume Up and Down buttons adjust the receive audio by default. If the PTT button is also held while pushing Volume Up or Volume Down, the transmit audio level is adjusted instead. For best results, transmit audio should be adjusted while in 700D/700E/1600 mode such that the ALC indicator on your radio is just barely showing (similar to how to configure data modes).</p>
                 </main>
 
                 <nav class="nav-wrapper" aria-label="Page navigation">
