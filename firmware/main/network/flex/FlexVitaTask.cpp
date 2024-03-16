@@ -56,12 +56,15 @@ FlexVitaTask::FlexVitaTask()
     , currentTime_(0)
     , timeFracSeq_(0)
     , audioEnabled_(false)
+    , isTransmitting_(false)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onSendVitaMessage_);
     registerMessageHandler(this, &FlexVitaTask::onEnableReportingMessage_);
     registerMessageHandler(this, &FlexVitaTask::onDisableReportingMessage_);
+    registerMessageHandler(this, &FlexVitaTask::onRequestRxMessage_);
+    registerMessageHandler(this, &FlexVitaTask::onRequestTxMessage_);
 
     downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
@@ -103,14 +106,38 @@ void FlexVitaTask::onTaskTick_()
     }
     
     // Generate packets for both RX and TX.
-    if (rxStreamId_)
+    if (rxStreamId_ && !isTransmitting_)
     {
         generateVitaPackets_(audio::AudioInput::USER_CHANNEL, rxStreamId_);
     }
+    else
+    {
+        // Clear FIFO if we're not in the right state. This is so that we
+        // don't end up with audio packets going to the wrong place
+        // (i.e. UI beeps being transmitted along with the FreeDV signal).
+        auto fifo = getAudioInput(audio::AudioInput::USER_CHANNEL);
+        short tmpBuf[MAX_VITA_SAMPLES];
+        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
+        {
+            // empty
+        }
+    }
     
-    if (txStreamId_)
+    if (txStreamId_ && isTransmitting_)
     {
         generateVitaPackets_(audio::AudioInput::RADIO_CHANNEL, txStreamId_);
+    }
+    else
+    {
+        // Clear FIFO if we're not in the right state. This is so that we
+        // don't end up with audio packets going to the wrong place
+        // (i.e. UI beeps being transmitted along with the FreeDV signal).
+        auto fifo = getAudioInput(audio::AudioInput::RADIO_CHANNEL);
+        short tmpBuf[MAX_VITA_SAMPLES];
+        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
+        {
+            // empty
+        }
     }
 }
 
@@ -425,6 +452,16 @@ void FlexVitaTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMess
 void FlexVitaTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMessage* message)
 {
     audioEnabled_ = false;
+}
+
+void FlexVitaTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
+{
+    isTransmitting_ = true;
+}
+
+void FlexVitaTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message)
+{
+    isTransmitting_ = false;
 }
     
 }

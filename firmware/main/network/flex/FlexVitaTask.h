@@ -23,6 +23,8 @@
 #include <sys/socket.h>
 
 #include "audio/AudioInput.h"
+#include "audio/FreeDVMessage.h"
+#include "audio/VoiceKeyerMessage.h"
 #include "network/NetworkMessage.h"
 #include "network/ReportingMessage.h"
 #include "task/DVTask.h"
@@ -68,6 +70,7 @@ private:
     time_t currentTime_;
     int timeFracSeq_;
     bool audioEnabled_;
+    bool isTransmitting_;
     
     // Resampler buffers
     float* downsamplerInBuf_;
@@ -92,6 +95,11 @@ private:
     // them as soon as they choose FDVU/FDVL.
     void onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message);
     void onDisableReportingMessage_(DVTask* origin, DisableReportingMessage* message);
+
+    // SmartSDR transmits any audio going to the user sound device as well as 
+    // the radio one, so we need a way to mute audio for the former during TX.
+    void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
+    void onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message);
 };
 
 }
