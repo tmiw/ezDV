@@ -61,6 +61,7 @@
 #define DEFAULT_WIFI_PASSWORD ("")
 #define DEFAULT_WIFI_HOSTNAME ("ezdv")
 
+#define DEFAULT_VOICE_KEYER_ENABLE (false)
 #define DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT (10)
 #define DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT (5)
 
@@ -70,7 +71,13 @@
 #define DEFAULT_REPORTING_FREQ (14236000)
 #define DEFAULT_REPORTING_MSG ("")
 
+#define DEFAULT_RADIO_ENABLED (false)
+#define DEFAULT_RADIO_HEADSET_PTT_ENABLED (false)
 #define DEFAULT_RADIO_PORT (50001)
+#define DEFAULT_RADIO_TYPE (0)
+#define DEFAULT_RADIO_USERNAME ("")
+#define DEFAULT_RADIO_PASSWORD ("")
+#define DEFAULT_RADIO_HOSTNAME ("")
 
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
@@ -330,14 +337,13 @@ void SettingsTask::initializeVolumes_()
 
 void SettingsTask::initializeWifi_()
 {
+    bool resaveSettings = false;
     esp_err_t result = storageHandle_->get_item(WIFI_ENABLED_ID, wifiEnabled_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Wi-Fi settings not found, will set to defaults");
-        setWifiSettings_(
-            DEFAULT_WIFI_ENABLED, DEFAULT_WIFI_MODE, DEFAULT_WIFI_SECURITY, 
-            DEFAULT_WIFI_CHANNEL, DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD,
-            DEFAULT_WIFI_HOSTNAME);
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiEnabled not found, will set to default");
+        wifiEnabled_ = DEFAULT_WIFI_ENABLED;
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -349,7 +355,13 @@ void SettingsTask::initializeWifi_()
     }
     
     result = storageHandle_->get_item(WIFI_MODE_ID, wifiMode_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiMode not found, will set to default");
+        wifiMode_ = DEFAULT_WIFI_MODE;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiMode: %s", esp_err_to_name(result));
     }
@@ -359,7 +371,13 @@ void SettingsTask::initializeWifi_()
     }
     
     result = storageHandle_->get_item(WIFI_SECURITY_ID, wifiSecurity_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiSecurity not found, will set to default");
+        wifiSecurity_ = DEFAULT_WIFI_SECURITY;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiSecurity: %s", esp_err_to_name(result));
     }
@@ -369,7 +387,13 @@ void SettingsTask::initializeWifi_()
     }
     
     result = storageHandle_->get_item(WIFI_CHANNEL_ID, wifiChannel_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiChannel not found, will set to default");
+        wifiChannel_ = DEFAULT_WIFI_CHANNEL;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiChannel: %s", esp_err_to_name(result));
     }
@@ -379,7 +403,14 @@ void SettingsTask::initializeWifi_()
     }
     
     result = storageHandle_->get_string(WIFI_SSID_ID, wifiSsid_, WifiSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiSsid not found, will set to default");
+        memset(wifiSsid_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+        strncpy(wifiSsid_, DEFAULT_WIFI_SSID, WifiSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiSsid: %s", esp_err_to_name(result));
     }
@@ -389,7 +420,14 @@ void SettingsTask::initializeWifi_()
     }
     
     result = storageHandle_->get_string(WIFI_PASSWORD_ID, wifiPassword_, WifiSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiPassword not found, will set to default");
+        memset(wifiPassword_, 0, WifiSettingsMessage::MAX_STR_SIZE);
+        strncpy(wifiPassword_, DEFAULT_WIFI_PASSWORD, WifiSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving wifiPassword: %s", esp_err_to_name(result));
     }
@@ -401,21 +439,10 @@ void SettingsTask::initializeWifi_()
     result = storageHandle_->get_string(WIFI_HOSTNAME_ID, wifiHostname_, WifiSettingsMessage::MAX_STR_SIZE);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Setting default hostname for Wi-Fi");
-
+        ESP_LOGW(CURRENT_LOG_TAG, "wifiHostname not found, will set to default");
         memset(wifiHostname_, 0, WifiSettingsMessage::MAX_STR_SIZE);
         strncpy(wifiHostname_, DEFAULT_WIFI_HOSTNAME, WifiSettingsMessage::MAX_STR_SIZE - 1);
-
-        result = storageHandle_->set_string(WIFI_HOSTNAME_ID, wifiHostname_);
-        if (result != ESP_OK)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "error setting wifiHostname: %s", esp_err_to_name(result));
-        }
-        else
-        {
-            commitTimer_.stop();
-            commitTimer_.start(true);
-        }
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -425,29 +452,43 @@ void SettingsTask::initializeWifi_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "wifiHostname: %s", wifiHostname_);
     }
-    
-    // Publish current Wi-Fi settings to everyone who may care.
-    WifiSettingsMessage* message = new WifiSettingsMessage(
-        wifiEnabled_,
-        wifiMode_,
-        wifiSecurity_,
-        wifiChannel_,
-        wifiSsid_,
-        wifiPassword_,
-        wifiHostname_
-    );
-    assert(message != nullptr);
-    publish(message);
-    delete message;
+
+    if (resaveSettings)
+    {
+        // setWifiSettings_ below will automatically publish WifiSettingsMessage.
+        setWifiSettings_(
+            wifiEnabled_, wifiMode_, wifiSecurity_, 
+            wifiChannel_, wifiSsid_, wifiPassword_,
+            wifiHostname_);
+    }
+    else
+    {
+        // Publish current Wi-Fi settings to everyone who may care.
+        WifiSettingsMessage* message = new WifiSettingsMessage(
+            wifiEnabled_,
+            wifiMode_,
+            wifiSecurity_,
+            wifiChannel_,
+            wifiSsid_,
+            wifiPassword_,
+            wifiHostname_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+    }
 }
 
 void SettingsTask::initializeRadio_()
 {
+    bool resaveSettings = false;
+
     esp_err_t result = storageHandle_->get_item(RADIO_ENABLED_ID, radioEnabled_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Radio settings not found, will set to defaults");
-        setRadioSettings_(false, DEFAULT_TIME_OUT_TIMER_SEC, false, 0, "", DEFAULT_RADIO_PORT, "", "");
+        ESP_LOGW(CURRENT_LOG_TAG, "radioEnabled not found, will set to default");
+        radioEnabled_ = DEFAULT_RADIO_ENABLED;
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -461,11 +502,9 @@ void SettingsTask::initializeRadio_()
     result = storageHandle_->get_item(HEADSET_PTT_ID, headsetPtt_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Headset settings not found, will set to default");
-        storageHandle_->set_item(HEADSET_PTT_ID, true);
-        headsetPtt_ = true;
-        commitTimer_.stop();
-        commitTimer_.start(true);
+        ESP_LOGW(CURRENT_LOG_TAG, "headsetPtt not found, will set to default");
+        headsetPtt_ = DEFAULT_RADIO_HEADSET_PTT_ENABLED;
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -479,11 +518,9 @@ void SettingsTask::initializeRadio_()
     result = storageHandle_->get_item(TIME_OUT_TIMER_ID, timeOutTimer_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "TOT settings not found, will set to default");
-        storageHandle_->set_item(TIME_OUT_TIMER_ID, DEFAULT_TIME_OUT_TIMER_SEC);
+        ESP_LOGW(CURRENT_LOG_TAG, "timeOutTimer not found, will set to default");
         timeOutTimer_ = DEFAULT_TIME_OUT_TIMER_SEC;
-        commitTimer_.stop();
-        commitTimer_.start(true);
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -495,7 +532,13 @@ void SettingsTask::initializeRadio_()
     }
     
     result = storageHandle_->get_item(RADIO_TYPE_ID, radioType_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "radioType not found, will set to default");
+        radioType_ = DEFAULT_RADIO_TYPE;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioType: %s", esp_err_to_name(result));
     }
@@ -505,7 +548,14 @@ void SettingsTask::initializeRadio_()
     }
     
     result = storageHandle_->get_string(RADIO_HOSTNAME_ID, radioHostname_, RadioSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "radioHostname not found, will set to default");
+        memset(radioHostname_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+        strncpy(radioHostname_, DEFAULT_RADIO_HOSTNAME, RadioSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioHostname: %s", esp_err_to_name(result));
     }
@@ -515,28 +565,38 @@ void SettingsTask::initializeRadio_()
     }
     
     result = storageHandle_->get_item(RADIO_PORT_ID, radioPort_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "radioPort not found, will set to default");
+        radioPort_ = DEFAULT_RADIO_PORT;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioPort: %s", esp_err_to_name(result));
     }
     else
     {
-        if (radioPort_ == 0)
-        {
-            // We shouldn't use 0 for the default port as most IC-705s
-            // will default to 50001.
-            radioPort_ = DEFAULT_RADIO_PORT;
-            result = storageHandle_->set_item(RADIO_PORT_ID, radioPort_);
-            if (result != ESP_OK)
-            {
-                ESP_LOGE(CURRENT_LOG_TAG, "error setting radioPort: %s", esp_err_to_name(result));
-            }
-        }
         ESP_LOGI(CURRENT_LOG_TAG, "radioPort: %d", radioPort_);
+    }
+
+    if (radioPort_ == 0)
+    {
+        // We shouldn't use 0 for the default port as most IC-705s
+        // will default to 50001.
+        radioPort_ = DEFAULT_RADIO_PORT;
+        resaveSettings = true;
     }
     
     result = storageHandle_->get_string(RADIO_USERNAME_ID, radioUsername_, RadioSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "radioUsername not found, will set to default");
+        memset(radioUsername_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+        strncpy(radioUsername_, DEFAULT_RADIO_USERNAME, RadioSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioUsername: %s", esp_err_to_name(result));
     }
@@ -546,7 +606,14 @@ void SettingsTask::initializeRadio_()
     }
     
     result = storageHandle_->get_string(RADIO_PASSWORD_ID, radioPassword_, RadioSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "radioPassword_ not found, will set to default");
+        memset(radioPassword_, 0, RadioSettingsMessage::MAX_STR_SIZE);
+        strncpy(radioPassword_, DEFAULT_RADIO_PASSWORD, RadioSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving radioPassword: %s", esp_err_to_name(result));
     }
@@ -554,32 +621,43 @@ void SettingsTask::initializeRadio_()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "radioPassword: ********");
     }
-    
-    // Publish current Wi-Fi settings to everyone who may care.
-    RadioSettingsMessage* message = new RadioSettingsMessage(
-        headsetPtt_,
-        timeOutTimer_,
-        radioEnabled_,
-        radioType_,
-        radioHostname_,
-        radioPort_,
-        radioUsername_,
-        radioPassword_
-    );
-    assert(message != nullptr);
-    publish(message);
-    delete message;
+
+    if (resaveSettings)
+    {
+        // setRadioSettings_ sends RadioSettingsMessage on completion.
+        setRadioSettings_(
+            headsetPtt_, timeOutTimer_, radioEnabled_, radioType_, 
+            radioHostname_, radioPort_, radioUsername_, radioPassword_);
+    }
+    else
+    {
+        // Publish current Wi-Fi settings to everyone who may care.
+        RadioSettingsMessage* message = new RadioSettingsMessage(
+            headsetPtt_,
+            timeOutTimer_,
+            radioEnabled_,
+            radioType_,
+            radioHostname_,
+            radioPort_,
+            radioUsername_,
+            radioPassword_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+    }
 }
 
 void SettingsTask::initialzeVoiceKeyer_()
 {
+    bool resaveSettings = false;
+
     esp_err_t result = storageHandle_->get_item(VOICE_KEYER_ENABLED_ID, enableVoiceKeyer_);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Voice keyer settings not found, will set to defaults");
-        setVoiceKeyerSettings_(
-            false, DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT, 
-            DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT);
+        ESP_LOGW(CURRENT_LOG_TAG, "enableVoiceKeyer not found, will set to default");
+        enableVoiceKeyer_ = DEFAULT_VOICE_KEYER_ENABLE;
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -591,7 +669,13 @@ void SettingsTask::initialzeVoiceKeyer_()
     }
     
     result = storageHandle_->get_item(VOICE_KEYER_TIMES_TO_TRANSMIT, voiceKeyerNumberTimesToTransmit_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "voiceKeyerNumberTimesToTransmit not found, will set to default");
+        voiceKeyerNumberTimesToTransmit_ = DEFAULT_VOICE_KEYER_TIMES_TO_TRANSMIT;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving voiceKeyerNumberTimesToTransmit: %s", esp_err_to_name(result));
     }
@@ -601,7 +685,13 @@ void SettingsTask::initialzeVoiceKeyer_()
     }
 
     result = storageHandle_->get_item(VOICE_KEYER_SECONDS_TO_WAIT_AFTER_TRANSMIT, voiceKeyerSecondsToWaitAfterTransmit_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "voiceKeyerSecondsToWaitAfterTransmit_ not found, will set to default");
+        voiceKeyerSecondsToWaitAfterTransmit_ = DEFAULT_VOICE_KEYER_SECONDS_TO_WAIT;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving voiceKeyerSecondsToWaitAfterTransmit: %s", esp_err_to_name(result));
     }
@@ -610,24 +700,38 @@ void SettingsTask::initialzeVoiceKeyer_()
         ESP_LOGI(CURRENT_LOG_TAG, "voiceKeyerSecondsToWaitAfterTransmit: %d", voiceKeyerSecondsToWaitAfterTransmit_);
     }
     
-    // Publish current voice keyer settings to everyone who may care.
-    VoiceKeyerSettingsMessage* message = new VoiceKeyerSettingsMessage(
-        enableVoiceKeyer_,
-        voiceKeyerNumberTimesToTransmit_,
-        voiceKeyerSecondsToWaitAfterTransmit_
-    );
-    assert(message != nullptr);
-    publish(message);
-    delete message;
+    if (resaveSettings)
+    {
+        // setVoiceKeyerSettings_ will broadcast VoiceKeyerSettingsMessage on completion.
+        setVoiceKeyerSettings_(
+            enableVoiceKeyer_, voiceKeyerNumberTimesToTransmit_, 
+            voiceKeyerSecondsToWaitAfterTransmit_);
+    }
+    else
+    {
+        // Publish current voice keyer settings to everyone who may care.
+        VoiceKeyerSettingsMessage* message = new VoiceKeyerSettingsMessage(
+            enableVoiceKeyer_,
+            voiceKeyerNumberTimesToTransmit_,
+            voiceKeyerSecondsToWaitAfterTransmit_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+    }
 }
 
 void SettingsTask::initializeReporting_()
 {
+    bool resaveSettings = false;
+
     esp_err_t result = storageHandle_->get_string(REPORTING_CALLSIGN_ID, callsign_, ReportingSettingsMessage::MAX_STR_SIZE);
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
-        ESP_LOGW(CURRENT_LOG_TAG, "Reporting settings not found, will set to defaults");
-        setReportingSettings_(DEFAULT_REPORTING_CALLSIGN, DEFAULT_REPORTING_GRID_SQUARE, DEFAULT_REPORTING_FORCE, DEFAULT_REPORTING_FREQ, DEFAULT_REPORTING_MSG);
+        ESP_LOGW(CURRENT_LOG_TAG, "callsign not found, will set to default");
+        memset(callsign_, 0, ReportingSettingsMessage::MAX_STR_SIZE);
+        strncpy(callsign_, DEFAULT_REPORTING_CALLSIGN, ReportingSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
     }
     else if (result != ESP_OK)
     {
@@ -639,7 +743,14 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_string(REPORTING_GRID_SQUARE_ID, gridSquare_, ReportingSettingsMessage::MAX_STR_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "gridSquare not found, will set to default");
+        memset(gridSquare_, 0, ReportingSettingsMessage::MAX_STR_SIZE);
+        strncpy(gridSquare_, DEFAULT_REPORTING_GRID_SQUARE, ReportingSettingsMessage::MAX_STR_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving grid square: %s", esp_err_to_name(result));
     }
@@ -649,7 +760,13 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_item(REPORTING_FORCE_ID, forceReporting_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "forceReporting not found, will set to default");
+        forceReporting_ = DEFAULT_REPORTING_FORCE;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving force reporting value: %s", esp_err_to_name(result));
     }
@@ -659,7 +776,13 @@ void SettingsTask::initializeReporting_()
     }
     
     result = storageHandle_->get_item(REPORTING_FREQ_ID, freqHz_);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "freqHz not found, will set to default");
+        freqHz_ = DEFAULT_REPORTING_FREQ;
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving reporting frequency: %s", esp_err_to_name(result));
     }
@@ -669,7 +792,14 @@ void SettingsTask::initializeReporting_()
     }
 
     result = storageHandle_->get_string(REPORTING_MSG_ID, message_, ReportingSettingsMessage::MAX_MSG_SIZE);
-    if (result != ESP_OK)
+    if (result == ESP_ERR_NVS_NOT_FOUND)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "message not found, will set to default");
+        memset(message_, 0, ReportingSettingsMessage::MAX_MSG_SIZE);
+        strncpy(message_, DEFAULT_REPORTING_MSG, ReportingSettingsMessage::MAX_MSG_SIZE - 1);
+        resaveSettings = true;
+    }
+    else if (result != ESP_OK)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "error retrieving reporting message: %s", esp_err_to_name(result));
     }
@@ -678,17 +808,27 @@ void SettingsTask::initializeReporting_()
         ESP_LOGI(CURRENT_LOG_TAG, "reportMsg: %s", message_);
     }
     
-    // Publish current reporting settings to everyone who may care.
-    ReportingSettingsMessage* message = new ReportingSettingsMessage(
-        callsign_,
-        gridSquare_,
-        forceReporting_,
-        freqHz_,
-        message_
-    );
-    assert(message != nullptr);
-    publish(message);
-    delete message;
+    if (resaveSettings)
+    {
+        // setReportingSettings_ will broadcast ReportingSettingsMessage when done.
+        setReportingSettings_(
+            callsign_, gridSquare_, forceReporting_, freqHz_, message_
+        );
+    }
+    else
+    {
+        // Publish current reporting settings to everyone who may care.
+        ReportingSettingsMessage* message = new ReportingSettingsMessage(
+            callsign_,
+            gridSquare_,
+            forceReporting_,
+            freqHz_,
+            message_
+        );
+        assert(message != nullptr);
+        publish(message);
+        delete message;
+    }
 }
 
 void SettingsTask::initializeLedBrightness_()
