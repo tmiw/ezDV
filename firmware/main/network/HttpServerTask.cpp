@@ -212,6 +212,11 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
     char filepath[FILE_PATH_MAX];
     get_path_from_uri(filepath, "/http", message->request->uri, sizeof(filepath));
 
+    if (filepath[strlen(filepath) - 1] == '/')
+    {
+        strcat(filepath, "index.html");
+    }
+
     char scratchBuf[SCRATCH_BUFSIZE];
     char *chunk = scratchBuf;
     size_t chunksize = read(message->fd, chunk, SCRATCH_BUFSIZE);
