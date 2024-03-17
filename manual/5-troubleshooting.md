@@ -105,5 +105,21 @@ esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --afte
 
 | Problem | Suggested Solutions |
 |---------|---------------------|
-| No audio coming in via headset. | * Use the Volume Up button to increase ezDV's volume<br/>* Plug headset into another device and verify that you can hear audio. |
+| No audio coming in via headset | * Use the Volume Up button to increase ezDV's volume.<br/>* Plug headset into another device and verify that you can hear audio.<br/>* Change ezDV mode to "ANA" (analog passthrough) and verify audio is coming from radio. |
+| ezDV unable to connect to Wi-Fi network | * Place ezDV closer to router/access point.<br/>* Turn on ezDV while holding Volume Down and verify configuration in the web interface. |
+| ezDV unable to connect to network-enabled radio (e.g. Flex radio or Icom IC-705) | * Make sure that ezDV is connected to the correct Wi-Fi network (blinking blue LED).<br/>* Verify correct radio configuration in the web interface.<br/>* Place ezDV and/or radio closer to router/access point (if possible).<br/>* Power cycle/reboot ezDV and/or radio. |
+| ezDV does not put the radio into transmit | * Verify wiring of radio interface cable<br/>* Verify that ezDV is properly connected to its configured network-enabled radio. |
+| ezDV is overdriving radio/amplifier on transmit (i.e. ALC is indicating) | * Use Volume Down button while transmitting to reduce transmit power level.<br/>* Verify power settings on radio. |
+| Radio is not transmitting audio from ezDV | * Use Volume Up button while transmitting to increase transmit power level.<br/>* Verify that current radio mode uses audio from ezDV (for example, putting radio into "data" mode).<br/>* Verify that ezDV is connected to the radio (if network-enabled). |
+| ezDV is not connecting to FreeDV Reporter | * Verify that ezDV is connected to Wi-Fi network with internet access.<br/>* Verify that callsign and grid square are configured in ezDV.<br/>* Verify that ezDV is connected to network-enabled radio (solid blue LED).<br/>* Verify that "Force reporting without radio connection" in web interface is enabled (if not using a network-enabled radio). |
+| ezDV web interface only partially loads | * Use web browser's "reload" button to refresh the web interface.<br/>* Move ezDV closer to router/access point or the PC/mobile device being used. |
+| Multiple "FDVU" modes display in SmartSDR | ezDV likely briefly lost connection to the radio. This does not normally cause problems* but you can power cycle your Flex radio to clean up the extra modes if needed. |
 
+\* A known issue in the Flex radio firmware causes the radio to crash if ezDV attempts to unregister itself. To avoid the crash, ezDV's unregistration logic has been disabled. This logic will be reenabled at a future date.
+
+## Getting assistance
+
+If you have a problem that is not already covered in this manual, you can obtain help through several sources:
+
+* [digitalvoice mailing list](https://groups.google.com/g/digitalvoice): This is the official FreeDV mailing list covering the FreeDV mode generally as well as FreeDV software and hardware devices such as ezDV.
+* GitHub: You can create a GitHub issue [here](https://github.com/tmiw/ezDV/issues) to report bugs or request feature enhancements. Note that this requires a GitHub account.
