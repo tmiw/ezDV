@@ -102,6 +102,8 @@ done via ezDV's web interface. See "Using the web interface" for more informatio
 |             | Hold       | Volume Down  | Decreases transmit audio level.                                                            |
 | Mode        | Press      | (none)       | Cycles between available FreeDV modes and analog passthrough.                              |
 |             | Hold*      | (none)       | Powers up or shuts down ezDV.                                                              |
+|             | Hold*      | PTT          | When off, powers up ezDV in Hardware Test Mode (see Troubleshooting).                      |
+|             | Hold*      | Volume Down  | When off, powers up ezDV with default Wi-Fi settings (see "Using the web interface").      |
 | Volume Up   | Press/Hold | (none)       | Increases ezDV volume through headset.                                                     |
 | Volume Down | Press/Hold | (none)       | Decreases ezDV volume through headset.                                                     |
 

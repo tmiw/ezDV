@@ -1,0 +1,69 @@
+# Using the web interface
+
+ezDV provides a web interface to allow users to adjust its configuration and operate some of its features.
+When Wi-Fi is enabled on ezDV, this interface is accessible through a regular web browser (such as Google Chrome
+or Microsoft Edge).
+
+## Accessing the web interface
+
+By default, Wi-Fi on ezDV is disabled for security reasons. To enable it (or recover from a bad configuration), 
+hold down the Mode and Volume Down buttons until ezDV turns on. This will cause ezDV to create an access point
+named "ezDV" followed by the last two octets of its MAC address. From there, you can connect your PC or mobile
+device to that network and open http://192.168.4.1/ in your web browser.
+
+If ezDV is configured to connect to an existing Wi-Fi network, you can open a web browser on a PC or mobile device
+connected to the same network as ezDV and enter ezDV's IP address into the browser's location box. This IP address
+can typically be found in your router's listing of connected devices; ezDV will also beep the letter "N" followed
+by the last octet of the IP address when it connects to the network (for example, "N100" for "192.168.1.100").  
+
+Alternatively, depending on your router, you can also use the configured hostname in your browser instead.
+By default, ezDV's hostname is "ezdv", which means that you can enter http://ezdv/ instead of its IP address.
+
+Regardless of how you access ezDV's web interface, you should see a page similar to the below:
+
+![Screenshot showing ezDV's main Web page](images/2-setup-webpage-general.png)
+
+From here, you can choose one of several tabs:
+
+* General: Contains miscallenous ezDV configuration options.
+* Reporting: Configures and operates the [FreeDV Reporter](https://qso.freedv.org/) reporting feature.
+* Voice Keyer: Configures ezDV's voice keyer feature.
+* Wi-Fi: Configures how ezDV connects to Wi-Fi.
+* Radio: Configures how ezDV connects to your network-enabled radio.
+* Firmware Update: Allows the user to perform a firmware update on ezDV.
+
+## Changing FreeDV mode
+
+The web interface provides the ability to change the current FreeDV mode, similar to when pushing the Mode
+button on the top of ezDV. To change the current FreeDV mode, simply push one of the mode buttons in the General 
+tab:
+
+![ezDV mode buttons on web interface](images/4-mode-buttons.png)
+
+Once pushed, ezDV will behave identically as if the mode was switched using the Mode button, including beeping
+the current mode in Morse Code through the wired headset.
+
+## Using and configuring the voice keyer
+
+To activate and deactivate the voice keyer, you can push the Voice Keyer button in the General tab. When active,
+the Voice Keyer button will turn red as shown below:
+
+![Voice Keyer button when active](images/4-voice-keyer-active.png)
+
+Pushing the button again will turn off the voice keyer:
+
+![Voice Keyer button when not active](images/4-voice-keyer-inactive.png)
+
+If the voice keyer feature is disabled, the Voice Keyer button will be grayed out. In order to configure the voice
+keyer, you will need to go into the Voice Keyer tab:
+
+![Voice Keyer tab for configuration](images/4-voice-keyer-config.png)
+
+The following can be set here to enable the voice keyer feature:
+
+| Setting | Description |
+|---------|-------------|
+| Enable voice keyer | When checked, this enables use of the voice keyer. The Voice Keyer button in the General tab will be allowed to be pushed, as well as be able to be activated by pushing on the Mode button on the front of ezDV while holding down PTT. |
+| Voice keyer file | Allows uploading of a new voice keyer file.<br/> *Note: ezDV requires a WAV file encoded with a sample rate of 8000 Hz and containing only one audio channel. If a file is uploaded that does not meet these requirements, ezDV will reject the upload.* |
+| Number of times to transmit | The number of times that ezDV will transmit the voice keyer file before it disables the voice keyer. You can also disable the voice keyer early by pushing on the Voice Keyer button or pushing on any of the physical buttons on the front of ezDV. |
+| Number of seconds to wait after transmit | The number of seconds to wait after transmitting the voice keyer file before starting another transmit cycle. |
