@@ -1,4 +1,4 @@
-# Example Wiring Configurations
+# Appendix: Example wiring configurations
 
 Some example configurations are below.
 
