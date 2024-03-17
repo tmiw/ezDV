@@ -143,9 +143,10 @@ void FreeDVTask::onTaskTick_()
             short inputBuf[numSpeechSamples];
             short outputBuf[numModemSamples];
         
-            int rv = codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples);
-            if (rv == 0)
+            bool skipEndTxHandling = false;
+            while (codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples) == 0)
             {
+                skipEndTxHandling = true;
                 //auto timeBegin = esp_timer_get_time();
 
                 freedv_tx(dv_, outputBuf, inputBuf);
@@ -153,7 +154,8 @@ void FreeDVTask::onTaskTick_()
                 //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
                 codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
             }
-            else if (isEndingTransmit_)
+            
+            if (isEndingTransmit_ && !skipEndTxHandling)
             {
                 // We've finished processing everything that's left, end TX now.
                 TransmitCompleteMessage message;
@@ -165,8 +167,9 @@ void FreeDVTask::onTaskTick_()
         }
         else
         {
+            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
             short inputBuf[freedv_get_n_max_modem_samples(dv_)];
-            short outputBuf[freedv_get_n_speech_samples(dv_)];
+            short outputBuf[numSpeechSamples];
             int nin = freedv_nin(dv_);
         
             int rv = codec2_fifo_read(codecInputFifo, inputBuf, nin);

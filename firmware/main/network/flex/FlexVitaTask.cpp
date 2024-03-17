@@ -110,7 +110,7 @@ void FlexVitaTask::onTaskTick_()
     {
         generateVitaPackets_(audio::AudioInput::USER_CHANNEL, rxStreamId_);
     }
-    else
+    else if (rxStreamId_)
     {
         // Clear FIFO if we're not in the right state. This is so that we
         // don't end up with audio packets going to the wrong place
@@ -127,7 +127,7 @@ void FlexVitaTask::onTaskTick_()
     {
         generateVitaPackets_(audio::AudioInput::RADIO_CHANNEL, txStreamId_);
     }
-    else
+    else if (txStreamId_)
     {
         // Clear FIFO if we're not in the right state. This is so that we
         // don't end up with audio packets going to the wrong place
