@@ -43,6 +43,16 @@ tab:
 Once pushed, ezDV will behave identically as if the mode was switched using the Mode button, including beeping
 the current mode in Morse Code through the wired headset.
 
+## Changing LED brightness
+
+ezDV allows you to change the brightness of the LEDs on the front of the device. This can make ezDV more comfortable
+to use at night (for example). This can be done by going to the General tab and moving the LED Brightness slider:
+
+![ezDV LED Brightness slider](images/4-led-brightness.png)
+
+Changes to the LED Brightness slider take effect immediately and are preserved, so it's not necessary to readjust
+every time ezDV is powered off and then on again.
+
 ## Using and configuring the voice keyer
 
 To activate and deactivate the voice keyer, you can push the Voice Keyer button in the General tab. When active,
@@ -128,3 +138,57 @@ The following can be configured in this screen:
 | Password | In "Access Point" mode (and when something other than "Open" is selected for "Security Type"), the password ezDV will require to allow other devices to connect to it. In "Client" mode, this is the password for the network selected or entered in "Network Name"/"SSID". |
 
 Pushing Save here will save these settings to ezDV's internal flash but require rebooting or power cycling ezDV for the settings to take effect.
+
+## Configuring radio connection and headset
+
+The Radio tab allows configuration of ezDV's connection to a network-enabled radio as well as headset-related functions. 
+Currently ezDV supports connections to the Icom IC-705 and Flex 6000 series radios, as shown below:
+
+![ezDV showing a FlexRadio configuration](images/2-setup-webpage-radio-flex.png)
+
+![ezDV showing a Icom IC-705 configuration](images/2-setup-webpage-radio-icom.png)
+
+The following can be configured in this screen:
+
+| Setting | Description |
+|---------|-------------|
+| Enable PTT using headset button | Enables the usage of the "call" button on your wired headset for toggling PTT. (See "Basic usage" for more information.) |
+| Time Out Timer (seconds) | Configures ezDV's "time out timer", which automatically puts the radio back into receive if the radio is stuck in transmit mode for too long. |
+| Use Wi-Fi Network for Radio RX/TX | When checked, allows ezDV to connect to a supported radio over Wi-Fi instead of using a wired headset. |
+| Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
+| Radio | Displays the list of Flex radios that ezDV is able to see on the network. You can also choose "(other)" and manually enter its IP address. |
+| IP Address | For Flex radios, this is typically auto-filled when selecting a radio from the Radio list. Otherwise, this is the IP address of the radio which to connect to. |
+| Port | For the IC-705, this is the control port number of the built-in server running on the radio. Defaults to "50001" and should not normally need to be changed. |
+| Username | For the IC-705, this is the "Network User1" or "Network User2" user ID. (See "Configuring Wi-Fi on the IC-705" or your radio's user manual for information on configuring these users.) |
+| Password | For the IC-705, this is the "Network User1" or "Network User2" password. |
+
+Pushing Save here will save these settings to ezDV's internal flash but require rebooting or power cycling ezDV for the settings to take effect.
+
+## Updating firmware
+
+From time to time, new ezDV firmware may be released that contains feature enhancements and/or bug fixes. These updates are typically posted
+on the [project's releases page](https://github.com/tmiw/ezDV/releases) and are announced in various other locations (such as the FreeDV mailing lists). 
+ezDV can be upgraded or downgraded by using the "Firmware Update" tab:
+
+![ezDV showing the "Firmware Update" tab](images/4-firmware-update.png)
+
+To update the firmware, perform the following steps:
+
+1. Download the firmware file ending in "-ota.tar.gz" to your PC and save it to a known location (such as your Downloads folder).
+2. Go to ezDV's "Firmware Update" tab and select the file you just downloaded. 
+3. Press the "Update" button. *Note: this may take several minutes to complete. Do not close your browser or navigate away from the ezDV web interface while the update is taking place.*
+
+Once complete, the new firmware is stored on ezDV's internal memory but will not take effect until ezDV is turned off and on again or rebooted.
+
+## Rebooting ezDV
+
+You can reboot ezDV from the web interface instead of powering it on and off using the physical controls. This is typically done after saving radio or Wi-Fi settings
+or after uploading new firmware. To do this, go to the General tab and press the Reboot button:
+
+![ezDV showing the Reboot button](images/4-reboot-button.png)
+
+ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it will automatically
+refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.
+
+*Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See "Accessing the web interface" for 
+information on finding its new address if required.*
