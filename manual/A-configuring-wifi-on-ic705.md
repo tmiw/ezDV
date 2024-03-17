@@ -21,9 +21,7 @@ Station (for connecting to an existing Wi-Fi network) or Access Point (for conne
 
 ![Icom IC-705 displaying Connection Type menu](images/2-setup-radio-ic705-connection-type.jpg)
 
-##### Configuring Wi-Fi on the IC-705
-
-###### Using the IC-705's built-in access point
+## Using the IC-705's built-in access point
 
 If you're using the IC-705's Access Point mode, it is a good idea to double-check your radio's SSID (aka Wi-Fi network name) and 
 Wi-Fi password by tapping "Connection Settings (Access Point)" and then tapping each option as shown below, updating them as needed:
@@ -33,7 +31,7 @@ Wi-Fi password by tapping "Connection Settings (Access Point)" and then tapping 
 Also, note the IP address that your IC-705 is using on this page as you will need it for later configuration of ezDV. Once the settings
 here are satisfactory, tap the Back button on the lower right hand corner of the screen, tap the WLAN option and then change it to ON.
 
-###### Connecting the IC-705 to an existing network
+## Connecting the IC-705 to an existing network
 
 First, tap the WLAN option on the WLAN Set page and change it to ON. This is needed in order to turn on the Wi-Fi radio in the IC-705
 and allow it to scan for networks.
@@ -64,7 +62,7 @@ the Access Point page will show "Connected" below your network's name. Tap the B
 
 Note this address as it will be needed for later configuration of ezDV.
 
-##### Configuring the Radio User
+## Configuring the Radio User
 
 The IC-705 requires a username and password to connect to the radio. If this is not already set up, you will need
 to do so now before continuing with ezDV setup. First, ensure that you're on the "WLAN Set" page and then go to the
@@ -84,7 +82,7 @@ is set to "YES".
 
 Tap the Back button until you reach the Set menu.
 
-##### Configuring Audio
+## Configuring Audio
 
 The IC-705 must be configured to accept transmit audio from the Wi-Fi interface in order for transmit with
 ezDV to work properly. From the Set menu, select "Connectors" as shown below:

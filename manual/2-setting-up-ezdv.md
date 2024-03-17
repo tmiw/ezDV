@@ -1,8 +1,8 @@
-# Setting Up ezDV
+# Setting up ezDV
 
 There are several steps required to get ezDV up and running with your radio.
 
-## Initial Assembly
+## Initial assembly
 
 If ezDV did not already come with a battery, you will need to obtain a 3.7V lithium polymer (LiPo) battery.
 One recommended battery can be purchased [from Amazon](https://www.amazon.com/gp/product/B08214DJLJ/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1).
@@ -41,7 +41,7 @@ Once attached, ezDV will appear as follows:
 
 ![ezDV with headset attached](images/2-setup-headset-location.jpg)
 
-## Radio Wiring
+## Radio wiring
 
 ### Radios without Wi-Fi support
 
@@ -76,7 +76,7 @@ Once this is confirmed, skip to [Initial Configuration](#initial-configuration).
 Several settings will need to be adjusted in the IC-705 before it can be used with ezDV. See "Configuring Wi-Fi on the Icom IC-705"
 or your radio's user manual for more information on configuring Wi-Fi.
 
-## Initial Configuration
+## Initial configuration
 
 To perform initial configuration of ezDV, push and hold both the Mode and Volume Down buttons at the same
 time until all four of the LEDs on the right hand side of ezDV turn on.
@@ -89,22 +89,32 @@ Once joined, open your Web browser and navigate to http://192.168.4.1/. You shou
 
 ![Screenshot showing ezDV's main Web page](images/2-setup-webpage-general.png)
 
-### Transmit Audio Levels (except Flex 6000 series)
+### Transmit audio levels
+
+#### Flex 6000 series
+
+ezDV uses a hardcoded transmit level when connected to the Flex 6000 series of radios, so adjusting the transmit level on 
+ezDV has no effect.
+
+#### Other radios
 
 *Note: for the Icom IC-705, this can only be done after configuring Wi-Fi and the radio connection.*
 
 ezDV's transmit audio levels will need to be adjusted to ensure that your radio does not indicate too much ALC, similar
-to other HF digital modes. Push the Mode button once; you should hear "700D" in Morse Code in your headset within a second
-after releasing the button. After doing so, you can adjust the transmit audio by pushing the Volume Up or Volume Down buttons
+to other HF digital modes. You can adjust the transmit audio by pushing the Volume Up or Volume Down buttons
 while holding the PTT button as indicated below:
 
 ![ezDV showing the PTT button (red circle) and the Volume Up/Down buttons (pink circle)](images/2-setup-tx-audio-levels.jpg)
 
-For most radios, ezDV's transmit level should be such that little to no ALC is indicated on the radio display (or alternatively,
-until power output just starts dropping from the level set in the radio). The specific ALC level required depends on the radio, so
-your radio's user manual is the best source for determining this.
+For most radios, ezDV's transmit level should be such that little to no ALC is indicated on the radio display. The specific 
+ALC level required depends on the radio, so your radio's user manual is the best source for determining this. Alternatively,
+you can increase the TX audio level until your power output stops increasing, then decrease it again until your power output
+begins to decrease.
 
-### Wi-Fi Configuration
+*Note: it's recommended to have your radio attached to a dummy load while adjusting your transmit audio levels to prevent
+interference to other operators.*
+
+### Wi-Fi configuration
 
 *Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features
 (such as reporting to [FreeDV Reporter](https://qso.freedv.org/)).*
@@ -118,7 +128,7 @@ the list that appears (which may take a few seconds while ezDV scans for your ne
 If desired, you can also change ezDV's name by modifying the "Hostname" field; this may allow you to access ezDV later by entering
 this name instead of trying to find its IP address. Click or tap Save to save your Wi-Fi settings.
 
-### Radio Connection
+### Radio connection
 
 *Note: this is optional unless you are using a radio with Wi-Fi support.*
 
@@ -142,7 +152,7 @@ Enter your radio's IP address, username and password that you saved when you con
 
 Click or tap Save to save the radio configuration.
 
-### Reporting Configuration
+### Reporting configuration
 
 It is highly recommended to configure your callsign and grid square. This has several benefits:
 
@@ -158,7 +168,7 @@ If desired, you can also enter a short message that will appear on FreeDV Report
 
 Once done, click or tap Save to save the reporting configuration.
 
-### Final Setup
+### Final setup
 
 After your radio, Wi-Fi and reporting configuration are complete, simply click or tap on the General tab and then click or tap on the Reboot button.
 ezDV will first show two red LEDs on the right hand side for a few seconds, then show all four LEDs for a few seconds, then turn them all off. If you're
