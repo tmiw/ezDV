@@ -514,6 +514,7 @@ void HttpServerTask::onTaskStart_()
 
         // Allow HTTP server to auto-purge old connections.
         config.lru_purge_enable = true;
+        config.max_open_sockets = 10;
 
         /* Use the URI wildcard matching function in order to
         * allow the same handler to respond to multiple different
