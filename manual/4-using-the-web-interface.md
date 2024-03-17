@@ -107,3 +107,24 @@ The following can be updated in the Reporting tab to operate FreeDV Reporter rep
 | Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter as your current frequency.|
 
 Pushing Save will immediately connect or disconnect to FreeDV Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
+
+## Configuring Wi-Fi
+
+The Wi-Fi tab allows configuration of ezDV's Wi-Fi connection:
+
+![ezDV showing the Wi-Fi tab](images/2-setup-webpage-wifi.png)
+
+The following can be configured in this screen:
+
+| Setting | Description |
+|---------|-------------|
+| Enable Wi-Fi | Enables or disables the Wi-Fi radio on ezDV. |
+| Hostname | The name to call ezDV on the network (default "ezdv"). Only letters, numbers and '-' can be used for the name. |
+| Wireless Mode | Can be either "Client" (to connect to an existing Wi-Fi network) or "Access Point" (to have ezDV generate its own Wi-Fi network). |
+| Network Name | The Wi-Fi network to connect to in "Client" mode. ezDV populates this list with the networks that it's able to see, or you can choose "(other)" and manually enter the name of the network in the "SSID" field. |
+| SSID | Typically automatically filled in if you select a network in the "Network Name" list. If "(other)" is selected, you can manually enter the name of the Wi-Fi network here (for example, if the network doesn't broadcast its presence). |
+| Security Type | In "Access Point" mode, controls the security of the Wi-Fi network ezDV provides. Can be either "Open" (no encryption/security) or one of "WEP", "WPA", "WPA2" or "WPA/WPA2". *Note: WPA2 is recommended for the best security.* |
+| Channel | In "Access Point" mode, this controls the 2.4 GHz Wi-Fi channel (1-11) ezDV uses. |
+| Password | In "Access Point" mode (and when something other than "Open" is selected for "Security Type"), the password ezDV will require to allow other devices to connect to it. In "Client" mode, this is the password for the network selected or entered in "Network Name"/"SSID". |
+
+Pushing Save here will save these settings to ezDV's internal flash but require rebooting or power cycling ezDV for the settings to take effect.
