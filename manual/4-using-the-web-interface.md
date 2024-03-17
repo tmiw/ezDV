@@ -64,6 +64,46 @@ The following can be set here to enable the voice keyer feature:
 | Setting | Description |
 |---------|-------------|
 | Enable voice keyer | When checked, this enables use of the voice keyer. The Voice Keyer button in the General tab will be allowed to be pushed, as well as be able to be activated by pushing on the Mode button on the front of ezDV while holding down PTT. |
-| Voice keyer file | Allows uploading of a new voice keyer file.<br/> *Note: ezDV requires a WAV file encoded with a sample rate of 8000 Hz and containing only one audio channel. If a file is uploaded that does not meet these requirements, ezDV will reject the upload.* |
+| Voice keyer file | Allows uploading of a new voice keyer file. Optional if one has already been uploaded to ezDV.<br/> *Note: ezDV requires a WAV file encoded with a sample rate of 8000 Hz and containing only one audio channel. If a file is uploaded that does not meet these requirements, ezDV will reject the upload.* |
 | Number of times to transmit | The number of times that ezDV will transmit the voice keyer file before it disables the voice keyer. You can also disable the voice keyer early by pushing on the Voice Keyer button or pushing on any of the physical buttons on the front of ezDV. |
 | Number of seconds to wait after transmit | The number of seconds to wait after transmitting the voice keyer file before starting another transmit cycle. |
+
+Pushing Save will immediately update the voice keyer configuration and enable its use if desired.
+
+## Reporting to FreeDV Reporter
+
+ezDV has the ability to report its current state to the [FreeDV Reporter](https://qso.freedv.org/) spotting service. 
+Operation of this feature can be done through the Reporting tab:
+
+![Example of a reporting configuration on ezDV](images/4-reporting-tab.png)
+
+When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter if it has access
+to an internet connection and is able to connect to a supported radio over Wi-Fi. You can also force a connection to
+FreeDV Reporter for radios without Wi-Fi support by checking the "Force reporting without radio connection" checkbox
+and manually entering the current frequency.
+
+Once connected to FreeDV Reporter, a new row will appear corresponding to your connection:
+
+![Example of an entry on FreeDV Reporter](images/4-freedv-reporter.png)
+
+If ezDV is able to decode a callsign from a received signal, it will transmit the received callsign and SNR to FreeDV
+Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight your row in 
+a blue background for several seconds to alert others that you've receiving a signal. When ezDV is transmitting, FreeDV
+Reporter will also highlight your row with a red background to indicate to others that you're transmitting.
+
+With radios that support connections over Wi-Fi, ezDV will also follow frequency changes on the radio and report them
+to FreeDV Reporter. FreeDV Reporter will then indicate your current frequency, allowing others to change to your frequency
+and potentially make a contact with you. Manual frequency updates (for those radios attached to ezDV with a wired connection)
+will also be sent to FreeDV Reporter as they're made.
+
+The following can be updated in the Reporting tab to operate FreeDV Reporter reporting:
+
+| Setting | Description |
+|---------|-------------|
+| Your callsign | The callsign to report to FreeDV Reporter. This callsign is also transmitted as part of your FreeDV signal so that others can report receipt of your signal. |
+| Grid square/locator | The 4-6 digit grid square to report to FreeDV Reporter. You can use a service such as [this](https://www.levinecentral.com/ham/grid_square.php) to calculate your grid square if not known. *Note: Clearing this field disables FreeDV Reporter reporting.* |
+| Message | A short message to display on the FreeDV Reporter website next to your callsign. This is transmitted solely on the internet, not over RF. |
+| Force reporting without radio connection | When checked, ezDV will connect to FreeDV Reporter even without a valid radio configuration. |
+| Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter as your current frequency.|
+
+Pushing Save will immediately connect or disconnect to FreeDV Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
