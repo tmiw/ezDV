@@ -82,7 +82,7 @@ namespace network
 {
 
 HttpServerTask::HttpServerTask()
-    : ezdv::task::DVTask("HttpServerTask", 3, 4096, tskNO_AFFINITY, 256)
+    : ezdv::task::DVTask("HttpServerTask", 5, 4096, tskNO_AFFINITY, 256)
     , firmwareUploadInProgress_(false)
     , isRunning_(false)
 {

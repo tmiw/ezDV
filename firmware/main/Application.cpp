@@ -555,6 +555,7 @@ extern "C" void app_main()
     bool hasChangedModes = false;
 #endif // ENABLE_AUTOMATED_TX_RX_TEST
 
+    //char buf[1024];
     for(;;)
     {
         vTaskDelay(pdMS_TO_TICKS(5000));
@@ -566,6 +567,9 @@ extern "C" void app_main()
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
         ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
 
+        //printf( "Task Name\tStatus\tPrio\tHWM\tTask\tAffinity\n");
+        //vTaskList(buf);
+        //printf("%s\n", buf);
         //esp_timer_dump(stdout);
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
         ptt = !ptt;

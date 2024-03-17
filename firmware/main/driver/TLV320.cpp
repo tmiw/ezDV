@@ -53,7 +53,7 @@ namespace driver
 using namespace std::placeholders;
 
 TLV320::TLV320(I2CDevice* i2cDevice)
-    : DVTask("TLV320Driver", 20 /* TBD */, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
+    : DVTask("TLV320Driver", 15, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
     , audio::AudioInput(2, 2)
     , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.

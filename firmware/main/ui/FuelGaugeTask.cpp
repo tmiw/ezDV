@@ -40,7 +40,7 @@ FuelGaugeTask::ChargeIndicatorConfiguration FuelGaugeTask::IndicatorConfig_[] = 
 };
 
 FuelGaugeTask::FuelGaugeTask()
-    : DVTask("FuelGaugeTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(1000))
+    : DVTask("FuelGaugeTask", 10, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(1000))
     , sentRequest_(false)
     , socChangeRate_(0)
 {

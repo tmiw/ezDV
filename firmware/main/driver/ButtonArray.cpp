@@ -32,7 +32,7 @@ namespace driver
 using namespace std::placeholders;
 
 ButtonArray::ButtonArray()
-    : DVTask("ButtonArray", 10 /* TBD */, 3072, tskNO_AFFINITY, 10)
+    : DVTask("ButtonArray", 10, 3072, tskNO_AFFINITY, 10)
     , pttButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::PTT), LONG_PRESS_INTERVAL_US, "PttButtonTimer")
     , modeButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::MODE), LONG_PRESS_INTERVAL_US, "ModeButtonTimer")
     , volUpButtonTimer_(this, std::bind(&ButtonArray::handleLongPressButton_, this, ButtonLabel::VOL_UP), LONG_PRESS_INTERVAL_US, "VolUpTimer")

@@ -58,7 +58,7 @@ namespace ui
 {
 
 RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask, ezdv::driver::TLV320* tlv320Task)
-    : DVTask("RfComplianceTestTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(20))
+    : DVTask("RfComplianceTestTask", 10, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(20))
     , AudioInput(1, 2)
     , leftChannelSineWave_(LEFT_FREQ_HZ, SINE_WAVE_AMPLITUDE)
     , rightChannelSineWave_(RIGHT_FREQ_HZ, SINE_WAVE_AMPLITUDE)

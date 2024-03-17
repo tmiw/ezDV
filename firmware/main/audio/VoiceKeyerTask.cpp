@@ -28,7 +28,7 @@ namespace audio
 {
 
 VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
-    : DVTask("VoiceKeyerTask", 10 /* TBD */, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
+    : DVTask("VoiceKeyerTask", 10, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
     , AudioInput(1, 1)
     , currentState_(VoiceKeyerTask::IDLE)
     , voiceKeyerFile_(nullptr)

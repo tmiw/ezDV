@@ -40,7 +40,7 @@ namespace flex
 {
 
 FlexTcpTask::FlexTcpTask()
-    : DVTask("FlexTcpTask", 10 /* TBD */, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
+    : DVTask("FlexTcpTask", 10, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
     , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), 10000000, "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
     , socket_(-1)
     , sequenceNumber_(0)

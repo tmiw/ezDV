@@ -134,7 +134,7 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 }
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
-    : ezdv::task::DVTask("WirelessTask", 1, 4096, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("WirelessTask", 5, 4096, tskNO_AFFINITY, 128)
     , wifiScanTimer_(this, std::bind(&WirelessTask::triggerWifiScan_, this), 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
     , icomRestartTimer_(this, std::bind(&WirelessTask::restartIcomConnection_, this), 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
