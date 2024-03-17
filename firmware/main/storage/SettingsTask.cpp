@@ -82,6 +82,7 @@
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
 #define LAST_MODE_ID ("lastMode")
+#define DEFAULT_LAST_MODE (1) /* Default to 700D */
 
 namespace ezdv
 {
@@ -855,7 +856,7 @@ void SettingsTask::initializeLastMode_()
     if (result == ESP_ERR_NVS_NOT_FOUND)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Last mode not found, will set to defaults");
-        setLastMode_(0);
+        setLastMode_(DEFAULT_LAST_MODE);
     }
     else if (result != ESP_OK)
     {
