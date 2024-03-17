@@ -130,16 +130,28 @@
             <li><a href="#updating-firmware"><span class="toc-section-number">4.8</span> Updating firmware</a></li>
             <li><a href="#rebooting-ezdv"><span class="toc-section-number">4.9</span> Rebooting ezDV</a></li>
             </ul></li>
-            <li><a href="#appendix-configuring-wi-fi-on-the-icom-ic-705"><span class="toc-section-number">5</span> Appendix: Configuring Wi-Fi on the Icom IC-705</a>
+            <li><a href="#troubleshooting"><span class="toc-section-number">5</span> Troubleshooting</a>
             <ul>
-            <li><a href="#using-the-ic-705s-built-in-access-point"><span class="toc-section-number">5.1</span> Using the IC-705’s built-in access point</a></li>
-            <li><a href="#connecting-the-ic-705-to-an-existing-network"><span class="toc-section-number">5.2</span> Connecting the IC-705 to an existing network</a></li>
-            <li><a href="#configuring-the-radio-user"><span class="toc-section-number">5.3</span> Configuring the Radio User</a></li>
-            <li><a href="#configuring-audio"><span class="toc-section-number">5.4</span> Configuring Audio</a></li>
+            <li><a href="#using-hardware-test-mode"><span class="toc-section-number">5.1</span> Using Hardware Test Mode</a></li>
+            <li><a href="#resetting-ezdv"><span class="toc-section-number">5.2</span> Resetting ezDV</a>
+            <ul>
+            <li><a href="#using-esp-idf-to-flash-firmware"><span class="toc-section-number">5.2.1</span> Using ESP-IDF to flash firmware</a></li>
+            <li><a href="#using-esp-flash-tool"><span class="toc-section-number">5.2.2</span> Using ESP Flash Tool</a></li>
+            <li><a href="#using-esptool"><span class="toc-section-number">5.2.3</span> Using esptool</a></li>
             </ul></li>
-            <li><a href="#example-wiring-configurations"><span class="toc-section-number">6</span> Example Wiring Configurations</a>
+            <li><a href="#common-problems"><span class="toc-section-number">5.3</span> Common problems</a></li>
+            <li><a href="#getting-assistance"><span class="toc-section-number">5.4</span> Getting assistance</a></li>
+            </ul></li>
+            <li><a href="#appendix-configuring-wi-fi-on-the-icom-ic-705"><span class="toc-section-number">6</span> Appendix: Configuring Wi-Fi on the Icom IC-705</a>
             <ul>
-            <li><a href="#elecraft-kx3"><span class="toc-section-number">6.1</span> Elecraft KX3</a></li>
+            <li><a href="#using-the-ic-705s-built-in-access-point"><span class="toc-section-number">6.1</span> Using the IC-705’s built-in access point</a></li>
+            <li><a href="#connecting-the-ic-705-to-an-existing-network"><span class="toc-section-number">6.2</span> Connecting the IC-705 to an existing network</a></li>
+            <li><a href="#configuring-the-radio-user"><span class="toc-section-number">6.3</span> Configuring the Radio User</a></li>
+            <li><a href="#configuring-audio"><span class="toc-section-number">6.4</span> Configuring Audio</a></li>
+            </ul></li>
+            <li><a href="#appendix-example-wiring-configurations"><span class="toc-section-number">7</span> Appendix: Example wiring configurations</a>
+            <ul>
+            <li><a href="#elecraft-kx3"><span class="toc-section-number">7.1</span> Elecraft KX3</a></li>
             </ul></li>
             </ul>
         </div>
@@ -174,7 +186,7 @@
             <div id="content" class="content">
                 <main>
 <h1 data-number="1" id="introduction"><span class="header-section-number">1</span> Introduction</h1>
-<p>ezDV is a handheld hardware device that allows easy use of <a href="https://freedv.org">FreeDV</a>, whether on the go or at home. Powered by an ESP32-S3 microcontroller, its built-in Wi-Fi support allows completely wireless setup (with supported radios) along with enabling more modern functionality such as FreeDV Reporter reporting and wireless firmware updates.</p>
+<p><a href="https://github.com/tmiw/ezDV">ezDV</a> is a handheld hardware device that allows easy use of <a href="https://freedv.org">FreeDV</a>, whether on the go or at home. Powered by an ESP32-S3 microcontroller, its built-in Wi-Fi support allows completely wireless setup (with supported radios) along with enabling more modern functionality such as FreeDV Reporter reporting and wireless firmware updates.</p>
 <p>For those radios without network capability, interfacing them with ezDV is straightforward through the use of the industry standard 3.5mm TRRS audio jack. This jack is configured similarly to what is used with wired headsets for mobile phones. Analog audio is also passed in and out from/to your wired headset using a second 3.5mm audio jack.</p>
 <p>This document describes the configuration and recommended usage of the ezDV device for maximum enjoyment and minimal frustration. Hope to hear you on the air!</p>
 <h1 data-number="2" id="setting-up-ezdv"><span class="header-section-number">2</span> Setting up ezDV</h1>
@@ -663,7 +675,157 @@
 </figure>
 <p>ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it will automatically refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.</p>
 <p><em>Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See “Accessing the web interface” for information on finding its new address if required.</em></p>
-<h1 data-number="5" id="appendix-configuring-wi-fi-on-the-icom-ic-705"><span class="header-section-number">5</span> Appendix: Configuring Wi-Fi on the Icom IC-705</h1>
+<h1 data-number="5" id="troubleshooting"><span class="header-section-number">5</span> Troubleshooting</h1>
+<p>This section contains some helpful tips and information that may help you diagnose and fix any problems you may have with ezDV.</p>
+<h2 data-number="5.1" id="using-hardware-test-mode"><span class="header-section-number">5.1</span> Using Hardware Test Mode</h2>
+<p>ezDV has a hardware test mode that can be used to ensure that the board is functioning properly. To access this mode, hold down the PTT button while turning on ezDV. Once ezDV starts, you will hear audio tones at 1275 Hz (user jack) and 1725 Hz (radio jack) and all LEDs will be lit at 50% duty cycle. If the board is functioning properly, only the frequency associated to the given jack (and harmonics, if square wave) will be in the output audio. Pushing the Mode button will cycle through the following:</p>
+<ul>
+<li>Sine tones at both jacks.</li>
+<li>Sine tone only on user jack.</li>
+<li>Sine tone only on radio jack.</li>
+<li>Square tones at both jacks.</li>
+<li>Square tone only on user jack.</li>
+<li>Square tone only on radio jack.</li>
+<li>No audio on either jack.</li>
+</ul>
+<p>Additionally, pushing any of the buttons will extinguish the following LEDs if the buttons are properly functioning:</p>
+<ul>
+<li>PTT: PTT (red)</li>
+<li>Mode: Sync (green)</li>
+<li>Volume Up: Overload (red)</li>
+<li>Volume Down: Network (blue)</li>
+</ul>
+<p>Releasing the button will re-illuminate the associated LED.</p>
+<p>To shut down ezDV while in this mode, long-press the Mode button as with regular operation.</p>
+<h2 data-number="5.2" id="resetting-ezdv"><span class="header-section-number">5.2</span> Resetting ezDV</h2>
+<p>In the event that ezDV is non-responsive and needs to be reset, you can open the ezDV enclosure to gain access to two buttons that are hidden in normal use. These are the Reset and Flash buttons as shown below:</p>
+<figure>
+<img src="images/5-front-of-ezdv.jpg" alt="" /><figcaption>Front of ezDV circuit board with Reset button (red circle) and Flash button (green circle) shown</figcaption>
+</figure>
+<p>Pressing and releasing the Reset button will cause ezDV to restart execution of its firmware. If the Flash button is held while pressing and releasing the Reset button, the ESP32-S3 on ezDV will enter into “firmware download mode”, which will allow you to clear ezDV’s internal memory and allow you to load a new copy of its firmware. To do this, you will need to plug ezDV into a USB port on your PC and either install esptool, ESP-IDF or ESP Flash Tool onto your PC’s hard drive.</p>
+<h3 data-number="5.2.1" id="using-esp-idf-to-flash-firmware"><span class="header-section-number">5.2.1</span> Using ESP-IDF to flash firmware</h3>
+<p>Download a copy of the ezDV firmware source code (typically listed as “Source code (zip)” or “Source code (tar.gz)” on the <a href="https://github.com/tmiw/ezDV/releases">project’s release page</a>). Decompress the file, change into the folder that is created, then run the following commands to build and flash the firmware:</p>
+<pre><code>. ~/esp/esp-idf/export.sh
+cd firmware
+idf.py -p /dev/ttyxxx0 build erase-flash flash</code></pre>
+<p>Where <code>/dev/ttyxxx0</code> (or <code>COMx:</code> on Windows) is the serial port created by your operating system after plugging ezDV in. Once complete, ezDV will automatically reboot and execute the firmware that’s been flashed.</p>
+<p><em>Note: The above will erase all of your settings and reset them to defaults. If you don’t want to do this, remove <code>erase-flash</code> from the above command.</em></p>
+<h3 data-number="5.2.2" id="using-esp-flash-tool"><span class="header-section-number">5.2.2</span> Using ESP Flash Tool</h3>
+<p>On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require installation of ESP-IDF.</p>
+<ol type="1">
+<li>Download the ESP Flash Tool from https://www.espressif.com/en/support/download/other-tools.</li>
+<li>Decompress all of the files in the ZIP file and execute flash_download_tool_3.9.3.exe.</li>
+<li>Select “ESP32-S3” for “ChipType”, “Develop” for “WorkMode” and “USB” for “LoadMode” as shown below:</li>
+</ol>
+<figure>
+<img src="images/ezDV_Flash_1.png" alt="" /><figcaption>ESP Flash Tool step 3</figcaption>
+</figure>
+<ol start="4" type="1">
+<li>Add rows for each of the .bin files in the resulting screen:</li>
+</ol>
+<table>
+<thead>
+<tr class="header">
+<th>File Name</th>
+<th>Offset</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>bootloader.bin</td>
+<td>0x0</td>
+</tr>
+<tr class="even">
+<td>partition-table.bin</td>
+<td>0x8000</td>
+</tr>
+<tr class="odd">
+<td>ota_data_initial.bin</td>
+<td>0xF000</td>
+</tr>
+<tr class="even">
+<td>ezdv.bin</td>
+<td>0x20000</td>
+</tr>
+<tr class="odd">
+<td>http_0.bin</td>
+<td>0x7F8000</td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, check each of the checkboxes to the left of the file name. It should look something like this, with each of the rows having a green background:</p>
+<figure>
+<img src="images/ezDV_Flash_2.png" alt="" /><figcaption>ESP Flash Tool step 4</figcaption>
+</figure>
+<ol start="5" type="1">
+<li><p>Set “SPI SPEED” to “80 MHz” and “SPI MODE” to “DIO”.</p></li>
+<li><p>Plug ezDV into your computer using a USB-C cable. Device Manager should show a new COM port named “USB/JTAG serial debug unit” or similar. Enter this COM port into the “COM” field in the application.</p></li>
+<li><p>(Optional) Push the ERASE button. This will show a green “SYNC” indicator for a bit followed by “Download” and then “FINISH” as per the above screenshot. <em>Note: There will be no firmware installed on the board once this step finishes. You will need to reconfigure ezDV after new firmware has been flashed.</em></p></li>
+<li><p>Push the START button. This will go through the same indicators as step 1 but this time will also have a progress bar indicating how far it’s gotten in flashing the new software.</p></li>
+<li><p>Push the STOP button and then close the application. Open the ezDV enclosure and briefly push/release the “Reset” button on the right hand side of the board. If everything went well, you’ll see the four LEDs light up for a few seconds indicating that ezDV is booting normally.</p></li>
+</ol>
+<h3 data-number="5.2.3" id="using-esptool"><span class="header-section-number">5.2.3</span> Using esptool</h3>
+<p>You can also use <a href="https://github.com/espressif/esptool">esptool</a>. For example:</p>
+<pre><code>esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin</code></pre>
+<h2 data-number="5.3" id="common-problems"><span class="header-section-number">5.3</span> Common problems</h2>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Problem</th>
+<th>Suggested Solutions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>No audio coming in via headset</td>
+<td>* Use the Volume Up button to increase ezDV’s volume.<br/>* Plug headset into another device and verify that you can hear audio.<br/>* Change ezDV mode to “ANA” (analog passthrough) and verify audio is coming from radio.</td>
+</tr>
+<tr class="even">
+<td>ezDV unable to connect to Wi-Fi network</td>
+<td>* Place ezDV closer to router/access point.<br/>* Turn on ezDV while holding Volume Down and verify configuration in the web interface.</td>
+</tr>
+<tr class="odd">
+<td>ezDV unable to connect to network-enabled radio (e.g. Flex radio or Icom IC-705)</td>
+<td>* Make sure that ezDV is connected to the correct Wi-Fi network (blinking blue LED).<br/>* Verify correct radio configuration in the web interface.<br/>* Place ezDV and/or radio closer to router/access point (if possible).<br/>* Power cycle/reboot ezDV and/or radio.</td>
+</tr>
+<tr class="even">
+<td>ezDV does not put the radio into transmit</td>
+<td>* Verify wiring of radio interface cable<br/>* Verify that ezDV is properly connected to its configured network-enabled radio.</td>
+</tr>
+<tr class="odd">
+<td>ezDV is overdriving radio/amplifier on transmit (i.e. ALC is indicating)</td>
+<td>* Use Volume Down button while transmitting to reduce transmit power level.<br/>* Verify power settings on radio.</td>
+</tr>
+<tr class="even">
+<td>Radio is not transmitting audio from ezDV</td>
+<td>* Use Volume Up button while transmitting to increase transmit power level.<br/>* Verify that current radio mode uses audio from ezDV (for example, putting radio into “data” mode).<br/>* Verify that ezDV is connected to the radio (if network-enabled).</td>
+</tr>
+<tr class="odd">
+<td>ezDV is not connecting to FreeDV Reporter</td>
+<td>* Verify that ezDV is connected to Wi-Fi network with internet access.<br/>* Verify that callsign and grid square are configured in ezDV.<br/>* Verify that ezDV is connected to network-enabled radio (solid blue LED).<br/>* Verify that “Force reporting without radio connection” in web interface is enabled (if not using a network-enabled radio).</td>
+</tr>
+<tr class="even">
+<td>ezDV web interface only partially loads</td>
+<td>* Use web browser’s “reload” button to refresh the web interface.<br/>* Move ezDV closer to router/access point or the PC/mobile device being used.</td>
+</tr>
+<tr class="odd">
+<td>Multiple “FDVU” modes display in SmartSDR</td>
+<td>ezDV likely briefly lost connection to the radio. This does not normally cause problems* but you can power cycle your Flex radio to clean up the extra modes if needed.</td>
+</tr>
+</tbody>
+</table>
+<p>* A known issue in the Flex radio firmware causes the radio to crash if ezDV attempts to unregister itself. To avoid the crash, ezDV’s unregistration logic has been disabled. This logic will be reenabled at a future date.</p>
+<h2 data-number="5.4" id="getting-assistance"><span class="header-section-number">5.4</span> Getting assistance</h2>
+<p>If you have a problem that is not already covered in this manual, you can obtain help through several sources:</p>
+<ul>
+<li><a href="https://groups.google.com/g/digitalvoice">digitalvoice mailing list</a>: This is the official FreeDV mailing list covering the FreeDV mode generally as well as FreeDV software and hardware devices such as ezDV.</li>
+<li>GitHub: You can create a GitHub issue <a href="https://github.com/tmiw/ezDV/issues">here</a> to report bugs or request feature enhancements. Note that this requires a GitHub account.</li>
+</ul>
+<h1 data-number="6" id="appendix-configuring-wi-fi-on-the-icom-ic-705"><span class="header-section-number">6</span> Appendix: Configuring Wi-Fi on the Icom IC-705</h1>
 <p>First, you will need to decide whether you want to join your IC-705 to an existing Wi-Fi network or whether you want to configure ezDV to use the IC-705’s built-in access point.</p>
 <p><em>Note: it is recommended to join your IC-705 to an existing Wi-Fi network in order to be able to access ezDV’s Web interface (and to take advantage of certain features if an Internet connection is available).</em></p>
 <p>Next, you’ll need to turn on your radio and push the Menu button. This will bring up the following screen:</p>
@@ -681,13 +843,13 @@
 <figure>
 <img src="images/2-setup-radio-ic705-connection-type.jpg" alt="" /><figcaption>Icom IC-705 displaying Connection Type menu</figcaption>
 </figure>
-<h2 data-number="5.1" id="using-the-ic-705s-built-in-access-point"><span class="header-section-number">5.1</span> Using the IC-705’s built-in access point</h2>
+<h2 data-number="6.1" id="using-the-ic-705s-built-in-access-point"><span class="header-section-number">6.1</span> Using the IC-705’s built-in access point</h2>
 <p>If you’re using the IC-705’s Access Point mode, it is a good idea to double-check your radio’s SSID (aka Wi-Fi network name) and Wi-Fi password by tapping “Connection Settings (Access Point)” and then tapping each option as shown below, updating them as needed:</p>
 <figure>
 <img src="images/2-setup-radio-ic705-connection-settings-ap.jpg" alt="" /><figcaption>Icom IC-705 displaying Access Point settings</figcaption>
 </figure>
 <p>Also, note the IP address that your IC-705 is using on this page as you will need it for later configuration of ezDV. Once the settings here are satisfactory, tap the Back button on the lower right hand corner of the screen, tap the WLAN option and then change it to ON.</p>
-<h2 data-number="5.2" id="connecting-the-ic-705-to-an-existing-network"><span class="header-section-number">5.2</span> Connecting the IC-705 to an existing network</h2>
+<h2 data-number="6.2" id="connecting-the-ic-705-to-an-existing-network"><span class="header-section-number">6.2</span> Connecting the IC-705 to an existing network</h2>
 <p>First, tap the WLAN option on the WLAN Set page and change it to ON. This is needed in order to turn on the Wi-Fi radio in the IC-705 and allow it to scan for networks.</p>
 <p>Next, tap “Connection Settings (Station)”. You will see the following page on the IC-705:</p>
 <figure>
@@ -710,7 +872,7 @@
 <img src="images/2-setup-radio-ic705-connection-settings-sta-with-ip.jpg" alt="" /><figcaption>Icom IC-705 displaying an IP address</figcaption>
 </figure>
 <p>Note this address as it will be needed for later configuration of ezDV.</p>
-<h2 data-number="5.3" id="configuring-the-radio-user"><span class="header-section-number">5.3</span> Configuring the Radio User</h2>
+<h2 data-number="6.3" id="configuring-the-radio-user"><span class="header-section-number">6.3</span> Configuring the Radio User</h2>
 <p>The IC-705 requires a username and password to connect to the radio. If this is not already set up, you will need to do so now before continuing with ezDV setup. First, ensure that you’re on the “WLAN Set” page and then go to the second page of options. You will see a “Remote Settings” option:</p>
 <figure>
 <img src="images/2-setup-radio-ic705-wlan-set-2.jpg" alt="" /><figcaption>Icom IC-705 displaying the Remote Settings option</figcaption>
@@ -724,7 +886,7 @@
 <img src="images/2-setup-radio-ic705-network-user1.jpg" alt="" /><figcaption>Icom IC-705 displaying the “Network User1” settings.</figcaption>
 </figure>
 <p>Tap the Back button until you reach the Set menu.</p>
-<h2 data-number="5.4" id="configuring-audio"><span class="header-section-number">5.4</span> Configuring Audio</h2>
+<h2 data-number="6.4" id="configuring-audio"><span class="header-section-number">6.4</span> Configuring Audio</h2>
 <p>The IC-705 must be configured to accept transmit audio from the Wi-Fi interface in order for transmit with ezDV to work properly. From the Set menu, select “Connectors” as shown below:</p>
 <figure>
 <img src="images/2-setup-radio-ic705-setmode-2.jpg" alt="" /><figcaption>Icom IC-705 displaying the “Connectors” option.</figcaption>
@@ -741,9 +903,9 @@
 <img src="images/2-setup-radio-ic705-data-mod.jpg" alt="" /><figcaption>List of valid “DATA MOD” options.</figcaption>
 </figure>
 <p><em>Note: if you share the IC-705 with other data mode applications over USB (for example, WSJT-X for FT8), make sure that “DATA MOD” is set to one of the “USB” options above when done using ezDV.</em></p>
-<h1 data-number="6" id="example-wiring-configurations"><span class="header-section-number">6</span> Example Wiring Configurations</h1>
+<h1 data-number="7" id="appendix-example-wiring-configurations"><span class="header-section-number">7</span> Appendix: Example wiring configurations</h1>
 <p>Some example configurations are below.</p>
-<h2 data-number="6.1" id="elecraft-kx3"><span class="header-section-number">6.1</span> Elecraft KX3</h2>
+<h2 data-number="7.1" id="elecraft-kx3"><span class="header-section-number">7.1</span> Elecraft KX3</h2>
 <p>If you have an Elecraft KX3, you can use off the shelf parts for your interface cable (no soldering required). These parts consist of a <a href="https://www.amazon.com/Headphone-Splitter-KOOPAO-Microphone-Earphones/dp/B084V3TRTV/ref=sr_1_3?crid=2V0WV9A8JJMW9&amp;keywords=headset%2Bsplitter&amp;qid=1671701520&amp;sprefix=headset%2Bsplitte%2Caps%2C136&amp;sr=8-3&amp;th=1">3.5mm splitter</a> and a <a href="https://www.amazon.com/gp/product/B07PJW6RQ7/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&amp;psc=1">3.5mm TRRS cable</a>. The microphone connector on the splitter should be plugged into PHONES on the KX3 while the speaker connector should be plugged into MIC.</p>
 <p>This setup will look like the following when plugged in:</p>
 <figure>
