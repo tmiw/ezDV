@@ -65,13 +65,13 @@
         <div class="tab-content" id="nav-tabContent">
             <form class="tab-pane fade show active" id="generalTabForm">
                 <div class="row mb-3 general-enable-row">
-                    <label for="ledBrightness" class="col-xs-4 col-md-2 col-form-labell">LED Brightness</label>
+                    <label for="ledBrightness" class="col-xs-4 col-md-2 col-form-label">LED Brightness</label>
                     <div class="col-xs-8 col-md-4">
                         <input id="ledBrightness" type="range" max="8192" min="819" step="410" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 general-enable-row">
-                    <label for="currentMode" class="col-xs-4 col-md-2 col-form-labell">Mode</label>
+                    <div class="col-xs-4 col-md-2 col-form-label">Mode</div>
                     <div class="col-xs-2 col-md-1">
                         <button type="button" class="btn btn-primary mode-button" id="modeAnalog">Analog</button>
                     </div>
@@ -86,13 +86,13 @@
                     </div>
                 </div>
                 <div class="row mb-3 general-enable-row">
-                    <label for="startVoiceKeyer" class="col-xs-4 col-md-2 col-form-labell">Start/Stop Voice Keyer</label>
+                    <label for="startVoiceKeyer" class="col-xs-4 col-md-2 col-form-label">Start/Stop Voice Keyer</label>
                     <div class="col-xs-8 col-md-4">
                         <button type="button" class="btn btn-secondary mode-button" id="startVoiceKeyer">Voice Keyer</button>
                     </div>
                 </div>
                 <div class="row mb-3 general-enable-row">
-                    <label for="rebootDevice" class="col-xs-4 col-md-2 col-form-labell">Reboot device</label>
+                    <label for="rebootDevice" class="col-xs-4 col-md-2 col-form-label">Reboot device</label>
                     <div class="col-xs-8 col-md-4">
                         <button type="button" class="btn btn-secondary mode-button" id="rebootDevice">Reboot</button>
                     </div>
@@ -114,19 +114,19 @@
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
-                    <label for="reportingCallsign" class="col-xs-4 col-md-2 col-form-labell">Your callsign</label>
+                    <label for="reportingCallsign" class="col-xs-4 col-md-2 col-form-label">Your callsign</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="reportingCallsign" value="N0CALL" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
-                    <label for="reportingGridSquare" class="col-xs-4 col-md-2 col-form-labell">Grid square/locator</label>
+                    <label for="reportingGridSquare" class="col-xs-4 col-md-2 col-form-label">Grid square/locator</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="reportingGridSquare" value="UN00KN" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
-                    <label for="reportingMessage" class="col-xs-4 col-md-2 col-form-labell">Message</label>
+                    <label for="reportingMessage" class="col-xs-4 col-md-2 col-form-label">Message</label>
                     <div class="col-xs-8 col-md-4">
                         <input id="reportingMessage" value="" class="form-control" />
                     </div>
@@ -142,7 +142,7 @@
                     </div>
                 </div>
                 <div class="row mb-3 reporting-enable-row">
-                    <label for="reportingFrequency" class="col-xs-4 col-md-2 col-form-labell">Current frequency (MHz)</label>
+                    <label for="reportingFrequency" class="col-xs-4 col-md-2 col-form-label">Current frequency (MHz)</label>
                     <div class="col-xs-8 col-md-4">
                         <input id="reportingFrequency" value="14.2360" class="form-control" />
                     </div>
@@ -187,19 +187,19 @@
                     </div>
                 </div>
                 <div class="row mb-3 vk-enable-row">
-                    <label for="voiceKeyerFile" class="col-xs-4 col-md-2 col-form-labell">Voice keyer file</label>
+                    <label for="voiceKeyerFile" class="col-xs-4 col-md-2 col-form-label">Voice keyer file</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="voiceKeyerFile" type="file" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 vk-enable-row">
-                    <label for="voiceKeyerTimesToTransmit" class="col-xs-4 col-md-2 col-form-labell">Number of times to transmit</label>
+                    <label for="voiceKeyerTimesToTransmit" class="col-xs-4 col-md-2 col-form-label">Number of times to transmit</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="voiceKeyerTimesToTransmit" value="" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 vk-enable-row">
-                    <label for="voiceKeyerSecondsToWait" class="col-xs-4 col-md-2 col-form-labell">Number of seconds to wait after transmit</label>
+                    <label for="voiceKeyerSecondsToWait" class="col-xs-4 col-md-2 col-form-label">Number of seconds to wait after transmit</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="voiceKeyerSecondsToWait" value="" class="form-control" />
                     </div>
@@ -234,7 +234,7 @@
                     </div>
                 </div>
                 <div class="row mb-3 update-enable-row">
-                    <label for="firmwareFile" class="col-xs-4 col-md-2 col-form-labell">Firmware file (.tar.gz)</label>
+                    <label for="firmwareFile" class="col-xs-4 col-md-2 col-form-label">Firmware file (.tar.gz)</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="firmwareFile" type="file" class="form-control" />
                     </div>
@@ -295,7 +295,7 @@
                     </div>
                 </div>
                 <div class="row mb-3 wifi-enable-row">
-                    <label for="wifiNetworkList" class="col-xs-4 col-md-2 col-form-labell">Network Name</label>
+                    <label for="wifiNetworkList" class="col-xs-4 col-md-2 col-form-label">Network Name</label>
                     <div class="col-xs-8 col-md-4">
                         <select id="wifiNetworkList" class="form-control" size="5" style="resize: both;">
                             <option value="">(other)</option>
@@ -303,7 +303,7 @@
                     </div>
                 </div>
                 <div class="row mb-3 wifi-enable-row">
-                    <label for="wifiSSID" class="col-xs-4 col-md-2 col-form-labell">SSID</label>
+                    <label for="wifiSSID" class="col-xs-4 col-md-2 col-form-label">SSID</label>
                     <div class="col-xs-8 col-md-4">
                     <input id="wifiSSID" value="" class="form-control" />
                     </div>
