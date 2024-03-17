@@ -1,6 +1,6 @@
 # Introduction
 
-ezDV is a handheld hardware device that allows easy use of [FreeDV](https://freedv.org), whether on the go or at home. 
+[ezDV](https://github.com/tmiw/ezDV) is a handheld hardware device that allows easy use of [FreeDV](https://freedv.org), whether on the go or at home. 
 Powered by an ESP32-S3 microcontroller, its built-in Wi-Fi support allows completely wireless setup (with supported radios) 
 along with enabling more modern functionality such as FreeDV Reporter reporting and wireless firmware updates.
 
