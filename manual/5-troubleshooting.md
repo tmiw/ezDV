@@ -67,7 +67,7 @@ On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require 
 2. Decompress all of the files in the ZIP file and execute flash\_download\_tool\_3.9.3.exe.
 3. Select "ESP32-S3" for "ChipType", "Develop" for "WorkMode" and "USB" for "LoadMode" as shown below:
 
-![ESP Flash Tool step 3](manual/ezDV_Flash_1.png)
+![ESP Flash Tool step 3](images/ezDV_Flash_1.png)
 
 4. Add rows for each of the .bin files in the resulting screen:
 
@@ -81,7 +81,7 @@ On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require 
 
 Additionally, check each of the checkboxes to the left of the file name. It should look something like this, with each of the rows having a green background:
 
-![ESP Flash Tool step 4](manual/ezDV_Flash_2.png)
+![ESP Flash Tool step 4](images/ezDV_Flash_2.png)
 
 5. Set "SPI SPEED" to "80 MHz" and "SPI MODE" to "DIO".
 
