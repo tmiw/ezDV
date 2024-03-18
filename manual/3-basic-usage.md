@@ -97,13 +97,13 @@ done via ezDV's web interface. See [Using the web interface](#using-the-web-inte
 | Button      | Action     | Also pressed | ezDV behavior                                                                              |
 |-------------|------------|--------------|--------------------------------------------------------------------------------------------|
 | PTT         | Hold       | (none)       | Places radio into transmit and outputs FreeDV signal/analog audio.                         |
-|             | Hold       | Mode         | If voice keyer configured, activates voice keyer. Otherwise, cycles betweens FreeDV modes. |
+|             | Hold       | Mode         | If voice keyer is configured, activates voice keyer. Otherwise, cycles betweens FreeDV modes. |
 |             | Hold       | Volume Up    | Increases transmit audio level.                                                            |
 |             | Hold       | Volume Down  | Decreases transmit audio level.                                                            |
 | Mode        | Press      | (none)       | Cycles between available FreeDV modes and analog passthrough.                              |
 |             | Hold*      | (none)       | Powers up or shuts down ezDV.                                                              |
 |             | Hold*      | PTT          | When off, powers up ezDV in Hardware Test Mode (see [Troubleshooting](#troubleshooting)).                      |
-|             | Hold*      | Volume Down  | When off, powers up ezDV with default Wi-Fi settings (see [Using the web interface](#using-the-web-interface).      |
+|             | Hold*      | Volume Down  | When off, powers up ezDV with default Wi-Fi settings (see [Using the web interface](#using-the-web-interface)).      |
 | Volume Up   | Press/Hold | (none)       | Increases ezDV volume through headset.                                                     |
 | Volume Down | Press/Hold | (none)       | Decreases ezDV volume through headset.                                                     |
 
