@@ -6,7 +6,7 @@
     <meta name="generator" content="pandoc" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="author" content="Mooneer Salem" />
-    <meta name="dcterms.date" content="2024-03-17" />
+    <meta name="dcterms.date" content="2024-03-18" />
     <meta name="keywords" content="ezDV, FreeDV, digital voice, amateur radio, ham radio" />
     <title>User’s Guide – ezDV</title>
 
@@ -222,7 +222,7 @@
 <li>Shield: RX audio from your radio to ezDV</li>
 </ul>
 <p>There is also silkscreen labeling on the back of the board corresponding to the location of the radio jack that indicates the pinout. This jack is on the left hand side of ezDV when looking downward at the front of the device.</p>
-<p>More information on example wiring configurations for various radios can be found in the “Example Wiring Configurations” section.</p>
+<p>More information on example wiring configurations for various radios can be found in the <a href="#appendix-example-wiring-configurations">Example Wiring Configurations</a> section.</p>
 <h3 data-number="2.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">2.2.2</span> Radios with Wi-Fi support</h3>
 <p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi. Currently this is supported only for the <a href="https://www.flexradio.com/">FlexRadio</a> 6000 series radios and the Icom IC-705.</p>
 <h4 data-number="2.2.2.1" id="flex-6000-series-radios"><span class="header-section-number">2.2.2.1</span> Flex 6000 series radios</h4>
@@ -290,7 +290,7 @@
 <figure>
 <img src="images/2-setup-radio-ic705-connected.jpg" alt="" /><figcaption>Icom IC-705 properly connected to ezDV (WLAN indicator at the top of the screen)</figcaption>
 </figure>
-<p>For Flex 6000 series radios, opening the SmartSDR software will show a “FDVU” (for upper sideband) and “FDVL” (for lower sideband) if ezDV is properly connected to the radio:</p>
+<p>For Flex 6000 series radios, opening the SmartSDR software will show a “FDVU” (for upper sideband) and “FDVL” (for lower sideband) mode if ezDV is properly connected to the radio:</p>
 <figure>
 <img src="images/2-setup-radio-flex-connected.png" alt="" /><figcaption>Flex 6300 properly connected to ezDV (existence of FDVU/FDVL modes)</figcaption>
 </figure>
@@ -315,7 +315,7 @@
 <img src="images/3-button-and-led-locations.jpg" alt="" /><figcaption>ezDV button and LED locations</figcaption>
 </figure>
 <h2 data-number="3.2" id="powering-ezdv-on-and-off"><span class="header-section-number">3.2</span> Powering ezDV on and off</h2>
-<p>To turn on ezDV, press and hold the Mode button for &gt;= 1 second. All four LEDs on the right hand side of the board should light briefly and then extinguish. You will also hear the last used mode in Morse Code on your wired headset or through SmartSDR if using a Flex radio. (On first start, this will be “700D”, which corresponds to FreeDV 700D mode.) Holding this button again for &gt;= 1 second will result in ezDV turning off (with “73” also being piped through the headset in Morse Code, corresponding to the well-known ham radio term for “goodbye”).</p>
+<p>To turn on ezDV, press and hold the Mode button for more than 1 second. All four LEDs on the right hand side of the board should light briefly and then extinguish. You will also hear the last used mode in Morse Code on your wired headset or through SmartSDR if using a Flex radio. (On first start, this will be “700D”, which corresponds to FreeDV 700D mode.) Holding this button again for more than 1 second will result in ezDV turning off (with “73” also being piped through the headset in Morse Code, corresponding to the well-known ham radio term for “goodbye”).</p>
 <p>If Wi-Fi is enabled on ezDV, you will additionally hear the letter “N” emitted in Morse Code once the network interface comes up. If ezDV is configured to connect to an existing wireless network, you will hear the last octet of the IP address immediately afterward. For example, if your router assigns the IP address “192.168.1.100” to ezDV, you will hear “N100” in the headset.</p>
 <p><em>Note: if your wireless network is configured with a “netmask” other than “255.255.255.0”, you may need to load your router’s configuration to obtain the rest of ezDV’s IP address. Otherwise, you can typically replace the last octet of your computer’s IP address with the number after the “N” when accessing ezDV with a web browser.</em></p>
 <h2 data-number="3.3" id="freedv-operation"><span class="header-section-number">3.3</span> FreeDV operation</h2>
@@ -338,7 +338,7 @@
 <h2 data-number="3.6" id="voice-keyer"><span class="header-section-number">3.6</span> Voice keyer</h2>
 <p>If configured, you can activate ezDV’s voice keyer functionality by holding down PTT and then pressing the Mode button. ezDV will then load the voice keyer file in its internal storage and play it back up to the number of times configured (with it pausing a configured number of seconds). By default, ezDV is configured to transmit the voice keyer file up to ten times, pausing for five seconds in between each transmission.</p>
 <p>While the voice keyer is active, pressing any button on ezDV will stop the voice keyer and place it back into regular operation. If using a Flex 6000 series radio, you can also stop the voice keyer by pushing the MOX button in SmartSDR</p>
-<p>Configuration of the voice keyer functionality (as well as stopping and starting of the voice keyer) can also be done via ezDV’s web interface. See “Using the web interface” for more information.</p>
+<p>Configuration of the voice keyer functionality (as well as stopping and starting of the voice keyer) can also be done via ezDV’s web interface. See <a href="#using-the-web-interface">Using the web interface</a> for more information.</p>
 <h2 data-number="3.7" id="summary-of-controls"><span class="header-section-number">3.7</span> Summary of controls</h2>
 <table>
 <colgroup>
@@ -396,13 +396,13 @@
 <td></td>
 <td>Hold*</td>
 <td>PTT</td>
-<td>When off, powers up ezDV in Hardware Test Mode (see Troubleshooting).</td>
+<td>When off, powers up ezDV in Hardware Test Mode (see <a href="#troubleshooting">Troubleshooting</a>).</td>
 </tr>
 <tr class="even">
 <td></td>
 <td>Hold*</td>
 <td>Volume Down</td>
-<td>When off, powers up ezDV with default Wi-Fi settings (see “Using the web interface”).</td>
+<td>When off, powers up ezDV with default Wi-Fi settings (see <a href="#using-the-web-interface">Using the web interface</a>.</td>
 </tr>
 <tr class="odd">
 <td>Volume Up</td>
@@ -619,7 +619,7 @@
 <tbody>
 <tr class="odd">
 <td>Enable PTT using headset button</td>
-<td>Enables the usage of the “call” button on your wired headset for toggling PTT. (See “Basic usage” for more information.)</td>
+<td>Enables the usage of the “call” button on your wired headset for toggling PTT. (See <a href="#basic-usage">Basic usage</a>" for more information.)</td>
 </tr>
 <tr class="even">
 <td>Time Out Timer (seconds)</td>
@@ -647,7 +647,7 @@
 </tr>
 <tr class="even">
 <td>Username</td>
-<td>For the IC-705, this is the “Network User1” or “Network User2” user ID. (See “Configuring Wi-Fi on the IC-705” or your radio’s user manual for information on configuring these users.)</td>
+<td>For the IC-705, this is the “Network User1” or “Network User2” user ID. (See <a href="#appendix-configuring-wi-fi-on-the-icom-ic-705">Configuring Wi-Fi on the IC-705</a> or your radio’s user manual for information on configuring these users.)</td>
 </tr>
 <tr class="odd">
 <td>Password</td>
@@ -674,7 +674,7 @@
 <img src="images/4-reboot-button.png" alt="" /><figcaption>ezDV showing the Reboot button</figcaption>
 </figure>
 <p>ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it will automatically refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.</p>
-<p><em>Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See “Accessing the web interface” for information on finding its new address if required.</em></p>
+<p><em>Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See <a href="#accessing-the-web-interface">Accessing the web interface</a> for information on finding its new address if required.</em></p>
 <h1 data-number="5" id="troubleshooting"><span class="header-section-number">5</span> Troubleshooting</h1>
 <p>This section contains some helpful tips and information that may help you diagnose and fix any problems you may have with ezDV.</p>
 <h2 data-number="5.1" id="using-hardware-test-mode"><span class="header-section-number">5.1</span> Using Hardware Test Mode</h2>
@@ -713,7 +713,7 @@ idf.py -p /dev/ttyxxx0 build erase-flash flash</code></pre>
 <h3 data-number="5.2.2" id="using-esp-flash-tool"><span class="header-section-number">5.2.2</span> Using ESP Flash Tool</h3>
 <p>On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require installation of ESP-IDF.</p>
 <ol type="1">
-<li>Download the ESP Flash Tool from https://www.espressif.com/en/support/download/other-tools.</li>
+<li>Download the ESP Flash Tool from <a href="https://www.espressif.com/en/support/download/other-tools">https://www.espressif.com/en/support/download/other-tools</a>.</li>
 <li>Decompress all of the files in the ZIP file and execute flash_download_tool_3.9.3.exe.</li>
 <li>Select “ESP32-S3” for “ChipType”, “Develop” for “WorkMode” and “USB” for “LoadMode” as shown below:</li>
 </ol>
@@ -823,7 +823,7 @@ idf.py -p /dev/ttyxxx0 build erase-flash flash</code></pre>
 <p>If you have a problem that is not already covered in this manual, you can obtain help through several sources:</p>
 <ul>
 <li><a href="https://groups.google.com/g/digitalvoice">digitalvoice mailing list</a>: This is the official FreeDV mailing list covering the FreeDV mode generally as well as FreeDV software and hardware devices such as ezDV.</li>
-<li>GitHub: You can create a GitHub issue <a href="https://github.com/tmiw/ezDV/issues">here</a> to report bugs or request feature enhancements. Note that this requires a GitHub account.</li>
+<li>GitHub: You can <a href="https://github.com/tmiw/ezDV/issues">create a GitHub issue</a> to report bugs or request feature enhancements. Note that this requires a GitHub account.</li>
 </ul>
 <h1 data-number="6" id="appendix-configuring-wi-fi-on-the-icom-ic-705"><span class="header-section-number">6</span> Appendix: Configuring Wi-Fi on the Icom IC-705</h1>
 <p>First, you will need to decide whether you want to join your IC-705 to an existing Wi-Fi network or whether you want to configure ezDV to use the IC-705’s built-in access point.</p>
