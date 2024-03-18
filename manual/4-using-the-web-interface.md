@@ -152,14 +152,14 @@ The following can be configured in this screen:
 
 | Setting | Description |
 |---------|-------------|
-| Enable PTT using headset button | Enables the usage of the "call" button on your wired headset for toggling PTT. (See "Basic usage" for more information.) |
+| Enable PTT using headset button | Enables the usage of the "call" button on your wired headset for toggling PTT. (See [Basic usage](#basic-usage)" for more information.) |
 | Time Out Timer (seconds) | Configures ezDV's "time out timer", which automatically puts the radio back into receive if the radio is stuck in transmit mode for too long. |
 | Use Wi-Fi Network for Radio RX/TX | When checked, allows ezDV to connect to a supported radio over Wi-Fi instead of using a wired headset. |
 | Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
 | Radio | Displays the list of Flex radios that ezDV is able to see on the network. You can also choose "(other)" and manually enter its IP address. |
 | IP Address | For Flex radios, this is typically auto-filled when selecting a radio from the Radio list. Otherwise, this is the IP address of the radio which to connect to. |
 | Port | For the IC-705, this is the control port number of the built-in server running on the radio. Defaults to "50001" and should not normally need to be changed. |
-| Username | For the IC-705, this is the "Network User1" or "Network User2" user ID. (See "Configuring Wi-Fi on the IC-705" or your radio's user manual for information on configuring these users.) |
+| Username | For the IC-705, this is the "Network User1" or "Network User2" user ID. (See [Configuring Wi-Fi on the IC-705](#appendix-configuring-wi-fi-on-the-icom-ic-705) or your radio's user manual for information on configuring these users.) |
 | Password | For the IC-705, this is the "Network User1" or "Network User2" password. |
 
 Pushing Save here will save these settings to ezDV's internal flash but require rebooting or power cycling ezDV for the settings to take effect.
@@ -190,5 +190,5 @@ or after uploading new firmware. To do this, go to the General tab and press the
 ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it will automatically
 refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.
 
-*Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See "Accessing the web interface" for 
+*Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See [Accessing the web interface](#accessing-the-web-interface) for 
 information on finding its new address if required.*

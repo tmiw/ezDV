@@ -22,10 +22,10 @@ These controls and LEDs are shown below:
 
 ## Powering ezDV on and off
 
-To turn on ezDV, press and hold the Mode button for >= 1 second. All four LEDs on the right hand side
+To turn on ezDV, press and hold the Mode button for more than 1 second. All four LEDs on the right hand side
 of the board should light briefly and then extinguish. You will also hear the last used
 mode in Morse Code on your wired headset or through SmartSDR if using a Flex radio. (On first start, this
-will be "700D", which corresponds to FreeDV 700D mode.) Holding this button again for >= 1 second will result
+will be "700D", which corresponds to FreeDV 700D mode.) Holding this button again for more than 1 second will result
 in ezDV turning off (with "73" also being piped through the headset in Morse Code, corresponding to the 
 well-known ham radio term for "goodbye").
 
@@ -90,7 +90,7 @@ regular operation. If using a Flex 6000 series radio, you can also stop the voic
 in SmartSDR
 
 Configuration of the voice keyer functionality (as well as stopping and starting of the voice keyer) can also be 
-done via ezDV's web interface. See "Using the web interface" for more information.
+done via ezDV's web interface. See [Using the web interface](#using-the-web-interface) for more information.
 
 ## Summary of controls
 
@@ -102,8 +102,8 @@ done via ezDV's web interface. See "Using the web interface" for more informatio
 |             | Hold       | Volume Down  | Decreases transmit audio level.                                                            |
 | Mode        | Press      | (none)       | Cycles between available FreeDV modes and analog passthrough.                              |
 |             | Hold*      | (none)       | Powers up or shuts down ezDV.                                                              |
-|             | Hold*      | PTT          | When off, powers up ezDV in Hardware Test Mode (see Troubleshooting).                      |
-|             | Hold*      | Volume Down  | When off, powers up ezDV with default Wi-Fi settings (see "Using the web interface").      |
+|             | Hold*      | PTT          | When off, powers up ezDV in Hardware Test Mode (see [Troubleshooting](#troubleshooting)).                      |
+|             | Hold*      | Volume Down  | When off, powers up ezDV with default Wi-Fi settings (see [Using the web interface](#using-the-web-interface).      |
 | Volume Up   | Press/Hold | (none)       | Increases ezDV volume through headset.                                                     |
 | Volume Down | Press/Hold | (none)       | Decreases ezDV volume through headset.                                                     |
 

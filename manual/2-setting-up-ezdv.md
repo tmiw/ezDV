@@ -57,7 +57,7 @@ There is also silkscreen labeling on the back of the board corresponding to the 
 the radio jack that indicates the pinout. This jack is on the left hand side of ezDV when looking
 downward at the front of the device.
 
-More information on example wiring configurations for various radios can be found in the "Example Wiring Configurations"
+More information on example wiring configurations for various radios can be found in the [Example Wiring Configurations](#appendix-example-wiring-configurations)
 section.
 
 ### Radios with Wi-Fi support
@@ -180,7 +180,7 @@ as shown below:
 
 ![Icom IC-705 properly connected to ezDV (WLAN indicator at the top of the screen)](images/2-setup-radio-ic705-connected.jpg)
 
-For Flex 6000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) if ezDV is properly connected
+For Flex 6000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) mode if ezDV is properly connected
 to the radio:
 
 ![Flex 6300 properly connected to ezDV (existence of FDVU/FDVL modes)](images/2-setup-radio-flex-connected.png)
