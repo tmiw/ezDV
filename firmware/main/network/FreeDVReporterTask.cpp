@@ -144,7 +144,7 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
 
 void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message)
 {
-    if (callsign_ != "" && gridSquare_ != "" && freeDVMode_ != audio::FreeDVMode::ANALOG)
+    if (callsign_ != "" && gridSquare_ != "")
     {
         reportingRefCount_++;
         
@@ -316,7 +316,7 @@ void FreeDVReporterTask::startSocketIoConnection_()
 
 void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
 {
-    ESP_LOGI(CURRENT_LOG_TAG, "got engine.io message %s of length %d", ptr, length);
+    ESP_LOGI(CURRENT_LOG_TAG, "got engine.io message %c of length %d", ptr[0], length);
 
     switch(ptr[0])
     {
@@ -356,7 +356,20 @@ void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
             break;
         }
         default:
-            // ignore all others as they're related to transport upgrades
+            // ignore all others as they're related to transport upgrades, but if we got
+            // something invalid, we should treat it as a disconnection.
+            if (!isdigit(ptr[0]))
+            {
+                ESP_LOGI(CURRENT_LOG_TAG, "invalid data received from engine.io -- reconnecting");
+
+                // "close" -- we're being closed
+                esp_websocket_client_stop(reportingClientHandle_);
+                esp_websocket_client_destroy(reportingClientHandle_);
+                reportingClientHandle_ = nullptr;
+                reportingEnabled_ = false;
+
+                startSocketIoConnection_();
+            }
             break;
     }
 }

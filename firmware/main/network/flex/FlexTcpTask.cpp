@@ -425,8 +425,13 @@ void FlexTcpTask::processCommand_(std::string& command)
                         if (activeSlice_ == -1)
                         {
                             // Don't enable reporting if we've already done so.
+                            ESP_LOGI(CURRENT_LOG_TAG, "Enabling FreeDV reporting for slice %d", sliceId);
                             EnableReportingMessage enableMessage;
                             publish(&enableMessage);
+                        }
+                        else 
+                        {
+                            ESP_LOGW(CURRENT_LOG_TAG, "Attempted to activate FDVU/FDVL from a second slice (id = %d, active = %d)", sliceId, activeSlice_);
                         }
 
                         // User wants to use the waveform.
