@@ -1,5 +1,4 @@
-Please add a description of what this pull request does, including references to
-existing issues that this PR resolves (if any).
+Please add a description of what this pull request does, including references to existing issues that this PR resolves (if any).
 
 ---
 
