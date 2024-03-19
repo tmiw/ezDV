@@ -15,8 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <esp_dsp.h>
 #include "SampleRateConverter.h"
 
 /* Generate using fir1(47,1/3) in Octave */
@@ -87,22 +85,19 @@ void fdmdv_8_to_24(float out24k[], short in8k[], int n)
 {
     int i,j,k,l;
 
-    // Zero out output array.
-    // Per IEEE754 this is equivalent to out24k[i] = 0.0.
-    memset(out24k, 0, FDMDV_OS_24 * n * sizeof(float));
-    
     for(i=0; i<n; i++) {
 	    for(j=0; j<FDMDV_OS_24; j++) {
+	        out24k[i*FDMDV_OS_24+j] = 0.0;
 	        for(k=0,l=0; k<FDMDV_OS_TAPS_24K; k+=FDMDV_OS_24,l++)
 		        out24k[i*FDMDV_OS_24+j] += fdmdv_os_filter24[k+j]*in8k[i-l];
+	        out24k[i*FDMDV_OS_24+j] *= FDMDV_OS_24 * FDMDV_SHORT_TO_FLOAT;
         }
     }	
 
-    // Scale output array appropriately so that values are between +/- 1.
-    dsps_mulc_f32(out24k, out24k, n * FDMDV_OS_24, FDMDV_OS_24 * FDMDV_SHORT_TO_FLOAT, 1, 1);
-
     /* update filter memory */
-    memmove(&in8k[-FDMDV_OS_TAPS_24_8K], &in8k[n-FDMDV_OS_TAPS_24_8K], sizeof(short) * FDMDV_OS_TAPS_24_8K);
+
+    for(i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
+	    in8k[i] = in8k[i + n];
 }
 
 /*---------------------------------------------------------------------------*\
@@ -121,19 +116,14 @@ void fdmdv_24_to_8(short out8k[], float in24k[], int n)
 {
     int i,j;
 
-    // Zero out output array.
-    memset(out8k, 0, n * sizeof(short));
-
-    // Scale input so that values are +/- 2^16
-    dsps_mulc_f32(in24k, in24k, FDMDV_OS_24 * n, FDMDV_FLOAT_TO_SHORT, 1, 1);
-    
-    // Assumption: fdmdv_os_filter24 is symmetrical
     for(i=0; i<n; i++) {
-      float temp = 0;
-      dsps_dotprod_f32(fdmdv_os_filter24, &in24k[i*FDMDV_OS_24 - FDMDV_OS_TAPS_24K + 1], &temp, FDMDV_OS_TAPS_24K);
-      out8k[i] = (short)temp;
+	    out8k[i] = 0.0;
+	    for(j=0; j<FDMDV_OS_TAPS_24K; j++)
+	        out8k[i] += fdmdv_os_filter24[j]*in24k[i*FDMDV_OS_24-j]*FDMDV_FLOAT_TO_SHORT;
     }
 
     /* update filter memory */
-    memmove(&in24k[-FDMDV_OS_TAPS_24K], &in24k[n*FDMDV_OS_24-FDMDV_OS_TAPS_24K], sizeof(float) * FDMDV_OS_TAPS_24K);
+
+    for(i=-FDMDV_OS_TAPS_24K; i<0; i++)
+	    in24k[i] = in24k[i + n*FDMDV_OS_24];
 }

@@ -30,7 +30,7 @@ extern "C"
 namespace ezdv
 {
 App::App()
-    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10)
+    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(5000))
     , audioMixer_(nullptr)
     , beeperTask_(nullptr)
     , freedvTask_(nullptr)
@@ -498,6 +498,58 @@ void App::onTaskSleep_()
     enterDeepSleep_();
 }
 
+void App::onTaskTick_()
+{
+#if 0
+    // infinite loop to track heap use
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+    bool ptt = false;
+    bool hasChangedModes = false;
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
+
+    char buf[1024];
+        
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+
+    /*printf( "Task Name\tStatus\tPrio\tHWM\tTask\tAffinity\n");
+    vTaskList(buf);
+    printf("%s\n\n", buf);
+
+    vTaskGetRunTimeStats(buf);
+    printf("%s\n\n", buf);*/
+
+    //esp_timer_dump(stdout);
+#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+    ptt = !ptt;
+
+    // Trigger PTT
+    if (!hasChangedModes)
+    {
+        ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::FREEDV_700D);
+        app->getFreeDVTask().post(&modeSetMessage);
+        hasChangedModes = true;
+    }
+
+    if (ptt)
+    {
+        ezdv::driver::ButtonShortPressedMessage pressedMessage(ezdv::driver::PTT);
+        app->getUITask().post(&pressedMessage);
+    }
+    else
+    {
+        ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
+        app->getUITask().post(&releasedMessage);
+    }
+#endif // ENABLE_AUTOMATED_TX_RX_TEST
+
+#endif
+}
+
 }
 
 ezdv::App* app;
@@ -546,53 +598,5 @@ extern "C" void app_main()
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Woken up via ULP, booting...");
         app->start();
-    }
-    
-#if 0
-    // infinite loop to track heap use
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
-    bool ptt = false;
-    bool hasChangedModes = false;
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
-
-    //char buf[1024];
-    for(;;)
-    {
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        
-        /*ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-        ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
-
-        //printf( "Task Name\tStatus\tPrio\tHWM\tTask\tAffinity\n");
-        //vTaskList(buf);
-        //printf("%s\n", buf);
-        //esp_timer_dump(stdout);
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
-        ptt = !ptt;
-
-        // Trigger PTT
-        if (!hasChangedModes)
-        {
-            ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::FREEDV_700D);
-            app->getFreeDVTask().post(&modeSetMessage);
-            hasChangedModes = true;
-        }
-
-        if (ptt)
-        {
-            ezdv::driver::ButtonShortPressedMessage pressedMessage(ezdv::driver::PTT);
-            app->getUITask().post(&pressedMessage);
-        }
-        else
-        {
-            ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
-            app->getUITask().post(&releasedMessage);
-        }
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
-    }
-#endif
+    }   
 }
