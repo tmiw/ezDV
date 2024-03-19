@@ -31,6 +31,7 @@
 #include "util/PSRamAllocator.h"
 
 #include "FlexMessage.h"
+#include "vita.h"
 
 namespace ezdv
 {
@@ -76,6 +77,12 @@ private:
     short* downsamplerOutBuf_;
     short* upsamplerInBuf_;
     float* upsamplerOutBuf_;
+
+    // vita packet cache -- preallocate on startup
+    // to reduce the amount of latency when sending packets 
+    // to the radio.
+    vita_packet* packetArray_;
+    int packetIndex_;
     
     void openSocket_();
     void disconnect_();

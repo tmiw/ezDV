@@ -29,6 +29,7 @@
 
 #include "SampleRateConverter.h"
 
+#define MAX_VITA_PACKETS (100)
 #define MAX_VITA_SAMPLES (42)
 #define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* XXX: SmartSDR crashes if I try to send all 180. */
 
@@ -75,6 +76,10 @@ FlexVitaTask::FlexVitaTask()
     assert(upsamplerInBuf_ != nullptr);
     upsamplerOutBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24), sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(upsamplerOutBuf_ != nullptr);
+
+    packetArray_ = (vita_packet*)heap_caps_calloc(MAX_VITA_PACKETS, sizeof(vita_packet), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    assert(packetArray_ != nullptr);
+    packetIndex_ = 0;
 }
 
 FlexVitaTask::~FlexVitaTask()
@@ -85,6 +90,7 @@ FlexVitaTask::~FlexVitaTask()
     heap_caps_free(upsamplerInBuf_);
     heap_caps_free(downsamplerOutBuf_);
     heap_caps_free(upsamplerOutBuf_);
+    heap_caps_free(packetArray_);
 }
 
 void FlexVitaTask::onTaskStart_()
@@ -154,8 +160,12 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
             continue;
         }
 
-        vita_packet* packet = new vita_packet;
+        vita_packet* packet = &packetArray_[packetIndex_++];
         assert(packet != nullptr);
+        if (packetIndex_ == MAX_VITA_PACKETS)
+        {
+            packetIndex_ = 0;
+        }
         
         // Upsample to 24K floats.
         fdmdv_8_to_24(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES);
@@ -254,7 +264,8 @@ void FlexVitaTask::disconnect_()
         audioSeqNum_ = 0;
         currentTime_ = 0;
         timeFracSeq_ = 0;
-        inputCtr_ = 0;        
+        inputCtr_ = 0;
+        packetIndex_ = 0;        
     }
 }
 
@@ -269,8 +280,13 @@ void FlexVitaTask::readPendingPackets_()
     // Process if there are pending datagrams in the buffer
     while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
     {
-        vita_packet* packet = new vita_packet;
+        vita_packet* packet = &packetArray_[packetIndex_++];
         assert(packet != nullptr);
+
+        if (packetIndex_ == MAX_VITA_PACKETS)
+        {
+            packetIndex_ = 0;
+        }
         
         auto rv = recv(socket_, (char*)packet, sizeof(vita_packet), 0);
         if (rv > 0)
@@ -278,10 +294,6 @@ void FlexVitaTask::readPendingPackets_()
             // Queue up packet for future processing.
             ReceiveVitaMessage message(packet, rv);
             post(&message);
-        }
-        else
-        {
-            delete packet;
         }
         
         // Reinitialize the read set for the next pass.
@@ -385,9 +397,9 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
             ESP_LOGW(CURRENT_LOG_TAG, "Undefined stream in %lx", htonl(packet->stream_id));
             break;
     }
-    
+
 cleanup:
-    delete message->packet;
+    // no cleanup needed
 }
 
 void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
@@ -437,8 +449,6 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
         // Read any packets that are available from the radio
         readPendingPackets_();
     }
-    
-    delete packet;
 }
 
 void FlexVitaTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message)
