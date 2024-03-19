@@ -19,7 +19,6 @@
 #define FLEX_VITA_TASK_H
 
 #include <ctime>
-#include <deque>
 #include <sys/socket.h>
 
 #include "audio/AudioInput.h"
@@ -60,7 +59,6 @@ protected:
     
 private:
     struct sockaddr_in radioAddress_;
-    std::deque<float, util::PSRamAllocator<float> > inputVector_;
     DVTimer packetReadTimer_;
     int socket_;
     std::string ip_;
@@ -71,6 +69,7 @@ private:
     int timeFracSeq_;
     bool audioEnabled_;
     bool isTransmitting_;
+    int inputCtr_;
     
     // Resampler buffers
     float* downsamplerInBuf_;

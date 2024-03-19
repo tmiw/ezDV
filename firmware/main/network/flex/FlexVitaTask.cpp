@@ -57,6 +57,7 @@ FlexVitaTask::FlexVitaTask()
     , timeFracSeq_(0)
     , audioEnabled_(false)
     , isTransmitting_(false)
+    , inputCtr_(0)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -236,6 +237,8 @@ void FlexVitaTask::openSocket_()
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
 
     packetReadTimer_.start();
+
+    inputCtr_ = 0;
 }
 
 void FlexVitaTask::disconnect_()
@@ -251,8 +254,7 @@ void FlexVitaTask::disconnect_()
         audioSeqNum_ = 0;
         currentTime_ = 0;
         timeFracSeq_ = 0;
-        
-        inputVector_.clear();
+        inputCtr_ = 0;        
     }
 }
 
@@ -356,30 +358,25 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
             unsigned int num_samples = payload_length >> 2; // / sizeof(uint32_t);
             unsigned int half_num_samples = num_samples >> 1;
 
-            for (unsigned int i = 0; i < half_num_samples; ++i)
+            int i = 0;
+            while (i < half_num_samples)
             {
                 uint32_t temp = ntohl(packet->if_samples[i << 1]);
-                inputVector_.push_back(*(float*)&temp);
-            }
-            
-            //ESP_LOGI(CURRENT_LOG_TAG, "Received %d samples from radio", half_num_samples);
-            
-            while (inputVector_.size() >= MAX_VITA_SAMPLES * FDMDV_OS_24)
-            {
-                for (int i = 0; i < MAX_VITA_SAMPLES * FDMDV_OS_24; i++)
+                downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp;
+                i++;
+
+                if (inputCtr_ == MAX_VITA_SAMPLES * FDMDV_OS_24)
                 {
-                    downsamplerInBuf_[FDMDV_OS_TAPS_24K + i] = inputVector_.front();
-                    inputVector_.pop_front();
-                }
+                    inputCtr_ = 0;
+                    fdmdv_24_to_8(downsamplerOutBuf_, &downsamplerInBuf_[FDMDV_OS_TAPS_24K], MAX_VITA_SAMPLES);
             
-                fdmdv_24_to_8(downsamplerOutBuf_, &downsamplerInBuf_[FDMDV_OS_TAPS_24K], MAX_VITA_SAMPLES);
-            
-                // Queue on respective FIFO.
-                auto fifo = getAudioOutput(channel);
-                if (fifo != nullptr)
-                {
-                    // Note: may be null during voice keyer operation
-                    codec2_fifo_write(fifo, downsamplerOutBuf_, MAX_VITA_SAMPLES);
+                    // Queue on respective FIFO.
+                    auto fifo = getAudioOutput(channel);
+                    if (fifo != nullptr)
+                    {
+                        // Note: may be null during voice keyer operation
+                        codec2_fifo_write(fifo, downsamplerOutBuf_, MAX_VITA_SAMPLES);
+                    }
                 }
             }            
             break;
