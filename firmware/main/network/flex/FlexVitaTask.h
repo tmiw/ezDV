@@ -61,6 +61,7 @@ protected:
 private:
     struct sockaddr_in radioAddress_;
     DVTimer packetReadTimer_;
+    DVTimer packetWriteTimer_;
     int socket_;
     std::string ip_;
     uint32_t rxStreamId_;
@@ -88,6 +89,7 @@ private:
     void disconnect_();
     
     void readPendingPackets_();
+    void sendAudioOut_();
     
     void generateVitaPackets_(audio::AudioInput::ChannelLabel channel, uint32_t streamId);
     

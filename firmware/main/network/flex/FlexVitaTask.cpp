@@ -47,9 +47,10 @@ namespace flex
 static float tx_scale_factor = exp(6.0f/20.0f * log(10.0f));
 
 FlexVitaTask::FlexVitaTask()
-    : DVTask("FlexVitaTask", 16, 8192, 1, 2048, pdMS_TO_TICKS(10))
+    : DVTask("FlexVitaTask", 16, 8192, 1, 2048, pdMS_TO_TICKS(20))
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), 5000, "FlexVitaPacketReadTimer")
+    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), 10000, "FlexVitaPacketReadTimer")
+    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), 10000, "FlexVitaPacketWriteTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)
@@ -106,53 +107,18 @@ void FlexVitaTask::onTaskSleep_()
 
 void FlexVitaTask::onTaskTick_()
 {
-    if (socket_ <= 0)
-    {
-        // Skip tick if we don't have a valid connection yet.
-        return;
-    }
-    
-    // Generate packets for both RX and TX.
-    if (rxStreamId_ && !isTransmitting_)
-    {
-        generateVitaPackets_(audio::AudioInput::USER_CHANNEL, rxStreamId_);
-    }
-    else if (rxStreamId_)
-    {
-        // Clear FIFO if we're not in the right state. This is so that we
-        // don't end up with audio packets going to the wrong place
-        // (i.e. UI beeps being transmitted along with the FreeDV signal).
-        auto fifo = getAudioInput(audio::AudioInput::USER_CHANNEL);
-        short tmpBuf[MAX_VITA_SAMPLES];
-        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
-        {
-            // empty
-        }
-    }
-    
-    if (txStreamId_ && isTransmitting_)
-    {
-        generateVitaPackets_(audio::AudioInput::RADIO_CHANNEL, txStreamId_);
-    }
-    else if (txStreamId_)
-    {
-        // Clear FIFO if we're not in the right state. This is so that we
-        // don't end up with audio packets going to the wrong place
-        // (i.e. UI beeps being transmitted along with the FreeDV signal).
-        auto fifo = getAudioInput(audio::AudioInput::RADIO_CHANNEL);
-        short tmpBuf[MAX_VITA_SAMPLES];
-        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
-        {
-            // empty
-        }
-    }
+    // empty
 }
 
 void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel, uint32_t streamId)
 {
     auto fifo = getAudioInput(channel);
-    
-    while(codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    int ctr = 0;
+
+    // We limit the number of times we go through this loop per call 
+    // so we don't completely monopolize our time in here. After all,
+    // we also need to handle RX.
+    while(ctr++ < 3 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
         if (!audioEnabled_)
         {
@@ -247,6 +213,7 @@ void FlexVitaTask::openSocket_()
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
 
     packetReadTimer_.start();
+    packetWriteTimer_.start();
 
     inputCtr_ = 0;
 }
@@ -256,6 +223,7 @@ void FlexVitaTask::disconnect_()
     if (socket_ > 0)
     {
         packetReadTimer_.stop();
+        packetWriteTimer_.stop();
         close(socket_);
         socket_ = -1;
         
@@ -299,6 +267,44 @@ void FlexVitaTask::readPendingPackets_()
         // Reinitialize the read set for the next pass.
         FD_ZERO(&readSet);
         FD_SET(socket_, &readSet);
+    }
+}
+
+void FlexVitaTask::sendAudioOut_()
+{
+    // Generate packets for both RX and TX.
+    if (rxStreamId_ && !isTransmitting_)
+    {
+        generateVitaPackets_(audio::AudioInput::USER_CHANNEL, rxStreamId_);
+    }
+    else if (rxStreamId_)
+    {
+        // Clear FIFO if we're not in the right state. This is so that we
+        // don't end up with audio packets going to the wrong place
+        // (i.e. UI beeps being transmitted along with the FreeDV signal).
+        auto fifo = getAudioInput(audio::AudioInput::USER_CHANNEL);
+        short tmpBuf[MAX_VITA_SAMPLES];
+        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
+        {
+            // empty
+        }
+    }
+    
+    if (txStreamId_ && isTransmitting_)
+    {
+        generateVitaPackets_(audio::AudioInput::RADIO_CHANNEL, txStreamId_);
+    }
+    else if (txStreamId_)
+    {
+        // Clear FIFO if we're not in the right state. This is so that we
+        // don't end up with audio packets going to the wrong place
+        // (i.e. UI beeps being transmitted along with the FreeDV signal).
+        auto fifo = getAudioInput(audio::AudioInput::RADIO_CHANNEL);
+        short tmpBuf[MAX_VITA_SAMPLES];
+        while(codec2_fifo_read(fifo, tmpBuf, MAX_VITA_SAMPLES) == 0)
+        {
+            // empty
+        }
     }
 }
 
@@ -445,9 +451,6 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
         {
             ESP_LOGW(CURRENT_LOG_TAG, "Needed %d tries to send a packet", tries++);
         }
-
-        // Read any packets that are available from the radio
-        readPendingPackets_();
     }
 }
 
