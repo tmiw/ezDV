@@ -22,6 +22,7 @@
 #include <map>
 #include "task/DVTask.h"
 #include "task/DVTaskMessage.h"
+#include "util/PSRamAllocator.h"
 
 extern "C"
 {
@@ -77,7 +78,7 @@ private:
         int newState;
     };
 
-    std::map<int, StateMachineState*> stateIdToStateMap_;
+    std::map<int, StateMachineState*, std::less<int>, util::PSRamAllocator<std::pair<const int, StateMachineState*> > > stateIdToStateMap_;
     DVTask* owner_;
     StateMachineState* currentState_;
 

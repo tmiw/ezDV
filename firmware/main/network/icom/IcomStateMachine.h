@@ -53,6 +53,9 @@ public:
     std::string getUsername();
     std::string getPassword();
 
+    void* operator new(size_t size);
+    void operator delete(void* p);
+
 protected:
     virtual std::string getName_() = 0;
 

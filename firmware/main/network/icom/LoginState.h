@@ -46,7 +46,7 @@ public:
 
 private:
     DVTimer tokenRenewTimer_;
-    std::vector<IcomPacket> radioCapabilities_;
+    std::vector<IcomPacket, util::PSRamAllocator<IcomPacket>> radioCapabilities_;
     uint32_t ourTokenRequest_;
     uint32_t theirToken_;
     uint16_t authSequenceNumber_;

@@ -93,7 +93,7 @@ void TrackedPacketState::onReceivePacket(IcomPacket& packet)
 {
     uint16_t pingSequence;
     bool packetSent;
-    std::vector<uint16_t> retryPackets;
+    std::vector<uint16_t, util::PSRamAllocator<uint16_t>> retryPackets;
     bool addReceivedPacket = false;
 
     if (packet.isPingRequest(pingSequence))
@@ -276,7 +276,7 @@ void TrackedPacketState::onRetransmitTimer_()
         return;
     }
     
-    std::vector<uint16_t> retransmitList;
+    std::vector<uint16_t, util::PSRamAllocator<uint16_t>> retransmitList;
     for (auto& packet : rxMissingPacketIds_)
     {
         retransmitList.push_back(packet.first);

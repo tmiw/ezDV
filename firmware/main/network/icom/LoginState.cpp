@@ -87,7 +87,7 @@ void LoginState::onReceivePacket(IcomPacket& packet)
     bool isPasswordIncorrect;
     uint16_t tokenRequest;
     uint32_t radioToken;
-    std::vector<radio_cap_packet_t> radios;
+    std::vector<radio_cap_packet_t, util::PSRamAllocator<radio_cap_packet_t>> radios;
     std::string radioName;
     uint32_t radioIp;
     bool isBusy;

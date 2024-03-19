@@ -23,6 +23,8 @@
 #include <memory>
 #include "RadioPacketDefinitions.h"
 
+#include "util/PSRamAllocator.h"
+
 namespace ezdv
 {
 
@@ -65,7 +67,7 @@ public:
     static IcomPacket CreatePingPacket(uint16_t pingSeq, uint32_t ourId, uint32_t theirId);
     static IcomPacket CreatePingAckPacket(uint16_t theirPingSeq, uint32_t ourId, uint32_t theirId);
     static IcomPacket CreateIdlePacket(uint16_t ourSeq, uint32_t ourId, uint32_t theirId);
-    static IcomPacket CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t> packetIdsToRetransmit);
+    static IcomPacket CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t, util::PSRamAllocator<uint16_t>> packetIdsToRetransmit);
     static IcomPacket CreateTokenRenewPacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
     static IcomPacket CreateTokenRemovePacket(uint16_t authSeq, uint16_t tokenRequest, uint32_t token, uint32_t ourId, uint32_t theirId);
     static IcomPacket CreateDisconnectPacket(uint32_t ourId, uint32_t theirId);
@@ -86,9 +88,9 @@ public:
     bool isPingRequest(uint16_t& pingSequence);
     bool isPingResponse(uint16_t& pingSequence);
     
-    bool isCapabilitiesPacket(std::vector<radio_cap_packet_t>& radios);
+    bool isCapabilitiesPacket(std::vector<radio_cap_packet_t, util::PSRamAllocator<radio_cap_packet_t>>& radios);
     
-    bool isRetransmitPacket(std::vector<uint16_t>& retryPackets);
+    bool isRetransmitPacket(std::vector<uint16_t, util::PSRamAllocator<uint16_t>>& retryPackets);
     
     bool isConnInfoPacket(std::string& name, uint32_t& ip, bool& isBusy);
     

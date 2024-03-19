@@ -252,7 +252,7 @@ IcomPacket IcomPacket::CreateIdlePacket(uint16_t ourSeq, uint32_t ourId, uint32_
     return result;
 }
 
-IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t> packetIdsToRetransmit)
+IcomPacket IcomPacket::CreateRetransmitRequest(uint32_t ourId, uint32_t theirId, std::vector<uint16_t, util::PSRamAllocator<uint16_t>> packetIdsToRetransmit)
 {
     static_assert(CONTROL_SIZE == sizeof(control_packet));
     constexpr uint16_t packetType = 0x01;
@@ -482,7 +482,7 @@ bool IcomPacket::isPingResponse(uint16_t& pingSequence)
     return ret;
 }
 
-bool IcomPacket::isCapabilitiesPacket(std::vector<radio_cap_packet_t>& radios)
+bool IcomPacket::isCapabilitiesPacket(std::vector<radio_cap_packet_t, util::PSRamAllocator<radio_cap_packet_t>>& radios)
 {
     auto rawData = getData();
     
@@ -500,7 +500,7 @@ bool IcomPacket::isCapabilitiesPacket(std::vector<radio_cap_packet_t>& radios)
     return result;
 }
 
-bool IcomPacket::isRetransmitPacket(std::vector<uint16_t>& retryPackets)
+bool IcomPacket::isRetransmitPacket(std::vector<uint16_t, util::PSRamAllocator<uint16_t>>& retryPackets)
 {
     bool result = false;
     

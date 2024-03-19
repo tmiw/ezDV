@@ -32,6 +32,16 @@ namespace network
 namespace icom
 {
 
+void* IcomStateMachine::operator new(size_t size)
+{
+    return heap_caps_calloc(size, 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+}
+
+void IcomStateMachine::operator delete(void* p)
+{
+    heap_caps_free(p);
+}
+
 IcomStateMachine::IcomStateMachine(DVTask* owner)
     : StateMachine(owner)
     , socket_(0)
