@@ -63,7 +63,7 @@ the above command.*
 
 On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require installation of ESP-IDF.
 
-1. Download the ESP Flash Tool from https://www.espressif.com/en/support/download/other-tools.
+1. Download the ESP Flash Tool from [https://www.espressif.com/en/support/download/other-tools](https://www.espressif.com/en/support/download/other-tools).
 2. Decompress all of the files in the ZIP file and execute flash\_download\_tool\_3.9.3.exe.
 3. Select "ESP32-S3" for "ChipType", "Develop" for "WorkMode" and "USB" for "LoadMode" as shown below:
 
@@ -122,4 +122,4 @@ esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --afte
 If you have a problem that is not already covered in this manual, you can obtain help through several sources:
 
 * [digitalvoice mailing list](https://groups.google.com/g/digitalvoice): This is the official FreeDV mailing list covering the FreeDV mode generally as well as FreeDV software and hardware devices such as ezDV.
-* GitHub: You can create a GitHub issue [here](https://github.com/tmiw/ezDV/issues) to report bugs or request feature enhancements. Note that this requires a GitHub account.
+* GitHub: You can [create a GitHub issue](https://github.com/tmiw/ezDV/issues) to report bugs or request feature enhancements. Note that this requires a GitHub account.
