@@ -143,3 +143,6 @@ ulp_embed_binary(ulp_main "ulp/main.c" "ulp/main.c")
 
 # Embedded HTTP server files
 spiffs_create_partition_image(http_0 http_server_files FLASH_IN_PROJECT)
+
+set_source_files_properties("network/flex/SampleRateConverter.c" PROPERTIES COMPILE_FLAGS -O3)
+set_source_files_properties("network/flex/FlexVitaTask.cpp" PROPERTIES COMPILE_FLAGS -O3)
