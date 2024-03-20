@@ -26,6 +26,9 @@
 #include "esp_timer.h"
 #include "esp_log.h"
 
+// Shared across all files as this is actually used pretty often.
+#define MS_TO_US(ms) (ms * 1000)
+
 extern "C"
 {
     DV_EVENT_DECLARE_BASE(DV_TASK_TIMER_MESSAGE);

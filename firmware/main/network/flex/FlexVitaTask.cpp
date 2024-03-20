@@ -47,10 +47,10 @@ namespace flex
 static float tx_scale_factor = exp(6.0f/20.0f * log(10.0f));
 
 FlexVitaTask::FlexVitaTask()
-    : DVTask("FlexVitaTask", 16, 8192, 1, 2048, pdMS_TO_TICKS(20))
+    : DVTask("FlexVitaTask", 16, 8192, 1, 2048)
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), 10000, "FlexVitaPacketReadTimer")
-    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), 10000, "FlexVitaPacketWriteTimer")
+    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), MS_TO_US(10), "FlexVitaPacketReadTimer")
+    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), MS_TO_US(10), "FlexVitaPacketWriteTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)
