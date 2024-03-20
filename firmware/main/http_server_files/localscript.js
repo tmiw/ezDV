@@ -1,4 +1,5 @@
 var refreshOnReconnect = false;
+var pendingReconnect = false;
 
 //==========================================================================================
 // Form state change
@@ -251,7 +252,8 @@ function wsConnect()
   {
       if (refreshOnReconnect)
       {
-          window.location.reload();
+          pendingReconnect = true;
+          ws.close();
       }
       else
       {
@@ -525,12 +527,19 @@ function wsConnect()
 
   ws.onclose = function(e) 
   {
-    console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-    $(".modal").show();
-    refreshOnReconnect = true; // force page refresh on reconnect (in case new FW changes HTML/JS)
-    setTimeout(function() {
-        wsConnect();
-    }, 1000);
+    if (pendingReconnect)
+    {
+        window.location.reload();
+    }
+    else
+    {
+        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+        $(".modal").show();
+        refreshOnReconnect = true; // force page refresh on reconnect (in case new FW changes HTML/JS)
+        setTimeout(function() {
+            wsConnect();
+        }, 1000);
+    }
   };
 
   ws.onerror = function(err) 
