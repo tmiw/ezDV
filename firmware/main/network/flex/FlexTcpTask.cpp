@@ -521,7 +521,7 @@ void FlexTcpTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMes
 
 void FlexTcpTask::onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message)
 {
-    if (activeSlice_ >= 0)
+    if (activeSlice_ >= 0 && strlen(message->callsign) > 0)
     {
         std::stringstream ss;
         ss << "spot add rx_freq=" << sliceFrequencies_[activeSlice_] << " callsign=" << message->callsign << " mode=FREEDV timestamp=" << time(NULL); //lifetime_seconds=300";
