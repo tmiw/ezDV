@@ -44,7 +44,7 @@ extern "C"
 
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
-#define SCRATCH_BUFSIZE 256
+#define SCRATCH_BUFSIZE 4096
 #define CURRENT_LOG_TAG "HttpServerTask"
 
 #define JSON_BATTERY_STATUS_TYPE "batteryStatus"
@@ -217,7 +217,9 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
         strcat(filepath, "index.html");
     }
 
-    char scratchBuf[SCRATCH_BUFSIZE];
+    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    assert(scratchBuf != nullptr);
+
     char *chunk = scratchBuf;
     size_t chunksize = read(message->fd, chunk, SCRATCH_BUFSIZE);
 
@@ -237,7 +239,7 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
 
             /* Close connection. */
             ESP_ERROR_CHECK(httpd_req_async_handler_complete(message->request));
-            return;
+            goto http_static_file_cleanup;
         }
 
         /* Repost event to be processed again. */
@@ -255,6 +257,9 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
         /* Close connection. */
         ESP_ERROR_CHECK(httpd_req_async_handler_complete(message->request));
     }
+
+http_static_file_cleanup:
+    heap_caps_free(scratchBuf);
 }
 
 esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
@@ -299,18 +304,35 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
 
-    // XXX - Send first chunk to make sure headers get sent. Otherwise, we'll crash in httpd_resp_send_chunk
-    // in HttpServerTask.
-    char scratchBuf[SCRATCH_BUFSIZE];
+    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    assert(scratchBuf != nullptr);
+
     char *chunk = scratchBuf;
-    size_t chunksize = read(fd, chunk, SCRATCH_BUFSIZE);
-
-    if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) 
+    size_t chunksize = 0;
+    
+    while ((chunksize = read(fd, chunk, SCRATCH_BUFSIZE)) > 0)
     {
-        close(fd);
-        return ESP_FAIL;
-    }
+        if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) 
+        {
+            httpd_resp_send_chunk(req, NULL, 0);
+            heap_caps_free(scratchBuf);
+            close(fd);
 
+            ESP_LOGW(CURRENT_LOG_TAG, "Sending %s failed!", filename);
+            return ESP_FAIL;
+        }
+    }
+    heap_caps_free(scratchBuf);
+
+    close(fd);
+    httpd_resp_send_chunk(req, NULL, 0);
+
+    ESP_LOGI(CURRENT_LOG_TAG, "Sending %s complete", filename);
+    return ESP_OK;
+
+#if 0
+    // Async requests are disabled due to ESP-IDF bug with additional HTTP headers.
+    // See https://github.com/espressif/esp-idf/issues/13430.
     httpd_req_t* asyncReq;
     esp_err_t err = httpd_req_async_handler_begin(req, &asyncReq);
     if (err == ESP_OK)
@@ -322,6 +344,7 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     }
 
     return err;
+#endif // 0
 }
 
 esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
