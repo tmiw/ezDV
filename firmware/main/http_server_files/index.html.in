@@ -465,8 +465,8 @@
             </div>
         </div>
     </div>
-    <script src="jquery-3.6.1.min.js.gz"></script>
-    <script src="bootstrap.bundle.min.js.gz"></script>
-    <script src="localscript.js"></script>
+    <script src="jquery-3.6.1.min.js.gz" defer></script>
+    <script src="bootstrap.bundle.min.js.gz" defer></script>
+    <script src="localscript.js" defer></script>
 </body>
 </html>
