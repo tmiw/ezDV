@@ -58,6 +58,7 @@ protected:
 private:
     std::stringstream inputBuffer_;
     DVTimer reconnectTimer_;
+    DVTimer commandHandlingTimer_;
     int socket_;
     int sequenceNumber_;
     std::string ip_;
@@ -79,6 +80,7 @@ private:
     void connect_();
     void disconnect_();
     void socketFinalCleanup_(bool reconnect);
+    void commandResponseTimeout_();
 
     void initializeWaveform_();
     void createWaveform_(std::string name, std::string shortName, std::string underlyingMode);

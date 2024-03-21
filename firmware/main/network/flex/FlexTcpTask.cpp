@@ -41,7 +41,8 @@ namespace flex
 
 FlexTcpTask::FlexTcpTask()
     : DVTask("FlexTcpTask", 10, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
-    , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), 10000000, "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
+    , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
+    , commandHandlingTimer_(this, std::bind(&FlexTcpTask::commandResponseTimeout_, this), MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
@@ -151,6 +152,8 @@ void FlexTcpTask::socketFinalCleanup_(bool reconnect)
 
         responseHandlers_.clear();
         inputBuffer_.clear();
+
+        commandHandlingTimer_.stop();
     }
     
     // Report sleep
@@ -295,11 +298,9 @@ void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsi
     if (socket_ > 0)
     {
         std::ostringstream ss;
-        
-        responseHandlers_[sequenceNumber_] = fn;
 
         ESP_LOGI(CURRENT_LOG_TAG, "Sending '%s' as command %d", command.c_str(), sequenceNumber_);    
-        ss << "C" << (sequenceNumber_++) << "|" << command << "\n";
+        ss << "C" << (sequenceNumber_) << "|" << command << "\n";
         
         auto rv = write(socket_, ss.str().c_str(), ss.str().length());
         if (rv <= 0)
@@ -311,7 +312,29 @@ void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsi
             // do any additional actions.
             fn(0xFFFFFFFF, "");
         }
+        else
+        {
+            responseHandlers_[sequenceNumber_++] = fn;
+            commandHandlingTimer_.stop();
+            commandHandlingTimer_.start(true);
+        }
     }
+}
+
+void FlexTcpTask::commandResponseTimeout_()
+{
+    // We timed out waiting for a response, just go ahead and call handlers so that
+    // processing can continue.
+    ESP_LOGW(CURRENT_LOG_TAG, "Timed out waiting for response from radio.");
+    for (auto& kvp : responseHandlers_)
+    {
+        if (kvp.second)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Calling response handler for command %d", kvp.first);
+            kvp.second(0xFFFFFFFF, "Timed out waiting for response from radio");
+        }
+    }
+    responseHandlers_.clear();
 }
 
 void FlexTcpTask::processCommand_(std::string& command)
@@ -351,7 +374,13 @@ void FlexTcpTask::processCommand_(std::string& command)
         if (responseHandlers_[seq])
         {
             responseHandlers_[seq](rv, ss.str());
-            responseHandlers_.erase(seq);
+        }
+        responseHandlers_.erase(seq);
+
+        // Stop timer if we're not waiting for any more responses.
+        if (responseHandlers_.size() == 0)
+        {
+            commandHandlingTimer_.stop();
         }
     }
     else if (command[0] == 'S')
