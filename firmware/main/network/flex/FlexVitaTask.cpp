@@ -22,6 +22,7 @@
 #include "FlexKeyValueParser.h"
 
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_dsp.h"
 
 #include "codec2_fifo.h"
@@ -60,6 +61,7 @@ FlexVitaTask::FlexVitaTask()
     , audioEnabled_(false)
     , isTransmitting_(false)
     , inputCtr_(0)
+    , lastVitaGenerationTime_(0)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -118,7 +120,21 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     // We limit the number of times we go through this loop per call 
     // so we don't completely monopolize our time in here. After all,
     // we also need to handle RX.
-    while(ctr++ < 3 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    //
+    // However, if we take longer than expected since the last call of this
+    // function, we should adjust that maximum limit so that SmartSDR has
+    // enough of a buffer to avoid dropouts. Since each VITA packet has about 5.25ms
+    // of audio, we limit the number of packets to (currentTime - previousTime) / 5.25ms
+    // plus 1 (and mandate a minimum in case we somehow get called faster than expected).
+    auto currentTimeInMicroseconds = esp_timer_get_time();
+    auto numberOfPacketsRequired = std::max(3, (int)(currentTimeInMicroseconds - lastVitaGenerationTime_) / 5250) + 1;
+    
+    if (numberOfPacketsRequired > 4)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Other code took longer than expected, need to send %d packets", numberOfPacketsRequired);
+    }
+
+    while(ctr++ < numberOfPacketsRequired && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
         if (!audioEnabled_)
         {
@@ -176,6 +192,8 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         SendVitaMessage message(packet, packet_len);
         post(&message);
     }
+
+    lastVitaGenerationTime_ = currentTimeInMicroseconds;
 }
 
 void FlexVitaTask::openSocket_()
@@ -216,6 +234,7 @@ void FlexVitaTask::openSocket_()
     packetWriteTimer_.start();
 
     inputCtr_ = 0;
+    lastVitaGenerationTime_ = esp_timer_get_time();
 }
 
 void FlexVitaTask::disconnect_()

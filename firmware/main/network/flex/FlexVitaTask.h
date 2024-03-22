@@ -72,6 +72,7 @@ private:
     bool audioEnabled_;
     bool isTransmitting_;
     int inputCtr_;
+    int64_t lastVitaGenerationTime_;
     
     // Resampler buffers
     float* downsamplerInBuf_;
