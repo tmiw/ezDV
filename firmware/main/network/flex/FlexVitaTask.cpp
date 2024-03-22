@@ -62,6 +62,8 @@ FlexVitaTask::FlexVitaTask()
     , isTransmitting_(false)
     , inputCtr_(0)
     , lastVitaGenerationTime_(0)
+    , minPacketsRequired_(0)
+    , packetDelayCounter_(0)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -117,6 +119,15 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     auto fifo = getAudioInput(channel);
     int ctr = 0;
 
+    packetDelayCounter_++;
+    if ((packetDelayCounter_ & 127) == 0)
+    {
+        // Halve the minimum number of packets required once per ~second.
+        // This is so that in case of a minor hiccup, we can go back to the 
+        // normal number of required packets ASAP.
+        minPacketsRequired_ >>= 1;
+    }
+
     // We limit the number of times we go through this loop per call 
     // so we don't completely monopolize our time in here. After all,
     // we also need to handle RX.
@@ -127,11 +138,14 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     // of audio, we limit the number of packets to (currentTime - previousTime) / 5.25ms
     // plus 1 (and mandate a minimum in case we somehow get called faster than expected).
     auto currentTimeInMicroseconds = esp_timer_get_time();
-    auto numberOfPacketsRequired = std::max(3, (int)(currentTimeInMicroseconds - lastVitaGenerationTime_) / 5250) + 1;
+    minPacketsRequired_ = std::max(4, minPacketsRequired_);
+    auto numberOfPacketsRequired = std::max(minPacketsRequired_, (int)(currentTimeInMicroseconds - lastVitaGenerationTime_) / 5250 + 1);
     
-    if (numberOfPacketsRequired > 4)
+    if (numberOfPacketsRequired > minPacketsRequired_)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Other code took longer than expected, need to send %d packets", numberOfPacketsRequired);
+        minPacketsRequired_ = numberOfPacketsRequired;
+        packetDelayCounter_ = 0;
     }
 
     while(ctr++ < numberOfPacketsRequired && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)

@@ -73,6 +73,8 @@ private:
     bool isTransmitting_;
     int inputCtr_;
     int64_t lastVitaGenerationTime_;
+    int minPacketsRequired_;
+    int packetDelayCounter_;
     
     // Resampler buffers
     float* downsamplerInBuf_;
