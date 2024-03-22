@@ -239,10 +239,17 @@ void FlexVitaTask::openSocket_()
 
     fcntl (socket_, F_SETFL , O_NONBLOCK);
 
+    // The below tells ESP-IDF to transmit on this socket using Wi-Fi voice priority.
+    // This also implicitly disables TX AMPDU for this socket. In testing, not having
+    // this worked a lot better than having it, so it's disabled for now. Perhaps in
+    // the future we can play with this again (perhaps with a lower priority level that
+    // will in fact use AMPDU?)
+#if 0
     const int precedenceVI = 6;
     const int precedenceOffset = 7;
     int priority = (precedenceVI << precedenceOffset);
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
+#endif // 0
 
     packetReadTimer_.start();
     packetWriteTimer_.start();
