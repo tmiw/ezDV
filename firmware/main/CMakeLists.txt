@@ -133,6 +133,7 @@ target_include_directories(${COMPONENT_LIB} PUBLIC
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=gnu11 -ffunction-sections -fdata-sections -O3 -fsingle-precision-constant -Wdouble-promotion")
 target_compile_options(codec2 PRIVATE -Wall -ffunction-sections -fdata-sections -O2 -fsingle-precision-constant -Wdouble-promotion)
+target_compile_options(${COMPONENT_LIB} PRIVATE -fsingle-precision-constant -Wdouble-promotion)
 
 # Generate HTML with correct version number
 string(TIMESTAMP PROJECT_YEAR "%Y")

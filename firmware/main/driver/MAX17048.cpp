@@ -198,17 +198,17 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
         int rcomp = 0x97;
         if (degC > 20)
         {
-            rcomp += (degC - 20) * (-0.5); // TempCoUp default
+            rcomp += (degC - 20) * (-0.5f); // TempCoUp default
         }
         else
         {
-            rcomp += (degC - 20) * (-5.0); // TempCoDown default
+            rcomp += (degC - 20) * (-5.0f); // TempCoDown default
         }
     
         if (rcomp > 255) rcomp = 255;
         else if (rcomp < 0) rcomp = 0;
     
-        ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
+        //ESP_LOGI(CURRENT_LOG_TAG, "Current temperature: %.02f C, new RCOMP: %d", degC, rcomp);
     
         config &= 0x00FF;
         config = ((uint8_t)rcomp << 8) | config;
@@ -232,7 +232,7 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
     // Publish battery status to all interested parties.
     // Also clean up the values as returned by the MAX17048
     // as it can return SOC > 100 or < 0.
-    auto calcSoc = soc / 256.0;
+    auto calcSoc = (float)soc * 0.00390625f; // soc / 256
     if (calcSoc > 100)
     {
         calcSoc = 100;
@@ -245,13 +245,14 @@ void MAX17048::onRequestBatteryStateMessage_(DVTask* origin, RequestBatteryState
     BatteryStateMessage message(voltage * 0.000078125, calcSoc, (int16_t)socChangeRate * 0.208, usbPower_.getCurrentValue());
     publish(&message);
     
-    ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
+    //ESP_LOGI(CURRENT_LOG_TAG, "Current battery stats: STATUS = %x, CONFIG = %x, V = %.2f, SOC = %.2f%%, CRATE = %.2f%%/hr", status, config, message.voltage, message.soc, message.socChangeRate);
 
     if (!suppressForcedSleep_)
     {
         if (message.voltage <= 3 || calcSoc <= 5 || (calcSoc <= 5.5 && isStarting_))
         {
             // If battery power is extremely low, immediately force sleep.
+            ESP_LOGW(CURRENT_LOG_TAG, "Low battery detected, begin shutdown");
             isLowSoc_ = true;
 
             // Post 
@@ -357,16 +358,16 @@ void MAX17048::onInterrupt_(bool val)
         auto rv = readInt16Reg_(REG_STATUS, &val);
         assert(rv == true);
         
-        bool voltageHigh = (val & (1 << 9)) != 0;
+        //bool voltageHigh = (val & (1 << 9)) != 0;
         bool voltageLow = (val & (1 << 10)) != 0;
-        bool voltageReset = (val & (1 << 11)) != 0;
+        //bool voltageReset = (val & (1 << 11)) != 0;
         bool socLow = (val & (1 << 12)) != 0;
-        bool socChange = (val & (1 << 13)) != 0;
+        //bool socChange = (val & (1 << 13)) != 0;
         
-        ESP_LOGI(
+        /*ESP_LOGI(
             CURRENT_LOG_TAG, 
             "Interrupt: VH = %d, VL = %d, VR = %d, SOC low = %d, SOC change = %d",
-            voltageHigh, voltageLow, voltageReset, socLow, socChange);
+            voltageHigh, voltageLow, voltageReset, socLow, socChange);*/
             
         if (socLow || voltageLow)
         {
@@ -400,7 +401,7 @@ float MAX17048::temperatureFromADC_()
     }
     val = valAccum >> 3;
     
-    ESP_LOGI(CURRENT_LOG_TAG, "ADC: %d", val);
+    //ESP_LOGI(CURRENT_LOG_TAG, "ADC: %d", val);
     
     // Formula 1: raw ADC to voltage:
     // V = 3.3x/4096 (4096 = 2^12 since 12 bit ADC)
@@ -409,21 +410,21 @@ float MAX17048::temperatureFromADC_()
     int millivolts = 0;
     ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adcCalibrationHandle_, val, &millivolts));
     float voltage = millivolts / 1000.0;
-    ESP_LOGI(CURRENT_LOG_TAG, "V: %f", voltage);
+    //ESP_LOGI(CURRENT_LOG_TAG, "V: %f", voltage);
     
     // Formula 2: voltage to resistance:
     // (10000/3.3 * V) / (1 - V/3.3) = R
     // 10000: bias resistor value
     float resistance = (3030.3 * voltage) / (1 - voltage / 3.3);
-    ESP_LOGI(CURRENT_LOG_TAG, "R: %f", resistance);
+    //ESP_LOGI(CURRENT_LOG_TAG, "R: %f", resistance);
     
     // Formula 3: resistance to temperature:
     // 1/T = 1/TO + (1/β) ⋅ ln (R/RO)
     // β: 3950
-    float tempInv = (1/298.15) + (1.0/3950.0) * log(resistance / 10000.0);
+    float tempInv = (1/298.15) + (1.0/3950.0) * std::log(resistance / 10000.0);
     float temp = 1.0 / tempInv - 273.15; // convert from K to C
     
-    ESP_LOGI(CURRENT_LOG_TAG, "Thermistor temp: %f C", temp);
+    //ESP_LOGI(CURRENT_LOG_TAG, "Thermistor temp: %f C", temp);
     return temp;
 }
 

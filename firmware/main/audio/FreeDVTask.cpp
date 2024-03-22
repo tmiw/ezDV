@@ -343,7 +343,7 @@ void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int 
     freedv_get_modem_extended_stats(thisPtr->dv_, thisPtr->stats_);
     
     float snr = thisPtr->stats_->snr_est;
-    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s at %.1f SNR", txt_ptr, snr);
+    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s" /*at %.1f SNR"*/, txt_ptr /*, (float)snr*/);
 
     FreeDVReceivedCallsignMessage message((char*)txt_ptr, snr);
     thisPtr->publish(&message);

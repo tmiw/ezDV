@@ -165,7 +165,7 @@ void AudioState::onRightChannelVolumeMessage_(DVTask* origin, storage::RightChan
 {
     float volInDb = 0.5 * message->volume;
 
-    float multiplier = exp(volInDb/20.0 * log(10.0));
+    float multiplier = std::exp(volInDb/20.0 * std::log(10.0));
     for (int index = 0; index < 160; index++)
     {
         audioMultiplier_[index] = multiplier;
