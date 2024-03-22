@@ -45,6 +45,18 @@ enum FlexMessageTypes
     VITA_RECEIVE = 2,
     VITA_SEND = 3,
     DISCOVERED_RADIO = 4,
+    GENERATE_PACKETS = 5,
+};
+
+class FlexGenerateSendPacketsMessage : public DVTaskMessageBase<GENERATE_PACKETS, FlexGenerateSendPacketsMessage>
+{
+public:    
+    FlexGenerateSendPacketsMessage()
+        : DVTaskMessageBase<GENERATE_PACKETS, FlexGenerateSendPacketsMessage>(FLEX_MESSAGE)
+    {
+        // empty
+    }
+    virtual ~FlexGenerateSendPacketsMessage() = default;
 };
 
 class FlexConnectRadioMessage : public DVTaskMessageBase<CONNECT_RADIO, FlexConnectRadioMessage>

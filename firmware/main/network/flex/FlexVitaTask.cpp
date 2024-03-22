@@ -33,6 +33,9 @@
 #define MAX_VITA_PACKETS (200)
 #define MAX_VITA_SAMPLES (42)
 #define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* XXX: SmartSDR crashes if I try to send all 180. */
+#define VITA_IO_TIME_INTERVAL_MS (10)
+#define SHORT_VITA_IO_TIME_INTERVAL_MS (1)
+#define MIN_VITA_PACKETS_TO_SEND (5)
 
 #define CURRENT_LOG_TAG "FlexVitaTask"
 
@@ -50,8 +53,8 @@ static float tx_scale_factor = std::exp(6.0f/20.0f * std::log(10.0f));
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 16, 8192, 1, 2048)
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), MS_TO_US(10), "FlexVitaPacketReadTimer")
-    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), MS_TO_US(10), "FlexVitaPacketWriteTimer")
+    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), MS_TO_US(VITA_IO_TIME_INTERVAL_MS), "FlexVitaPacketReadTimer")
+    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), MS_TO_US(VITA_IO_TIME_INTERVAL_MS), "FlexVitaPacketWriteTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)
@@ -64,6 +67,7 @@ FlexVitaTask::FlexVitaTask()
     , lastVitaGenerationTime_(0)
     , minPacketsRequired_(0)
     , packetDelayCounter_(0)
+    , currentWriteIntervalMs_(VITA_IO_TIME_INTERVAL_MS)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -72,6 +76,7 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onDisableReportingMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestTxMessage_);
+    registerMessageHandler(this, &FlexVitaTask::onFlexGenerateSendPacketsMessage_);
 
     downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
@@ -119,10 +124,43 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     auto fifo = getAudioInput(channel);
     int ctr = 0;
 
+    auto currentTimeInMicroseconds = esp_timer_get_time();
+
+    // If we're starved of TX audio, use a shorter timer interval until we do
+    // get audio. This has the effect of polling for the minimum number of audio samples
+    // and thus resynchronizing with the rest of the system.
+    if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES)
+    {
+        if (currentWriteIntervalMs_ == VITA_IO_TIME_INTERVAL_MS)
+        {
+            currentWriteIntervalMs_ = SHORT_VITA_IO_TIME_INTERVAL_MS;
+        }
+        else if (currentWriteIntervalMs_ > VITA_IO_TIME_INTERVAL_MS)
+        {
+            currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
+        }
+
+        //ESP_LOGW(CURRENT_LOG_TAG, "FIFO starved, waiting for additional samples");
+
+        minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
+        lastVitaGenerationTime_ = currentTimeInMicroseconds;
+        
+        packetWriteTimer_.stop();
+        packetWriteTimer_.changeInterval(MS_TO_US(currentWriteIntervalMs_));
+        currentWriteIntervalMs_ <<= 1; // Double the write interval every time through here.
+
+        packetWriteTimer_.start();
+        return;
+    }
+    else
+    {
+        currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
+    }
+
     packetDelayCounter_++;
     if ((packetDelayCounter_ & 127) == 0)
     {
-        // Halve the minimum number of packets required once per ~second.
+        // Reduce the minimum number of packets required once per ~second.
         // This is so that in case of a minor hiccup, we can go back to the 
         // normal number of required packets ASAP.
         minPacketsRequired_ >>= 1;
@@ -136,9 +174,9 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     // function, we should adjust that maximum limit so that SmartSDR has
     // enough of a buffer to avoid dropouts. Since each VITA packet has about 5.25ms
     // of audio, we limit the number of packets to (currentTime - previousTime) / 5.25ms
-    // plus 1 (and mandate a minimum in case we somehow get called faster than expected).
-    auto currentTimeInMicroseconds = esp_timer_get_time();
-    minPacketsRequired_ = std::max(4, minPacketsRequired_);
+    // plus 1. We also mandate a minimum, which is either the minimum we calculated
+    // last time around or enough packets to fill in (RX timer interval + TX timer interval) ms + 1.
+    minPacketsRequired_ = std::max(MIN_VITA_PACKETS_TO_SEND, minPacketsRequired_);
     auto numberOfPacketsRequired = std::max(minPacketsRequired_, (int)(currentTimeInMicroseconds - lastVitaGenerationTime_) / 5250 + 1);
     
     if (numberOfPacketsRequired > minPacketsRequired_)
@@ -207,7 +245,11 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         post(&message);
     }
 
+    // Restart packet timer once we've sent the minimum.
     lastVitaGenerationTime_ = currentTimeInMicroseconds;
+    packetWriteTimer_.stop();
+    packetWriteTimer_.changeInterval(MS_TO_US(currentWriteIntervalMs_));
+    packetWriteTimer_.start();
 }
 
 void FlexVitaTask::openSocket_()
@@ -256,6 +298,7 @@ void FlexVitaTask::openSocket_()
 
     inputCtr_ = 0;
     lastVitaGenerationTime_ = esp_timer_get_time();
+    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
 }
 
 void FlexVitaTask::disconnect_()
@@ -273,7 +316,8 @@ void FlexVitaTask::disconnect_()
         currentTime_ = 0;
         timeFracSeq_ = 0;
         inputCtr_ = 0;
-        packetIndex_ = 0;        
+        packetIndex_ = 0;
+        currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
     }
 }
 
@@ -311,6 +355,12 @@ void FlexVitaTask::readPendingPackets_()
 }
 
 void FlexVitaTask::sendAudioOut_()
+{
+    FlexGenerateSendPacketsMessage message;
+    post(&message);
+}
+
+void FlexVitaTask::onFlexGenerateSendPacketsMessage_(DVTask* origin, FlexGenerateSendPacketsMessage* message)
 {
     // Generate packets for both RX and TX.
     if (rxStreamId_ && !isTransmitting_)
@@ -507,11 +557,15 @@ void FlexVitaTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMe
 void FlexVitaTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
 {
     isTransmitting_ = true;
+    packetDelayCounter_ = 0;
+    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
 }
 
 void FlexVitaTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message)
 {
     isTransmitting_ = false;
+    packetDelayCounter_ = 0;
+    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
 }
     
 }
