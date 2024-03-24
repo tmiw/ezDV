@@ -20,6 +20,8 @@
 
 #include "esp_vfs_fat.h"
 
+#include "codec2_fifo.h"
+
 #include "AudioInput.h"
 #include "VoiceKeyerMessage.h"
 #include "WAVFileReader.h"
@@ -56,6 +58,8 @@ protected:
 private:
     enum { IDLE, TX, WAITING } currentState_;
 
+    DVTimer voiceKeyerTickTimer_;
+    uint64_t lastTimeInTick_;
     FILE* voiceKeyerFile_;
     WAVFileReader* wavReader_;
     uint64_t timeAtBeginningOfState_;
@@ -63,6 +67,10 @@ private:
     int timesToTransmit_;
     int timesTransmitted_;
     int bytesToUpload_;
+
+    FIFO* fileReadFifo_;
+    short* fileReadScratchBuf_;
+    DVTimer fileReadTimer_;
 
     // These are so we can shut off mic audio from the codec
     // chip during TX and restore audio routing once voice keying
@@ -74,6 +82,7 @@ private:
 
     void startKeyer_();
     void stopKeyer_();
+    void tickKeyer_();
 
     void onStartVoiceKeyerMessage_(DVTask* origin, StartVoiceKeyerMessage* message);
     void onStopVoiceKeyerMessage_(DVTask* origin, StopVoiceKeyerMessage* message);
@@ -85,6 +94,9 @@ private:
 
     // Listen for RequestRxMessage so we can stop voice keyer if running.
     void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
+
+    // Timer handler to read VK file into FIFO
+    void readSamplesIntoFifo_();
 };
 
 }

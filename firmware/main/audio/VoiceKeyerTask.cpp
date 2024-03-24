@@ -21,6 +21,28 @@
 #define CURRENT_LOG_TAG "VoiceKeyerTask"
 #define VOICE_KEYER_FILE ("/vk/keyer.wav")
 
+// Number of audio samples to read from the WAV file.
+// This number was set to match the flash page size (4KB).
+#define SAMPLES_TO_READ_PER_CYCLE (4096)
+
+// Maximum number of samples in the FIFO.
+#define MAX_SAMPLES_IN_FIFO (SAMPLES_TO_READ_PER_CYCLE << 1)
+
+// Number of samples to forward onto FDV task.
+#define SAMPLES_TO_SEND_PER_CYCLE (160)
+
+// Interval which to send samples to FDV task.
+#define TIMER_TICK_INTERVAL (MS_TO_US(20))
+
+// Interval which to attempt to read more samples from flash.
+#define FILE_READ_INTERVAL (MS_TO_US(250))
+
+// If we fall behind for some reason, the VK task will send 
+// x * SAMPLES_TO_SEND_PER_CYCLE (where x is the number calculated
+// to be needed to be back in sync). This places an upper bound
+// on x so we don't end up permanently being out of sync.
+#define MAXIMUM_NUMBER_OF_LOOPS_PER_TICK (2)
+
 namespace ezdv
 {
 
@@ -28,9 +50,11 @@ namespace audio
 {
 
 VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
-    : DVTask("VoiceKeyerTask", 10, 4096, tskNO_AFFINITY, 256, pdMS_TO_TICKS(20))
+    : DVTask("VoiceKeyerTask", 15, 4096, tskNO_AFFINITY, 256, portMAX_DELAY)
     , AudioInput(1, 1)
     , currentState_(VoiceKeyerTask::IDLE)
+    , voiceKeyerTickTimer_(this, std::bind(&VoiceKeyerTask::tickKeyer_, this), TIMER_TICK_INTERVAL, "VKSendTimer")
+    , lastTimeInTick_(0)
     , voiceKeyerFile_(nullptr)
     , wavReader_(nullptr)
     , timeAtBeginningOfState_(0)
@@ -38,6 +62,7 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     , timesToTransmit_(0)
     , timesTransmitted_(0)
     , bytesToUpload_(0)
+    , fileReadTimer_(this, std::bind(&VoiceKeyerTask::readSamplesIntoFifo_, this), FILE_READ_INTERVAL, "VKFileReadTimer")
     , micDeviceTask_(micDeviceTask)
     , fdvTask_(fdvTask)
     , wlHandle_(-1)
@@ -50,11 +75,18 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     registerMessageHandler(this, &VoiceKeyerTask::onStartFileUploadMessage_);
 
     registerMessageHandler(this, &VoiceKeyerTask::onRequestRxMessage_);
+
+    fileReadFifo_ = codec2_fifo_create(MAX_SAMPLES_IN_FIFO);
+    assert(fileReadFifo_ != nullptr);
+
+    fileReadScratchBuf_ = (short*)heap_caps_calloc(SAMPLES_TO_READ_PER_CYCLE, sizeof(short), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
+    assert(fileReadScratchBuf_ != nullptr);
 }
 
 VoiceKeyerTask::~VoiceKeyerTask()
 {
-    // empty
+    heap_caps_free(fileReadScratchBuf_);
+    codec2_fifo_destroy(fileReadFifo_);
 }
 
 void VoiceKeyerTask::onTaskStart_()
@@ -99,43 +131,85 @@ void VoiceKeyerTask::onTaskSleep_()
     }
 }
 
+void VoiceKeyerTask::readSamplesIntoFifo_()
+{
+    if (wavReader_ == nullptr || codec2_fifo_free(fileReadFifo_) < SAMPLES_TO_READ_PER_CYCLE)
+    {
+        return;
+    }
+
+    auto numRead = wavReader_->read(fileReadScratchBuf_, SAMPLES_TO_READ_PER_CYCLE);
+    if (numRead < SAMPLES_TO_READ_PER_CYCLE)
+    {
+        delete wavReader_;
+        wavReader_ = nullptr;
+
+        fclose(voiceKeyerFile_);
+        voiceKeyerFile_ = nullptr;
+
+        fileReadTimer_.stop();
+    }
+
+    codec2_fifo_write(fileReadFifo_, fileReadScratchBuf_, numRead);
+}
+
 void VoiceKeyerTask::onTaskTick_()
 {
+    // empty
+}
+
+void VoiceKeyerTask::tickKeyer_()
+{
+    auto currentTime = esp_timer_get_time();
+
     switch (currentState_)
     {
         case VoiceKeyerTask::IDLE:
             break;
         case VoiceKeyerTask::TX:
         {
-            short numSamples[160];
+            short samples[SAMPLES_TO_SEND_PER_CYCLE];
             auto fifo = getAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL);
             assert(fifo != nullptr);
 
-            auto numRead = wavReader_->read(numSamples, 160);
-            codec2_fifo_write(fifo, numSamples, numRead);
-
-            if (numRead < 160)
+            // If it takes longer than expected to get into this handler,
+            // we should send enough extra samples to compensate. 
+            int numTimesToRead = std::max(1, (int)(currentTime - lastTimeInTick_) / TIMER_TICK_INTERVAL);
+            numTimesToRead = std::min(numTimesToRead, MAXIMUM_NUMBER_OF_LOOPS_PER_TICK);
+            if (numTimesToRead > 1)
             {
-                delete wavReader_;
-                wavReader_ = nullptr;
+                ESP_LOGW(CURRENT_LOG_TAG, "Took longer than expected to enter tick handler, now sending %d samples", numTimesToRead * SAMPLES_TO_SEND_PER_CYCLE);
+            }
 
-                fclose(voiceKeyerFile_);
-                voiceKeyerFile_ = nullptr;
+            for (int count = 0; count < numTimesToRead; count++)
+            {
+                auto numToRead = std::min(codec2_fifo_used(fileReadFifo_), SAMPLES_TO_SEND_PER_CYCLE);
 
-                currentState_ = VoiceKeyerTask::WAITING;
-                timeAtBeginningOfState_ = esp_timer_get_time();
+                if (codec2_fifo_free(fifo) < numToRead)
+                {
+                    break;
+                }
 
-                // Request return to RX
-                RequestRxMessage message;
-                publish(&message);
+                codec2_fifo_read(fileReadFifo_, samples, numToRead);
+                codec2_fifo_write(fifo, samples, numToRead);
+
+                if (numToRead < SAMPLES_TO_SEND_PER_CYCLE)
+                {
+                    currentState_ = VoiceKeyerTask::WAITING;
+                    timeAtBeginningOfState_ = currentTime;
+
+                    // Request return to RX
+                    RequestRxMessage message;
+                    publish(&message);
+
+                    break;
+                }
             }
 
             break;
         }
         case VoiceKeyerTask::WAITING:
         {
-            auto currentTime = esp_timer_get_time();
-
             // Time elapsed in seconds
             auto timeElapsed = (currentTime - timeAtBeginningOfState_) / 1000000;
 
@@ -159,6 +233,8 @@ void VoiceKeyerTask::onTaskTick_()
             break;
         }
     }
+
+    lastTimeInTick_ = currentTime;
 }
 
 void VoiceKeyerTask::startKeyer_()
@@ -172,17 +248,35 @@ void VoiceKeyerTask::startKeyer_()
         wavReader_ = new WAVFileReader(voiceKeyerFile_);
         assert(wavReader_ != nullptr);
 
-        // Reroute input audio so it's coming from us
-        micDeviceTask_->setAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL, nullptr);
-        setAudioOutput(
-            ezdv::audio::AudioInput::LEFT_CHANNEL,
-            fdvTask_->getAudioInput(ezdv::audio::AudioInput::LEFT_CHANNEL));
+        // Fully populate the FIFO before starting TX.
+        // Note: each call can read up to half of the FIFO worth of 
+        // samples at a time.
+        while (voiceKeyerFile_ != nullptr && codec2_fifo_free(fileReadFifo_) >= SAMPLES_TO_READ_PER_CYCLE)
+        {
+            readSamplesIntoFifo_();
+        }
+
+        // Start file read timer to ensure that the input FIFO
+        // remains full.
+        fileReadTimer_.start();
+
+        // Reroute input audio so it's coming from us.
+        // Only do this if we just started the keyer for the first time.
+        if (timesTransmitted_ == 0)
+        {
+            micDeviceTask_->setAudioOutput(ezdv::audio::AudioInput::LEFT_CHANNEL, nullptr);
+            setAudioOutput(
+                ezdv::audio::AudioInput::LEFT_CHANNEL,
+                fdvTask_->getAudioInput(ezdv::audio::AudioInput::LEFT_CHANNEL));
+        }
 
         // Request TX
         RequestTxMessage message;
         publish(&message);
 
         currentState_ = VoiceKeyerTask::TX;
+        voiceKeyerTickTimer_.start();
+        lastTimeInTick_ = esp_timer_get_time();
     }
     else
     {
@@ -215,6 +309,15 @@ void VoiceKeyerTask::stopKeyer_()
     publish(&message);
 
     currentState_ = VoiceKeyerTask::IDLE;
+    voiceKeyerTickTimer_.stop();
+
+    // If there's anything still in the FIFO,
+    // make sure it's gone.
+    short tmp;
+    while (codec2_fifo_read(fileReadFifo_, &tmp, 1) == 0)
+    {
+        // empty
+    }
 }
 
 void VoiceKeyerTask::onStartVoiceKeyerMessage_(DVTask* origin, StartVoiceKeyerMessage* message)
