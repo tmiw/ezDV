@@ -60,7 +60,7 @@ namespace driver
 {
 
 MAX17048::MAX17048(I2CDevice* i2cDevice)
-    : DVTask("MAX17048", 10, 2870, tskNO_AFFINITY, 10, pdMS_TO_TICKS(60000))
+    : DVTask("MAX17048", 10, 2870, tskNO_AFFINITY, 32, pdMS_TO_TICKS(60000))
     , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , usbPower_(this, std::bind(&MAX17048::onTaskTick_, this), false, false)
