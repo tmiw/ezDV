@@ -31,11 +31,12 @@
 #include "SampleRateConverter.h"
 
 #define MAX_VITA_PACKETS (200)
-#define MAX_VITA_SAMPLES (42)
-#define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* XXX: SmartSDR crashes if I try to send all 180. */
-#define VITA_IO_TIME_INTERVAL_MS (10)
+#define MAX_VITA_SAMPLES (42) /* 5.25ms/packet @ 8000 Hz */
+#define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* Must be less than the max size of the VITA packet (180 two channel samples) */
+#define VITA_IO_TIME_INTERVAL_MS (20)
 #define SHORT_VITA_IO_TIME_INTERVAL_MS (1)
-#define MIN_VITA_PACKETS_TO_SEND (5)
+#define MIN_VITA_PACKETS_TO_SEND (4)
+#define US_OF_AUDIO_PER_VITA_PACKET (5250)
 
 #define CURRENT_LOG_TAG "FlexVitaTask"
 
@@ -66,8 +67,8 @@ FlexVitaTask::FlexVitaTask()
     , inputCtr_(0)
     , lastVitaGenerationTime_(0)
     , minPacketsRequired_(0)
-    , packetDelayCounter_(0)
     , currentWriteIntervalMs_(VITA_IO_TIME_INTERVAL_MS)
+    , timeBeyondExpectedUs_(0)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -129,6 +130,7 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     // If we're starved of TX audio, use a shorter timer interval until we do
     // get audio. This has the effect of polling for the minimum number of audio samples
     // and thus resynchronizing with the rest of the system.
+    #if 0
     if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES)
     {
         if (currentWriteIntervalMs_ == VITA_IO_TIME_INTERVAL_MS)
@@ -153,40 +155,28 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         return;
     }
     else
+    #endif
     {
         currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
     }
 
-    packetDelayCounter_++;
-    if ((packetDelayCounter_ & 127) == 0)
+    // Determine the number of extra packets we need to send this go-around.
+    // This is since it can take a bit longer than the timer interval to 
+    // actually enter this method (depending on what else is going on in the
+    // system at the time).
+    auto tmp = currentTimeInMicroseconds - lastVitaGenerationTime_;
+    if (tmp > 0)
     {
-        // Reduce the minimum number of packets required once per ~second.
-        // This is so that in case of a minor hiccup, we can go back to the 
-        // normal number of required packets ASAP.
-        minPacketsRequired_ >>= 1;
+        timeBeyondExpectedUs_ += tmp;
+    }
+    minPacketsRequired_ = std::max(minPacketsRequired_, MIN_VITA_PACKETS_TO_SEND);
+    while (timeBeyondExpectedUs_ >= US_OF_AUDIO_PER_VITA_PACKET)
+    {
+        minPacketsRequired_++;
+        timeBeyondExpectedUs_ -= US_OF_AUDIO_PER_VITA_PACKET;
     }
 
-    // We limit the number of times we go through this loop per call 
-    // so we don't completely monopolize our time in here. After all,
-    // we also need to handle RX.
-    //
-    // However, if we take longer than expected since the last call of this
-    // function, we should adjust that maximum limit so that SmartSDR has
-    // enough of a buffer to avoid dropouts. Since each VITA packet has about 5.25ms
-    // of audio, we limit the number of packets to (currentTime - previousTime) / 5.25ms
-    // plus 1. We also mandate a minimum, which is either the minimum we calculated
-    // last time around or enough packets to fill in (RX timer interval + TX timer interval) ms + 1.
-    minPacketsRequired_ = std::max(MIN_VITA_PACKETS_TO_SEND, minPacketsRequired_);
-    auto numberOfPacketsRequired = std::max(minPacketsRequired_, (int)(currentTimeInMicroseconds - lastVitaGenerationTime_) / 5250 + 1);
-    
-    if (numberOfPacketsRequired > minPacketsRequired_)
-    {
-        ESP_LOGW(CURRENT_LOG_TAG, "Other code took longer than expected, need to send %d packets", numberOfPacketsRequired);
-        minPacketsRequired_ = numberOfPacketsRequired;
-        packetDelayCounter_ = 0;
-    }
-
-    while(ctr++ < numberOfPacketsRequired && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    while(ctr++ < minPacketsRequired_ && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
         if (!audioEnabled_)
         {
@@ -617,14 +607,12 @@ void FlexVitaTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMe
 void FlexVitaTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
 {
     isTransmitting_ = true;
-    packetDelayCounter_ = 0;
     currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
 }
 
 void FlexVitaTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message)
 {
     isTransmitting_ = false;
-    packetDelayCounter_ = 0;
     currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
 }
     

@@ -74,8 +74,8 @@ private:
     int inputCtr_;
     int64_t lastVitaGenerationTime_;
     int minPacketsRequired_;
-    int packetDelayCounter_;
     int currentWriteIntervalMs_;
+    int64_t timeBeyondExpectedUs_;
     
     // Resampler buffers
     float* downsamplerInBuf_;
