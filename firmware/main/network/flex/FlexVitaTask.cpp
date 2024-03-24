@@ -530,7 +530,8 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
             unsigned int half_num_samples = num_samples >> 1;
 
             int i = 0;
-            while (i < half_num_samples)
+            auto fifo = getAudioOutput(channel);
+            while (fifo != nullptr && i < half_num_samples)
             {
                 uint32_t temp = ntohl(packet->if_samples[i << 1]);
                 downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp;
@@ -542,12 +543,8 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
                     fdmdv_24_to_8(downsamplerOutBuf_, &downsamplerInBuf_[FDMDV_OS_TAPS_24K], MAX_VITA_SAMPLES);
             
                     // Queue on respective FIFO.
-                    auto fifo = getAudioOutput(channel);
-                    if (fifo != nullptr)
-                    {
-                        // Note: may be null during voice keyer operation
-                        codec2_fifo_write(fifo, downsamplerOutBuf_, MAX_VITA_SAMPLES);
-                    }
+                    // Note: may be null during voice keyer operation
+                    codec2_fifo_write(fifo, downsamplerOutBuf_, MAX_VITA_SAMPLES);
                 }
             }            
             break;
