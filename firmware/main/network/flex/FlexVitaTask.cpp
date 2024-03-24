@@ -219,12 +219,75 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         packet->stream_id = streamId;
         packet->class_id = AUDIO_CLASS_ID;
         packet->timestamp_type = audioSeqNum_++;
-    
-        for (unsigned int i = 0, j = 0; i < MAX_VITA_SAMPLES_TO_SEND; ++i, j += 2)
+
+        uint32_t* dataPtr = (uint32_t*)&upsamplerOutBuf_[0];
+        uint32_t masks[] = 
         {
-            packet->if_samples[j] = packet->if_samples[j + 1] = htonl(*(uint32_t*)&upsamplerOutBuf_[i]);
+            0x000000ff,
+            0x00ff0000,
+            0x0000ff00,
+            0xff000000
+        };
+
+        uint32_t* ptrOut = &packet->if_samples[0];
+
+        int optimizedNumToSend = MAX_VITA_SAMPLES_TO_SEND & 0xFFFFFFFC; // We only operate in blocks of 4 samples.
+        for (int i = 0; i < optimizedNumToSend >> 2; i++)
+        {
+            uint32_t* ptrMasks = masks;
+
+            // Assumption: ptrIn is 16 byte aligned.
+            asm volatile(
+                "ld.qr q0, %1, 0\n"              // Load audio sample into q0
+
+                "movi a10, 24\n"
+                "wsr a10, sar\n"                 // Load 24 into sar register
+                "mv.qr q5, q0\n"                 // Copy q0 into q5
+                "mv.qr q6, q0\n"                 // Copy q0 into q6
+                "ee.vldbc.32.ip q1, %2, 4\n"     // Load 0x000000ff 4 times into q1
+                "ee.vsr.32 q5, q5\n"             // Shift all four values in q5 right 24 bits
+                "ee.andq q1, q1, q5\n"           // q1 = q5 & 0x000000ff
+                "ee.vldbc.32.ip q4, %2, 4\n"     // Load 0xff000000 4 times into q4
+                "ee.vsl.32 q6, q6\n"             // Shift all four values in q6 left 24 bits
+                "ee.andq q4, q4, q6\n"           // q4 = q4 & 0xff000000
+
+                "movi a10, 8\n"
+                "wsr a10, sar\n"                 // Load 8 into sar register
+                "mv.qr q5, q0\n"                 // Copy q0 into q5
+                "mv.qr q6, q0\n"                 // Copy q0 into q6
+                "ee.vsr.32 q5, q5\n"             // Shift all four values in q5 right 8 bits
+                "ee.vldbc.32.ip q3, %2, 4\n"     // Load 0x0000ff00 4 times into q3
+                "ee.andq q3, q3, q5\n"           // q3 = q5 & 0x0000ff00
+                "ee.vldbc.32.ip q2, %2, 4\n"     // Load 0x00ff0000 4 times into q2
+                "ee.vsl.32 q6, q6\n"             // Shift all four values in q6 left 8 bits
+                "ee.andq q2, q2, q6\n"           // q2 = q6 & 0x00ff0000
+
+                "ee.orq q0, q1, q2\n"            // q0 = q1 | q2
+                "ee.orq q0, q0, q3\n"            // q0 = q0 | q3
+                "ee.orq q0, q0, q4\n"            // q0 = q0 | q4
+
+                "mv.qr q1, q0\n"                 // Copy q0 into q1
+                "ee.vzip.32 q0, q1\n"            // Interleave each word of q0 and q1 together
+
+                "st.qr q0, %0, 0\n"              // Save first word to ptrOut
+                "st.qr q1, %0, 16\n"             // Save second word to ptrOut
+                "addi %0, %0, 32\n"              // Add 32 to ptrOut address (8 samples)
+                "addi %1, %1, 16\n"              // Add 16 to dataPtr address (4 samples)
+                : "=r"(ptrOut), "=r"(dataPtr), "=r"(ptrMasks)
+                : "0"(ptrOut), "1"(dataPtr), "2"(ptrMasks)
+                : "a10", "memory"
+            );
         }
-        
+
+        // Get the remaining ones that we couldn't get to with the optimized logic above.
+        while (dataPtr < (uint32_t*)&upsamplerOutBuf_[MAX_VITA_SAMPLES_TO_SEND])
+        {
+            uint32_t tmp = htonl(*dataPtr);
+            *ptrOut++ = tmp;
+            *ptrOut++ = tmp;
+            dataPtr++;
+        }
+
         size_t packet_len = VITA_PACKET_HEADER_SIZE + MAX_VITA_SAMPLES_TO_SEND * 2 * sizeof(float);
 
         //  XXX Lots of magic numbers here!
