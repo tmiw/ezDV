@@ -65,8 +65,8 @@ if(${ESP_PLATFORM})
                             INCLUDE_DIRS
                                 ${CMAKE_CURRENT_LIST_DIR}
                                 $ENV{IDF_PATH}/components
-                            #LDFRAGMENTS
-                            #    "codec2.lf"
+                            LDFRAGMENTS
+                                flexradio.lf
                             REQUIRES
                                 esp-dsp
                                 ulp
