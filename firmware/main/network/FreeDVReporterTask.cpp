@@ -37,6 +37,7 @@ namespace network
 
 FreeDVReporterTask::FreeDVReporterTask()
     : ezdv::task::DVTask("FreeDVReporterTask", 1, 5144, tskNO_AFFINITY, 128)
+    , reconnectTimer_(this, std::bind(&FreeDVReporterTask::startSocketIoConnection_, this), MS_TO_US(10000), "FDVReporterReconn")
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
     , reportingEnabled_(false)
@@ -88,6 +89,8 @@ void FreeDVReporterTask::onTaskSleep_()
     {
         stopSocketIoConnection_();
     }
+
+    reconnectTimer_.stop();
 }
 
 void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::ReportingSettingsMessage* message)
@@ -255,7 +258,7 @@ void FreeDVReporterTask::onWebsocketDisconnectedMessage_(DVTask* origin, Websock
     {
         // Retry connection if reporting is enabled (i.e. we lost connection).
         stopSocketIoConnection_();
-        startSocketIoConnection_();
+        reconnectTimer_.start(true);
     }
 }
 
@@ -305,7 +308,7 @@ void FreeDVReporterTask::startSocketIoConnection_()
     memset(&ws_cfg, 0, sizeof(ws_cfg));
 
     ws_cfg.uri = uri.c_str();
-    ws_cfg.reconnect_timeout_ms = 60000; // 60 second reconnect timer
+    ws_cfg.disable_auto_reconnect = true; // we're handling auto-reconnect
 
     ESP_LOGI(CURRENT_LOG_TAG, "init client for %s", ws_cfg.uri);
     reportingClientHandle_ = esp_websocket_client_init(&ws_cfg);
@@ -400,7 +403,7 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
         {
             // error connecting to namespace, close connection and retry
             stopSocketIoConnection_();
-            startSocketIoConnection_();
+            reconnectTimer_.start(true);
             break;
         }
         default:
@@ -414,12 +417,20 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
 void FreeDVReporterTask::stopSocketIoConnection_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "stopping socket.io connection");
-    const char* engineIoDisconnectMessage = "1";
-    esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
-    esp_websocket_client_stop(reportingClientHandle_);
-    esp_websocket_client_destroy(reportingClientHandle_);
+    if (reportingClientHandle_ != nullptr)
+    {
+        if (esp_websocket_client_is_connected(reportingClientHandle_))
+        {
+            const char* engineIoDisconnectMessage = "1";
+            esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
+            esp_websocket_client_stop(reportingClientHandle_);
+        }
+        
+        esp_websocket_client_destroy(reportingClientHandle_);
+    }
     reportingClientHandle_ = nullptr;
     reportingEnabled_ = false;
+    ESP_LOGI(CURRENT_LOG_TAG, "socket.io connection stopped");
 }
 
 void FreeDVReporterTask::sendReportingMessageUpdate_()
@@ -526,15 +537,21 @@ void FreeDVReporterTask::WebsocketEventHandler_(void *handler_args, esp_event_ba
         case WEBSOCKET_EVENT_CONNECTED:
         {
             ESP_LOGI(CURRENT_LOG_TAG, "WEBSOCKET_EVENT_CONNECTED");
-            WebsocketConnectedMessage connMessage;
-            thisObj->post(&connMessage);
+            if (thisObj->isAwake())
+            {
+                WebsocketConnectedMessage connMessage;
+                thisObj->post(&connMessage);
+            }
             break;
         }
         case WEBSOCKET_EVENT_DISCONNECTED:
         {
             ESP_LOGI(CURRENT_LOG_TAG, "WEBSOCKET_EVENT_DISCONNECTED");
-            WebsocketDisconnectedMessage disconnMessage;
-            thisObj->post(&disconnMessage);
+            if (thisObj->isAwake())
+            {
+                WebsocketDisconnectedMessage disconnMessage;
+                thisObj->post(&disconnMessage);
+            }
             break;
         }
         case WEBSOCKET_EVENT_DATA:

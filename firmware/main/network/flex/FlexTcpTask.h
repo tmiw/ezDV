@@ -58,6 +58,7 @@ protected:
 private:
     std::stringstream inputBuffer_;
     DVTimer reconnectTimer_;
+    DVTimer connectionCheckTimer_;
     DVTimer commandHandlingTimer_;
     int socket_;
     int sequenceNumber_;
@@ -66,6 +67,7 @@ private:
     bool isLSB_;
     int txSlice_;
     bool isTransmitting_;
+    bool isConnecting_;
 
     std::map<int, std::string, std::less<int>, util::PSRamAllocator<std::pair<const int, std::string> > > sliceFrequencies_;
     std::map<int, bool, std::less<int>, util::PSRamAllocator<std::pair<const int, bool> > > activeSlices_;
@@ -78,6 +80,7 @@ private:
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;
     
     void connect_();
+    void checkConnection_();
     void disconnect_();
     void socketFinalCleanup_(bool reconnect);
     void commandResponseTimeout_();

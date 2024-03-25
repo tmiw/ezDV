@@ -560,7 +560,10 @@ void WirelessTask::onNetworkDisconnected_()
     icomRestartTimer_.stop();
     
     // Force immediate state transition to idle for the radio tasks.
-    freeDVReporterTask_.sleep();
+    if (freeDVReporterTask_.isAwake())
+    {
+        sleep(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+    }
 
     if (icomControlTask_ != nullptr)
     {
@@ -585,7 +588,7 @@ void WirelessTask::onNetworkDisconnected_()
 
     if (flexTcpTask_ != nullptr)
     {
-        sleep(flexTcpTask_, pdMS_TO_TICKS(1000));
+        sleep(flexTcpTask_, pdMS_TO_TICKS(5000));
         delete flexTcpTask_;
         flexTcpTask_ = nullptr;
     }

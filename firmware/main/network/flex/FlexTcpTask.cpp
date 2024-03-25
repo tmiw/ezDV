@@ -42,12 +42,14 @@ namespace flex
 FlexTcpTask::FlexTcpTask()
     : DVTask("FlexTcpTask", 10, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
     , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
+    , connectionCheckTimer_(this, std::bind(&FlexTcpTask::checkConnection_, this), MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
     , commandHandlingTimer_(this, std::bind(&FlexTcpTask::commandResponseTimeout_, this), MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
     , txSlice_(-1)
     , isTransmitting_(false)
+    , isConnecting_(false)
 {
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
@@ -86,6 +88,7 @@ void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     
     if (socket_ > 0)
     {
+        isConnecting_ = false;
         disconnect_();
     }
     else
@@ -96,7 +99,7 @@ void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
 void FlexTcpTask::onTaskTick_()
 {
-    if (socket_ <= 0)
+    if (socket_ <= 0 || isConnecting_)
     {
         // Skip tick if we don't have a valid connection yet.
         return;
@@ -154,6 +157,8 @@ void FlexTcpTask::socketFinalCleanup_(bool reconnect)
         inputBuffer_.clear();
 
         commandHandlingTimer_.stop();
+        connectionCheckTimer_.stop();
+        isConnecting_ = false;
     }
     
     // Report sleep
@@ -182,10 +187,14 @@ void FlexTcpTask::connect_()
     }
     assert(socket_ != -1);
 
+    // Set socket to be non-blocking.
+    fcntl (socket_, F_SETFL, O_NONBLOCK);
+
     // Connect to the radio.
     ESP_LOGI(CURRENT_LOG_TAG, "Connecting to radio at IP %s", ip_.c_str());
+    isConnecting_ = true;
     int rv = connect(socket_, (struct sockaddr*)&radioAddress, sizeof(radioAddress));
-    if (rv == -1)
+    if (rv == -1 && errno != EINPROGRESS)
     {
         auto err = errno;
         ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while connecting", err, strerror(err));
@@ -195,23 +204,74 @@ void FlexTcpTask::connect_()
         socket_ = -1;
         reconnectTimer_.start();
     }
+    else if (rv == 0)
+    {
+        // We got an immediate connection!
+        checkConnection_();
+    }
     else
     {
-        ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
-        sequenceNumber_ = 0;
-        
-        // Set socket to be non-blocking.
-        fcntl (socket_, F_SETFL, O_NONBLOCK);
-        
-        // Report successful connection
-        ezdv::network::RadioConnectionStatusMessage response(true);
-        publish(&response);
-
-        // Get current FreeDV mode to ensure filters are set properly on
-        // SmartSDR connection.
-        audio::RequestGetFreeDVModeMessage requestGetFreeDVMode;
-        publish(&requestGetFreeDVMode);
+        connectionCheckTimer_.start();
     }
+}
+
+void FlexTcpTask::checkConnection_()
+{
+    ESP_LOGI(CURRENT_LOG_TAG, "Checking to see if we're connected to the radio");
+
+    fd_set writeSet;
+    struct timeval tv = {0, 0};
+    int err = 0;
+
+    FD_ZERO(&writeSet);
+    FD_SET(socket_, &writeSet);
+    
+    if (select(socket_ + 1, nullptr, &writeSet, nullptr, &tv) > 0)
+    {
+        int sockErrCode = 0;
+        socklen_t resultLength = sizeof(sockErrCode);
+        auto sockOptError = getsockopt(socket_, SOL_SOCKET, SO_ERROR, &sockErrCode, &resultLength);
+
+        if (sockOptError < 0)
+        {
+            err = errno;
+            goto socket_error;
+        }
+        else if (sockErrCode != 0 && sockErrCode != EINPROGRESS)
+        {
+            err = sockErrCode;
+            goto socket_error;
+        }
+        else if (sockErrCode == 0)
+        {
+            isConnecting_ = false;
+            connectionCheckTimer_.stop();
+
+            ESP_LOGI(CURRENT_LOG_TAG, "Connected to radio successfully");
+            sequenceNumber_ = 0;
+            
+            // Report successful connection
+            ezdv::network::RadioConnectionStatusMessage response(true);
+            publish(&response);
+
+            // Get current FreeDV mode to ensure filters are set properly on
+            // SmartSDR connection.
+            audio::RequestGetFreeDVModeMessage requestGetFreeDVMode;
+            publish(&requestGetFreeDVMode);
+        }
+    }
+
+    return;
+
+socket_error:
+    ESP_LOGE(CURRENT_LOG_TAG, "Got socket error %d (%s) while connecting", err, strerror(err));
+    
+    // Try again in a few seconds
+    connectionCheckTimer_.stop();
+    isConnecting_ = false;
+    close(socket_);
+    socket_ = -1;
+    reconnectTimer_.start();
 }
 
 void FlexTcpTask::disconnect_()
@@ -295,6 +355,8 @@ void FlexTcpTask::sendRadioCommand_(std::string command)
 
 void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsigned int rv, std::string message)> fn)
 {
+    int err = 0;
+
     if (socket_ > 0)
     {
         std::ostringstream ss;
@@ -302,23 +364,66 @@ void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsi
         ESP_LOGI(CURRENT_LOG_TAG, "Sending '%s' as command %d", command.c_str(), sequenceNumber_);    
         ss << "C" << (sequenceNumber_) << "|" << command << "\n";
         
-        auto rv = write(socket_, ss.str().c_str(), ss.str().length());
-        if (rv <= 0)
-        {
-            // We've likely disconnected, do cleanup and re-attempt connection.
-            socketFinalCleanup_(true);
+        // Make sure we can actually write to the socket
+        fd_set writeSet;
+        struct timeval tv = {0, 0};
 
-            // Call event handler with failure code in case the sender needs to
-            // do any additional actions.
-            fn(0xFFFFFFFF, "");
+        FD_ZERO(&writeSet);
+        FD_SET(socket_, &writeSet);
+
+        if (select(socket_ + 1, nullptr, &writeSet, nullptr, &tv) > 0)
+        {
+            int sockErrCode = 0;
+            socklen_t resultLength = sizeof(sockErrCode);
+            auto sockOptError = getsockopt(socket_, SOL_SOCKET, SO_ERROR, &sockErrCode, &resultLength);
+
+            if (sockOptError < 0)
+            {
+                err = errno;
+                goto socket_error;
+            }
+            else if (sockErrCode != 0)
+            {
+                err = sockErrCode;
+                goto socket_error;
+            }
+            else if (sockErrCode == 0)
+            {
+                auto rv = write(socket_, ss.str().c_str(), ss.str().length());
+                if (rv <= 0)
+                {
+                    err = rv;
+                    goto socket_error;
+                }
+                else
+                {
+                    responseHandlers_[sequenceNumber_++] = fn;
+                    commandHandlingTimer_.stop();
+                    commandHandlingTimer_.start(true);
+                }
+            }
+            
+            return;
         }
         else
         {
-            responseHandlers_[sequenceNumber_++] = fn;
-            commandHandlingTimer_.stop();
-            commandHandlingTimer_.start(true);
+            err = errno;
         }
     }
+    else
+    {
+        return;
+    }
+
+socket_error:
+    ESP_LOGE(CURRENT_LOG_TAG, "Failed writing command to radio!");
+    
+    // We've likely disconnected, do cleanup and re-attempt connection.
+    socketFinalCleanup_(true);
+
+    // Call event handler with failure code in case the sender needs to
+    // do any additional actions.
+    fn(0xFFFFFFFF, strerror(err));
 }
 
 void FlexTcpTask::commandResponseTimeout_()

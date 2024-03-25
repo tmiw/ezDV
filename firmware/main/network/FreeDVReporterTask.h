@@ -21,6 +21,7 @@
 #include "esp_websocket_client.h"
 
 #include "task/DVTask.h"
+#include "task/DVTimer.h"
 #include "ReportingMessage.h"
 #include "audio/FreeDVMessage.h"
 #include "storage/SettingsMessage.h"
@@ -78,6 +79,7 @@ private:
     using WebsocketDisconnectedMessage = SocketIoMessageCommon<WEBSOCKET_DISCONNECTED>;
     using WebsocketDataMessage = SocketIoMessageCommon<WEBSOCKET_MESSAGE>;
 
+    DVTimer reconnectTimer_;
     esp_websocket_client_handle_t reportingClientHandle_;
     cJSON* jsonAuthObj_;
     bool reportingEnabled_;
