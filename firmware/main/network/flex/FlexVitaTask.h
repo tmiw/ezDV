@@ -74,9 +74,8 @@ private:
     int inputCtr_;
     int64_t lastVitaGenerationTime_;
     int minPacketsRequired_;
-    int currentWriteIntervalMs_;
     int64_t timeBeyondExpectedUs_;
-    
+
     // Resampler buffers
     float* downsamplerInBuf_;
     short* downsamplerOutBuf_;
@@ -100,7 +99,6 @@ private:
     void onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMessage* message);
     void onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* message);
     void onSendVitaMessage_(DVTask* origin, SendVitaMessage* message);
-    void onFlexGenerateSendPacketsMessage_(DVTask* origin, FlexGenerateSendPacketsMessage* message);
 
     // Listen to EnableReportingMessage and DisableReportingMessage
     // so that we can actually start sending audio to SmartSDR.

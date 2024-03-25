@@ -31,12 +31,12 @@
 #include "SampleRateConverter.h"
 
 #define MAX_VITA_PACKETS (200)
-#define MAX_VITA_SAMPLES (42) /* 5.25ms/packet @ 8000 Hz */
-#define MAX_VITA_SAMPLES_TO_SEND (MAX_VITA_SAMPLES * FDMDV_OS_24) /* Must be less than the max size of the VITA packet (180 two channel samples) */
-#define VITA_IO_TIME_INTERVAL_MS (20)
-#define SHORT_VITA_IO_TIME_INTERVAL_MS (1)
+#define MAX_VITA_SAMPLES (42) /* 5.25ms/block @ 8000 Hz */
+#define MAX_VITA_SAMPLES_TO_RESAMPLE (MAX_VITA_SAMPLES * FDMDV_OS_24) /* Must be less than the max size of the VITA packet (180 two channel samples) */
+#define VITA_SAMPLES_TO_SEND MAX_VITA_SAMPLES_TO_RESAMPLE
 #define MIN_VITA_PACKETS_TO_SEND (4)
 #define US_OF_AUDIO_PER_VITA_PACKET (5250)
+#define VITA_IO_TIME_INTERVAL_US (US_OF_AUDIO_PER_VITA_PACKET * MIN_VITA_PACKETS_TO_SEND) /* Time interval between subsequent sends or receives */
 
 #define CURRENT_LOG_TAG "FlexVitaTask"
 
@@ -54,8 +54,8 @@ static float tx_scale_factor = std::exp(6.0f/20.0f * std::log(10.0f));
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 16, 8192, 1, 3072)
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), MS_TO_US(VITA_IO_TIME_INTERVAL_MS), "FlexVitaPacketReadTimer")
-    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), MS_TO_US(VITA_IO_TIME_INTERVAL_MS), "FlexVitaPacketWriteTimer")
+    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketReadTimer")
+    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketWriteTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)
@@ -67,7 +67,6 @@ FlexVitaTask::FlexVitaTask()
     , inputCtr_(0)
     , lastVitaGenerationTime_(0)
     , minPacketsRequired_(0)
-    , currentWriteIntervalMs_(VITA_IO_TIME_INTERVAL_MS)
     , timeBeyondExpectedUs_(0)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
@@ -77,7 +76,6 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onDisableReportingMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestTxMessage_);
-    registerMessageHandler(this, &FlexVitaTask::onFlexGenerateSendPacketsMessage_);
 
     downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
@@ -123,72 +121,67 @@ void FlexVitaTask::onTaskTick_()
 void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel, uint32_t streamId)
 {
     auto fifo = getAudioInput(channel);
-    int ctr = 0;
 
     auto currentTimeInMicroseconds = esp_timer_get_time();
+    auto timeSinceLastPacketSend = currentTimeInMicroseconds - lastVitaGenerationTime_;
+    lastVitaGenerationTime_ = currentTimeInMicroseconds;
 
-    // If we're starved of TX audio, use a shorter timer interval until we do
-    // get audio. This has the effect of polling for the minimum number of audio samples
-    // and thus resynchronizing with the rest of the system.
-    #if 0
-    if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES)
+#if 0
+    // If we're starved of audio, don't even bother going through the rest of the logic right now
+    // and reset state back to the point right when we started.
+    if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES_TO_RESAMPLE * minPacketsRequired_)
     {
-        if (currentWriteIntervalMs_ == VITA_IO_TIME_INTERVAL_MS)
-        {
-            currentWriteIntervalMs_ = SHORT_VITA_IO_TIME_INTERVAL_MS;
-        }
-        else if (currentWriteIntervalMs_ > VITA_IO_TIME_INTERVAL_MS)
-        {
-            currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
-        }
-
-        //ESP_LOGW(CURRENT_LOG_TAG, "FIFO starved, waiting for additional samples");
-
-        minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
-        lastVitaGenerationTime_ = currentTimeInMicroseconds;
-        
-        packetWriteTimer_.stop();
-        packetWriteTimer_.changeInterval(MS_TO_US(currentWriteIntervalMs_));
-        currentWriteIntervalMs_ <<= 1; // Double the write interval every time through here.
-
-        packetWriteTimer_.start();
+        if (isTransmitting_) ESP_LOGW(CURRENT_LOG_TAG, "Not enough audio samples to process/send packets (minimum packets needed: %d)!", minPacketsRequired_);
+        minPacketsRequired_ = 0;
+        timeBeyondExpectedUs_ = 0;
         return;
-    }
-    else
-    #endif
-    {
-        currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
     }
 
     // Determine the number of extra packets we need to send this go-around.
     // This is since it can take a bit longer than the timer interval to 
     // actually enter this method (depending on what else is going on in the
     // system at the time).
-    auto tmp = currentTimeInMicroseconds - lastVitaGenerationTime_;
-    if (tmp > 0)
+    int addedExtra = 0;
+    auto packetsToSend = MIN_VITA_PACKETS_TO_SEND * timeSinceLastPacketSend / VITA_IO_TIME_INTERVAL_US;
+    if (packetsToSend == 0 && minPacketsRequired_ == 0)
     {
-        timeBeyondExpectedUs_ += tmp;
+        // We're executing too quickly (or there are a bunch of events piled up that
+        // need to be worked through). We'll wait until the next time we're actually
+        // supposed to execute.
+        ESP_LOGW(CURRENT_LOG_TAG, "Executing send handler too quickly!");
+        return;
     }
-    minPacketsRequired_ = std::max(minPacketsRequired_, MIN_VITA_PACKETS_TO_SEND);
+    else
+    {
+        //ESP_LOGI(CURRENT_LOG_TAG, "In the previous interval, %" PRIu64 " packets should have gone out (time since last send = %" PRIu64 ")", packetsToSend, timeSinceLastPacketSend);
+        minPacketsRequired_ += packetsToSend;
+        timeBeyondExpectedUs_ += timeSinceLastPacketSend % VITA_IO_TIME_INTERVAL_US;
+    }
+
     while (timeBeyondExpectedUs_ >= US_OF_AUDIO_PER_VITA_PACKET)
     {
+        addedExtra++;
         minPacketsRequired_++;
         timeBeyondExpectedUs_ -= US_OF_AUDIO_PER_VITA_PACKET;
     }
 
-    while(ctr++ < minPacketsRequired_ && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    if (minPacketsRequired_ <= 0)
     {
+        minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
+        timeBeyondExpectedUs_ = 0;
+    }
+
+    //ESP_LOGI(CURRENT_LOG_TAG, "Packets to be sent this time: %d", minPacketsRequired_);
+#endif
+
+    while(/*minPacketsRequired_ > 0 &&*/ codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    {
+        minPacketsRequired_--;
+
         if (!audioEnabled_)
         {
             // Skip sending audio to SmartSDR if the user isn't using us yet.
             continue;
-        }
-
-        vita_packet* packet = &packetArray_[packetIndex_++];
-        assert(packet != nullptr);
-        if (packetIndex_ == MAX_VITA_PACKETS)
-        {
-            packetIndex_ = 0;
         }
         
         // Upsample to 24K floats.
@@ -198,17 +191,11 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         dsps_mulc_f32(
             upsamplerOutBuf_,
             upsamplerOutBuf_,
-            MAX_VITA_SAMPLES_TO_SEND,
+            MAX_VITA_SAMPLES_TO_RESAMPLE,
             tx_scale_factor,
             1,
             1
         );
-            
-        // Fil in packet with data
-        packet->packet_type = VITA_PACKET_TYPE_IF_DATA_WITH_STREAM_ID;
-        packet->stream_id = streamId;
-        packet->class_id = AUDIO_CLASS_ID;
-        packet->timestamp_type = audioSeqNum_++;
 
         uint32_t* dataPtr = (uint32_t*)&upsamplerOutBuf_[0];
         uint32_t masks[] = 
@@ -219,9 +206,16 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
             0xff000000
         };
 
-        uint32_t* ptrOut = &packet->if_samples[0];
+        // Get free packet
+        vita_packet* packet = &packetArray_[packetIndex_++];
+        assert(packet != nullptr);
+        if (packetIndex_ == MAX_VITA_PACKETS)
+        {
+            packetIndex_ = 0;
+        }
+        uint32_t* ptrOut = (uint32_t*)packet->if_samples;
 
-        int optimizedNumToSend = MAX_VITA_SAMPLES_TO_SEND & 0xFFFFFFFC; // We only operate in blocks of 4 samples.
+        int optimizedNumToSend = MAX_VITA_SAMPLES_TO_RESAMPLE & 0xFFFFFFFC; // We only operate in blocks of 4 samples.
         for (int i = 0; i < optimizedNumToSend >> 2; i++)
         {
             uint32_t* ptrMasks = masks;
@@ -270,15 +264,21 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         }
 
         // Get the remaining ones that we couldn't get to with the optimized logic above.
-        while (dataPtr < (uint32_t*)&upsamplerOutBuf_[MAX_VITA_SAMPLES_TO_SEND])
+        while (dataPtr < (uint32_t*)&upsamplerOutBuf_[MAX_VITA_SAMPLES_TO_RESAMPLE])
         {
             uint32_t tmp = htonl(*dataPtr);
             *ptrOut++ = tmp;
             *ptrOut++ = tmp;
             dataPtr++;
         }
+                
+        // Fil in packet with data
+        packet->packet_type = VITA_PACKET_TYPE_IF_DATA_WITH_STREAM_ID;
+        packet->stream_id = streamId;
+        packet->class_id = AUDIO_CLASS_ID;
+        packet->timestamp_type = audioSeqNum_++;
 
-        size_t packet_len = VITA_PACKET_HEADER_SIZE + MAX_VITA_SAMPLES_TO_SEND * 2 * sizeof(float);
+        size_t packet_len = VITA_PACKET_HEADER_SIZE + VITA_SAMPLES_TO_SEND * 2 * sizeof(float);
 
         //  XXX Lots of magic numbers here!
         packet->timestamp_type = 0x50u | (packet->timestamp_type & 0x0Fu);
@@ -298,11 +298,7 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         post(&message);
     }
 
-    // Restart packet timer once we've sent the minimum.
-    lastVitaGenerationTime_ = currentTimeInMicroseconds;
-    packetWriteTimer_.stop();
-    packetWriteTimer_.changeInterval(MS_TO_US(currentWriteIntervalMs_));
-    packetWriteTimer_.start();
+    //minPacketsRequired_ -= addedExtra;
 }
 
 void FlexVitaTask::openSocket_()
@@ -346,13 +342,14 @@ void FlexVitaTask::openSocket_()
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
 #endif // 0
 
+    minPacketsRequired_ = 0;
+    timeBeyondExpectedUs_ = 0;
+    lastVitaGenerationTime_ = esp_timer_get_time();
+
     packetReadTimer_.start();
     packetWriteTimer_.start();
 
-    inputCtr_ = 0;
-    lastVitaGenerationTime_ = esp_timer_get_time();
-    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
-}
+    inputCtr_ = 0;}
 
 void FlexVitaTask::disconnect_()
 {
@@ -370,7 +367,6 @@ void FlexVitaTask::disconnect_()
         timeFracSeq_ = 0;
         inputCtr_ = 0;
         packetIndex_ = 0;
-        currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
     }
 }
 
@@ -408,12 +404,6 @@ void FlexVitaTask::readPendingPackets_()
 }
 
 void FlexVitaTask::sendAudioOut_()
-{
-    FlexGenerateSendPacketsMessage message;
-    post(&message);
-}
-
-void FlexVitaTask::onFlexGenerateSendPacketsMessage_(DVTask* origin, FlexGenerateSendPacketsMessage* message)
 {
     // Generate packets for both RX and TX.
     if (rxStreamId_ && !isTransmitting_)
@@ -607,13 +597,27 @@ void FlexVitaTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMe
 void FlexVitaTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
 {
     isTransmitting_ = true;
-    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
+
+    // Reset packet timing parameters so we can redetermine how quickly we need to be
+    // sending packets.
+    minPacketsRequired_ = 0;
+    timeBeyondExpectedUs_ = 0;
+    lastVitaGenerationTime_ = esp_timer_get_time();
+    packetWriteTimer_.stop();
+    packetWriteTimer_.start();
 }
 
 void FlexVitaTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMessage* message)
 {
     isTransmitting_ = false;
-    currentWriteIntervalMs_ = VITA_IO_TIME_INTERVAL_MS;
+
+    // Reset packet timing parameters so we can redetermine how quickly we need to be
+    // sending packets.
+    minPacketsRequired_ = 0;
+    timeBeyondExpectedUs_ = 0;
+    lastVitaGenerationTime_ = esp_timer_get_time();
+    packetWriteTimer_.stop();
+    packetWriteTimer_.start();
 }
     
 }

@@ -114,6 +114,8 @@ void FreeDVTask::onTaskTick_()
         // Analog mode, just pipe through the audio.
         short inputBuf[FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
         memset(inputBuf, 0, sizeof(inputBuf));
+
+        if (codec2_fifo_free(codecOutputFifo) < FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP) return;
         
         while (!(isTransmitting_ && isEndingTransmit_) && 
                codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
@@ -142,6 +144,8 @@ void FreeDVTask::onTaskTick_()
             int numModemSamples = freedv_get_n_nom_modem_samples(dv_);
             short inputBuf[numSpeechSamples];
             short outputBuf[numModemSamples];
+
+            if (codec2_fifo_free(codecOutputFifo) < numModemSamples) return;
         
             bool skipEndTxHandling = false;
             while (codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples) == 0)
@@ -171,6 +175,8 @@ void FreeDVTask::onTaskTick_()
             short inputBuf[freedv_get_n_max_modem_samples(dv_)];
             short outputBuf[numSpeechSamples];
             int nin = freedv_nin(dv_);
+
+            if (codec2_fifo_free(codecOutputFifo) < numSpeechSamples) return;
         
             int rv = codec2_fifo_read(codecInputFifo, inputBuf, nin);
             if (rv == 0)
