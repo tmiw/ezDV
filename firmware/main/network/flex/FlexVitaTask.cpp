@@ -126,7 +126,6 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     auto timeSinceLastPacketSend = currentTimeInMicroseconds - lastVitaGenerationTime_;
     lastVitaGenerationTime_ = currentTimeInMicroseconds;
 
-#if 0
     // If we're starved of audio, don't even bother going through the rest of the logic right now
     // and reset state back to the point right when we started.
     if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES_TO_RESAMPLE * minPacketsRequired_)
@@ -158,23 +157,22 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         timeBeyondExpectedUs_ += timeSinceLastPacketSend % VITA_IO_TIME_INTERVAL_US;
     }
 
-    while (timeBeyondExpectedUs_ >= US_OF_AUDIO_PER_VITA_PACKET)
+    while (timeBeyondExpectedUs_ >= (US_OF_AUDIO_PER_VITA_PACKET >> 1))
     {
-        addedExtra++;
+        addedExtra = 1;
         minPacketsRequired_++;
         timeBeyondExpectedUs_ -= US_OF_AUDIO_PER_VITA_PACKET;
     }
 
     if (minPacketsRequired_ <= 0)
     {
-        minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
+        minPacketsRequired_ = 0;
         timeBeyondExpectedUs_ = 0;
     }
 
     //ESP_LOGI(CURRENT_LOG_TAG, "Packets to be sent this time: %d", minPacketsRequired_);
-#endif
 
-    while(/*minPacketsRequired_ > 0 &&*/ codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    while(minPacketsRequired_ > 0 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
         minPacketsRequired_--;
 
@@ -298,7 +296,7 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         post(&message);
     }
 
-    //minPacketsRequired_ -= addedExtra;
+    minPacketsRequired_ -= addedExtra;
 }
 
 void FlexVitaTask::openSocket_()
@@ -342,7 +340,7 @@ void FlexVitaTask::openSocket_()
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
 #endif // 0
 
-    minPacketsRequired_ = 0;
+    minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
     timeBeyondExpectedUs_ = 0;
     lastVitaGenerationTime_ = esp_timer_get_time();
 
@@ -600,7 +598,7 @@ void FlexVitaTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* 
 
     // Reset packet timing parameters so we can redetermine how quickly we need to be
     // sending packets.
-    minPacketsRequired_ = 0;
+    minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
     timeBeyondExpectedUs_ = 0;
     lastVitaGenerationTime_ = esp_timer_get_time();
     packetWriteTimer_.stop();
@@ -613,7 +611,7 @@ void FlexVitaTask::onRequestRxMessage_(DVTask* origin, audio::TransmitCompleteMe
 
     // Reset packet timing parameters so we can redetermine how quickly we need to be
     // sending packets.
-    minPacketsRequired_ = 0;
+    minPacketsRequired_ = MIN_VITA_PACKETS_TO_SEND;
     timeBeyondExpectedUs_ = 0;
     lastVitaGenerationTime_ = esp_timer_get_time();
     packetWriteTimer_.stop();
