@@ -99,7 +99,7 @@ void FlexTcpTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
 
 void FlexTcpTask::onTaskTick_()
 {
-    if (socket_ <= 0 || isConnecting_)
+    if (socket_ <= 0 || isConnecting_ || !isAwake())
     {
         // Skip tick if we don't have a valid connection yet.
         return;
@@ -417,7 +417,7 @@ void FlexTcpTask::sendRadioCommand_(std::string command, std::function<void(unsi
 
 socket_error:
     ESP_LOGE(CURRENT_LOG_TAG, "Failed writing command to radio!");
-    
+
     // We've likely disconnected, do cleanup and re-attempt connection.
     socketFinalCleanup_(true);
 
