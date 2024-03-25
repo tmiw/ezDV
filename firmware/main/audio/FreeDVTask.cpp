@@ -92,6 +92,8 @@ void FreeDVTask::onTaskTick_()
 {
     if (!isActive_) return;
 
+    bool syncLed = false;
+
     //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
 
     struct FIFO* codecInputFifo = nullptr;
@@ -136,8 +138,6 @@ void FreeDVTask::onTaskTick_()
     }
     else
     {
-        bool syncLed = false;
-
         if (isTransmitting_)
         {
             int numSpeechSamples = freedv_get_n_speech_samples(dv_);
@@ -193,12 +193,12 @@ void FreeDVTask::onTaskTick_()
         
             syncLed = freedv_get_sync(dv_) > 0;
         }
-
-        // Broadcast current sync state
-        FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
-        publish(message);
-        delete message;
     }
+
+    // Broadcast current sync state
+    FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
+    publish(message);
+    delete message;
 }
 
 void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
