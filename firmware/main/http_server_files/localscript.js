@@ -470,7 +470,7 @@ function wsConnect()
                 var numHoursRemaining = (100 - json.stateOfCharge) / json.stateOfChargeChange;
                   if (numHoursRemaining >= 10)
                   {
-                    $(".time-remaining").text("(>10h to full)");
+                    $(".time-remaining").text("(not charging)");
                   }
                   else if (numHoursRemaining > 1)
                   {
