@@ -40,8 +40,6 @@ public:
     virtual uint32_t getSize() const = 0;
     virtual DVEventBaseType getEventBase() const = 0;
     virtual int32_t getEventType() const = 0;
-
-    virtual uint64_t getEventPair() { return ((uint64_t)getEventBase() << 32) | (getEventType()); }
 };
 
 template<uint32_t EVENT_TYPE_ID, typename MessageType>
