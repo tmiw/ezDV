@@ -55,6 +55,7 @@ private:
     bool isTransmitting_;
     bool isEndingTransmit_;
     bool isActive_;
+    int samplesBeforeEnd_;
 
     MODEM_STATS* stats_;
 

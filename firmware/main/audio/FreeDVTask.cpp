@@ -41,6 +41,7 @@ FreeDVTask::FreeDVTask()
     , isTransmitting_(false)
     , isEndingTransmit_(false)
     , isActive_(false)
+    , samplesBeforeEnd_(0)
     , stats_(nullptr)
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
@@ -147,10 +148,18 @@ void FreeDVTask::onTaskTick_()
 
             if (codec2_fifo_free(codecOutputFifo) < numModemSamples) return;
         
-            bool skipEndTxHandling = false;
             while (codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples) == 0)
             {
-                skipEndTxHandling = true;
+                // Limit the amount of time we spend here so we don't end up
+                // stuck transmitting forever.
+                if (isEndingTransmit_)
+                {
+                    samplesBeforeEnd_ -= numSpeechSamples;
+                    if (samplesBeforeEnd_ <= 0)
+                    {
+                        break;
+                    }
+                }
                 //auto timeBegin = esp_timer_get_time();
 
                 freedv_tx(dv_, outputBuf, inputBuf);
@@ -159,7 +168,7 @@ void FreeDVTask::onTaskTick_()
                 codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
             }
             
-            if (isEndingTransmit_ && !skipEndTxHandling)
+            if (isEndingTransmit_ && samplesBeforeEnd_ <= 0)
             {
                 // We've finished processing everything that's left, end TX now.
                 TransmitCompleteMessage message;
@@ -293,6 +302,7 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
         // Delay ending TX until we've processed what's remaining. This means we'll need
         // to add a bit of silence at the end of the transmission as well depending on 
         // the currently active mode.
+        samplesBeforeEnd_ = 2000; // 250ms maximum @ 8000 Hz
         isEndingTransmit_ = true;
 
         if (dv_ != nullptr)
@@ -309,6 +319,7 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
     }
     else
     {
+        isEndingTransmit_ = false;
         isTransmitting_ = message->pttState;
         if (!isTransmitting_)
         {
