@@ -53,7 +53,7 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     : DVTask("VoiceKeyerTask", 15, 4096, tskNO_AFFINITY, 256, portMAX_DELAY)
     , AudioInput(1, 1)
     , currentState_(VoiceKeyerTask::IDLE)
-    , voiceKeyerTickTimer_(this, std::bind(&VoiceKeyerTask::tickKeyer_, this), TIMER_TICK_INTERVAL, "VKSendTimer")
+    , voiceKeyerTickTimer_(this, &VoiceKeyerTask::tickKeyer_, TIMER_TICK_INTERVAL, "VKSendTimer")
     , lastTimeInTick_(0)
     , voiceKeyerFile_(nullptr)
     , wavReader_(nullptr)
@@ -62,7 +62,7 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     , timesToTransmit_(0)
     , timesTransmitted_(0)
     , bytesToUpload_(0)
-    , fileReadTimer_(this, std::bind(&VoiceKeyerTask::readSamplesIntoFifo_, this), FILE_READ_INTERVAL, "VKFileReadTimer")
+    , fileReadTimer_(this, &VoiceKeyerTask::readSamplesIntoFifo_, FILE_READ_INTERVAL, "VKFileReadTimer")
     , micDeviceTask_(micDeviceTask)
     , fdvTask_(fdvTask)
     , wlHandle_(-1)
@@ -131,7 +131,7 @@ void VoiceKeyerTask::onTaskSleep_()
     }
 }
 
-void VoiceKeyerTask::readSamplesIntoFifo_()
+void VoiceKeyerTask::readSamplesIntoFifo_(DVTimer*)
 {
     if (wavReader_ == nullptr || codec2_fifo_free(fileReadFifo_) < SAMPLES_TO_READ_PER_CYCLE)
     {
@@ -158,7 +158,7 @@ void VoiceKeyerTask::onTaskTick_()
     // empty
 }
 
-void VoiceKeyerTask::tickKeyer_()
+void VoiceKeyerTask::tickKeyer_(DVTimer*)
 {
     auto currentTime = esp_timer_get_time();
 
@@ -253,7 +253,7 @@ void VoiceKeyerTask::startKeyer_()
         // samples at a time.
         while (voiceKeyerFile_ != nullptr && codec2_fifo_free(fileReadFifo_) >= SAMPLES_TO_READ_PER_CYCLE)
         {
-            readSamplesIntoFifo_();
+            readSamplesIntoFifo_(nullptr);
         }
 
         // Start file read timer to ensure that the input FIFO

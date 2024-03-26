@@ -44,9 +44,9 @@ static std::map<audio::FreeDVMode, std::string> ModeList_ = {
 
 UserInterfaceTask::UserInterfaceTask()
     : DVTask("UserInterfaceTask", 10, 4096, tskNO_AFFINITY, 64, pdMS_TO_TICKS(10))
-    , volHoldTimer_(this, std::bind(&UserInterfaceTask::updateVolumeCommon_, this), VOL_BUTTON_HOLD_TIMER_TICK_US, "VolHoldTimer")
-    , networkFlashTimer_(this, std::bind(&UserInterfaceTask::flashNetworkLight_, this), NET_LED_FLASH_TIMER_TICK_US, "NetworkFlashTimer")
-    , timeOutTimer_(this, std::bind(&UserInterfaceTask::stopTx_, this), 1000000 /* placeholder, will be set by user config */, "TxTimeoutTimer")
+    , volHoldTimer_(this, &UserInterfaceTask::updateVolumeCommon_, VOL_BUTTON_HOLD_TIMER_TICK_US, "VolHoldTimer")
+    , networkFlashTimer_(this, &UserInterfaceTask::flashNetworkLight_, NET_LED_FLASH_TIMER_TICK_US, "NetworkFlashTimer")
+    , timeOutTimer_(this, &UserInterfaceTask::stopTx_, 1000000 /* placeholder, will be set by user config */, "TxTimeoutTimer")
     , currentMode_(audio::ANALOG)
     , isTransmitting_(false)
     , isActive_(false)
@@ -161,11 +161,11 @@ void UserInterfaceTask::onButtonShortPressedMessage_(DVTask* origin, driver::But
             }
             case driver::ButtonLabel::VOL_UP:
                 volIncrement_ = 1;
-                updateVolumeCommon_();
+                updateVolumeCommon_(nullptr);
                 break;
             case driver::ButtonLabel::VOL_DOWN:
                 volIncrement_ = -1;
-                updateVolumeCommon_();
+                updateVolumeCommon_(nullptr);
                 break;
             default:
                 assert(0);
@@ -256,7 +256,7 @@ void UserInterfaceTask::onRightChannelVolumeMessage_(DVTask* origin, storage::Ri
     rightVolume_ = message->volume;
 }
 
-void UserInterfaceTask::updateVolumeCommon_()
+void UserInterfaceTask::updateVolumeCommon_(DVTimer*)
 {
     if (isTransmitting_)
     {
@@ -305,7 +305,7 @@ void UserInterfaceTask::onRadioStateChange_(DVTask* origin, network::RadioConnec
     radioStatus_ = message->state;
 }
 
-void UserInterfaceTask::flashNetworkLight_()
+void UserInterfaceTask::flashNetworkLight_(DVTimer*)
 {
     if (isActive_)
     {
@@ -324,7 +324,7 @@ void UserInterfaceTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMess
 
 void UserInterfaceTask::onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message)
 {
-    stopTx_();
+    stopTx_(nullptr);
 }
 
 void UserInterfaceTask::onVoiceKeyerSettingsMessage_(
@@ -338,7 +338,7 @@ void UserInterfaceTask::onVoiceKeyerCompleteMessage_(DVTask* origin, audio::Voic
     voiceKeyerRunning_ = false;
 }
 
-void UserInterfaceTask::stopTx_()
+void UserInterfaceTask::stopTx_(DVTimer*)
 {
     // Stop time out timer (TOT)
     timeOutTimer_.stop();

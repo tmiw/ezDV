@@ -51,7 +51,7 @@ protected:
 private:
     DVTimer areYouReadyTimer_;
 
-    void onAreYouReadyTimer_();
+    void onAreYouReadyTimer_(DVTimer*);
 };
 
 }

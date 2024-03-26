@@ -54,8 +54,8 @@ private:
     bool completingTransmit_;
     float audioMultiplier_[160];
 
-    void onAudioOutTimer_();
-    void onAudioWatchdog_();
+    void onAudioOutTimer_(DVTimer*);
+    void onAudioWatchdog_(DVTimer*);
     
     void onRightChannelVolumeMessage_(DVTask* origin, storage::RightChannelVolumeMessage* message);
     void onTransmitCompleteMessage_(DVTask* origin, ezdv::audio::TransmitCompleteMessage* message);

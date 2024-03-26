@@ -37,7 +37,7 @@ namespace network
 
 FreeDVReporterTask::FreeDVReporterTask()
     : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128)
-    , reconnectTimer_(this, std::bind(&FreeDVReporterTask::startSocketIoConnection_, this), MS_TO_US(10000), "FDVReporterReconn")
+    , reconnectTimer_(this, &FreeDVReporterTask::startSocketIoConnection_, MS_TO_US(10000), "FDVReporterReconn")
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
     , reportingEnabled_(false)
@@ -110,7 +110,7 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
     if (reportingEnabled_ && callsignChanged)
     {
         stopSocketIoConnection_();
-        startSocketIoConnection_();
+        startSocketIoConnection_(nullptr);
     }
     
     // If forced reporting has changed, trigger disconnect or connect
@@ -156,7 +156,7 @@ void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReporti
         {
             stopSocketIoConnection_();
         }
-        startSocketIoConnection_();
+        startSocketIoConnection_(nullptr);
     }
 }
 
@@ -281,7 +281,7 @@ const char* FreeDVReporterTask::freeDVModeAsString_()
 
 }
 
-void FreeDVReporterTask::startSocketIoConnection_()
+void FreeDVReporterTask::startSocketIoConnection_(DVTimer*)
 {
     if (jsonAuthObj_ != nullptr)
     {
@@ -341,7 +341,7 @@ void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
             reportingClientHandle_ = nullptr;
             reportingEnabled_ = false;
 
-            startSocketIoConnection_();
+            startSocketIoConnection_(nullptr);
             break;
         }
         case '2':
@@ -371,7 +371,7 @@ void FreeDVReporterTask::handleEngineIoMessage_(char* ptr, int length)
                 reportingClientHandle_ = nullptr;
                 reportingEnabled_ = false;
 
-                startSocketIoConnection_();
+                startSocketIoConnection_(nullptr);
             }
             break;
     }

@@ -82,7 +82,7 @@ private:
 
     void startKeyer_();
     void stopKeyer_();
-    void tickKeyer_();
+    void tickKeyer_(DVTimer*);
 
     void onStartVoiceKeyerMessage_(DVTask* origin, StartVoiceKeyerMessage* message);
     void onStopVoiceKeyerMessage_(DVTask* origin, StopVoiceKeyerMessage* message);
@@ -96,7 +96,7 @@ private:
     void onRequestRxMessage_(DVTask* origin, audio::RequestRxMessage* message);
 
     // Timer handler to read VK file into FIFO
-    void readSamplesIntoFifo_();
+    void readSamplesIntoFifo_(DVTimer*);
 };
 
 }

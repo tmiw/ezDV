@@ -86,11 +86,11 @@ private:
     void sendPing_();
     void retransmitPacket_(uint16_t packet);
 
-    void onPingTimer_();
-    void onIdleTimer_();
-    void onRetransmitTimer_();
-    void onTxRetransmitTimer_();
-    void onCleanupTimer_();
+    void onPingTimer_(DVTimer*);
+    void onIdleTimer_(DVTimer*);
+    void onRetransmitTimer_(DVTimer*);
+    void onTxRetransmitTimer_(DVTimer*);
+    void onCleanupTimer_(DVTimer*);
 
     void incrementPingSequence_(uint16_t pingSeq);
 

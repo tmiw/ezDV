@@ -57,7 +57,7 @@ private:
     void onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message);
     void onClearBeeperText_(DVTask* origin, ClearBeeperTextMessage* message);
 
-    void onTimerTick_();
+    void onTimerTick_(DVTimer*);
 
     void stringToBeeperScript_(std::string str);
     void charToBeeperScript_(char ch);

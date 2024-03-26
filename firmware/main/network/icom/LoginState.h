@@ -63,7 +63,7 @@ private:
     void insertCapability_(radio_cap_packet_t radio);
     void clearRadioCapabilities_();
 
-    void onTokenRenewTimer_();
+    void onTokenRenewTimer_(DVTimer*);
 };
 
 }

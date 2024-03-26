@@ -109,7 +109,7 @@ private:
 
     const char* freeDVModeAsString_();
 
-    void startSocketIoConnection_();
+    void startSocketIoConnection_(DVTimer*);
     void stopSocketIoConnection_();
     void handleEngineIoMessage_(char* ptr, int length);
     void handleSocketIoMessage_(char* ptr, int length);

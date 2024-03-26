@@ -43,7 +43,7 @@ protected:
 private:
     DVTimer mixerTick_;
     
-    void onTimerTick_();
+    void onTimerTick_(DVTimer*);
 };
 
 }

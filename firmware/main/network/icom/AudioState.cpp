@@ -34,8 +34,8 @@ namespace icom
 
 AudioState::AudioState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , audioOutTimer_(parent_->getTask(), std::bind(&AudioState::onAudioOutTimer_, this), MS_TO_US(20), "IcomAudioOutTimer")
-    , audioWatchdogTimer_(parent_->getTask(), std::bind(&AudioState::onAudioWatchdog_, this), MS_TO_US(WATCHDOG_PERIOD), "IcomAudioWatchdogTimer")
+    , audioOutTimer_(parent_->getTask(), &AudioState::onAudioOutTimer_, MS_TO_US(20), "IcomAudioOutTimer")
+    , audioWatchdogTimer_(parent_->getTask(), &AudioState::onAudioWatchdog_, MS_TO_US(WATCHDOG_PERIOD), "IcomAudioWatchdogTimer")
     , audioSequenceNumber_(0)
     , completingTransmit_(false)
 {
@@ -103,13 +103,13 @@ void AudioState::onReceivePacket(IcomPacket& packet)
     TrackedPacketState::onReceivePacket(packet);
 }
 
-void AudioState::onAudioWatchdog_()
+void AudioState::onAudioWatchdog_(DVTimer*)
 {
     ESP_LOGW(parent_->getName().c_str(), "No audio data received recently, reconnecting channel");
     parent_->transitionState(IcomProtocolState::ARE_YOU_THERE);
 }
 
-void AudioState::onAudioOutTimer_()
+void AudioState::onAudioOutTimer_(DVTimer*)
 {
     auto task = (IcomSocketTask*)(parent_->getTask());
     auto inputFifo = task->getAudioInput(ezdv::audio::AudioInput::LEFT_CHANNEL);

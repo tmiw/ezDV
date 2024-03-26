@@ -31,11 +31,11 @@ namespace icom
 
 TrackedPacketState::TrackedPacketState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , pingTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onPingTimer_, this), MS_TO_US(PING_PERIOD), "IcomPingTimer")
-    , idleTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onIdleTimer_, this), MS_TO_US(IDLE_PERIOD), "IcomIdleTimer")
-    , retransmitRequestTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onRetransmitTimer_, this), MS_TO_US(RETRANSMIT_PERIOD), "IcomRetransmitRequestTimer")
-    , txRetransmitTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onTxRetransmitTimer_, this), MS_TO_US(TX_RETRANSMIT_PERIOD), "IcomTxRetransmitTimer")
-    , cleanupTimer_(parent_->getTask(), std::bind(&TrackedPacketState::onCleanupTimer_, this), MS_TO_US(WATCHDOG_PERIOD), "IcomCleanupTimer")
+    , pingTimer_(parent_->getTask(), &TrackedPacketState::onPingTimer_, MS_TO_US(PING_PERIOD), "IcomPingTimer")
+    , idleTimer_(parent_->getTask(), &TrackedPacketState::onIdleTimer_, MS_TO_US(IDLE_PERIOD), "IcomIdleTimer")
+    , retransmitRequestTimer_(parent_->getTask(), &TrackedPacketState::onRetransmitTimer_, MS_TO_US(RETRANSMIT_PERIOD), "IcomRetransmitRequestTimer")
+    , txRetransmitTimer_(parent_->getTask(), &TrackedPacketState::onTxRetransmitTimer_, MS_TO_US(TX_RETRANSMIT_PERIOD), "IcomTxRetransmitTimer")
+    , cleanupTimer_(parent_->getTask(), &TrackedPacketState::onCleanupTimer_, MS_TO_US(WATCHDOG_PERIOD), "IcomCleanupTimer")
     , pingSequenceNumber_(0)
     , sendSequenceNumber_(1) // Start sequence at 1.
     , numSavedBytesInPacketQueue_(0)
@@ -234,7 +234,7 @@ void TrackedPacketState::sendPing_()
     parent_->sendUntracked(packet);
 }
 
-void TrackedPacketState::onPingTimer_()
+void TrackedPacketState::onPingTimer_(DVTimer*)
 {
     // Ping timer fired. Send ping request.
     //ESP_LOGI(sm_.get_name().c_str(), "Send ping, seq %d", sm_.getCurrentPingSequence());
@@ -244,14 +244,14 @@ void TrackedPacketState::onPingTimer_()
     idleTimer_.start();
 }
 
-void TrackedPacketState::onIdleTimer_()
+void TrackedPacketState::onIdleTimer_(DVTimer*)
 {
     // Idle timer fired. Send control packet with seq = 0
     auto packet = IcomPacket::CreateIdlePacket(0, parent_->getOurIdentifier(), parent_->getTheirIdentifier());
     parent_->sendUntracked(packet);
 }
 
-void TrackedPacketState::onTxRetransmitTimer_()
+void TrackedPacketState::onTxRetransmitTimer_(DVTimer*)
 {
     for (auto& kvp : txRetryPacketIds_)
     {
@@ -261,7 +261,7 @@ void TrackedPacketState::onTxRetransmitTimer_()
     txRetryPacketIds_.clear();
 }
     
-void TrackedPacketState::onRetransmitTimer_()
+void TrackedPacketState::onRetransmitTimer_(DVTimer*)
 {
     if (rxMissingPacketIds_.size() == 0)
     {
@@ -287,7 +287,7 @@ void TrackedPacketState::onRetransmitTimer_()
     parent_->sendUntracked(packet);
 }
 
-void TrackedPacketState::onCleanupTimer_()
+void TrackedPacketState::onCleanupTimer_(DVTimer*)
 {
     // Iterate through the current sent queue and delete packets
     // that are older than PURGE_SECONDS.

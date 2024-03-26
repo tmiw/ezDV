@@ -79,11 +79,11 @@ private:
     using HandlerMapFn_ = std::function<void(unsigned int rv, std::string message)>;
     std::map<int, HandlerMapFn_, std::less<int>, util::PSRamAllocator<std::pair<const int, HandlerMapFn_> > > responseHandlers_;
     
-    void connect_();
-    void checkConnection_();
+    void connect_(DVTimer*);
+    void checkConnection_(DVTimer*);
     void disconnect_();
     void socketFinalCleanup_(bool reconnect);
-    void commandResponseTimeout_();
+    void commandResponseTimeout_(DVTimer*);
 
     void initializeWaveform_();
     void createWaveform_(std::string name, std::string shortName, std::string underlyingMode);

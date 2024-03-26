@@ -191,8 +191,8 @@ private:
     void onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message);
     void onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message);
     
-    void restartIcomConnection_();
-    void triggerWifiScan_();
+    void restartIcomConnection_(DVTimer*);
+    void triggerWifiScan_(DVTimer*);
     void onWifiScanComplete_();
     
     void onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message);

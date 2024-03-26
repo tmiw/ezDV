@@ -29,7 +29,7 @@ namespace audio
 AudioMixer::AudioMixer()
     : DVTask("AudioMixer", 15, 3144, tskNO_AFFINITY, pdMS_TO_TICKS(20))
     , AudioInput(2, 1)
-    , mixerTick_(this, std::bind(&AudioMixer::onTimerTick_, this), AUDIO_MIXER_TIMER_TICK_US, "AudioMixerTimer")
+    , mixerTick_(this, &AudioMixer::onTimerTick_, AUDIO_MIXER_TIMER_TICK_US, "AudioMixerTimer")
 {
     // empty
 }
@@ -54,11 +54,11 @@ void AudioMixer::onTaskSleep_()
     int ctr = 2; // Should only need to run twice to flush everything
     while (ctr-- > 0 && (codec2_fifo_used(leftInputFifo) > 0 || codec2_fifo_used(rightInputFifo) > 0))
     {
-        onTimerTick_();
+        onTimerTick_(nullptr);
     }
 }
 
-void AudioMixer::onTimerTick_()
+void AudioMixer::onTimerTick_(DVTimer*)
 {
     struct FIFO* leftInputFifo = getAudioInput(AudioInput::LEFT_CHANNEL);
     struct FIFO* rightInputFifo = getAudioInput(AudioInput::RIGHT_CHANNEL);

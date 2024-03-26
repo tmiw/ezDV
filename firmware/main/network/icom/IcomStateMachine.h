@@ -83,7 +83,7 @@ private:
     
     void openSocket_();
     
-    void readPendingPackets_();
+    void readPendingPackets_(DVTimer*);
 };
 
 }

@@ -30,11 +30,13 @@ namespace task
     
 DVTimer::DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds, const char* timerName)
     : owner_(owner)
-    , fn_(fn)
     , intervalInMicroseconds_(intervalInMicroseconds)
     , running_(false)
     , once_(false)
 {
+    fn_ = new TimerHandlerFnForwarder(fn);
+    assert(fn_ != nullptr);
+    
     esp_timer_create_args_t args = {
         .callback = &OnESPTimerFire_,
         .arg = this,
@@ -64,6 +66,8 @@ DVTimer::~DVTimer()
     ESP_ERROR_CHECK(
         esp_timer_delete(timerHandle_)
     );
+
+    delete fn_;
 }
 
 void DVTimer::changeInterval(uint64_t intervalInMicroseconds)
@@ -115,7 +119,7 @@ void DVTimer::onTimerFire_(DVTask* origin, TimerFireMessage* message)
 {
     if (message->timer == this)
     {
-        fn_(this);
+        fn_->call(this);
     }
 }
 

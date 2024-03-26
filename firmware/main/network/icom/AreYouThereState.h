@@ -48,7 +48,7 @@ public:
 private:
     DVTimer resendTimer_;
 
-    void retrySend_();
+    void retrySend_(DVTimer*);
 };
 
 }

@@ -30,7 +30,7 @@ namespace icom
 
 AreYouThereState::AreYouThereState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , resendTimer_(parent_->getTask(), std::bind(&AreYouThereState::retrySend_, this), MS_TO_US(AREYOUTHERE_PERIOD), "IcomResendTimer")
+    , resendTimer_(parent_->getTask(), &AreYouThereState::retrySend_, MS_TO_US(AREYOUTHERE_PERIOD), "IcomResendTimer")
 {
     // empty
 }
@@ -74,7 +74,7 @@ void AreYouThereState::onReceivePacket(IcomPacket& packet)
     // Ignore unexpected packets. TBD -- may need to send Disconnect instead?
 }
 
-void AreYouThereState::retrySend_()
+void AreYouThereState::retrySend_(DVTimer*)
 {
     ESP_LOGI(parent_->getName().c_str(), "Retrying send");
         

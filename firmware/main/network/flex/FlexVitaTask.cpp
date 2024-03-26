@@ -54,8 +54,8 @@ static float tx_scale_factor = std::exp(6.2f/20.0f * std::log(10.0f));
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 16, 8192, 1, 2048)
     , audio::AudioInput(2, 2)
-    , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketReadTimer")
-    , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketWriteTimer")
+    , packetReadTimer_(this, &FlexVitaTask::readPendingPackets_, VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketReadTimer")
+    , packetWriteTimer_(this, &FlexVitaTask::sendAudioOut_, VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketWriteTimer")
     , socket_(-1)
     , rxStreamId_(0)
     , txStreamId_(0)
@@ -368,7 +368,7 @@ void FlexVitaTask::disconnect_()
     }
 }
 
-void FlexVitaTask::readPendingPackets_()
+void FlexVitaTask::readPendingPackets_(DVTimer*)
 {
     fd_set readSet;
     struct timeval tv = {0, 0};
@@ -401,7 +401,7 @@ void FlexVitaTask::readPendingPackets_()
     }
 }
 
-void FlexVitaTask::sendAudioOut_()
+void FlexVitaTask::sendAudioOut_(DVTimer*)
 {
     // Generate packets for both RX and TX.
     if (rxStreamId_ && !isTransmitting_)

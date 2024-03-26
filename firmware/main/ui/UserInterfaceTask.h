@@ -79,7 +79,7 @@ private:
     // Network state handling
     void onNetworkStateChange_(DVTask* origin, network::WirelessNetworkStatusMessage* message);
     void onRadioStateChange_(DVTask* origin, network::RadioConnectionStatusMessage* message);
-    void flashNetworkLight_();
+    void flashNetworkLight_(DVTimer*);
 
     // Voice keyer handling
     void onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message);
@@ -89,7 +89,7 @@ private:
     void onRequestStartStopKeyerMessage_(DVTask* origin, audio::RequestStartStopKeyerMessage* message);
     void onGetKeyerStateMessage_(DVTask* origin, audio::GetKeyerStateMessage* message);
     void startTx_();
-    void stopTx_();
+    void stopTx_(DVTimer*);
 
     // ADC overload handling
     void onADCOverload_(DVTask* origin, driver::OverloadStateMessage* message);
@@ -98,7 +98,7 @@ private:
     void onHeadsetButtonPressed_(DVTask* origin, driver::HeadsetButtonPressMessage* message);
 
     // Timer handling
-    void updateVolumeCommon_();
+    void updateVolumeCommon_(DVTimer*);
 
     // Battery state handling
     void onBatteryStateUpdate_(DVTask* origin, driver::BatteryStateMessage* message);

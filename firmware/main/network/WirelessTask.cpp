@@ -135,8 +135,8 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
 
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 5, 4096, tskNO_AFFINITY, 128)
-    , wifiScanTimer_(this, std::bind(&WirelessTask::triggerWifiScan_, this), 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
-    , icomRestartTimer_(this, std::bind(&WirelessTask::restartIcomConnection_, this), 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
+    , wifiScanTimer_(this, &WirelessTask::triggerWifiScan_, 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
+    , icomRestartTimer_(this, &WirelessTask::restartIcomConnection_, 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
     , icomAudioTask_(nullptr)
     , icomCIVTask_(nullptr)
@@ -726,7 +726,7 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     }
 }
 
-void WirelessTask::restartIcomConnection_()
+void WirelessTask::restartIcomConnection_(DVTimer*)
 {
     storage::RequestRadioSettingsMessage request;
     publish(&request);
@@ -749,7 +749,7 @@ void WirelessTask::restartIcomConnection_()
     }
 }
 
-void WirelessTask::triggerWifiScan_()
+void WirelessTask::triggerWifiScan_(DVTimer*)
 {
     // Start Wi-Fi scan using default config. A WIFI_EVENT_SCAN_DONE event
     // will be fired by ESP-IDF once the scan is done.
@@ -798,7 +798,7 @@ void WirelessTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage*
     ESP_LOGI(CURRENT_LOG_TAG, "Starting Wi-Fi scan");
     
     wifiScanTimer_.stop();
-    triggerWifiScan_();
+    triggerWifiScan_(nullptr);
 }
 
 void WirelessTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message)

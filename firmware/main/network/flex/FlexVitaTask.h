@@ -91,8 +91,8 @@ private:
     void openSocket_();
     void disconnect_();
     
-    void readPendingPackets_();
-    void sendAudioOut_();
+    void readPendingPackets_(DVTimer*);
+    void sendAudioOut_(DVTimer*);
     
     void generateVitaPackets_(audio::AudioInput::ChannelLabel channel, uint32_t streamId);
     

@@ -56,7 +56,7 @@ private:
     void sendCIVClosePacket_();
     void sendCIVPacket_(uint8_t* packet, uint16_t size);
 
-    void onCIVWatchdog_();
+    void onCIVWatchdog_(DVTimer*);
     void onFreeDVSetPTTStateMessage_(DVTask* origin, ezdv::audio::FreeDVSetPTTStateMessage* message);
     void onStopTransmitMessage_(DVTask* origin, StopTransmitMessage* message);
 };

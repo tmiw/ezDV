@@ -357,7 +357,7 @@ void DVTask::threadEntry_()
         if (newStackWaterMark < stackWaterMark)
         {
             stackWaterMark = newStackWaterMark;
-            //ESP_LOGI(taskName_.c_str(), "New stack high water mark of %d", newStackWaterMark);
+            ESP_LOGI(taskName_.c_str(), "New stack high water mark of %d", newStackWaterMark);
         }
     }
 }

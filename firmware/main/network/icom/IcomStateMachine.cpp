@@ -49,7 +49,7 @@ IcomStateMachine::IcomStateMachine(DVTask* owner)
     , theirIdentifier_(0)
     , port_(0)
     , localPort_(0)
-    , packetReadTimer_(owner, std::bind(&IcomStateMachine::readPendingPackets_, this), MS_TO_US(10), "IcomPacketReadTimer")
+    , packetReadTimer_(owner, &IcomStateMachine::readPendingPackets_, MS_TO_US(10), "IcomPacketReadTimer")
 {
     owner->registerMessageHandler(this, &IcomStateMachine::onSendPacket_);
     owner->registerMessageHandler(this, &IcomStateMachine::onReceivePacket_);
@@ -190,7 +190,7 @@ void IcomStateMachine::onTransitionComplete_()
     }
 }
 
-void IcomStateMachine::readPendingPackets_()
+void IcomStateMachine::readPendingPackets_(DVTimer*)
 {
     auto state = getProtocolState_();
     
@@ -279,7 +279,7 @@ void IcomStateMachine::onSendPacket_(DVTask* owner, SendPacketMessage* message)
         }
 
         // Read any packets that are available from the radio
-        readPendingPackets_();
+        readPendingPackets_(nullptr);
     }
     
     delete packet;

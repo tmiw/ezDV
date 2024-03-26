@@ -30,7 +30,7 @@ namespace icom
 
 AreYouReadyState::AreYouReadyState(IcomStateMachine* parent)
     : IcomProtocolState(parent)
-    , areYouReadyTimer_(parent->getTask(), std::bind(&AreYouReadyState::onAreYouReadyTimer_, this), MS_TO_US(RETRANSMIT_PERIOD), "IcomAreYouReadyTimer")
+    , areYouReadyTimer_(parent->getTask(), &AreYouReadyState::onAreYouReadyTimer_, MS_TO_US(RETRANSMIT_PERIOD), "IcomAreYouReadyTimer")
 {
     // empty
 }
@@ -73,7 +73,7 @@ void AreYouReadyState::onReceivePacket(IcomPacket& packet)
     }
 }
 
-void AreYouReadyState::onAreYouReadyTimer_()
+void AreYouReadyState::onAreYouReadyTimer_(DVTimer*)
 {
     ESP_LOGI(parent_->getName().c_str(), "Retrying send");
 

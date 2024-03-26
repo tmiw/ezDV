@@ -41,9 +41,9 @@ namespace flex
 
 FlexTcpTask::FlexTcpTask()
     : DVTask("FlexTcpTask", 10, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
-    , reconnectTimer_(this, std::bind(&FlexTcpTask::connect_, this), MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
-    , connectionCheckTimer_(this, std::bind(&FlexTcpTask::checkConnection_, this), MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
-    , commandHandlingTimer_(this, std::bind(&FlexTcpTask::commandResponseTimeout_, this), MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
+    , reconnectTimer_(this, &FlexTcpTask::connect_, MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
+    , connectionCheckTimer_(this, &FlexTcpTask::checkConnection_, MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
+    , commandHandlingTimer_(this, &FlexTcpTask::commandResponseTimeout_, MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
@@ -166,7 +166,7 @@ void FlexTcpTask::socketFinalCleanup_(bool reconnect)
     else reconnectTimer_.stop();
 }
 
-void FlexTcpTask::connect_()
+void FlexTcpTask::connect_(DVTimer*)
 {
     // Stop any existing reconnection timers.
     reconnectTimer_.stop();
@@ -207,7 +207,7 @@ void FlexTcpTask::connect_()
     else if (rv == 0)
     {
         // We got an immediate connection!
-        checkConnection_();
+        checkConnection_(nullptr);
     }
     else
     {
@@ -215,7 +215,7 @@ void FlexTcpTask::connect_()
     }
 }
 
-void FlexTcpTask::checkConnection_()
+void FlexTcpTask::checkConnection_(DVTimer*)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Checking to see if we're connected to the radio");
 
@@ -426,7 +426,7 @@ socket_error:
     fn(0xFFFFFFFF, strerror(err));
 }
 
-void FlexTcpTask::commandResponseTimeout_()
+void FlexTcpTask::commandResponseTimeout_(DVTimer*)
 {
     // We timed out waiting for a response, just go ahead and call handlers so that
     // processing can continue.
@@ -632,7 +632,7 @@ void FlexTcpTask::onFlexConnectRadioMessage_(DVTask* origin, FlexConnectRadioMes
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Received radio connect message");
     ip_ = message->ip;
-    connect_();
+    connect_(nullptr);
 }
 
 void FlexTcpTask::onRequestTxMessage_(DVTask* origin, audio::RequestTxMessage* message)
