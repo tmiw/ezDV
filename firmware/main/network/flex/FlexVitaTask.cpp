@@ -49,10 +49,10 @@ namespace network
 namespace flex
 {
     
-static float tx_scale_factor = std::exp(6.0f/20.0f * std::log(10.0f));
+static float tx_scale_factor = std::exp(6.2f/20.0f * std::log(10.0f));
 
 FlexVitaTask::FlexVitaTask()
-    : DVTask("FlexVitaTask", 16, 8192, 1, 3072)
+    : DVTask("FlexVitaTask", 16, 8192, 1, 4096)
     , audio::AudioInput(2, 2)
     , packetReadTimer_(this, std::bind(&FlexVitaTask::readPendingPackets_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketReadTimer")
     , packetWriteTimer_(this, std::bind(&FlexVitaTask::sendAudioOut_, this), VITA_IO_TIME_INTERVAL_US, "FlexVitaPacketWriteTimer")
