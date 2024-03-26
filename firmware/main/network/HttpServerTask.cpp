@@ -181,6 +181,9 @@ static void set_content_type_from_file(httpd_req_t *req, const char *filename)
     // Enable unsafe inline scripting (required by newer Chrome)
     ESP_ERROR_CHECK(httpd_resp_set_hdr(req, "Content-Security-Policy", "script-src 'self' 'unsafe-inline'"));
 
+    // Disable caching to prevent rendering problems during firmware updates
+    ESP_ERROR_CHECK(httpd_resp_set_hdr(req, "Cache-Control", "no-store"));
+
     // Enable gzip encoding if required
     if (gzipEncoding)
     {
