@@ -49,7 +49,7 @@ public:
     DVTimer(DVTask* owner, TimerHandlerFn fn, uint64_t intervalInMicroseconds, const char* timerName);
 
     template<typename ClassObj>
-    DVTimer(DVTask* owner, void (ClassObj::*fn)(DVTimer*), uint64_t intervalInMicroseconds, const char* timerName);
+    DVTimer(DVTask* owner, ClassObj* classObj, void (ClassObj::*fn)(DVTimer*), uint64_t intervalInMicroseconds, const char* timerName);
 
     virtual ~DVTimer();
     
@@ -102,17 +102,17 @@ private:
     };
 
     template<typename ClassObj>
-    class TimerHandlerFowarder : public TimerHandler
+    class TimerHandlerForwarder : public TimerHandler
     {
     public:
-        TimerHandlerFowarder(ClassObj* classObj, void (ClassObj::*fn)(DVTimer*))
+        TimerHandlerForwarder(ClassObj* classObj, void (ClassObj::*fn)(DVTimer*))
             : classObj_(classObj)
             , fn_(fn)
         {
-            // empty
+            assert(classObj_ != nullptr);
         }
 
-        virtual ~TimerHandlerFowarder() = default;
+        virtual ~TimerHandlerForwarder() = default;
 
         virtual void call(DVTimer* timerObj) override
         {
@@ -137,13 +137,13 @@ private:
 };
 
 template<typename ClassObj>
-DVTimer::DVTimer(DVTask* owner, void (ClassObj::*fn)(DVTimer*), uint64_t intervalInMicroseconds, const char* timerName)
+DVTimer::DVTimer(DVTask* owner, ClassObj* classObj, void (ClassObj::*fn)(DVTimer*), uint64_t intervalInMicroseconds, const char* timerName)
     : owner_(owner)
     , intervalInMicroseconds_(intervalInMicroseconds)
     , running_(false)
     , once_(false)
 {
-    fn_ = new TimerHandlerFowarder<ClassObj>((ClassObj*)owner, fn);
+    fn_ = new TimerHandlerForwarder<ClassObj>(classObj, fn);
     assert(fn_ != nullptr);
 
     esp_timer_create_args_t args = {

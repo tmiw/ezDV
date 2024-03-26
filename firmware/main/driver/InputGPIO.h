@@ -75,7 +75,7 @@ private:
     gpio_glitch_filter_handle_t glitchFilterHandle_;
 
     void onGPIOStateChange_(DVTask* origin, InterruptFireMessage* message);
-    void onDebounceTimerFire_();
+    void onDebounceTimerFire_(DVTimer*);
 
     static void OnGPIOInterrupt_(void* ptr);
 
@@ -95,7 +95,7 @@ const char* InputGPIO<NumGPIO>::GetTimerName_()
 
 template<gpio_num_t NumGPIO>
 InputGPIO<NumGPIO>::InputGPIO(DVTask* owner, GPIOChangeFn onChange, bool enablePullup, bool enablePulldown, bool enableDebounce)
-    : debounceTimer_(owner, std::bind(&InputGPIO<NumGPIO>::onDebounceTimerFire_, this), DEBOUNCE_TIMER_US, GetTimerName_())
+    : debounceTimer_(owner, this, &InputGPIO<NumGPIO>::onDebounceTimerFire_, DEBOUNCE_TIMER_US, GetTimerName_())
     , owner_(owner)
     , onStateChange_(onChange)
     , interruptEnabled_(false)
@@ -203,7 +203,7 @@ void InputGPIO<NumGPIO>::onGPIOStateChange_(DVTask* origin, InterruptFireMessage
 }
 
 template<gpio_num_t NumGPIO>
-void InputGPIO<NumGPIO>::onDebounceTimerFire_()
+void InputGPIO<NumGPIO>::onDebounceTimerFire_(DVTimer*)
 {
     // Re-enable interrupt handler so we can restart debounce next button press.
     enableInterrupt(true);

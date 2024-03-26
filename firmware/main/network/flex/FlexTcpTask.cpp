@@ -40,10 +40,10 @@ namespace flex
 {
 
 FlexTcpTask::FlexTcpTask()
-    : DVTask("FlexTcpTask", 10, 8192, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
-    , reconnectTimer_(this, &FlexTcpTask::connect_, MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
-    , connectionCheckTimer_(this, &FlexTcpTask::checkConnection_, MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
-    , commandHandlingTimer_(this, &FlexTcpTask::commandResponseTimeout_, MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
+    : DVTask("FlexTcpTask", 10, 4096, tskNO_AFFINITY, 1024, pdMS_TO_TICKS(10))
+    , reconnectTimer_(this, this, &FlexTcpTask::connect_, MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
+    , connectionCheckTimer_(this, this, &FlexTcpTask::checkConnection_, MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
+    , commandHandlingTimer_(this, this, &FlexTcpTask::commandResponseTimeout_, MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)

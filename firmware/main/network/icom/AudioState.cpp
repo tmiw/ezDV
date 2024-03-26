@@ -34,8 +34,8 @@ namespace icom
 
 AudioState::AudioState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , audioOutTimer_(parent_->getTask(), &AudioState::onAudioOutTimer_, MS_TO_US(20), "IcomAudioOutTimer")
-    , audioWatchdogTimer_(parent_->getTask(), &AudioState::onAudioWatchdog_, MS_TO_US(WATCHDOG_PERIOD), "IcomAudioWatchdogTimer")
+    , audioOutTimer_(parent_->getTask(), this, &AudioState::onAudioOutTimer_, MS_TO_US(20), "IcomAudioOutTimer")
+    , audioWatchdogTimer_(parent_->getTask(), this, &AudioState::onAudioWatchdog_, MS_TO_US(WATCHDOG_PERIOD), "IcomAudioWatchdogTimer")
     , audioSequenceNumber_(0)
     , completingTransmit_(false)
 {

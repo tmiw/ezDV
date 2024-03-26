@@ -44,9 +44,9 @@ static std::map<audio::FreeDVMode, std::string> ModeList_ = {
 
 UserInterfaceTask::UserInterfaceTask()
     : DVTask("UserInterfaceTask", 10, 4096, tskNO_AFFINITY, 64, pdMS_TO_TICKS(10))
-    , volHoldTimer_(this, &UserInterfaceTask::updateVolumeCommon_, VOL_BUTTON_HOLD_TIMER_TICK_US, "VolHoldTimer")
-    , networkFlashTimer_(this, &UserInterfaceTask::flashNetworkLight_, NET_LED_FLASH_TIMER_TICK_US, "NetworkFlashTimer")
-    , timeOutTimer_(this, &UserInterfaceTask::stopTx_, 1000000 /* placeholder, will be set by user config */, "TxTimeoutTimer")
+    , volHoldTimer_(this, this, &UserInterfaceTask::updateVolumeCommon_, VOL_BUTTON_HOLD_TIMER_TICK_US, "VolHoldTimer")
+    , networkFlashTimer_(this, this, &UserInterfaceTask::flashNetworkLight_, NET_LED_FLASH_TIMER_TICK_US, "NetworkFlashTimer")
+    , timeOutTimer_(this, this, &UserInterfaceTask::stopTx_, 1000000 /* placeholder, will be set by user config */, "TxTimeoutTimer")
     , currentMode_(audio::ANALOG)
     , isTransmitting_(false)
     , isActive_(false)

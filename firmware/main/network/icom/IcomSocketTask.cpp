@@ -31,7 +31,7 @@ namespace icom
 {
 
 IcomSocketTask::IcomSocketTask(SocketType socketType)
-    : DVTask(GetTaskName_(socketType), (socketType == AUDIO_SOCKET) ? 16 : 10, 6144, (socketType == AUDIO_SOCKET) ? 1 : tskNO_AFFINITY, 1024, pdMS_TO_TICKS(20))
+    : DVTask(GetTaskName_(socketType), (socketType == AUDIO_SOCKET) ? 16 : 10, 4096, (socketType == AUDIO_SOCKET) ? 1 : tskNO_AFFINITY, 1024, pdMS_TO_TICKS(20))
     , ezdv::audio::AudioInput(1, 1)
     , socketType_(socketType)
 {

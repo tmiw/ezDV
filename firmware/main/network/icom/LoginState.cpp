@@ -35,7 +35,7 @@ namespace icom
 
 LoginState::LoginState(IcomStateMachine* parent)
     : TrackedPacketState(parent)
-    , tokenRenewTimer_(parent->getTask(), &LoginState::onTokenRenewTimer_, MS_TO_US(TOKEN_RENEWAL), "IcomTokenRenewTimer")
+    , tokenRenewTimer_(parent->getTask(), this, &LoginState::onTokenRenewTimer_, MS_TO_US(TOKEN_RENEWAL), "IcomTokenRenewTimer")
     , ourTokenRequest_(0)
     , theirToken_(0)
     , authSequenceNumber_(0)

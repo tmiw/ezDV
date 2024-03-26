@@ -83,7 +83,7 @@ std::map<char, std::string> BeeperTask::CharacterToMorse_ = {
 BeeperTask::BeeperTask()
     : DVTask("BeeperTask", 10, 4096, tskNO_AFFINITY, pdMS_TO_TICKS(10))
     , AudioInput(1, 1) // we don't need the input FIFO, just the output one
-    , beeperTimer_(this, &BeeperTask::onTimerTick_, BEEPER_TIMER_TICK_US, "BeeperTimer")
+    , beeperTimer_(this, this, &BeeperTask::onTimerTick_, BEEPER_TIMER_TICK_US, "BeeperTimer")
     , sineGenerator_(CW_SIDETONE_FREQ_HZ, 10000)
     , sineCounter_(0)
     , deferShutdown_(false)
