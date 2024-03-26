@@ -460,7 +460,7 @@ void SettingsTask::initializeWifi_()
         setWifiSettings_(
             wifiEnabled_, wifiMode_, wifiSecurity_, 
             wifiChannel_, wifiSsid_, wifiPassword_,
-            wifiHostname_);
+            wifiHostname_, true);
     }
     else
     {
@@ -628,7 +628,8 @@ void SettingsTask::initializeRadio_()
         // setRadioSettings_ sends RadioSettingsMessage on completion.
         setRadioSettings_(
             headsetPtt_, timeOutTimer_, radioEnabled_, radioType_, 
-            radioHostname_, radioPort_, radioUsername_, radioPassword_);
+            radioHostname_, radioPort_, radioUsername_, radioPassword_,
+            true);
     }
     else
     {
@@ -706,7 +707,7 @@ void SettingsTask::initialzeVoiceKeyer_()
         // setVoiceKeyerSettings_ will broadcast VoiceKeyerSettingsMessage on completion.
         setVoiceKeyerSettings_(
             enableVoiceKeyer_, voiceKeyerNumberTimesToTransmit_, 
-            voiceKeyerSecondsToWaitAfterTransmit_);
+            voiceKeyerSecondsToWaitAfterTransmit_, true);
     }
     else
     {
@@ -813,7 +814,7 @@ void SettingsTask::initializeReporting_()
     {
         // setReportingSettings_ will broadcast ReportingSettingsMessage when done.
         setReportingSettings_(
-            callsign_, gridSquare_, forceReporting_, freqHz_, message_
+            callsign_, gridSquare_, forceReporting_, freqHz_, message_, true
         );
     }
     else
@@ -957,11 +958,12 @@ void SettingsTask::onSetWifiSettingsMessage_(DVTask* origin, SetWifiSettingsMess
 
 void SettingsTask::setWifiSettings_(
     bool enabled, WifiMode mode, WifiSecurityMode security, int channel, const char* ssid,
-    const char* password, const char* hostname)
+    const char* password, const char* hostname, bool force)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Saving Wi-Fi settings");
 
     bool valuesChanged =
+        force ||
         wifiEnabled_ != enabled ||
         wifiMode_ != mode ||
         wifiSecurity_ != security ||
@@ -1054,9 +1056,10 @@ void SettingsTask::onSetRadioSettingsMessage_(DVTask* origin, SetRadioSettingsMe
 void SettingsTask::setRadioSettings_(
     bool headsetPtt, int timeOutTimer, bool enabled, int type, 
     const char* host, int port, 
-    const char* username, const char* password)
+    const char* username, const char* password, bool force)
 {
     bool valuesChanged = 
+        force ||
         headsetPtt_ != headsetPtt ||
         timeOutTimer_ != timeOutTimer ||
         radioEnabled_ != enabled ||
@@ -1158,9 +1161,10 @@ void SettingsTask::onSetVoiceKeyerSettingsMessage_(DVTask* origin, SetVoiceKeyer
     setVoiceKeyerSettings_(message->enabled, message->timesToTransmit, message->secondsToWait);
 }
 
-void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait)
+void SettingsTask::setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait, bool force)
 {
     bool valuesChanged =
+        force ||
         enableVoiceKeyer_ != enabled ||
         voiceKeyerNumberTimesToTransmit_ != timesToTransmit ||
         voiceKeyerSecondsToWaitAfterTransmit_ != secondsToWait;
@@ -1214,9 +1218,10 @@ void SettingsTask::onSetReportingSettingsMessage_(DVTask* origin, SetReportingSe
 }
 
 void SettingsTask::setReportingSettings_(
-    const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message)
+    const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message, bool force)
 {
     bool valuesChanged = 
+        force ||
         (strcmp(callsign_, callsign) != 0) ||
         (strcmp(gridSquare_, gridSquare) != 0) ||
         (strcmp(message_, message) != 0) ||

@@ -112,10 +112,10 @@ private:
     
     void setLeftChannelVolume_(int8_t vol);
     void setRightChannelVolume_(int8_t vol);
-    void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, const char* ssid, const char* password, const char* hostname);
-    void setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, const char* host, int port, const char* username, const char* password);
-    void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait);
-    void setReportingSettings_(const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message);
+    void setWifiSettings_(bool enabled, WifiMode mode, WifiSecurityMode security, int channel, const char* ssid, const char* password, const char* hostname, bool force = false);
+    void setRadioSettings_(bool headsetPtt, int timeOutTimer, bool enabled, int type, const char* host, int port, const char* username, const char* password, bool force = false);
+    void setVoiceKeyerSettings_(bool enabled, int timesToTransmit, int secondsToWait, bool force = false);
+    void setReportingSettings_(const char* callsign, const char* gridSquare, bool forceReporting, uint64_t freqHz, const char* message, bool force = false);
     void setLedBrightness_(int dutyCycle);
     void setLastMode_(int lastMode);
 
