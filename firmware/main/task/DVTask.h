@@ -137,8 +137,10 @@ private:
     class FnPtrStorage
     {
     public:
-        FnPtrStorage();
         virtual ~FnPtrStorage() = default;
+
+    protected:
+        FnPtrStorage() = default; // not intended to be called by others
     };
 
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
@@ -147,19 +149,62 @@ private:
     using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
 
     template<typename MessageType>
-    class MessageFnPtrStorage
+    class MessageHandler : public FnPtrStorage
     {
     public:
-        MessageFnPtrStorage(std::function<void(DVTask*, MessageType*)>* ptrProvided)
-            : ptr(ptrProvided)
-            {}
+        virtual ~MessageHandler() = default;
 
-        virtual ~MessageFnPtrStorage()
+        virtual void call(DVTask* origin, MessageType* message) = 0;
+
+    protected:
+        MessageHandler() = default; // not intended to be called by others
+    };
+
+    template<typename MessageType>
+    class MessageFnObjStorage : public MessageHandler<MessageType>
+    {
+    public:
+        MessageFnObjStorage(std::function<void(DVTask*, MessageType*)>* ptrProvided)
+            : ptr_(ptrProvided)
         {
-            delete ptr;
+            // empty
         }
 
-        std::function<void(DVTask*, MessageType*)>* ptr;
+        virtual ~MessageFnObjStorage()
+        {
+            delete ptr_;
+        }
+
+        virtual void call(DVTask* origin, MessageType* message) override 
+        {
+            (*ptr_)(origin, message);
+        }
+
+    private:
+        std::function<void(DVTask*, MessageType*)>* ptr_;
+    };
+
+    template<typename ClassObj, typename MessageType>
+    class MessageFnPtrStorage : public MessageHandler<MessageType>
+    {
+    public:
+        MessageFnPtrStorage(ClassObj* classObj, void (ClassObj::*fn)(DVTask* origin, MessageType* msg))
+            : classObj_(classObj)
+            , fn_(fn)
+        {
+            // empty
+        }
+
+        virtual ~MessageFnPtrStorage() = default;
+
+        virtual void call(DVTask* origin, MessageType* message) override 
+        {
+            (classObj_->*fn_)(origin, message);
+        }
+
+    private:
+        ClassObj* classObj_;
+        void (ClassObj::*fn_)(DVTask* origin, MessageType* msg);
     };
 
     // Structure to help encode messages for queuing.
@@ -232,7 +277,7 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
     std::function<void(DVTask*, MessageType*)>* fnPtr = new std::function<void(DVTask*, MessageType*)>(handler);
     assert(fnPtr != nullptr);
 
-    MessageFnPtrStorage<MessageType>* fnPtrStorage = new MessageFnPtrStorage<MessageType>(fnPtr);
+    MessageFnObjStorage<MessageType>* fnPtrStorage = new MessageFnObjStorage<MessageType>(fnPtr);
     assert(fnPtrStorage != nullptr);
 
     // Register task specific handler.
@@ -256,18 +301,35 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
 template<typename MessageType, typename ObjType>
 DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, void(ObjType::*handler)(DVTask*, MessageType*))
 {
-    return registerMessageHandler<MessageType>(std::bind(handler, taskObj, _1, _2));
+    MessageFnPtrStorage<ObjType, MessageType>* fnPtrStorage = new MessageFnPtrStorage<ObjType, MessageType>(taskObj, handler);
+    assert(fnPtrStorage != nullptr);
+
+    // Register task specific handler.
+    MessageType tmpMessage;
+    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
+    eventRegistrationMap_.insert(
+        std::make_pair(key, val)        
+    );
+
+    // Register for use by publish.
+    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+    SubscriberTasksByMessageType_.insert(
+        std::make_pair(key, this)
+    );
+    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+    
+    return fnPtrStorage;
 }
 
 template<typename MessageType>
 void DVTask::HandleEvent_(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data)
 {
-    MessageFnPtrStorage<MessageType>* fnPtrStorage = (MessageFnPtrStorage<MessageType>*)event_handler_arg;
-    std::function<void(DVTask*, MessageType*)>* fnPtr = fnPtrStorage->ptr;
+    MessageHandler<MessageType>* fnPtrStorage = (MessageHandler<MessageType>*)event_handler_arg;
     
     MessageEntry* entry = *(MessageEntry**)event_data;
     MessageType* message = (MessageType*)&entry->messageStart;
-    (*fnPtr)(entry->origin, message);
+    fnPtrStorage->call(entry->origin, message);
 }
 
 template<typename ResultMessageType>
