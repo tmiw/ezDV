@@ -31,6 +31,7 @@
 #include "freertos/semphr.h"
 
 #include "DVTaskControlMessage.h"
+#include "util/PSRamAllocator.h"
 
 using namespace std::placeholders;
 
@@ -144,9 +145,17 @@ private:
     };
 
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
-    using EventIdentifierPair = std::pair<DVEventBaseType, int32_t>;
-    using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, FnPtrStorage*>>;
-    using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
+    using EventIdentifierPair = uint64_t; // std::pair<DVEventBaseType, int32_t>;
+    using EventMap = std::multimap<
+        EventIdentifierPair, 
+        std::pair<EventHandlerFn, FnPtrStorage*>, 
+        std::less<EventIdentifierPair>, 
+        util::PSRamAllocator<std::pair<const EventIdentifierPair, std::pair<EventHandlerFn, FnPtrStorage*> > > >;
+    using PublishMap = std::multimap<
+        EventIdentifierPair,
+        DVTask*, 
+        std::less<EventIdentifierPair>,
+        util::PSRamAllocator<std::pair<const EventIdentifierPair, DVTask*> > >;
 
     template<typename MessageType>
     class MessageHandler : public FnPtrStorage
@@ -282,7 +291,7 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
 
     // Register task specific handler.
     MessageType tmpMessage;
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto key = tmpMessage.getEventPair();
     auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
     eventRegistrationMap_.insert(
         std::make_pair(key, val)        
@@ -306,7 +315,7 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, vo
 
     // Register task specific handler.
     MessageType tmpMessage;
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
+    auto key = tmpMessage.getEventPair();
     auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
     eventRegistrationMap_.insert(
         std::make_pair(key, val)        

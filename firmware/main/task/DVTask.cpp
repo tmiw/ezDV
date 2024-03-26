@@ -222,7 +222,7 @@ void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 
 void DVTask::publish(DVTaskMessage* message)
 {    
-    auto messagePair = std::make_pair(message->getEventBase(), message->getEventType());
+    auto messagePair = message->getEventPair();
 
     std::vector<DVTask*> tasksToPostTo;
 
@@ -314,7 +314,8 @@ void DVTask::singleMessagingLoop_(int64_t ticksRemaining)
     if (xQueueReceive(taskQueue_, &entry, ticksRemaining) == pdTRUE)
     {
         //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
-        auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
+        uint64_t eventPair = ((uint64_t)entry->eventBase << 32) | (entry->eventId);
+        auto iterPair = eventRegistrationMap_.equal_range(eventPair);
         EventMap::iterator iter = iterPair.first;
         while (iter != iterPair.second)
         {
