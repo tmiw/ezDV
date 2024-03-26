@@ -36,7 +36,7 @@ namespace network
 {
 
 FreeDVReporterTask::FreeDVReporterTask()
-    : ezdv::task::DVTask("FreeDVReporterTask", 1, 5144, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128)
     , reconnectTimer_(this, std::bind(&FreeDVReporterTask::startSocketIoConnection_, this), MS_TO_US(10000), "FDVReporterReconn")
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
