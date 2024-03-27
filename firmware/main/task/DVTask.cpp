@@ -228,7 +228,12 @@ void DVTask::publish(DVTaskMessage* message)
 
     // Get the list of tasks to post to first so we don't deadlock.
     auto rv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    assert(rv == pdTRUE);
+    if (rv != pdTRUE)
+    {
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not get task list in time for %s to publish", taskName_.c_str());
+        vTaskDelay(pdMS_TO_TICKS(100)); // flush debug output before crashing
+        assert(rv == pdTRUE);
+    }
 
     for (auto& taskPair : SubscriberTasksByMessageType_)
     {
