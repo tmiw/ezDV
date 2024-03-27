@@ -168,7 +168,7 @@ void FreeDVTask::onTaskTick_()
                 codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
             }
             
-            if (isEndingTransmit_ && samplesBeforeEnd_ <= 0)
+            if (isEndingTransmit_ && samplesBeforeEnd_ < numSpeechSamples)
             {
                 // We've finished processing everything that's left, end TX now.
                 TransmitCompleteMessage message;
