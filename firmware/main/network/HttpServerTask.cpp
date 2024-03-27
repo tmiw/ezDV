@@ -16,7 +16,8 @@
  */
 
 #include <stdio.h>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <sys/param.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>

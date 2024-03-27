@@ -18,7 +18,6 @@
 #ifndef DV_TASK_H
 #define DV_TASK_H
 
-#include <string>
 #include <map>
 #include <deque>
 #include <functional>
@@ -53,7 +52,7 @@ public:
     /// @param pinnedCoreId  The core that the task should be pinned to (tskNO_AFFINITY to disable).
     /// @param taskQueueSize The maximum number of events that can be queued up at a time.
     /// @param taskTick The amount of time to wait for messages before running "tick" method.
-    DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick = portMAX_DELAY);
+    DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick = portMAX_DELAY);
 
     /// @brief Cleans up after the task.
     virtual ~DVTask();
@@ -235,7 +234,7 @@ private:
         MessageEntry* entry;
     };
 
-    std::string taskName_;
+    const char* taskName_;
 
     TaskHandle_t taskObject_;
     EventMap eventRegistrationMap_;
@@ -402,7 +401,7 @@ void DVTask::waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait)
 
     if (!found)
     {
-        ESP_LOGE("DVTask", "Was waiting for %s but timed out", taskToWaitFor->taskName_.c_str());
+        ESP_LOGE("DVTask", "Was waiting for %s but timed out", taskToWaitFor->taskName_);
         vTaskDelay(pdMS_TO_TICKS(100));
     }
     assert(found);

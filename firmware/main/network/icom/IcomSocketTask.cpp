@@ -138,26 +138,20 @@ void IcomSocketTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     }
 }
 
-std::string IcomSocketTask::GetTaskName_(SocketType socketType)
+const char* IcomSocketTask::GetTaskName_(SocketType socketType)
 {
-    std::string prefix = "IcomSocketTask/";
-    
     switch(socketType)
     {
         case CONTROL_SOCKET:
-            prefix += "Control";
-            break;
+            return "IcomSocketTask/Control";
         case CIV_SOCKET:
-            prefix += "CIV";
-            break;
+            return "IcomSocketTask/CIV";
         case AUDIO_SOCKET:
-            prefix += "Audio";
-            break;
+            return "IcomSocketTask/Audio";
         default:
             assert(0);
+            return "";
     }
-    
-    return prefix;
 }
 
 }

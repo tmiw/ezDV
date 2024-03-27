@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string>
+
 #include "FreeDVReporterTask.h"
 #include "cJSON.h"
 #include "esp_app_desc.h"

@@ -18,6 +18,7 @@
 #ifndef FLEX_VITA_TASK_H
 #define FLEX_VITA_TASK_H
 
+#include <string>
 #include <ctime>
 #include <sys/socket.h>
 

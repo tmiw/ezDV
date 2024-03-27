@@ -39,7 +39,7 @@ void DVTask::Initialize()
     assert(SubscriberTasksByMessageTypeSemaphore_ != nullptr);
 }
 
-DVTask::DVTask(std::string taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
+DVTask::DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
     : taskName_(taskName)
     , taskObject_(nullptr)
     , taskQueueSize_(taskQueueSize)
@@ -163,7 +163,7 @@ void DVTask::startTask_()
     assert(taskQueue_ != nullptr);
 
     auto returnValue = 
-        xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_.c_str(), taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
+        xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_, taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
     assert(returnValue == pdPASS);
 }
 
@@ -230,7 +230,7 @@ void DVTask::publish(DVTaskMessage* message)
     auto rv = xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
     if (rv != pdTRUE)
     {
-        ESP_LOGE(CURRENT_LOG_TAG, "Could not get task list in time for %s to publish", taskName_.c_str());
+        ESP_LOGE(CURRENT_LOG_TAG, "Could not get task list in time for %s to publish", taskName_);
         vTaskDelay(pdMS_TO_TICKS(100)); // flush debug output before crashing
         assert(rv == pdTRUE);
     }
@@ -259,7 +259,7 @@ void DVTask::onTaskStart_(DVTask* origin, TaskStartMessage* message)
     vTaskDelay(pdMS_TO_TICKS(10));
     onTaskStart_();
 
-    ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_.c_str());
+    ESP_LOGI(CURRENT_LOG_TAG, "Task %s started", taskName_);
 
     TaskStartedMessage result;
     publish(&result);
@@ -270,7 +270,7 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     vTaskDelay(pdMS_TO_TICKS(10));
     onTaskSleep_();
 
-    ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_.c_str());
+    ESP_LOGI(CURRENT_LOG_TAG, "Task %s asleep", taskName_);
 
     // Process all remaining messages in message queue in case
     // there are actions that need to be performed during shutdown.
@@ -299,7 +299,7 @@ void DVTask::postHelper_(MessageEntry* entry)
         auto rv = xQueueSendToBack(taskQueue_, &entry, pdMS_TO_TICKS(100));
         if (rv == errQUEUE_FULL)
         {
-            ESP_LOGE(CURRENT_LOG_TAG, "Task %s has a full queue! (maximum: %ld)", taskName_.c_str(), taskQueueSize_);
+            ESP_LOGE(CURRENT_LOG_TAG, "Task %s has a full queue! (maximum: %ld)", taskName_, taskQueueSize_);
             vTaskDelay(pdMS_TO_TICKS(100));
         }
         assert(rv != errQUEUE_FULL);
@@ -362,7 +362,7 @@ void DVTask::threadEntry_()
         if (newStackWaterMark < stackWaterMark)
         {
             stackWaterMark = newStackWaterMark;
-            ESP_LOGI(taskName_.c_str(), "New stack high water mark of %d", newStackWaterMark);
+            ESP_LOGI(taskName_, "New stack high water mark of %d", newStackWaterMark);
         }
     }
 }

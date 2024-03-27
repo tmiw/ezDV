@@ -64,7 +64,7 @@ private:
     void onIcomCIVAudioConnectionInfo_(DVTask* origin, IcomCIVAudioConnectionInfo* message);
     void onRadioDisconnectedMessage_(DVTask* origin, DisconnectedRadioMessage* message);
     
-    static std::string GetTaskName_(SocketType socketType);
+    static const char* GetTaskName_(SocketType socketType);
 };
 
 }
