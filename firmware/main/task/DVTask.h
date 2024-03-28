@@ -30,8 +30,17 @@
 #include "freertos/semphr.h"
 
 #include "DVTaskControlMessage.h"
+#include "util/ObjectList.h"
+#include "util/klib/khash.h"
 
 using namespace std::placeholders;
+
+// Declare required hash table functions.
+extern "C"
+{
+    KHASH_DECLARE(publish_map, int64_t, void*);
+    KHASH_DECLARE(event_map, int64_t, void*);
+}
 
 namespace ezdv
 {
@@ -143,9 +152,17 @@ private:
     };
 
     using EventHandlerFn = void(*)(void *event_handler_arg, DVEventBaseType event_base, int32_t event_id, void *event_data);
-    using EventIdentifierPair = std::pair<DVEventBaseType, int32_t>;
-    using EventMap = std::multimap<EventIdentifierPair, std::pair<EventHandlerFn, FnPtrStorage*>>;
-    using PublishMap = std::multimap<EventIdentifierPair, DVTask*>;
+
+    struct EventHandlerInfo
+    {
+        EventHandlerFn eventFn;
+        FnPtrStorage* fnStorage;
+    };
+
+    using EventList = util::ObjectList<EventHandlerInfo>;
+    using EventMap = kh_event_map_t*;
+    using TaskList = util::ObjectList<DVTask*>;
+    using PublishMap = kh_publish_map_t*;
 
     template<typename MessageType>
     class MessageHandler : public FnPtrStorage
@@ -272,7 +289,7 @@ private:
 
 template<typename MessageType>
 DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(DVTask*, MessageType*)> handler)
-{    
+{
     std::function<void(DVTask*, MessageType*)>* fnPtr = new std::function<void(DVTask*, MessageType*)>(handler);
     assert(fnPtr != nullptr);
 
@@ -281,17 +298,41 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(std::function<void(D
 
     // Register task specific handler.
     MessageType tmpMessage;
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
-    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
-    eventRegistrationMap_.insert(
-        std::make_pair(key, val)        
-    );
+    auto key = tmpMessage.getEventPair();
+    auto eventK = kh_get(event_map, eventRegistrationMap_, key);
+    if (eventK == kh_end(eventRegistrationMap_))
+    {
+        // Create new linked list to store handlers
+        int ret = 0;
+        EventList* eventList = new EventList();
+        assert(eventList != nullptr);
+
+        eventK = kh_put(event_map, eventRegistrationMap_, key, &ret);
+        assert(ret != -1);
+        kh_value(eventRegistrationMap_, eventK) = eventList;
+    }
+
+    EventHandlerInfo info;
+    info.eventFn = (EventHandlerFn)&HandleEvent_<MessageType>;
+    info.fnStorage = fnPtrStorage;
+    ((EventList*)kh_value(eventRegistrationMap_, eventK))->append(info);
 
     // Register for use by publish.
     xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    SubscriberTasksByMessageType_.insert(
-        std::make_pair(key, this)
-    );
+    auto k = kh_get(publish_map, SubscriberTasksByMessageType_, key);
+	if (k == kh_end(SubscriberTasksByMessageType_))
+    {
+        // Create new linked list to store tasks to post to when an event matches.
+        int ret = 0;
+        TaskList* taskList = new TaskList();
+        assert(taskList != nullptr);
+
+        k = kh_put(publish_map, SubscriberTasksByMessageType_, key, &ret);
+        assert(ret != -1);
+        kh_value(SubscriberTasksByMessageType_, k) = taskList;
+    }
+
+    ((TaskList*)kh_value(SubscriberTasksByMessageType_, k))->append(this);
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
     
     return fnPtrStorage;
@@ -305,17 +346,41 @@ DVTask::MessageHandlerHandle DVTask::registerMessageHandler(ObjType* taskObj, vo
 
     // Register task specific handler.
     MessageType tmpMessage;
-    auto key = std::make_pair(tmpMessage.getEventBase(), tmpMessage.getEventType());
-    auto val = std::make_pair((EventHandlerFn)&HandleEvent_<MessageType>, (FnPtrStorage*)fnPtrStorage);
-    eventRegistrationMap_.insert(
-        std::make_pair(key, val)        
-    );
+    auto key = tmpMessage.getEventPair();
+    auto eventK = kh_get(event_map, eventRegistrationMap_, key);
+    if (eventK == kh_end(eventRegistrationMap_))
+    {
+        // Create new linked list to store handlers
+        int ret = 0;
+        EventList* eventList = new EventList();
+        assert(eventList != nullptr);
+
+        eventK = kh_put(event_map, eventRegistrationMap_, key, &ret);
+        assert(ret != -1);
+        kh_value(eventRegistrationMap_, eventK) = eventList;
+    }
+
+    EventHandlerInfo info;
+    info.eventFn = (EventHandlerFn)&HandleEvent_<MessageType>;
+    info.fnStorage = fnPtrStorage;
+    ((EventList*)kh_value(eventRegistrationMap_, eventK))->append(info);
 
     // Register for use by publish.
     xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    SubscriberTasksByMessageType_.insert(
-        std::make_pair(key, this)
-    );
+    auto k = kh_get(publish_map, SubscriberTasksByMessageType_, key);
+	if (k == kh_end(SubscriberTasksByMessageType_))
+    {
+        // Create new linked list to store tasks to post to when an event matches.
+        int ret = 0;
+        TaskList* taskList = new TaskList();
+        assert(taskList != nullptr);
+
+        k = kh_put(publish_map, SubscriberTasksByMessageType_, key, &ret);
+        assert(ret != -1);
+        kh_value(SubscriberTasksByMessageType_, k) = taskList;
+    }
+
+    ((TaskList*)kh_value(SubscriberTasksByMessageType_, k))->append(this);
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
     
     return fnPtrStorage;

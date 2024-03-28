@@ -40,6 +40,19 @@ public:
     virtual uint32_t getSize() const = 0;
     virtual DVEventBaseType getEventBase() const = 0;
     virtual int32_t getEventType() const = 0;
+
+    // Functions to convert base + type into int64 value.
+    // ASSUMPTION: base is a constant string built into the codebase, not
+    // something dynamically allocated/generated.
+    int64_t getEventPair() const 
+    {
+        return GetEventPair(getEventBase(), getEventType());
+    }
+
+    static int64_t GetEventPair(DVEventBaseType base, int32_t type)
+    {
+        return ((int64_t)type << 32) | ((uint64_t)base);
+    }
 };
 
 template<uint32_t EVENT_TYPE_ID, typename MessageType>

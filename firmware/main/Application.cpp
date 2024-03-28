@@ -500,7 +500,7 @@ void App::onTaskSleep_()
 
 void App::onTaskTick_()
 {
-#if 0
+#if 1
     // infinite loop to track heap use
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
     bool ptt = false;

@@ -55,6 +55,7 @@ set(SOURCES
     "task/DVTask.cpp"
     "task/DVTaskControlMessage.cpp"
     "task/DVTimer.cpp"
+    "task/PublishList.cpp"
     "ui/FuelGaugeTask.cpp"
     "ui/RFComplianceTestTask.cpp"
     "ui/UserInterfaceTask.cpp"

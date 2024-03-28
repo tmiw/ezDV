@@ -37,6 +37,10 @@ void DVTask::Initialize()
 {
     SubscriberTasksByMessageTypeSemaphore_ = xSemaphoreCreateBinary();
     assert(SubscriberTasksByMessageTypeSemaphore_ != nullptr);
+
+    // Initialize publish map.
+    SubscriberTasksByMessageType_ = kh_init(publish_map);
+    assert(SubscriberTasksByMessageType_ != nullptr);
 }
 
 DVTask::DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStackSize, BaseType_t pinnedCoreId, int32_t taskQueueSize, TickType_t taskTick)
@@ -49,6 +53,10 @@ DVTask::DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStac
     , taskQueue_(nullptr)
     , taskTick_(taskTick)
 {
+    // Create event registration map
+    eventRegistrationMap_ = kh_init(event_map);
+    assert(eventRegistrationMap_ != nullptr);
+
     // Register task start/wake/sleep handlers.
     registerMessageHandler(this, &DVTask::onTaskStart_);
     registerMessageHandler(this, &DVTask::onTaskSleep_);
@@ -59,11 +67,20 @@ DVTask::~DVTask()
 {
     assert(taskObject_ == nullptr);
 
-    while (eventRegistrationMap_.size() > 0)
+    while (kh_size(eventRegistrationMap_) > 0)
     {
-        auto iter = eventRegistrationMap_.begin();
-        unregisterMessageHandler(iter->second.second);
+        auto iter = kh_begin(eventRegistrationMap_);
+        if (iter != kh_end(eventRegistrationMap_))
+        {
+            EventList* eventList = (EventList*)kh_val(eventRegistrationMap_, iter);
+            if (eventList->count > 0)
+            {
+                unregisterMessageHandler(eventList->mem[0].fnStorage);
+            }
+        }
     }
+
+    kh_destroy(event_map, eventRegistrationMap_);
 }
 
 void DVTask::start()
@@ -126,34 +143,92 @@ void DVTask::unregisterMessageHandler(MessageHandlerHandle handler)
     FnPtrStorage* handlerPtr = (FnPtrStorage*)handler;
     
     // Unregister task specific handler.
-    auto iter = eventRegistrationMap_.begin();
-    EventIdentifierPair key;
-    for (; iter != eventRegistrationMap_.end(); iter++)
+    bool updateCentralList = false;
+    bool found = false;
+    int64_t key = 0;
+    for (auto iter = kh_begin(eventRegistrationMap_); iter != kh_end(eventRegistrationMap_); ++iter)
     {
-        if (iter->second.second == handlerPtr)
+        if (kh_exist(eventRegistrationMap_, iter))
         {
-            key = iter->first;
-            eventRegistrationMap_.erase(iter);
-            delete handlerPtr;
-            break;
-        }
-    }
-    
-    // Unregister for use by publish.
-    xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
-    if (eventRegistrationMap_.count(key) == 0)
-    {
-        auto iter = SubscriberTasksByMessageType_.equal_range(key);
-        for (auto i = iter.first; i != iter.second; i++)
-        {
-            if (i->second == this)
+            EventList* list = (EventList*)kh_val(eventRegistrationMap_, iter);
+            for (int index = 0; index < list->count; index++)
             {
-                SubscriberTasksByMessageType_.erase(i);
+                if (list->mem[index].fnStorage == handlerPtr)
+                {
+                    found = true;
+                    key = kh_key(eventRegistrationMap_, iter);
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                if (list->count == 1)
+                {
+                    // Just destroy the list.
+                    kh_del(event_map, eventRegistrationMap_, iter);
+                    updateCentralList = true;
+                }
+                else
+                {
+                    EventList* newList = new EventList();
+                    assert(newList != nullptr);
+
+                    for (int index = 0; index < list->count; index++)
+                    {
+                        if (list->mem[index].fnStorage == handlerPtr) break;
+                        newList->append(list->mem[index]);
+                    }
+
+                    kh_val(eventRegistrationMap_, iter) = newList;
+                }
+
+                delete list;
+                delete handlerPtr;
                 break;
             }
         }
     }
-    xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+    
+    // Unregister for use by publish.
+    if (updateCentralList)
+    {
+        xSemaphoreTake(SubscriberTasksByMessageTypeSemaphore_, pdMS_TO_TICKS(100));
+
+        // Create new publish list without us if we're no longer subscribed to this event.
+        auto k = kh_get(publish_map, SubscriberTasksByMessageType_, key);
+        assert(k != kh_end(SubscriberTasksByMessageType_));
+
+        auto oldPublishList = (TaskList*)kh_val(SubscriberTasksByMessageType_, k);
+        int ret = 0;
+        TaskList* newPublishList = new TaskList();
+        assert(newPublishList != nullptr);
+
+        int numRemaining = 0;
+        for (auto index = 0; index < oldPublishList->count; index++)
+        {
+            if (oldPublishList->mem[index] == this)
+            {
+                continue;
+            }
+
+            numRemaining++;
+            newPublishList->append(oldPublishList->mem[index]);
+        }
+
+        delete oldPublishList;
+        if (numRemaining > 0)
+        {
+            kh_value(SubscriberTasksByMessageType_, k) = newPublishList;
+        }
+        else
+        {
+            delete newPublishList;
+            kh_del(publish_map, SubscriberTasksByMessageType_, k);
+        }
+
+        xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
+    }
 }
 
 void DVTask::startTask_()
@@ -235,11 +310,13 @@ void DVTask::publish(DVTaskMessage* message)
         assert(rv == pdTRUE);
     }
 
-    for (auto& taskPair : SubscriberTasksByMessageType_)
+    auto k = kh_get(publish_map, SubscriberTasksByMessageType_, message->getEventPair());
+    if (k != kh_end(SubscriberTasksByMessageType_))
     {
-        if (messagePair == taskPair.first)
+        auto publishList = (TaskList*)kh_val(SubscriberTasksByMessageType_, k);
+        for (auto index = 0; index < publishList->count; index++)
         {
-            tasksToPostTo.push_back(taskPair.second);
+            tasksToPostTo.push_back(publishList->mem[index]);
         }
     }
     xSemaphoreGive(SubscriberTasksByMessageTypeSemaphore_);
@@ -318,13 +395,16 @@ void DVTask::singleMessagingLoop_(int64_t ticksRemaining)
 
     if (xQueueReceive(taskQueue_, &entry, ticksRemaining) == pdTRUE)
     {
-        //ESP_LOGI(taskName_.c_str(), "Received message %s:%ld", entry->eventBase, entry->eventId);
-        auto iterPair = eventRegistrationMap_.equal_range(std::make_pair(entry->eventBase, entry->eventId));
-        EventMap::iterator iter = iterPair.first;
-        while (iter != iterPair.second)
+        //ESP_LOGI(taskName_, "Received message %s:%ld", entry->eventBase, entry->eventId);
+        auto key = DVTaskMessage::GetEventPair(entry->eventBase, entry->eventId);
+        auto iter = kh_get(event_map, eventRegistrationMap_, key);
+        if (iter != kh_end(eventRegistrationMap_))
         {
-            (*iter->second.first)(iter->second.second, entry->eventBase, entry->eventId, &entry);
-            iter++;
+            EventList* eventList = (EventList*)kh_val(eventRegistrationMap_, iter);
+            for (int index = 0; index < eventList->count; index++)
+            {
+                (*eventList->mem[index].eventFn)(eventList->mem[index].fnStorage, entry->eventBase, entry->eventId, &entry);
+            }
         }
 
         // Deallocate message now that we're done with it.
