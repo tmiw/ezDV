@@ -71,6 +71,10 @@ public:
     /// @param message The message to post to the task.
     void postISR(DVTaskMessage* message);
 
+    /// @brief Posts a message to own event queue (from timer).
+    /// @param message The message to post to the task.
+    void postTimer(DVTaskMessage* message);
+
     /// @brief Posts a message to destination's event queue.
     /// @param destination The destination task to send the event to.
     /// @param message The message to send.
