@@ -311,7 +311,8 @@ void FreeDVReporterTask::startSocketIoConnection_(DVTimer*)
 
     ws_cfg.uri = uri.c_str();
     ws_cfg.disable_auto_reconnect = true; // we're handling auto-reconnect
-
+    ws_cfg.task_prio = 1; // report to the server when able, don't interfere with others
+    
     ESP_LOGI(CURRENT_LOG_TAG, "init client for %s", ws_cfg.uri);
     reportingClientHandle_ = esp_websocket_client_init(&ws_cfg);
     esp_websocket_register_events(reportingClientHandle_, WEBSOCKET_EVENT_ANY, WebsocketEventHandler_, (void *)this);
