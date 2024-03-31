@@ -94,6 +94,7 @@ private:
 
     int pingIntervalMs_;
     int pingTimeoutMs_;
+    bool isConnecting_;
 
     void onReportingSettingsMessage_(DVTask* origin, storage::ReportingSettingsMessage* message);
     void onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message);

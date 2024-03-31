@@ -52,6 +52,7 @@ FreeDVReporterTask::FreeDVReporterTask()
     , reportingRefCount_(0)
     , pingIntervalMs_(0)
     , pingTimeoutMs_(0)
+    , isConnecting_(false)
 {
     registerMessageHandler(this, &FreeDVReporterTask::onReportingSettingsMessage_);
     registerMessageHandler(this, &FreeDVReporterTask::onEnableReportingMessage_);
@@ -246,6 +247,8 @@ void FreeDVReporterTask::onSetFreeDVMode_(DVTask* origin, audio::SetFreeDVModeMe
 
 void FreeDVReporterTask::onWebsocketConnectedMessage_(DVTask* origin, WebsocketConnectedMessage* message)
 {
+    isConnecting_ = false;
+    
     // Send namespace connection request with previously constructed auth data.
     std::string namespaceOpen = "40";
     auto tmp = cJSON_PrintUnformatted(jsonAuthObj_);
@@ -256,7 +259,7 @@ void FreeDVReporterTask::onWebsocketConnectedMessage_(DVTask* origin, WebsocketC
 
 void FreeDVReporterTask::onWebsocketDisconnectedMessage_(DVTask* origin, WebsocketDisconnectedMessage* message)
 {
-    if (reportingEnabled_)
+    if (reportingEnabled_ || isConnecting_)
     {
         // Retry connection if reporting is enabled (i.e. we lost connection).
         stopSocketIoConnection_();
@@ -312,7 +315,9 @@ void FreeDVReporterTask::startSocketIoConnection_(DVTimer*)
     ws_cfg.uri = uri.c_str();
     ws_cfg.disable_auto_reconnect = true; // we're handling auto-reconnect
     ws_cfg.task_prio = 1; // report to the server when able, don't interfere with others
-    
+
+    isConnecting_ = true;
+
     ESP_LOGI(CURRENT_LOG_TAG, "init client for %s", ws_cfg.uri);
     reportingClientHandle_ = esp_websocket_client_init(&ws_cfg);
     esp_websocket_register_events(reportingClientHandle_, WEBSOCKET_EVENT_ANY, WebsocketEventHandler_, (void *)this);
