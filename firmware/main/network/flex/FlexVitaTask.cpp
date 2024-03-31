@@ -35,8 +35,10 @@
 #define MAX_VITA_SAMPLES_TO_RESAMPLE (MAX_VITA_SAMPLES * FDMDV_OS_24) /* Must be less than the max size of the VITA packet (180 two channel samples) */
 #define VITA_SAMPLES_TO_SEND MAX_VITA_SAMPLES_TO_RESAMPLE
 #define MIN_VITA_PACKETS_TO_SEND (4)
+#define MAX_VITA_PACKETS_TO_SEND (10)
 #define US_OF_AUDIO_PER_VITA_PACKET (5250)
 #define VITA_IO_TIME_INTERVAL_US (US_OF_AUDIO_PER_VITA_PACKET * MIN_VITA_PACKETS_TO_SEND) /* Time interval between subsequent sends or receives */
+#define MAX_JITTER_US (500) /* Corresponds to +/- the maximum amount VITA_IO_TIME_INTERVAL_US should vary by. */
 
 #define CURRENT_LOG_TAG "FlexVitaTask"
 
@@ -128,12 +130,24 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
 
     // If we're starved of audio, don't even bother going through the rest of the logic right now
     // and reset state back to the point right when we started.
-    if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES_TO_RESAMPLE * minPacketsRequired_)
+    /*if (codec2_fifo_used(fifo) < MAX_VITA_SAMPLES_TO_RESAMPLE * minPacketsRequired_)
     {
         if (isTransmitting_) ESP_LOGW(CURRENT_LOG_TAG, "Not enough audio samples to process/send packets (minimum packets needed: %d)!", minPacketsRequired_);
         minPacketsRequired_ = 0;
         timeBeyondExpectedUs_ = 0;
         return;
+    }*/
+
+    if (isTransmitting_ && (
+        timeSinceLastPacketSend >= (VITA_IO_TIME_INTERVAL_US + MAX_JITTER_US) ||
+        timeSinceLastPacketSend <= (VITA_IO_TIME_INTERVAL_US - MAX_JITTER_US)))
+    {
+        ESP_LOGW(
+            CURRENT_LOG_TAG, 
+            "Packet TX jitter is a bit high (time = %" PRIu64 ", expected: %d-%d)", 
+            timeSinceLastPacketSend,
+            VITA_IO_TIME_INTERVAL_US - MAX_JITTER_US,
+            VITA_IO_TIME_INTERVAL_US + MAX_JITTER_US);
     }
 
     // Determine the number of extra packets we need to send this go-around.
@@ -171,10 +185,11 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     }
 
     //ESP_LOGI(CURRENT_LOG_TAG, "Packets to be sent this time: %d", minPacketsRequired_);
-
-    while(minPacketsRequired_ > 0 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    int ctr = MAX_VITA_PACKETS_TO_SEND;
+    while(minPacketsRequired_ > 0 && ctr > 0 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
     {
         minPacketsRequired_--;
+        ctr--;
 
         if (!audioEnabled_)
         {
@@ -284,12 +299,12 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         packet->length = htons(packet_len >> 2); // Length is in 32-bit words, note there are two channels
 
         packet->timestamp_int = time(NULL);
-        if (packet->timestamp_int != currentTime_)
+        /*if (packet->timestamp_int != currentTime_)
         {
             timeFracSeq_ = 0;
-        }
+        }*/
         
-        packet->timestamp_frac = timeFracSeq_++;
+        packet->timestamp_frac = __builtin_bswap64(audioSeqNum_ - 1); // timeFracSeq_++;
         currentTime_ = packet->timestamp_int;
 
         SendVitaMessage message(packet, packet_len);
@@ -377,7 +392,8 @@ void FlexVitaTask::readPendingPackets_(DVTimer*)
     FD_SET(socket_, &readSet);
     
     // Process if there are pending datagrams in the buffer
-    while (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    int ctr = MAX_VITA_PACKETS_TO_SEND;
+    while (ctr-- > 0 && select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
     {
         vita_packet* packet = &packetArray_[packetIndex_++];
         assert(packet != nullptr);

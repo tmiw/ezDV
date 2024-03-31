@@ -289,6 +289,21 @@ void DVTask::postISR(DVTaskMessage* message)
     }
 }
 
+void DVTask::postTimer(DVTaskMessage* message)
+{
+    if (taskQueue_ && isAwake())
+    {
+        MessageEntry* entry = createMessageEntry_(nullptr, message);
+        auto rv = xQueueSendToFront(taskQueue_, &entry, pdMS_TO_TICKS(100));
+        if (rv == errQUEUE_FULL)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Task %s has a full queue! (maximum: %ld)", taskName_, taskQueueSize_);
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        assert(rv != errQUEUE_FULL);
+    }
+}
+
 void DVTask::sendTo(DVTask* destination, DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(this, message);

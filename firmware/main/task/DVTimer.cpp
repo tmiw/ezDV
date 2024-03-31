@@ -134,7 +134,7 @@ void DVTimer::OnESPTimerFire_(void* ptr)
     }
 
     TimerFireMessage message(obj);
-    obj->owner_->post(&message);
+    obj->owner_->postTimer(&message);
 }
 
 }
