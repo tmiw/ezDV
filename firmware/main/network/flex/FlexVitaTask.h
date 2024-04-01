@@ -78,7 +78,7 @@ private:
     int64_t timeBeyondExpectedUs_;
 
     // Resampler buffers
-    float* downsamplerInBuf_;
+    short* downsamplerInBuf_;
     short* downsamplerOutBuf_;
     short* upsamplerInBuf_;
     float* upsamplerOutBuf_;

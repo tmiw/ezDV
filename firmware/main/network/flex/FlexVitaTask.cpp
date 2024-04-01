@@ -79,7 +79,7 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestTxMessage_);
 
-    downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
+    downsamplerInBuf_ = (short*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(short), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
     downsamplerOutBuf_ = (short*)heap_caps_calloc(MAX_VITA_SAMPLES, sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerOutBuf_ != nullptr);
@@ -384,16 +384,10 @@ void FlexVitaTask::disconnect_()
 }
 
 void FlexVitaTask::readPendingPackets_(DVTimer*)
-{
-    fd_set readSet;
-    struct timeval tv = {0, 0};
-    
-    FD_ZERO(&readSet);
-    FD_SET(socket_, &readSet);
-    
+{ 
     // Process if there are pending datagrams in the buffer
     int ctr = MAX_VITA_PACKETS_TO_SEND;
-    while (ctr-- > 0 && select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    while (ctr-- > 0)
     {
         vita_packet* packet = &packetArray_[packetIndex_++];
         assert(packet != nullptr);
@@ -410,10 +404,10 @@ void FlexVitaTask::readPendingPackets_(DVTimer*)
             ReceiveVitaMessage message(packet, rv);
             post(&message);
         }
-        
-        // Reinitialize the read set for the next pass.
-        FD_ZERO(&readSet);
-        FD_SET(socket_, &readSet);
+        else
+        {
+            break;
+        }
     }
 }
 
@@ -528,7 +522,7 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
             while (fifo != nullptr && i < half_num_samples)
             {
                 uint32_t temp = ntohl(packet->if_samples[i << 1]);
-                downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp;
+                downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp * FDMDV_FLOAT_TO_SHORT;
                 i++;
 
                 if (inputCtr_ == MAX_VITA_SAMPLES * FDMDV_OS_24)
