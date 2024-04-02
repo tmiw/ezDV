@@ -15,6 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "esp_dsp.h"
+
 #include "SampleRateConverter.h"
 
 // (int16(fir1(47, 1/3) * 32767))' in Octave
@@ -142,9 +144,9 @@ static const short fdmdv_os_filter24_short2[] = {
   in8k[] (see t24_8.c unit test as example).
 \*---------------------------------------------------------------------------*/
 
-void fdmdv_8_to_24(float out24k[], short in8k[], int n)
+void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scaleFactor)
 {
-    for(i=0; i<n; i++) {
+    for(int i=0; i<n; i++) {
       short tmp0 = 0;
       short tmp1 = 0;
       short tmp2 = 0;
@@ -157,9 +159,9 @@ void fdmdv_8_to_24(float out24k[], short in8k[], int n)
       //     dsps_dotprod_s16(fdmdv_os_filter24_short0, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp0, FDMDV_OS_TAPS_24_8K, 0);
       //     dsps_dotprod_s16(fdmdv_os_filter24_short1, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp1, FDMDV_OS_TAPS_24_8K, 0);
       //     dsps_dotprod_s16(fdmdv_os_filter24_short2, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp2, FDMDV_OS_TAPS_24_8K, 0);
-      //     out24k[i*FDMDV_OS_24] = tmp0 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24;
-      //     out24k[i*FDMDV_OS_24 + 1] = tmp1 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24;
-      //     out24k[i*FDMDV_OS_24 + 2] = tmp2 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24;
+      //     out24k[i*FDMDV_OS_24] = tmp0 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
+      //     out24k[i*FDMDV_OS_24 + 1] = tmp1 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
+      //     out24k[i*FDMDV_OS_24 + 2] = tmp2 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
       //
       // As each of the filter arrays are of fixed size (16 entries each) and share one operand (in8k), we don't actually
       // need to eat the overhead of calling into ESP-DSP three separate times. We can simply retrieve each of the blocks
@@ -207,22 +209,28 @@ void fdmdv_8_to_24(float out24k[], short in8k[], int n)
         "float.s f2, %[tmp1], 15\n"         // f2 = tmp1 * FDMDV_SHORT_TO_FLOAT
         "float.s f3, %[tmp2], 15\n"         // f3 = tmp2 * FDMDV_SHORT_TO_FLOAT
         "mul.s f1, f1, f0\n"                // f1 *= 3
-        "mul.s f2, f2, f0\n"                // f1 *= 3
-        "mul.s f3, f3, f0\n"                // f1 *= 3
+        "mul.s f1, f1, %[scaleFactor]\n"    // f1 *= scaleFactor
+        "mul.s f2, f2, f0\n"                // f2 *= 3
+        "mul.s f2, f2, %[scaleFactor]\n"    // f2 *= scaleFactor
+        "mul.s f3, f3, f0\n"                // f3 *= 3
+        "mul.s f3, f3, %[scaleFactor]\n"    // f3 *= scaleFactor
         "ssi f1, %[out], 0\n"               // out[0] = f1        
         "ssi f2, %[out], 4\n"               // out[1] = f2        
         "ssi f3, %[out], 8\n"               // out[2] = f3
         
         : [tmp0] "=r"(tmp0), [tmp1] "=r"(tmp1), [tmp2] "=r"(tmp2), [out] "=r"(out)
-        : [filter0] "r"(fdmdv_os_filter24_short0), [filter1] "r"(fdmdv_os_filter24_short1), [filter2] "r"(fdmdv_os_filter24_short2), [data] "r"(data), "3"(out)
+        : [filter0] "r"(fdmdv_os_filter24_short0), [filter1] "r"(fdmdv_os_filter24_short1), [filter2] "r"(fdmdv_os_filter24_short2), [data] "r"(data), "3"(out), [scaleFactor] "f"(scaleFactor)
         : "a9", "a10", "f0", "f1", "f2", "f3", "memory"
       );
     }	
 
     /* update filter memory */
 
-    for(i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
+    for(int i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
 	    in8k[i] = in8k[i + n];
+
+    // quell warning
+    (void)out24k[0];
 }
 
 /*---------------------------------------------------------------------------*\
@@ -239,7 +247,7 @@ void fdmdv_8_to_24(float out24k[], short in8k[], int n)
 
 void fdmdv_24_to_8(short out8k[], short in24k[], int n)
 {
-    int i,j;
+    int i;
 
     for(i=0; i<n; i++) {
       dsps_dotprod_s16(fdmdv_os_filter24_short, &in24k[-FDMDV_OS_TAPS_24K + i*FDMDV_OS_24], &out8k[i], FDMDV_OS_TAPS_24K, 0);

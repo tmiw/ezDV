@@ -198,17 +198,7 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         }
         
         // Upsample to 24K floats.
-        fdmdv_8_to_24(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES);
-
-        // Scale output audio as SmartSDR is a lot quieter than expected otherwise.
-        dsps_mulc_f32(
-            upsamplerOutBuf_,
-            upsamplerOutBuf_,
-            MAX_VITA_SAMPLES_TO_RESAMPLE,
-            tx_scale_factor,
-            1,
-            1
-        );
+        fdmdv_8_to_24_with_scaling(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES, tx_scale_factor);
 
         uint32_t* dataPtr = (uint32_t*)&upsamplerOutBuf_[0];
         uint32_t masks[] = 

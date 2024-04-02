@@ -33,7 +33,7 @@ extern "C" {
 /* Special purpose 8->24K conversion functions for the Flex 6000 series.
    The Flex uses floating point numbers while Codec2 uses shorts, so we
    also have code to convert between those formats. */
-void           fdmdv_8_to_24(float out24k[], short in8k[], int n);
+void           fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scaleFactor);
 void           fdmdv_24_to_8(short out8k[], short in24k[], int n);
 
 #ifdef __cplusplus
