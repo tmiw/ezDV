@@ -183,7 +183,7 @@ void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scale
         "ee.srs.accx a10, a9, 0\n"          // a10 = accx >> a9
         "mov %[tmp1], a10\n"                // tmp1 = a10
         "ee.zero.accx\n"                    // accx = 0
-        "ee.vmulas.s16.accx q1, q3\n"       // accx += q2 * q3
+        "ee.vmulas.s16.accx q2, q3\n"       // accx += q2 * q3
         "ee.srs.accx a10, a9, 0\n"          // a10 = accx >> a9
         "mov %[tmp2], a10\n"                // tmp2 = a10
 
@@ -201,7 +201,7 @@ void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scale
         "ee.srs.accx a10, a9, 0\n"          // a10 = accx >> a9
         "add %[tmp1], %[tmp1], a10\n"       // tmp1 += a10
         "ee.zero.accx\n"                    // accx = 0
-        "ee.vmulas.s16.accx q1, q3\n"       // accx += q2 * q3
+        "ee.vmulas.s16.accx q2, q3\n"       // accx += q2 * q3
         "ee.srs.accx a10, a9, 0\n"          // a10 = accx >> a9
         "add %[tmp2], %[tmp2], a10\n"       // tmp2 += a10
 
