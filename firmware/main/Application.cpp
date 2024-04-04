@@ -18,8 +18,8 @@
 //======================================================================
 // DEBUGGING OPTIONS (TBD: add as ESP-IDF menuconfig options)
 //======================================================================
-#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
-#define PRINT_PROCESS_STATS /* Prints process stats (e.g. CPU usage). Requires FreeRTOS real time stats to be enabled. */
+//#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
+//#define PRINT_PROCESS_STATS /* Prints process stats (e.g. CPU usage). Requires FreeRTOS real time stats to be enabled. */
 //#define ENABLE_AUTOMATED_TX_RX_TEST /* Toggles PTT every tick. */
 
 //======================================================================
