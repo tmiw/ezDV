@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
 #include "esp_dsp.h"
 
 #include "SampleRateConverter.h"
@@ -146,74 +147,81 @@ static const short fdmdv_os_filter24_short2[] = {
 
 void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scaleFactor)
 {
-  scaleFactor *= FDMDV_OS_24;
+    scaleFactor *= FDMDV_OS_24;
 
-    for(int i=0; i<n; i++) {
-      short tmp0 = 0;
-      short tmp1 = 0;
-      short tmp2 = 0;
+    short tmp0 = 0;
+    short tmp1 = 0;
+    short tmp2 = 0;
 
-      short* data = &in8k[i - FDMDV_OS_TAPS_24_8K];
-      float* out = &out24k[i*FDMDV_OS_24];
+    short* data = &in8k[-FDMDV_OS_TAPS_24_8K];
+    float* out = &out24k[0];
 
-      // The below is equivalent to the following C code:
-      //
-      //     dsps_dotprod_s16(fdmdv_os_filter24_short0, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp0, FDMDV_OS_TAPS_24_8K, 0);
-      //     dsps_dotprod_s16(fdmdv_os_filter24_short1, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp1, FDMDV_OS_TAPS_24_8K, 0);
-      //     dsps_dotprod_s16(fdmdv_os_filter24_short2, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp2, FDMDV_OS_TAPS_24_8K, 0);
-      //     out24k[i*FDMDV_OS_24] = tmp0 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
-      //     out24k[i*FDMDV_OS_24 + 1] = tmp1 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
-      //     out24k[i*FDMDV_OS_24 + 2] = tmp2 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
-      //
-      // As each of the filter arrays are of fixed size (16 entries each) and share one operand (in8k), we don't actually
-      // need to eat the overhead of calling into ESP-DSP three separate times. We can simply retrieve each of the blocks
-      // of the filter entries and the input data once and perform dot products on each of those registers.
-      asm volatile(
-        "movi a9, 15\n"                     // a9 = 15
-        "ld.qr q0, %[filter0], 0\n"         // Load filter0 into q0
-        "ld.qr q1, %[filter1], 0\n"         // Load filter1 into q1
-        "ld.qr q2, %[filter2], 0\n"         // Load filter1 into q2
-        "ld.qr q3, %[data], 0\n"            // Load data into q3
-        "ld.qr q4, %[filter0], 16\n"        // Load filter0 + 16 into q4
-        "ld.qr q5, %[filter1], 16\n"        // Load filter1 + 16 into q5
-        "ld.qr q6, %[filter2], 16\n"        // Load filter1 + 16 into q6
-        "ld.qr q7, %[data], 16\n"           // Load data + 16 into q7
+    // The below is equivalent to the following C code:
+    //
+    // for(int i=0; i<n; i++) 
+    // {
+    //     dsps_dotprod_s16(fdmdv_os_filter24_short0, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp0, FDMDV_OS_TAPS_24_8K, 0);
+    //     dsps_dotprod_s16(fdmdv_os_filter24_short1, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp1, FDMDV_OS_TAPS_24_8K, 0);
+    //     dsps_dotprod_s16(fdmdv_os_filter24_short2, &in8k[i - FDMDV_OS_TAPS_24_8K], &tmp2, FDMDV_OS_TAPS_24_8K, 0);
+    //     out24k[i*FDMDV_OS_24] = tmp0 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
+    //     out24k[i*FDMDV_OS_24 + 1] = tmp1 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
+    //     out24k[i*FDMDV_OS_24 + 2] = tmp2 * FDMDV_SHORT_TO_FLOAT * FDMDV_OS_24 * scaleFactor;
+    // }
+    //
+    // As each of the filter arrays are of fixed size (16 entries each) and share one operand (in8k), we don't actually
+    // need to eat the overhead of calling into ESP-DSP three separate times. We can simply retrieve each of the blocks
+    // of the filter entries and the input data once and perform dot products on each of those registers.
+    asm volatile(
+      "movi a9, 15\n"                                                          // a9 = 15
+      "ld.qr q0, %[filter0], 0\n"                                              // Load filter0 into q0
+      "ld.qr q1, %[filter1], 0\n"                                              // Load filter1 into q1
+      "ld.qr q2, %[filter2], 0\n"                                              // Load filter1 into q2
+      "ld.qr q4, %[filter0], 16\n"                                             // Load filter0 + 16 into q4
+      "ld.qr q5, %[filter1], 16\n"                                             // Load filter1 + 16 into q5
+      "ld.qr q6, %[filter2], 16\n"                                             // Load filter1 + 16 into q6
+      "loopgtz %[n], fdmdv_8_to_24_with_scaling_loop_end\n"                    // while (n > 0) {
+      "                                     ld.qr q3, %[data], 0\n"            // Load data into q3
+      "                                     ld.qr q7, %[data], 16\n"           // Load data + 16 into q7
+      "                                     addi %[data], %[data], 2\n"        // data++
 
-        "ee.zero.accx\n"                    // accx = 0
-        "ee.vmulas.s16.accx q0, q3\n"       // accx += q0 * q3
-        "ee.vmulas.s16.accx q4, q7\n"       // accx += q4 * q7
-        "ee.srs.accx %[tmp0], a9, 0\n"      // tmp0 = accx >> a9
+      "                                     ee.zero.accx\n"                    // accx = 0
+      "                                     ee.vmulas.s16.accx q0, q3\n"       // accx += q0 * q3
+      "                                     ee.vmulas.s16.accx q4, q7\n"       // accx += q4 * q7
+      "                                     ee.srs.accx %[tmp0], a9, 0\n"      // tmp0 = accx >> a9
 
-        "ee.zero.accx\n"                    // accx = 0
-        "ee.vmulas.s16.accx q1, q3\n"       // accx += q1 * q3
-        "ee.vmulas.s16.accx q5, q7\n"       // accx += q5 * q7
-        "ee.srs.accx %[tmp1], a9, 0\n"      // tmp1 = accx >> a9
+      "                                     ee.zero.accx\n"                    // accx = 0
+      "                                     ee.vmulas.s16.accx q1, q3\n"       // accx += q1 * q3
+      "                                     ee.vmulas.s16.accx q5, q7\n"       // accx += q5 * q7
+      "                                     ee.srs.accx %[tmp1], a9, 0\n"      // tmp1 = accx >> a9
 
-        "ee.zero.accx\n"                    // accx = 0
-        "ee.vmulas.s16.accx q2, q3\n"       // accx += q2 * q3
-        "ee.vmulas.s16.accx q6, q7\n"       // accx += q6 * q7
-        "ee.srs.accx %[tmp2], a9, 0\n"      // tmp2 = accx >> a9
+      "                                     ee.zero.accx\n"                    // accx = 0
+      "                                     ee.vmulas.s16.accx q2, q3\n"       // accx += q2 * q3
+      "                                     ee.vmulas.s16.accx q6, q7\n"       // accx += q6 * q7
+      "                                     ee.srs.accx %[tmp2], a9, 0\n"      // tmp2 = accx >> a9
 
-        "float.s f1, %[tmp0], 15\n"         // f1 = tmp0 * FDMDV_SHORT_TO_FLOAT
-        "float.s f2, %[tmp1], 15\n"         // f2 = tmp1 * FDMDV_SHORT_TO_FLOAT
-        "float.s f3, %[tmp2], 15\n"         // f3 = tmp2 * FDMDV_SHORT_TO_FLOAT
-        "mul.s f1, f1, %[scaleFactor]\n"    // f1 *= scaleFactor
-        "mul.s f2, f2, %[scaleFactor]\n"    // f2 *= scaleFactor
-        "mul.s f3, f3, %[scaleFactor]\n"    // f3 *= scaleFactor
-        "ssi f1, %[out], 0\n"               // out[0] = f1        
-        "ssi f2, %[out], 4\n"               // out[1] = f2        
-        "ssi f3, %[out], 8\n"               // out[2] = f3
-        
-        : [tmp0] "=r"(tmp0), [tmp1] "=r"(tmp1), [tmp2] "=r"(tmp2), [out] "=r"(out)
-        : [filter0] "r"(fdmdv_os_filter24_short0), [filter1] "r"(fdmdv_os_filter24_short1), [filter2] "r"(fdmdv_os_filter24_short2), [data] "r"(data), "3"(out), [scaleFactor] "f"(scaleFactor)
-        : "a9", "f1", "f2", "f3", "memory"
-      );
-    }	
+      "                                     float.s f1, %[tmp0], 15\n"         // f1 = tmp0 * FDMDV_SHORT_TO_FLOAT
+      "                                     float.s f2, %[tmp1], 15\n"         // f2 = tmp1 * FDMDV_SHORT_TO_FLOAT
+      "                                     float.s f3, %[tmp2], 15\n"         // f3 = tmp2 * FDMDV_SHORT_TO_FLOAT
+      "                                     mul.s f1, f1, %[scaleFactor]\n"    // f1 *= scaleFactor
+      "                                     mul.s f2, f2, %[scaleFactor]\n"    // f2 *= scaleFactor
+      "                                     mul.s f3, f3, %[scaleFactor]\n"    // f3 *= scaleFactor
+      "                                     ssi f1, %[out], 0\n"               // out[0] = f1        
+      "                                     ssi f2, %[out], 4\n"               // out[1] = f2        
+      "                                     ssi f3, %[out], 8\n"               // out[2] = f3
+      "                                     addi %[out], %[out], 12\n"         // out += FDMDV_OS_24
+      "fdmdv_8_to_24_with_scaling_loop_end:\n"                                 // n--
+                                                                               // }
+      
+      : [tmp0] "=r"(tmp0), [tmp1] "=r"(tmp1), [tmp2] "=r"(tmp2), [out] "=r"(out), [data] "=r"(data), [n] "=r"(n)
+      : [filter0] "r"(fdmdv_os_filter24_short0), [filter1] "r"(fdmdv_os_filter24_short1), [filter2] "r"(fdmdv_os_filter24_short2), "4"(data), "3"(out), "5"(n), [scaleFactor] "f"(scaleFactor)
+      : "a9", "f1", "f2", "f3", "memory"
+    );
 
     /* update filter memory */
+    memmove(&in8k[-FDMDV_OS_TAPS_24_8K], &in8k[n - FDMDV_OS_TAPS_24_8K], sizeof(short) * FDMDV_OS_TAPS_24_8K);
 
-    for(int i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
-	    in8k[i] = in8k[i + n];
+    //for(int i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
+	  //  in8k[i] = in8k[i + n];
 
     // quell warning
     (void)out24k[0];
