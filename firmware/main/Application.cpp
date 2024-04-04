@@ -1,3 +1,30 @@
+/* 
+ * This file is part of the ezDV project (https://github.com/tmiw/ezDV).
+ * Copyright (c) 2024 Mooneer Salem
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//======================================================================
+// DEBUGGING OPTIONS (TBD: add as ESP-IDF menuconfig options)
+//======================================================================
+#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
+#define PRINT_PROCESS_STATS /* Prints process stats (e.g. CPU usage). */
+
+//======================================================================
+// No user-configurable options beyond this point!
+//======================================================================
+
 #include "Application.h"
 
 #include "driver/rtc_io.h"
@@ -18,9 +45,9 @@
 #define BOOTUP_PTT_GPIO (GPIO_NUM_4)
 #define TLV320_RESET_GPIO (GPIO_NUM_13)
 
-#if 0
+#if defined(PRINT_PROCESS_STATS)
 #define ARRAY_SIZE_OFFSET   5   //Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
-#endif // 0
+#endif // defined(PRINT_PROCESS_STATS)
 
 extern "C"
 {
@@ -502,7 +529,7 @@ void App::onTaskSleep_()
     enterDeepSleep_();
 }
 
-#if 0
+#if defined(PRINT_PROCESS_STATS)
 /**
  * @brief   Function to print the CPU usage of tasks over a given duration.
  *
@@ -610,11 +637,11 @@ exit_fn:    //Common return path
     free(end_array);
     return ret;
 }
-#endif // 0
+#endif // define(PRINT_PROCESS_STATS)
 
 void App::onTaskTick_()
 {
-#if 0
+#if defined(TASK_TICK_DEBUGGING)
     // infinite loop to track heap use
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
     bool ptt = false;
@@ -630,7 +657,9 @@ void App::onTaskTick_()
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
 
+#if defined(PRINT_PROCESS_STATS)
     print_real_time_stats(pdMS_TO_TICKS(1000));
+#endif // defined(PRINT_PROCESS_STATS)
 
     //esp_timer_dump(stdout);
 #if defined(ENABLE_AUTOMATED_TX_RX_TEST)
@@ -656,7 +685,7 @@ void App::onTaskTick_()
     }
 #endif // ENABLE_AUTOMATED_TX_RX_TEST
 
-#endif
+#endif // defined(TASK_TICK_DEBUGGING)
 }
 
 }
