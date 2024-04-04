@@ -147,15 +147,6 @@ static const short fdmdv_os_filter24_short2[] = {
 
 void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scaleFactor)
 {
-    scaleFactor *= FDMDV_OS_24;
-
-    short tmp0 = 0;
-    short tmp1 = 0;
-    short tmp2 = 0;
-
-    short* data = &in8k[-FDMDV_OS_TAPS_24_8K];
-    float* out = &out24k[0];
-
     // The below is equivalent to the following C code:
     //
     // for(int i=0; i<n; i++) 
@@ -171,6 +162,15 @@ void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scale
     // As each of the filter arrays are of fixed size (16 entries each) and share one operand (in8k), we don't actually
     // need to eat the overhead of calling into ESP-DSP three separate times. We can simply retrieve each of the blocks
     // of the filter entries and the input data once and perform dot products on each of those registers.
+
+    short* data = &in8k[-FDMDV_OS_TAPS_24_8K];
+    float* out = &out24k[0];
+    short tmp0 = 0;
+    short tmp1 = 0;
+    short tmp2 = 0;
+
+    scaleFactor *= FDMDV_OS_24;
+
     asm volatile(
       "movi a9, 15\n"                                                          // a9 = 15
       "ld.qr q0, %[filter0], 0\n"                                              // Load filter0 into q0
@@ -212,16 +212,30 @@ void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scale
       "fdmdv_8_to_24_with_scaling_loop_end:\n"                                 // n--
                                                                                // }
       
-      : [tmp0] "=r"(tmp0), [tmp1] "=r"(tmp1), [tmp2] "=r"(tmp2), [out] "=r"(out), [data] "=r"(data), [n] "=r"(n)
-      : [filter0] "r"(fdmdv_os_filter24_short0), [filter1] "r"(fdmdv_os_filter24_short1), [filter2] "r"(fdmdv_os_filter24_short2), "4"(data), "3"(out), "5"(n), [scaleFactor] "f"(scaleFactor)
-      : "a9", "f1", "f2", "f3", "memory"
+      : /* outputs */ 
+        [tmp0] "=r"(tmp0), 
+        [tmp1] "=r"(tmp1), 
+        [tmp2] "=r"(tmp2), 
+        [out] "=r"(out), 
+        [data] "=r"(data), 
+        [n] "=r"(n)
+      : /* inputs */
+        [filter0] "r"(fdmdv_os_filter24_short0), 
+        [filter1] "r"(fdmdv_os_filter24_short1), 
+        [filter2] "r"(fdmdv_os_filter24_short2), 
+        "3"(out),
+        "4"(data),  
+        "5"(n), 
+        [scaleFactor] "f"(scaleFactor)
+      : /* clobbered registers */
+        "a9", "f1", "f2", "f3", "memory"
     );
 
     /* update filter memory */
-    memmove(&in8k[-FDMDV_OS_TAPS_24_8K], &in8k[n - FDMDV_OS_TAPS_24_8K], sizeof(short) * FDMDV_OS_TAPS_24_8K);
-
-    //for(int i=-FDMDV_OS_TAPS_24_8K; i<0; i++)
-	  //  in8k[i] = in8k[i + n];
+    memmove(
+      &in8k[-FDMDV_OS_TAPS_24_8K], 
+      &in8k[n - FDMDV_OS_TAPS_24_8K], 
+      sizeof(short) * FDMDV_OS_TAPS_24_8K);
 
     // quell warning
     (void)out24k[0];
@@ -241,13 +255,19 @@ void fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scale
 
 void fdmdv_24_to_8(short out8k[], short in24k[], int n)
 {
-    int i;
-
-    for(i=0; i<n; i++) {
-      dsps_dotprod_s16(fdmdv_os_filter24_short, &in24k[-FDMDV_OS_TAPS_24K + i*FDMDV_OS_24], &out8k[i], FDMDV_OS_TAPS_24K, 0);
+    for(int i = 0; i < n; i++) 
+    {
+        dsps_dotprod_s16(
+            fdmdv_os_filter24_short, 
+            &in24k[-FDMDV_OS_TAPS_24K + (i * FDMDV_OS_24)], 
+            &out8k[i], 
+            FDMDV_OS_TAPS_24K, 
+            0);
     }
 
     /* update filter memory */
-    for(i=-FDMDV_OS_TAPS_24K; i<0; i++)
-	    in24k[i] = in24k[i + n*FDMDV_OS_24];
+    memmove(
+      &in24k[-FDMDV_OS_TAPS_24K], 
+      &in24k[n * FDMDV_OS_24 - FDMDV_OS_TAPS_24K], 
+      sizeof(short) * FDMDV_OS_TAPS_24K);
 }
