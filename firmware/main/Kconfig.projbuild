@@ -51,6 +51,9 @@ config EZDV_OUTPUT_TASK_LIST
     help
         Prints a list of executing FreeRTOS tasks.
 
+        NOTE: FreeRTOS tracing options will need to be double-checked after disabling this
+        option as they are forced on even after disabling.
+
 config EZDV_DUMP_TIMERS
     bool "Print timers"
     default n
