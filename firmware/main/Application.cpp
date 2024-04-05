@@ -18,9 +18,10 @@
 //======================================================================
 // DEBUGGING OPTIONS (TBD: add as ESP-IDF menuconfig options)
 //======================================================================
-//#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
+#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
 //#define PRINT_PROCESS_STATS /* Prints process stats (e.g. CPU usage). Requires FreeRTOS real time stats to be enabled. */
 //#define ENABLE_AUTOMATED_TX_RX_TEST /* Toggles PTT every tick. */
+#define PRINT_HEAP_USAGE /* Prints heap usage. */
 
 //======================================================================
 // No user-configurable options beyond this point!
@@ -649,14 +650,14 @@ void App::onTaskTick_()
     bool hasChangedModes = false;
 #endif // ENABLE_AUTOMATED_TX_RX_TEST
 
-    char buf[1024];
-        
-    /*ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+#if defined(PRINT_HEAP_USAGE)    
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));*/
+    ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+#endif // defined(PRINT_HEAP_USAGE)
 
 #if defined(PRINT_PROCESS_STATS)
     print_real_time_stats(pdMS_TO_TICKS(1000));
