@@ -15,18 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//======================================================================
-// DEBUGGING OPTIONS (TBD: add as ESP-IDF menuconfig options)
-//======================================================================
-#define TASK_TICK_DEBUGGING /* Enables debugging output every ~1 second. */
-//#define PRINT_PROCESS_STATS /* Prints process stats (e.g. CPU usage). Requires FreeRTOS real time stats to be enabled. */
-//#define ENABLE_AUTOMATED_TX_RX_TEST /* Toggles PTT every tick. */
-#define PRINT_HEAP_USAGE /* Prints heap usage. */
-
-//======================================================================
-// No user-configurable options beyond this point!
-//======================================================================
-
 #include "Application.h"
 
 #include "driver/rtc_io.h"
@@ -36,10 +24,16 @@
 #include "esp_sleep.h"
 #include "esp_log.h"
 
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_ENABLE_TICK_OUTPUT
+#define MAIN_APP_TASK_TICK_INTERVAL (pdMS_TO_TICKS(CONFIG_EZDV_TICK_OUTPUT_INTERVAL))
+#else
+#define MAIN_APP_TASK_TICK_INTERVAL (portMAX_DELAY)
+#endif // CONFIG_EZDV_ENABLE_TICK_OUTPUT
+
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 #include "driver/ButtonMessage.h"
 #include "audio/FreeDVMessage.h"
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
 #define CURRENT_LOG_TAG ("app")
 
@@ -63,7 +57,7 @@ extern "C"
 namespace ezdv
 {
 App::App()
-    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(1000))
+    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, MAIN_APP_TASK_TICK_INTERVAL)
     , audioMixer_(nullptr)
     , beeperTask_(nullptr)
     , freedvTask_(nullptr)
@@ -643,28 +637,31 @@ exit_fn:    //Common return path
 
 void App::onTaskTick_()
 {
-#if defined(TASK_TICK_DEBUGGING)
+#if CONFIG_EZDV_ENABLE_TICK_OUTPUT
     // infinite loop to track heap use
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
     bool ptt = false;
     bool hasChangedModes = false;
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
-#if defined(PRINT_HEAP_USAGE)    
+#if CONFIG_EZDV_PRINT_HEAP_USAGE
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
-#endif // defined(PRINT_HEAP_USAGE)
+#endif // CONFIG_EZDV_PRINT_HEAP_USAGE
 
-#if defined(PRINT_PROCESS_STATS)
+#if CONFIG_EZDV_OUTPUT_TASK_LIST
     print_real_time_stats(pdMS_TO_TICKS(1000));
-#endif // defined(PRINT_PROCESS_STATS)
+#endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
-    //esp_timer_dump(stdout);
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_DUMP_TIMERS
+    esp_timer_dump(stdout);
+#endif // CONFIG_EZDV_DUMP_TIMERS
+
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
     ptt = !ptt;
 
     // Trigger PTT
@@ -685,9 +682,9 @@ void App::onTaskTick_()
         ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
         app->getUITask().post(&releasedMessage);
     }
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
-#endif // defined(TASK_TICK_DEBUGGING)
+#endif // CONFIG_EZDV_ENABLE_TICK_OUTPUT
 }
 
 }

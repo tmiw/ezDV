@@ -511,6 +511,12 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# ezDV Debugging Options
+#
+# CONFIG_EZDV_ENABLE_TICK_OUTPUT is not set
+# end of ezDV Debugging Options
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
