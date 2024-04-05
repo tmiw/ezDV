@@ -51,7 +51,7 @@ namespace network
 namespace flex
 {
     
-static float tx_scale_factor = std::exp(6.2f/20.0f * std::log(10.0f));
+static float tx_scale_factor = std::exp(9.0f/20.0f * std::log(10.0f));
 
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 16, 4096, 1, 1024)

@@ -1914,15 +1914,15 @@ CONFIG_DSP_MAX_FFT_SIZE=4096
 # end of DSP Library
 
 #
-# libsodium
-#
-# end of libsodium
-
-#
 # ESP WebSocket client
 #
 CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER=y
 # end of ESP WebSocket client
+
+#
+# libsodium
+#
+# end of libsodium
 # end of Component config
 
 # CONFIG_IDF_EXPERIMENTAL_FEATURES is not set
