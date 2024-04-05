@@ -7,10 +7,16 @@
 #include "esp_sleep.h"
 #include "esp_log.h"
 
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_ENABLE_TICK_OUTPUT
+#define MAIN_APP_TASK_TICK_INTERVAL (pdMS_TO_TICKS(CONFIG_EZDV_TICK_OUTPUT_INTERVAL))
+#else
+#define MAIN_APP_TASK_TICK_INTERVAL (portMAX_DELAY)
+#endif // CONFIG_EZDV_ENABLE_TICK_OUTPUT
+
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 #include "driver/ButtonMessage.h"
 #include "audio/FreeDVMessage.h"
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
 #define CURRENT_LOG_TAG ("app")
 
@@ -30,7 +36,7 @@ extern "C"
 namespace ezdv
 {
 App::App()
-    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(5000))
+    : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, MAIN_APP_TASK_TICK_INTERVAL)
     , audioMixer_(nullptr)
     , beeperTask_(nullptr)
     , freedvTask_(nullptr)
@@ -500,31 +506,37 @@ void App::onTaskSleep_()
 
 void App::onTaskTick_()
 {
-#if 0
+#if CONFIG_EZDV_ENABLE_TICK_OUTPUT
     // infinite loop to track heap use
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
     bool ptt = false;
     bool hasChangedModes = false;
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
-    char buf[1024];
-        
+#if CONFIG_EZDV_PRINT_HEAP_USAGE
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (32 - 8 bit): %d", heap_caps_get_free_size(MALLOC_CAP_32BIT) - heap_caps_get_free_size(MALLOC_CAP_8BIT));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+#endif // CONFIG_EZDV_PRINT_HEAP_USAGE
 
-    /*printf( "Task Name\tStatus\tPrio\tHWM\tTask\tAffinity\n");
+#if CONFIG_EZDV_OUTPUT_TASK_LIST
+    char buf[1024];
+    printf( "Task Name\tStatus\tPrio\tHWM\tTask\tAffinity\n");
     vTaskList(buf);
     printf("%s\n\n", buf);
 
     vTaskGetRunTimeStats(buf);
-    printf("%s\n\n", buf);*/
+    printf("%s\n\n", buf);
+#endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
-    //esp_timer_dump(stdout);
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
+#if CONFIG_EZDV_DUMP_TIMERS
+    esp_timer_dump(stdout);
+#endif // CONFIG_EZDV_DUMP_TIMERS
+
+#if CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
     ptt = !ptt;
 
     // Trigger PTT
@@ -545,9 +557,9 @@ void App::onTaskTick_()
         ezdv::driver::ButtonReleasedMessage releasedMessage(ezdv::driver::PTT);
         app->getUITask().post(&releasedMessage);
     }
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
+#endif // CONFIG_EZDV_ENABLE_TX_RX_AUTOMATED_TEST
 
-#endif
+#endif // CONFIG_EZDV_ENABLE_TICK_OUTPUT
 }
 
 }

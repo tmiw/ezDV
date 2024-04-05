@@ -1,0 +1,64 @@
+menu "ezDV Debugging Options"
+
+config EZDV_ENABLE_TICK_OUTPUT
+    bool "Enable per-tick debugging"
+    default n
+    help
+        Enables the printing of periodic debugging output.  This output comes 
+        from the main application task (Application.cpp) and can consist of 
+        one or more types of debugging output that prints every X milliseconds.
+
+        NOTE: this output may impact the performance of executing tasks (especially 
+        anything network-related).
+
+config EZDV_TICK_OUTPUT_INTERVAL
+    int "Debugging output interval (ms)"
+    default 5000
+    depends on EZDV_ENABLE_TICK_OUTPUT
+    help
+        How often to output debugging data to the console in milliseconds.
+
+config EZDV_PRINT_HEAP_USAGE
+    bool "Print heap usage"
+    default n
+    depends on EZDV_ENABLE_TICK_OUTPUT
+    help
+        Outputs the amount of heap remaining in bytes organized by the
+        following categories:
+        * 8 bit allocations
+        * 32 bit allocations
+        * Difference between 32 and 8 bit allocations
+        * Internal RAM
+        * SPIRAM
+        * DMA capable RAM
+
+config EZDV_ENABLE_TX_RX_AUTOMATED_TEST
+    bool "Enable TX/RX toggling"
+    default n
+    depends on EZDV_ENABLE_TICK_OUTPUT
+    help
+        Performs a stress test of the main ezDV code by toggling TX
+        and RX every tick interval. This will also attempt to reset
+        the active FreeDV mode to 700D.
+
+config EZDV_OUTPUT_TASK_LIST
+    bool "Print FreeRTOS task list"
+    default n
+    depends on EZDV_ENABLE_TICK_OUTPUT
+    select FREERTOS_USE_TRACE_FACILITY
+    select FREERTOS_GENERATE_RUN_TIME_STATS
+    select FREERTOS_VTASKLIST_INCLUDE_COREID
+    help
+        Prints a list of executing FreeRTOS tasks.
+
+        NOTE: FreeRTOS tracing options will need to be double-checked after disabling this
+        option as they are forced on even after disabling.
+
+config EZDV_DUMP_TIMERS
+    bool "Print timers"
+    default n
+    depends on EZDV_ENABLE_TICK_OUTPUT
+    help
+        Prints timer statistics to the console.
+
+endmenu
