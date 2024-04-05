@@ -41,9 +41,9 @@
 #define BOOTUP_PTT_GPIO (GPIO_NUM_4)
 #define TLV320_RESET_GPIO (GPIO_NUM_13)
 
-#if defined(PRINT_PROCESS_STATS)
+#if CONFIG_EZDV_OUTPUT_TASK_LIST
 #define ARRAY_SIZE_OFFSET   5   //Increase this if print_real_time_stats returns ESP_ERR_INVALID_SIZE
-#endif // defined(PRINT_PROCESS_STATS)
+#endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
 extern "C"
 {
@@ -525,7 +525,7 @@ void App::onTaskSleep_()
     enterDeepSleep_();
 }
 
-#if defined(PRINT_PROCESS_STATS)
+#if CONFIG_EZDV_OUTPUT_TASK_LIST
 /**
  * @brief   Function to print the CPU usage of tasks over a given duration.
  *
@@ -633,7 +633,7 @@ exit_fn:    //Common return path
     free(end_array);
     return ret;
 }
-#endif // define(PRINT_PROCESS_STATS)
+#endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
 void App::onTaskTick_()
 {
