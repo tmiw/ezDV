@@ -45,9 +45,9 @@ config EZDV_OUTPUT_TASK_LIST
     bool "Print FreeRTOS task list"
     default n
     depends on EZDV_ENABLE_TICK_OUTPUT
-    imply FREERTOS_USE_TRACE_FACILITY
-    imply FREERTOS_GENERATE_RUN_TIME_STATS
-    imply FREERTOS_VTASKLIST_INCLUDE_COREID
+    select FREERTOS_USE_TRACE_FACILITY
+    select FREERTOS_GENERATE_RUN_TIME_STATS
+    select FREERTOS_VTASKLIST_INCLUDE_COREID
     help
         Prints a list of executing FreeRTOS tasks.
 
