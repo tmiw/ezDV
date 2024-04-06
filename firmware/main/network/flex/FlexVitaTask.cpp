@@ -285,16 +285,11 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
 
         //  XXX Lots of magic numbers here!
         packet->timestamp_type = 0x50u | (packet->timestamp_type & 0x0Fu);
-        assert(packet_len % 4 == 0);
+        assert((packet_len & 0x3) == 0); // equivalent to packet_len / 4
         packet->length = htons(packet_len >> 2); // Length is in 32-bit words, note there are two channels
 
-        packet->timestamp_int = time(NULL);
-        /*if (packet->timestamp_int != currentTime_)
-        {
-            timeFracSeq_ = 0;
-        }*/
-        
-        packet->timestamp_frac = __builtin_bswap64(audioSeqNum_ - 1); // timeFracSeq_++;
+        packet->timestamp_int = htonl(time(NULL));
+        packet->timestamp_frac = __builtin_bswap64(audioSeqNum_ - 1);
         currentTime_ = packet->timestamp_int;
 
         SendVitaMessage message(packet, packet_len);
