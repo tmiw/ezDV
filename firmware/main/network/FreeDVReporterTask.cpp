@@ -110,10 +110,17 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
     message_ = message->message;
     
     // Disconnect and reconnect if there were any changes
-    if (reportingEnabled_ && callsignChanged)
+    if (callsignChanged)
     {
-        stopSocketIoConnection_();
-        startSocketIoConnection_(nullptr);
+        if (reportingEnabled_)
+        {
+            stopSocketIoConnection_();
+        }
+        
+        if (reportingRefCount_ > 0 && callsign_.length() > 0 && gridSquare_.length() > 0)
+        {
+            startSocketIoConnection_(nullptr);
+        }
     }
     
     // If forced reporting has changed, trigger disconnect or connect
@@ -150,10 +157,9 @@ void FreeDVReporterTask::onReportingSettingsMessage_(DVTask* origin, storage::Re
 
 void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReportingMessage* message)
 {
+    reportingRefCount_++;
     if (callsign_ != "" && gridSquare_ != "")
-    {
-        reportingRefCount_++;
-        
+    {        
         ESP_LOGI(CURRENT_LOG_TAG, "Reporting enabled by radio driver, begin connection");
         if (reportingEnabled_)
         {
@@ -165,14 +171,10 @@ void FreeDVReporterTask::onEnableReportingMessage_(DVTask* origin, EnableReporti
 
 void FreeDVReporterTask::onDisableReportingMessage_(DVTask* origin, DisableReportingMessage* message)
 {
-    if (reportingEnabled_)
+    reportingRefCount_--;
+    if (reportingEnabled_ && reportingRefCount_ == 0)
     {
-        reportingRefCount_--;
-        
-        if (reportingRefCount_ == 0)
-        {
-            stopSocketIoConnection_();
-        }
+        stopSocketIoConnection_();
     }
 }
 

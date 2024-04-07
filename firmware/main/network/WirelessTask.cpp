@@ -118,8 +118,24 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
             case WIFI_EVENT_AP_STOP:
             case WIFI_EVENT_STA_DISCONNECTED:
             {
-                NetworkDownMessage message;
-                obj->post(&message);
+                bool networkIsDown = true;
+
+                if (event_id == WIFI_EVENT_STA_DISCONNECTED)
+                {
+                    wifi_event_sta_disconnected_t *disconn = (wifi_event_sta_disconnected_t*)event_data;
+                    if (disconn->reason == WIFI_REASON_ROAMING) 
+                    {
+                        ESP_LOGW(CURRENT_LOG_TAG, "Network disconnected due to roaming");
+                        networkIsDown = false;
+                    }
+                }
+
+                if (networkIsDown)
+                {
+                    NetworkDownMessage message;
+                    obj->post(&message);
+                }
+
                 break;
             }
             case WIFI_EVENT_AP_STADISCONNECTED:
@@ -388,6 +404,12 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         wifi_config.sta.channel = 0;
         wifi_config.sta.listen_interval = 0;
         wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+
+        // Enable fast roaming (typically for mesh networks or enterprise setups)
+        wifi_config.sta.btm_enabled = 1;
+        wifi_config.sta.rm_enabled = 1;
+        wifi_config.sta.mbo_enabled = 1;
+        wifi_config.sta.ft_enabled = 1;
         
         sprintf((char*)wifi_config.sta.ssid, "%s", ssid);
         sprintf((char*)wifi_config.sta.password, "%s", password);
