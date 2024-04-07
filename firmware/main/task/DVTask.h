@@ -63,6 +63,9 @@ public:
     /// @brief Commands the task to perform sleep actions.
     void sleep();
 
+    /// @brief Determines whether there's enough queue space available to post a message.
+    bool canPostMessage();
+
     /// @brief Posts a message to own event queue.
     /// @param message The message to post to the task.
     void post(DVTaskMessage* message);

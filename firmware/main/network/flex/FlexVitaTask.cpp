@@ -191,9 +191,10 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         minPacketsRequired_--;
         ctr--;
 
-        if (!audioEnabled_)
+        if (!audioEnabled_ || !canPostMessage())
         {
-            // Skip sending audio to SmartSDR if the user isn't using us yet.
+            // Skip sending audio to SmartSDR if the user isn't using us yet
+            // (or if something really goes wrong and our queue fills up).
             continue;
         }
         
@@ -533,9 +534,7 @@ cleanup:
 }
 
 void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
-{
-    const int MAX_RETRY_TIME_MS = 5;
-    
+{   
     auto packet = message->packet;
     assert(packet != nullptr);
 
@@ -544,8 +543,8 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
         auto startTime = esp_timer_get_time();
         int tries = 1;
         int rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
-        auto totalTimeMs = (esp_timer_get_time() - startTime)/1000;
-        while (rv == -1 && totalTimeMs < MAX_RETRY_TIME_MS)
+        auto totalTimeUs = esp_timer_get_time() - startTime;
+        while (rv == -1 && totalTimeUs <= US_OF_AUDIO_PER_VITA_PACKET)
         {
             auto err = errno;
             if (err == ENOMEM)
@@ -554,7 +553,7 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
                 vTaskDelay(1);
                 tries++;
                 rv = sendto(socket_, (char*)packet, message->length, 0, (struct sockaddr*)&radioAddress_, sizeof(radioAddress_));
-                continue;
+                totalTimeUs = (esp_timer_get_time() - startTime)/1000;
             }
             else
             {
@@ -567,7 +566,7 @@ void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
             }
         }
         
-        if (totalTimeMs >= MAX_RETRY_TIME_MS)
+        if (totalTimeUs > US_OF_AUDIO_PER_VITA_PACKET)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Wi-Fi subsystem took too long to become ready, dropping packet");
         }
