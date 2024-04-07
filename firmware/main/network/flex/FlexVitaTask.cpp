@@ -51,7 +51,7 @@ namespace network
 namespace flex
 {
     
-static float tx_scale_factor = std::exp(6.2f/20.0f * std::log(10.0f));
+static float tx_scale_factor = std::exp(9.0f/20.0f * std::log(10.0f));
 
 FlexVitaTask::FlexVitaTask()
     : DVTask("FlexVitaTask", 16, 4096, 1, 512)
@@ -79,7 +79,7 @@ FlexVitaTask::FlexVitaTask()
     registerMessageHandler(this, &FlexVitaTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexVitaTask::onRequestTxMessage_);
 
-    downsamplerInBuf_ = (float*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
+    downsamplerInBuf_ = (short*)heap_caps_calloc((MAX_VITA_SAMPLES * FDMDV_OS_24 + FDMDV_OS_TAPS_24K), sizeof(short), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerInBuf_ != nullptr);
     downsamplerOutBuf_ = (short*)heap_caps_calloc(MAX_VITA_SAMPLES, sizeof(float), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(downsamplerOutBuf_ != nullptr);
@@ -198,17 +198,7 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         }
         
         // Upsample to 24K floats.
-        fdmdv_8_to_24(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES);
-
-        // Scale output audio as SmartSDR is a lot quieter than expected otherwise.
-        dsps_mulc_f32(
-            upsamplerOutBuf_,
-            upsamplerOutBuf_,
-            MAX_VITA_SAMPLES_TO_RESAMPLE,
-            tx_scale_factor,
-            1,
-            1
-        );
+        fdmdv_8_to_24_with_scaling(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES, tx_scale_factor);
 
         uint32_t* dataPtr = (uint32_t*)&upsamplerOutBuf_[0];
         uint32_t masks[] = 
@@ -295,16 +285,11 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
 
         //  XXX Lots of magic numbers here!
         packet->timestamp_type = 0x50u | (packet->timestamp_type & 0x0Fu);
-        assert(packet_len % 4 == 0);
+        assert((packet_len & 0x3) == 0); // equivalent to packet_len / 4
         packet->length = htons(packet_len >> 2); // Length is in 32-bit words, note there are two channels
 
-        packet->timestamp_int = time(NULL);
-        /*if (packet->timestamp_int != currentTime_)
-        {
-            timeFracSeq_ = 0;
-        }*/
-        
-        packet->timestamp_frac = __builtin_bswap64(audioSeqNum_ - 1); // timeFracSeq_++;
+        packet->timestamp_int = htonl(time(NULL));
+        packet->timestamp_frac = __builtin_bswap64(audioSeqNum_ - 1);
         currentTime_ = packet->timestamp_int;
 
         SendVitaMessage message(packet, packet_len);
@@ -362,7 +347,8 @@ void FlexVitaTask::openSocket_()
     packetReadTimer_.start();
     packetWriteTimer_.start();
 
-    inputCtr_ = 0;}
+    inputCtr_ = 0;
+}
 
 void FlexVitaTask::disconnect_()
 {
@@ -384,16 +370,10 @@ void FlexVitaTask::disconnect_()
 }
 
 void FlexVitaTask::readPendingPackets_(DVTimer*)
-{
-    fd_set readSet;
-    struct timeval tv = {0, 0};
-    
-    FD_ZERO(&readSet);
-    FD_SET(socket_, &readSet);
-    
+{ 
     // Process if there are pending datagrams in the buffer
     int ctr = MAX_VITA_PACKETS_TO_SEND;
-    while (ctr-- > 0 && select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    while (ctr-- > 0)
     {
         vita_packet* packet = &packetArray_[packetIndex_++];
         assert(packet != nullptr);
@@ -410,10 +390,10 @@ void FlexVitaTask::readPendingPackets_(DVTimer*)
             ReceiveVitaMessage message(packet, rv);
             post(&message);
         }
-        
-        // Reinitialize the read set for the next pass.
-        FD_ZERO(&readSet);
-        FD_SET(socket_, &readSet);
+        else
+        {
+            break;
+        }
     }
 }
 
@@ -528,7 +508,7 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
             while (fifo != nullptr && i < half_num_samples)
             {
                 uint32_t temp = ntohl(packet->if_samples[i << 1]);
-                downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp;
+                downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp * FDMDV_FLOAT_TO_SHORT;
                 i++;
 
                 if (inputCtr_ == MAX_VITA_SAMPLES * FDMDV_OS_24)
@@ -554,7 +534,7 @@ cleanup:
 
 void FlexVitaTask::onSendVitaMessage_(DVTask* origin, SendVitaMessage* message)
 {
-    const int MAX_RETRY_TIME_MS = 50;
+    const int MAX_RETRY_TIME_MS = 5;
     
     auto packet = message->packet;
     assert(packet != nullptr);
