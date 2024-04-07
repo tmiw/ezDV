@@ -347,7 +347,8 @@ void FlexVitaTask::openSocket_()
     packetReadTimer_.start();
     packetWriteTimer_.start();
 
-    inputCtr_ = 0;}
+    inputCtr_ = 0;
+}
 
 void FlexVitaTask::disconnect_()
 {
