@@ -192,6 +192,11 @@ DVTask::MessageEntry* DVTask::createMessageEntry_(DVTask* origin, DVTaskMessage*
     return entry;
 }
 
+bool DVTask::canPostMessage()
+{
+    return uxQueueSpacesAvailable(taskQueue_) > 0;
+}
+
 void DVTask::post(DVTaskMessage* message)
 {
     MessageEntry* entry = createMessageEntry_(nullptr, message);

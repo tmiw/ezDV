@@ -83,11 +83,20 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
+    auto task = getTask();
+
+    if (!task->canPostMessage())
+    {
+        // something's gone very wrong, just skip sending the packet
+        // until our queue clears up.
+        return;
+    }
+
     auto allocPacket = new IcomPacket(std::move(packet));
     assert(allocPacket != nullptr);
 
     SendPacketMessage message(allocPacket);
-    getTask()->post(&message);
+    task->post(&message);
 }
 
 void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)
