@@ -1,10 +1,10 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  espressif/esp_websocket_client: "*"
+  espressif/esp_websocket_client: ">=1.2.3"
   espressif/libsodium: "*"
   ## Required IDF version
   idf:
-    version: ">=4.1.0"
+    version: ">=5.2.1"
   # # Put list of dependencies here
   # # For components maintained by Espressif:
   # component: "~1.0.0"

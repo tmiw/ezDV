@@ -205,7 +205,7 @@ void WirelessTask::onTaskSleep_()
     // Stop reporting
     if (freeDVReporterTask_.isAwake())
     {
-        sleep(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
+        sleep(&freeDVReporterTask_, pdMS_TO_TICKS(2000));
     }
 
     disableHttp_();

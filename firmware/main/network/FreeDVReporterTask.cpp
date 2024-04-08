@@ -90,7 +90,7 @@ void FreeDVReporterTask::onTaskSleep_()
 {
     if (reportingEnabled_)
     {
-        stopSocketIoConnection_(true);
+        stopSocketIoConnection_();
     }
 
     reconnectTimer_.stop();
@@ -424,7 +424,7 @@ void FreeDVReporterTask::handleSocketIoMessage_(char* ptr, int length)
     }
 }
 
-void FreeDVReporterTask::stopSocketIoConnection_(bool isSleeping)
+void FreeDVReporterTask::stopSocketIoConnection_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "stopping socket.io connection");
     if (reportingClientHandle_ != nullptr)
@@ -435,40 +435,42 @@ void FreeDVReporterTask::stopSocketIoConnection_(bool isSleeping)
             esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
             esp_websocket_client_stop(reportingClientHandle_);
         }
-        
-        if (isSleeping)
+
+        // XXX - there's a bug in esp_websocket_client that causes it to take a while to
+        // destroy its task after stopping the client. While not ideal, the below code
+        // to check for this process and close it at least prevents it from accessing
+        // invalid memory if it were to stay running after destroying the handle.
+        //
+        // Note: as of esp_websocket_client v1.2.3 this might have been fixed, but this
+        // shouldn't hurt to keep in here for a bit. Its timeout is apparently 1000ms, so
+        // if it's still not dead a bit longer after that, we're probably still good to kill
+        // the task.
+        auto websocketHandle = xTaskGetHandle("websocket_task");
+        if (websocketHandle != nullptr)
         {
-            // XXX - there's a bug in esp_websocket_client that causes it to take a while to
-            // destroy its task after stopping the client. While not ideal, the below code
-            // to check for this process and close it at least prevents it from accessing
-            // invalid memory if it were to stay running after destroying the handle.
-            auto websocketHandle = xTaskGetHandle("websocket_task");
-            if (websocketHandle != nullptr)
+            ESP_LOGW(CURRENT_LOG_TAG, "websocket_task is still running despite esp_websocket_client_stop()!");
+        }
+        auto timeBegin = esp_timer_get_time();
+        bool forceKillTask = false;
+        while (websocketHandle != nullptr)
+        {
+            auto currentState = eTaskGetState(websocketHandle);
+            auto timeElapsed = esp_timer_get_time() - timeBegin;
+            if (currentState == eDeleted || currentState == eInvalid ||
+                timeElapsed >= MS_TO_US(1250))
             {
-                ESP_LOGW(CURRENT_LOG_TAG, "websocket_task is still running despite esp_websocket_client_stop()!");
-            }
-            auto timeBegin = esp_timer_get_time();
-            bool forceKillTask = false;
-            while (websocketHandle != nullptr)
-            {
-                auto currentState = eTaskGetState(websocketHandle);
-                auto timeElapsed = esp_timer_get_time() - timeBegin;
-                if (currentState == eDeleted || currentState == eInvalid ||
-                    timeElapsed >= MS_TO_US(1000))
-                {
-                    forceKillTask = timeElapsed >= MS_TO_US(1000);
-                    break;
-                }
-
-                // Make sure other stuff can run.
-                taskYIELD();
+                forceKillTask = timeElapsed >= MS_TO_US(1250);
+                break;
             }
 
-            if (forceKillTask && websocketHandle != nullptr)
-            {
-                ESP_LOGI(CURRENT_LOG_TAG, "More than 1000ms has elapsed waiting for websocket_task, force killing it now.");
-                vTaskDelete(websocketHandle);
-            }
+            // Make sure other stuff can run.
+            taskYIELD();
+        }
+
+        if (forceKillTask && websocketHandle != nullptr)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "More than 1000ms has elapsed waiting for websocket_task, force killing it now.");
+            vTaskDelete(websocketHandle);
         }
         
         esp_websocket_client_destroy(reportingClientHandle_);
