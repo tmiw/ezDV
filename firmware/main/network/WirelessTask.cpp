@@ -89,6 +89,17 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
 
                 break;
             }
+            case IP_EVENT_GOT_IP6:
+            {
+                // Print out IPv6 address FYI but don't bring up the network
+                // as the radios we interface with are v4-only.
+                ip_event_got_ip6_t* ipData = (ip_event_got_ip6_t*)event_data;
+                char buf[64];
+                sprintf(buf, "IP " IPV6STR, IPV62STR(ipData->ip6_info.ip));
+
+                ESP_LOGI(CURRENT_LOG_TAG, "Got IPv6 address %s", buf);
+                break;
+            }
         }
     }
 }
@@ -145,6 +156,17 @@ void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t e
                 obj->post(&message);
                 break;
             }
+            case WIFI_EVENT_STA_CONNECTED:
+            {
+                ESP_LOGI(CURRENT_LOG_TAG, "Connected to Wi-Fi");
+                esp_ip6_addr_t addr;
+
+                if (esp_netif_get_ip6_linklocal(obj->netif_, &addr) != ESP_OK)
+                {
+                    esp_netif_create_ip6_linklocal(obj->netif_);
+                }
+                break;
+            }
         }
     }
 }
@@ -166,6 +188,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
     , radioRunning_(false)
+    , netif_(nullptr)
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
@@ -253,7 +276,7 @@ void WirelessTask::enableDefaultWifi_()
 {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_ap();
+    netif_ = esp_netif_create_default_wifi_ap();
     
     // Register event handler so we can notify the user on network
     // status changes.
@@ -297,14 +320,13 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     
-    esp_netif_t* netif = nullptr;
     if (mode == storage::WifiMode::ACCESS_POINT)
     {
-        netif = esp_netif_create_default_wifi_ap();
+        netif_ = esp_netif_create_default_wifi_ap();
     }
     else if (mode == storage::WifiMode::CLIENT)
     {
-        netif = esp_netif_create_default_wifi_sta();
+        netif_ = esp_netif_create_default_wifi_sta();
     }
     else
     {
@@ -315,7 +337,7 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
     if (hostname != nullptr && strlen(hostname) > 0)
     {
         ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV hostname to %s", hostname);
-        ESP_ERROR_CHECK(esp_netif_set_hostname(netif, hostname));
+        ESP_ERROR_CHECK(esp_netif_set_hostname(netif_, hostname));
     }
 
     ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV SSID to %s", ssid);
