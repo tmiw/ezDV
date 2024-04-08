@@ -111,7 +111,7 @@ private:
     const char* freeDVModeAsString_();
 
     void startSocketIoConnection_(DVTimer*);
-    void stopSocketIoConnection_(bool isSleeping = false);
+    void stopSocketIoConnection_();
     void handleEngineIoMessage_(char* ptr, int length);
     void handleSocketIoMessage_(char* ptr, int length);
 
