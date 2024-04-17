@@ -1,14 +1,2 @@
-[submodule "firmware/externals/esp-dsp"]
-	path = firmware/externals/esp-dsp
-	url = https://github.com/espressif/esp-dsp.git
-[submodule "enclosure/library/YAPP_Box"]
-	path = enclosure/library/YAPP_Box
-	url = https://github.com/mrWheel/YAPP_Box.git
-[submodule "firmware/externals/uzlib"]
-	path = firmware/externals/uzlib
-	url = https://github.com/tmiw/uzlib
-[submodule "firmware/externals/tinyuntar"]
-	path = firmware/externals/tinyuntar
-	url = https://github.com/tmiw/TinyUntar.git
 [submodule "socketio-esp-idf"]
 	url = https://github.com/tmiw/socketio-esp-idf.git
