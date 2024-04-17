@@ -260,7 +260,7 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
 
-    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_32BIT);
     assert(scratchBuf != nullptr);
 
     char *chunk = scratchBuf;

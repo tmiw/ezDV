@@ -21,6 +21,7 @@
 #include "driver/gpio.h"
 #include "esp_sleep.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 
 #define CURRENT_LOG_TAG ("App")
 
@@ -73,6 +74,9 @@ extern "C" void app_main()
 {
     // Note: mandatory before using DVTask.
     DVTask::Initialize();
+
+    // initialize flash
+    ESP_ERROR_CHECK(nvs_flash_init());
 
     app = new ezdv::App();
     assert(app != nullptr);
