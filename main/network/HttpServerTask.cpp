@@ -173,7 +173,7 @@ void HttpServerTask::onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStat
         strcat(filepath, "index.html");
     }
 
-    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_32BIT);
     assert(scratchBuf != nullptr);
 
     char *chunk = scratchBuf;
@@ -260,6 +260,7 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
 
+#if 0
     char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_32BIT);
     assert(scratchBuf != nullptr);
 
@@ -286,7 +287,7 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     ESP_LOGI(CURRENT_LOG_TAG, "Sending %s complete", filename);
     return ESP_OK;
 
-#if 0
+#else
     // Async requests are disabled due to ESP-IDF bug with additional HTTP headers.
     // See https://github.com/espressif/esp-idf/issues/13430.
     httpd_req_t* asyncReq;
@@ -334,7 +335,7 @@ esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
     if (ws_pkt.len) 
     {
         /* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
-        buf = (uint8_t*)heap_caps_calloc(1, ws_pkt.len + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+        buf = (uint8_t*)heap_caps_calloc(1, ws_pkt.len + 1, MALLOC_CAP_32BIT);
         if (buf == NULL) 
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Failed to calloc memory for buf");

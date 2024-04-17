@@ -1858,15 +1858,15 @@ CONFIG_WIFI_PROV_STA_ALL_CHANNEL_SCAN=y
 # end of Wi-Fi Provisioning Manager
 
 #
+# libsodium
+#
+# end of libsodium
+
+#
 # ESP WebSocket client
 #
 CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER=y
 # end of ESP WebSocket client
-
-#
-# libsodium
-#
-# end of libsodium
 # end of Component config
 
 # CONFIG_IDF_EXPERIMENTAL_FEATURES is not set
