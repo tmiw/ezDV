@@ -1,5 +1,0 @@
-[mapping:main]
-archive: libmain.a
-entries:
-    FlexVitaTask (noflash)
-    SampleRateConverter (noflash)

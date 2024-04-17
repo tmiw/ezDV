@@ -20,28 +20,9 @@
 
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
-#include "audio/AudioMixer.h"
-#include "audio/BeeperTask.h"
-#include "audio/FreeDVTask.h"
-#include "audio/VoiceKeyerTask.h"
-#include "driver/ButtonArray.h"
-#include "driver/ButtonMessage.h"
-#include "driver/I2CDevice.h"
-#include "driver/LedArray.h"
-#include "driver/MAX17048.h"
-#include "driver/TLV320.h"
 #include "network/WirelessTask.h"
-#include "storage/SettingsTask.h"
-#include "storage/SoftwareUpdateTask.h"
-#include "ui/UserInterfaceTask.h"
-#include "ui/FuelGaugeTask.h"
-#include "ui/RFComplianceTestTask.h"
 
 using namespace ezdv::task;
-
-// Uncomment below to enable automated TX/RX test
-// (5s TX, 5s RX, repeat indefinitely)
-//#define ENABLE_AUTOMATED_TX_RX_TEST
 
 namespace ezdv
 {
@@ -51,40 +32,13 @@ class App : public DVTask
 public:
     App();
 
-#if defined(ENABLE_AUTOMATED_TX_RX_TEST)
-    audio::FreeDVTask& getFreeDVTask() { return freedvTask_; }
-    ui::UserInterfaceTask& getUITask() { return uiTask_; }
-#endif // ENABLE_AUTOMATED_TX_RX_TEST
-
 protected:
     virtual void onTaskStart_() override;
     virtual void onTaskSleep_() override;
     virtual void onTaskTick_() override;
     
 private:
-    audio::AudioMixer* audioMixer_;
-    audio::BeeperTask* beeperTask_;
-    audio::FreeDVTask* freedvTask_;
-    driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
-    driver::LedArray ledArray_;
-    driver::MAX17048 max17048_;
-    driver::TLV320* tlv320Device_;
     network::WirelessTask* wirelessTask_;
-    storage::SettingsTask* settingsTask_;
-    storage::SoftwareUpdateTask* softwareUpdateTask_;
-    ui::UserInterfaceTask* uiTask_;
-    ui::RfComplianceTestTask* rfComplianceTask_;
-    ui::FuelGaugeTask* fuelGaugeTask_;
-    audio::VoiceKeyerTask* voiceKeyerTask_;
-    
-    bool rfComplianceEnabled_;
-    bool wifiOverrideEnabled_;
-
-    void enablePeripheralPower_();
-    void enterDeepSleep_();
-    
-    void checkOverrides_();
 };
 
 }

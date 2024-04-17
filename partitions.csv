@@ -4,12 +4,7 @@ nvs,      data, nvs,     ,        0x6000,
 otadata,  data, ota,     ,        0x2000,
 phy_init, data, phy,     ,        0x1000,
 ota_0,    app,  ota_0,   ,        4000K,
-ota_1,    app,  ota_1,   ,        4000K,
 
 # Static HTTP files for web config (1MB)
 # Two slots to correspond with ota_* above.
 http_0,   data, spiffs,  ,        1000K,
-http_1,   data, spiffs,  ,        1000K,
-
-# R/W partition to store voice keyer .wav file (1MB, TBD)
-vk,       data, fat,     ,        1000K,

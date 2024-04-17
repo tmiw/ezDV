@@ -22,16 +22,8 @@
 #include "esp_http_server.h"
 
 #include "task/DVTask.h"
-#include "icom/IcomSocketTask.h"
-#include "flex/FlexTcpTask.h"
-#include "flex/FlexVitaTask.h"
-#include "FreeDVReporterTask.h"
-
-#include "audio/AudioInput.h"
-#include "audio/VoiceKeyerTask.h"
 
 #include "NetworkMessage.h"
-#include "storage/SettingsMessage.h"
 
 #include "HttpServerTask.h"
 
@@ -54,10 +46,8 @@ class HttpServerTask;
 class WirelessTask : public DVTask
 {
 public:
-    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
+    WirelessTask();
     virtual ~WirelessTask();
-    
-    void setWiFiOverride(bool wifiOverride);
     
 protected:
     virtual void onTaskStart_() override;
@@ -132,50 +122,15 @@ private:
     using ApStartedMessage = ZeroArgumentMessageCommon<AP_STARTED>;
     using NetworkDownMessage = ZeroArgumentMessageCommon<NETWORK_DOWN>;
 
-    class DeviceDisconnectedMessage : public DVTaskMessageBase<DEVICE_DISCONNECTED, DeviceDisconnectedMessage>
-    {
-    public:
-        DeviceDisconnectedMessage(uint8_t* macProvided = nullptr)
-            : DVTaskMessageBase<DEVICE_DISCONNECTED, DeviceDisconnectedMessage>(WIRELESS_TASK_MESSAGE)
-        {
-            memset(macAddress, 0, sizeof(macAddress));
-
-            if (macProvided != nullptr)
-            {
-                memcpy(macAddress, macProvided, sizeof(macAddress));
-            }
-        }
-        virtual ~DeviceDisconnectedMessage() = default;
-
-        uint8_t macAddress[6];
-    };
-
-    DVTimer wifiScanTimer_;
-    DVTimer icomRestartTimer_;
     HttpServerTask httpServerTask_;
-    icom::IcomSocketTask* icomControlTask_;
-    icom::IcomSocketTask* icomAudioTask_;
-    icom::IcomSocketTask* icomCIVTask_;
-    flex::FlexTcpTask* flexTcpTask_;
-    flex::FlexVitaTask* flexVitaTask_;
-    FreeDVReporterTask freeDVReporterTask_;
-    
-    // for rerouting audio after connection
-    ezdv::audio::AudioInput* freedvHandler_;
-    ezdv::audio::AudioInput* tlv320Handler_; 
-    ezdv::audio::AudioInput* audioMixerHandler_; 
-    ezdv::audio::VoiceKeyerTask* vkTask_; 
     
     bool isAwake_;
-    bool overrideWifiSettings_;
     bool wifiRunning_;
-    bool radioRunning_;
     int radioType_;
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
     uint8_t radioMac_[6];
         
-    void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname);
     void enableDefaultWifi_();
     
     void disableWifi_();
@@ -187,20 +142,11 @@ private:
     void onNetworkDisconnected_();
     
     void onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message);
-    void onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message);
-    void onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message);
-    void onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message);
-    
-    void restartIcomConnection_(DVTimer*);
-    void triggerWifiScan_(DVTimer*);
-    void onWifiScanComplete_();
     
     void onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message);
     void onStaAssignedIpMessage_(DVTask* origin, StaAssignedIpMessage* message);
-    void onWifiScanCompletedMessage_(DVTask* origin, WifiScanCompletedMessage* message);
     void onApStartedMessage_(DVTask* origin, ApStartedMessage* message);
     void onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message);
-    void onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message);
 
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
