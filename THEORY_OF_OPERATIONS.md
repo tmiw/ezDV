@@ -101,6 +101,23 @@ In each message type, the contents of the message are typically defined as publi
 treats them similarly to C structs. Additionally, the size of the message should be known in advance and constant
 (for example, the size shouldn't vary based on the length of a string inside the message).
 
+To send a message to a component, tasks typically call the `publish()` method, i.e.
+
+```c++
+MessageType message(1, 2, 3);
+publish(&message);
+```
+
+`publish()` sends the provided message to all tasks that are subscribed to it. Depending on the message type,
+this can cause multiple tasks to process the message at the same time. Alternatively, if a task has a pointer
+to another, it can use `post()` on the task instead to send only to that task. For example:
+
+```c++
+DVTask* destinationTask = getDestinationTask();
+MessageType message(1, 2, 3);
+destinationTask->post(&message);
+```
+
 ### Audio Routing
 
 #### Receive
