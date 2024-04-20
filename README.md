@@ -80,6 +80,10 @@ esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --afte
 
 If the flash process fails (or you are flashing for the first time), you can manually place ezDV into flash mode by holding down the "GPIO0/Flash" button while pushing the "Reset" button on the board. Hold "GPIO0/Flash" for a second or so after releasing Reset, then release. You can then use ESP-IDF, the ESP Flash Tool or esptool to flash ezDV with working firmware.
 
+## Contributing to ezDV
+
+Pleae read the [Theory of Operation](https://github.com/tmiw/ezDV/blob/main/THEORY_OF_OPERATIONS.md) document for more information about the general hardware and software architecture, along with information about how to contribute changes to ezDV.
+
 ## License
 
 This project is subject to the terms of the [TAPR Open Hardware License v1.0](https://tapr.org/the-tapr-open-hardware-license/) (schematics, 
