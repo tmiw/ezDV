@@ -408,7 +408,7 @@
                     <div class="col-xs-8 col-md-4">
                     <select id="radioType" class="form-control">
                         <option value="0">Icom (e.g. IC-705)</option>
-                        <option value="1">Flex 6000 series</option>
+                        <option value="1">Flex 6000/8000 series</option>
                     </select>
                     </div>
                 </div>

@@ -30,7 +30,7 @@ extern "C" {
 #define FDMDV_FLOAT_TO_SHORT    ((float)32767.0)                /* Multiplication factor to convert float between -1.0 and 1.0 to short */
 #define FDMDV_SHORT_TO_FLOAT    ((float)1.0 / FDMDV_FLOAT_TO_SHORT) /* Multiplication factor to convert short between -32768 and 32767 to float */
 
-/* Special purpose 8->24K conversion functions for the Flex 6000 series.
+/* Special purpose 8->24K conversion functions for the Flex 6000/8000 series.
    The Flex uses floating point numbers while Codec2 uses shorts, so we
    also have code to convert between those formats. */
 void           fdmdv_8_to_24_with_scaling(float out24k[], short in8k[], int n, float scaleFactor);
