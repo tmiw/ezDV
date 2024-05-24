@@ -142,7 +142,7 @@ Pushing Save here will save these settings to ezDV's internal flash but require 
 ## Configuring radio connection and headset
 
 The Radio tab allows configuration of ezDV's connection to a network-enabled radio as well as headset-related functions. 
-Currently ezDV supports connections to the Icom IC-705 and Flex 6000 series radios, as shown below:
+Currently ezDV supports connections to the Icom IC-705 and Flex 6000/8000 series radios, as shown below:
 
 ![ezDV showing a FlexRadio configuration](images/2-setup-webpage-radio-flex.png)
 
@@ -155,7 +155,7 @@ The following can be configured in this screen:
 | Enable PTT using headset button | Enables the usage of the "call" button on your wired headset for toggling PTT. (See [Basic usage](#basic-usage)" for more information.) |
 | Time Out Timer (seconds) | Configures ezDV's "time out timer", which automatically puts the radio back into receive if the radio is stuck in transmit mode for too long. |
 | Use Wi-Fi Network for Radio RX/TX | When checked, allows ezDV to connect to a supported radio over Wi-Fi instead of using a wired headset. |
-| Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
+| Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000/8000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
 | Radio | Displays the list of Flex radios that ezDV is able to see on the network. You can also choose "(other)" and manually enter its IP address. |
 | IP Address | For Flex radios, this is typically auto-filled when selecting a radio from the Radio list. Otherwise, this is the IP address of the radio which to connect to. |
 | Port | For the IC-705, this is the control port number of the built-in server running on the radio. Defaults to "50001" and should not normally need to be changed. |

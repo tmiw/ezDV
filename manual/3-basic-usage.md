@@ -58,7 +58,7 @@ pushing and releasing the call button will toggle between transmit and receive.
 
 ## Radio setup and usage
 
-### Flex 6000 series
+### Flex 6000/8000 series
 
 To use ezDV, simply start the SmartSDR software on your PC or iPad and select either FDVU mode (for upper sideband) 
 or FDVL (for lower sideband). Decoded audio as well as Morse code beeps will be output to your speaker. Use the MOX
@@ -86,7 +86,7 @@ times configured (with it pausing a configured number of seconds). By default, e
 the voice keyer file up to ten times, pausing for five seconds in between each transmission.
 
 While the voice keyer is active, pressing any button on ezDV will stop the voice keyer and place it back into
-regular operation. If using a Flex 6000 series radio, you can also stop the voice keyer by pushing the MOX button
+regular operation. If using a Flex 6000/8000 series radio, you can also stop the voice keyer by pushing the MOX button
 in SmartSDR
 
 Configuration of the voice keyer functionality (as well as stopping and starting of the voice keyer) can also be 

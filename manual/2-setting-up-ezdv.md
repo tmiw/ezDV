@@ -63,10 +63,10 @@ section.
 ### Radios with Wi-Fi support
 
 If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio
-over Wi-Fi. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 6000 series radios 
+over Wi-Fi. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 6000/8000 series radios 
 and the Icom IC-705.
 
-#### Flex 6000 series radios
+#### Flex 6000/8000 series radios
 
 Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. *not* using SmartLink).
 Once this is confirmed, skip to [Initial Configuration](#initial-configuration).
@@ -91,9 +91,9 @@ Once joined, open your Web browser and navigate to http://192.168.4.1/. You shou
 
 ### Transmit audio levels
 
-#### Flex 6000 series
+#### Flex 6000/8000 series
 
-ezDV uses a hardcoded transmit level when connected to the Flex 6000 series of radios, so adjusting the transmit level on 
+ezDV uses a hardcoded transmit level when connected to the Flex 6000/8000 series of radios, so adjusting the transmit level on 
 ezDV has no effect.
 
 #### Other radios
@@ -135,7 +135,7 @@ this name instead of trying to find its IP address. Click or tap Save to save yo
 Click on the "Radio" tab and check the "Use Wi-Fi Network for Radio RX/TX" checkbox. Select your radio model in the "Radio Type"
 drop-down list, which will bring up different fields depending on the radio being configured.
 
-#### Flex 6000 series
+#### Flex 6000/8000 series
 
 Select the name of your radio from the "Radio" drop-down list as shown below. Your radio's IP address should automatically
 be filled in the "IP Address" field:
@@ -180,7 +180,7 @@ as shown below:
 
 ![Icom IC-705 properly connected to ezDV (WLAN indicator at the top of the screen)](images/2-setup-radio-ic705-connected.jpg)
 
-For Flex 6000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) mode if ezDV is properly connected
+For Flex 6000/8000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) mode if ezDV is properly connected
 to the radio:
 
 ![Flex 6300 properly connected to ezDV (existence of FDVU/FDVL modes)](images/2-setup-radio-flex-connected.png)
