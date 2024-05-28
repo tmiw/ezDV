@@ -287,7 +287,7 @@ void FlexTcpTask::initializeWaveform_()
     // Send needed commands to initialize the waveform. This is from the reference
     // waveform implementation.
     createWaveform_("FreeDV-USB", "FDVU", "DIGU");
-    createWaveform_("FreeDV-LSB", "FDVL", "LSB");
+    createWaveform_("FreeDV-LSB", "FDVL", "DIGL");
     
     // subscribe to slice updates, needed to detect when we enter FDVU/FDVL mode
     sendRadioCommand_("sub slice all");
