@@ -570,16 +570,16 @@ void FlexTcpTask::processCommand_(std::string& command)
 
                         // User wants to use the waveform.
                         activeSlice_ = sliceId;
-                        isLSB_ = mode->second == "FDVL";
-
-                        // Set the filter corresponding to the current mode.
-                        setFilter_(currentWidth_.first, currentWidth_.second);
 
                         // Ensure that we connect to any reporting services as appropriate
                         uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
                         ReportFrequencyChangeMessage freqChangeMessage(freqHz);
                         publish(&freqChangeMessage);
                     }
+                    
+                    // Set the filter corresponding to the current mode.
+                    isLSB_ = mode->second == "FDVL";
+                    setFilter_(currentWidth_.first, currentWidth_.second);
                 }
                 else if (sliceId == activeSlice_)
                 {
