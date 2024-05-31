@@ -216,9 +216,9 @@ void VoiceKeyerTask::tickKeyer_(DVTimer*)
 
             if (timeElapsed >= numSecondsToWait_)
             {
+                timesTransmitted_++;
                 if (timesTransmitted_ < timesToTransmit_)
                 {
-                    timesTransmitted_++;
                     startKeyer_();
                 }
                 else
