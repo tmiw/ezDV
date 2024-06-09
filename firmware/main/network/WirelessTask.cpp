@@ -208,11 +208,6 @@ void WirelessTask::onTaskSleep_()
         sleep(&freeDVReporterTask_, pdMS_TO_TICKS(2000));
     }
 
-    if (pskReporterTask_.isAwake())
-    {
-        sleep(&pskReporterTask_, pdMS_TO_TICKS(1000));
-    }
-
     disableHttp_();
         
     // Audio and CIV need to stop before control
@@ -512,11 +507,6 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddres
         {
             start(&freeDVReporterTask_, pdMS_TO_TICKS(1000));
         }
-
-        if (!pskReporterTask_.isAwake())
-        {
-            start(&pskReporterTask_, pdMS_TO_TICKS(1000));
-        }
         
         storage::RequestRadioSettingsMessage request;
         publish(&request);
@@ -595,11 +585,6 @@ void WirelessTask::onNetworkDisconnected_()
     if (freeDVReporterTask_.isAwake())
     {
         sleep(&freeDVReporterTask_, pdMS_TO_TICKS(2000));
-    }
-    
-    if (pskReporterTask_.isAwake())
-    {
-        sleep(&pskReporterTask_, pdMS_TO_TICKS(1000));
     }
 
     if (icomControlTask_ != nullptr)

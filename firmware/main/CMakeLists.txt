@@ -46,7 +46,6 @@ set(SOURCES
     "network/FreeDVReporterTask.cpp"
     "network/HttpServerTask.cpp"
     "network/NetworkMessage.cpp"
-    "network/PskReporterTask.cpp"
     "network/ReportingMessage.cpp"
     "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
