@@ -26,6 +26,7 @@
 #include "flex/FlexTcpTask.h"
 #include "flex/FlexVitaTask.h"
 #include "FreeDVReporterTask.h"
+#include "PskReporterTask.h"
 
 #include "audio/AudioInput.h"
 #include "audio/VoiceKeyerTask.h"
@@ -159,6 +160,7 @@ private:
     flex::FlexTcpTask* flexTcpTask_;
     flex::FlexVitaTask* flexVitaTask_;
     FreeDVReporterTask freeDVReporterTask_;
+    PskReporterTask pskReporterTask_;
     
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;
