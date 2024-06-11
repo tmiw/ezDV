@@ -73,9 +73,20 @@ void TLV320::onTaskStart_()
 {
     // To begin, we need to hard reset the TLV320.
     ESP_LOGI(CURRENT_LOG_TAG, "reset TLV320");
-    initializeI2S_();
     initializeResetGPIO_();
     tlv320HardReset_();
+    
+    // Make sure the TLV320 is actually there. If not, no point in continuing.
+    bool result = false;
+    getConfigurationOption_(0, 0, &result);
+    if (!result)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Cannot communicate with TLV320, possibly using ezDV on board without one");
+        return;
+    }
+    
+    // Initialize I2S.
+    initializeI2S_();
     
     // Enable required clocks.
     ESP_LOGI(CURRENT_LOG_TAG, "configure clocks");
@@ -108,10 +119,18 @@ void TLV320::onTaskStart_()
 void TLV320::onTaskSleep_()
 {
     // Stop reading from I2S.
-    i2s_channel_disable(i2sRxDevice_);
-    i2s_del_channel(i2sRxDevice_);
-    i2s_channel_disable(i2sTxDevice_);
-    i2s_del_channel(i2sTxDevice_);
+    if (i2sRxDevice_ != nullptr)
+    {
+        i2s_channel_disable(i2sRxDevice_);
+        i2s_del_channel(i2sRxDevice_);
+    }
+    
+    if (i2sTxDevice_ != nullptr)
+    {
+        i2s_channel_disable(i2sTxDevice_);
+        i2s_del_channel(i2sTxDevice_);
+    }
+    
     i2sRxDevice_ = nullptr;
     i2sTxDevice_ = nullptr;
 
@@ -200,7 +219,7 @@ void TLV320::setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t*
     i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, reg, val, size);
 }
 
-uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg)
+uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg, bool* readResult)
 {
     if (page != currentPage_)
     {
@@ -213,6 +232,12 @@ uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "Could not read bytes from I2C!");
     }
+    
+    if (readResult != nullptr)
+    {
+        *readResult = rv;
+    }
+    
     return result[0];
 }
 
