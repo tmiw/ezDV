@@ -86,7 +86,7 @@ void WirelessTask::EthernetEventHandler_(void *arg, esp_event_base_t event_base,
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");
         break;
     case ETHERNET_EVENT_START:
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");        
         break;
     case ETHERNET_EVENT_STOP:
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Stopped");
@@ -119,6 +119,7 @@ void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t eve
                 break;
             }
             case IP_EVENT_STA_GOT_IP:
+            case IP_EVENT_ETH_GOT_IP:
             {
                 ip_event_got_ip_t* ipData = (ip_event_got_ip_t*)event_data;
                 char buf[32];
@@ -291,7 +292,6 @@ void WirelessTask::onTaskSleep_()
 
 void WirelessTask::enableDefaultWifi_()
 {
-    ESP_ERROR_CHECK(esp_netif_init());
     esp_netif_create_default_wifi_ap();
     
     // Register event handler so we can notify the user on network
@@ -332,9 +332,7 @@ void WirelessTask::enableDefaultWifi_()
 }
 
 void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname)
-{
-    ESP_ERROR_CHECK(esp_netif_init());
-    
+{    
     esp_netif_t* netif = nullptr;
     if (mode == storage::WifiMode::ACCESS_POINT)
     {
@@ -468,6 +466,12 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
 
 void WirelessTask::enableEthernet_()
 {
+    // Generate MAC address
+    uint8_t base_mac_addr[ETH_ADDR_LEN];
+    ESP_ERROR_CHECK(esp_efuse_mac_get_default(base_mac_addr));
+    uint8_t local_mac_1[ETH_ADDR_LEN];
+    esp_derive_local_mac(local_mac_1, base_mac_addr);
+    
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();      // apply default common MAC configuration
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();      // apply default PHY configuration
     phy_config.phy_addr = 1;                                     // alter the PHY address according to your board design
@@ -487,6 +491,7 @@ void WirelessTask::enableEthernet_()
     buscfg.max_transfer_sz = 0; // use default
     buscfg.flags = SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_GPIO_PINS;
     buscfg.isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO;
+    buscfg.intr_flags = 0;
     ESP_ERROR_CHECK(spi_bus_initialize(ETHERNET_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
     
     // Configure SPI device
@@ -516,9 +521,7 @@ void WirelessTask::enableEthernet_()
         ESP_LOGW(CURRENT_LOG_TAG, "could not install driver");
         return;
     }
-    
-    esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &EthernetEventHandler_, this);
-    
+        
     // Create network interface for Ethernet
     esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH(); // apply default network interface configuration for Ethernet
     esp_netif_t *eth_netif = esp_netif_new(&cfg); // create network interface for Ethernet driver
@@ -528,19 +531,36 @@ void WirelessTask::enableEthernet_()
     }
     else
     {
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(ETH_EVENT, 
+                                                            ESP_EVENT_ANY_ID, 
+                                                            &EthernetEventHandler_, 
+                                                            this,
+                                                            NULL));
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                            ESP_EVENT_ANY_ID,
+                                                            &WiFiEventHandler_,
+                                                            this,
+                                                            NULL));
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                            ESP_EVENT_ANY_ID,
+                                                            &IPEventHandler_,
+                                                            this,
+                                                            NULL));
+        
+        // Set MAC address
+        ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, local_mac_1));
+        
         auto glue = esp_eth_new_netif_glue(eth_handle);
         if (!glue)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Could not create glue object");
         }
         else
-        {
+        {        
             esp_netif_attach(eth_netif, glue); // attach Ethernet driver to TCP/IP stack
             esp_eth_start(eth_handle); // start Ethernet driver state machine
         }
     }
-    
-    ESP_LOGI(CURRENT_LOG_TAG, "ethernet started");
 }
 
 void WirelessTask::disableWifi_()
@@ -850,6 +870,7 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     if (!wifiRunning_)
     {
         // Start event loop.
+        ESP_ERROR_CHECK(esp_netif_init());
         ESP_ERROR_CHECK(esp_event_loop_create_default());
         
         // Ethernet should always be started in case we're plugged into the network.
