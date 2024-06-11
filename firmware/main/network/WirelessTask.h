@@ -174,7 +174,8 @@ private:
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
     uint8_t radioMac_[6];
-        
+    
+    void enableEthernet_();
     void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname);
     void enableDefaultWifi_();
     
@@ -204,6 +205,7 @@ private:
 
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    static void EthernetEventHandler_(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 };
 
 }

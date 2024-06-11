@@ -32,6 +32,10 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 
+#include "hal/eth_types.h"
+#include "esp_eth.h"
+#include "esp_eth_driver.h"
+
 #include "WirelessTask.h"
 #include "HttpServerTask.h"
 #include "NetworkMessage.h"
@@ -45,6 +49,14 @@
 #define SCRATCH_BUFSIZE 256
 #define CURRENT_LOG_TAG "WirelessTask"
 
+#define ETHERNET_SPI_HOST (SPI2_HOST)
+#define ETHERNET_CLOCK_SPEED_HZ (SPI_MASTER_FREQ_16M)
+#define GPIO_ETHERNET_SPI_SCLK (42)
+#define GPIO_ETHERNET_SPI_MISO (41)
+#define GPIO_ETHERNET_SPI_MOSI (40)
+#define GPIO_ETHERNET_SPI_CS (39)
+#define GPIO_ETHERNET_INTERRUPT (38)
+
 extern "C"
 {
     DV_EVENT_DEFINE_BASE(WIRELESS_TASK_MESSAGE);
@@ -56,6 +68,34 @@ namespace ezdv
 namespace network
 {
 
+void WirelessTask::EthernetEventHandler_(void *arg, esp_event_base_t event_base,
+                              int32_t event_id, void *event_data)
+{
+    uint8_t mac_addr[6] = {0};
+    /* we can get the ethernet driver handle from event data */
+    esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
+
+    switch (event_id) {
+    case ETHERNET_EVENT_CONNECTED:
+        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Up");
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
+                    mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+        break;
+    case ETHERNET_EVENT_DISCONNECTED:
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");
+        break;
+    case ETHERNET_EVENT_START:
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");
+        break;
+    case ETHERNET_EVENT_STOP:
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Stopped");
+        break;
+    default:
+        break;
+    }
+}
+    
 void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "IP event: %ld", event_id);
@@ -252,7 +292,6 @@ void WirelessTask::onTaskSleep_()
 void WirelessTask::enableDefaultWifi_()
 {
     ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_ap();
     
     // Register event handler so we can notify the user on network
@@ -295,7 +334,6 @@ void WirelessTask::enableDefaultWifi_()
 void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname)
 {
     ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
     
     esp_netif_t* netif = nullptr;
     if (mode == storage::WifiMode::ACCESS_POINT)
@@ -426,6 +464,83 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
         esp_sntp_init();
         esp_sntp_setservername(0, "pool.ntp.org");
     }
+}
+
+void WirelessTask::enableEthernet_()
+{
+    eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();      // apply default common MAC configuration
+    eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();      // apply default PHY configuration
+    phy_config.phy_addr = 1;                                     // alter the PHY address according to your board design
+    phy_config.reset_gpio_num = -1;                              // alter the GPIO used for PHY reset
+
+    // SPI bus configuration
+    spi_bus_config_t buscfg;
+    buscfg.mosi_io_num = GPIO_ETHERNET_SPI_MOSI;
+    buscfg.miso_io_num = GPIO_ETHERNET_SPI_MISO;
+    buscfg.sclk_io_num = GPIO_ETHERNET_SPI_SCLK;
+    buscfg.quadwp_io_num = -1;
+    buscfg.quadhd_io_num = -1;
+    buscfg.data4_io_num = -1;
+    buscfg.data5_io_num = -1;
+    buscfg.data6_io_num = -1;
+    buscfg.data7_io_num = -1;
+    buscfg.max_transfer_sz = 0; // use default
+    buscfg.flags = SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_GPIO_PINS;
+    buscfg.isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO;
+    ESP_ERROR_CHECK(spi_bus_initialize(ETHERNET_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
+    
+    // Configure SPI device
+    spi_device_interface_config_t spi_devcfg;
+    memset(&spi_devcfg, 0, sizeof(spi_device_interface_config_t));
+    spi_devcfg.mode = 0;
+    spi_devcfg.clock_speed_hz = ETHERNET_CLOCK_SPEED_HZ;
+    spi_devcfg.spics_io_num = GPIO_ETHERNET_SPI_CS;
+    spi_devcfg.queue_size = 20;
+    spi_devcfg.command_bits = 0;
+    spi_devcfg.address_bits = 0;
+    spi_devcfg.clock_source = SPI_CLK_SRC_DEFAULT;
+    
+    /* W5500 ethernet driver is based on spi driver */
+    eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(ETHERNET_SPI_HOST, &spi_devcfg);
+    w5500_config.int_gpio_num = GPIO_ETHERNET_INTERRUPT;
+    //w5500_config.poll_period_ms = 5;
+    esp_eth_mac_t *mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
+    esp_eth_phy_t *phy = esp_eth_phy_new_w5500(&phy_config);
+    
+    esp_eth_config_t config = ETH_DEFAULT_CONFIG(mac, phy); // apply default driver configuration
+    esp_eth_handle_t eth_handle = nullptr; // after the driver is installed, we will get the handle of the driver
+    esp_eth_driver_install(&config, &eth_handle); // install driver
+    
+    if (eth_handle == nullptr)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "could not install driver");
+        return;
+    }
+    
+    esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &EthernetEventHandler_, this);
+    
+    // Create network interface for Ethernet
+    esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH(); // apply default network interface configuration for Ethernet
+    esp_netif_t *eth_netif = esp_netif_new(&cfg); // create network interface for Ethernet driver
+    if (eth_netif == nullptr)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "Could not initialize Ethernet interface");
+    }
+    else
+    {
+        auto glue = esp_eth_new_netif_glue(eth_handle);
+        if (!glue)
+        {
+            ESP_LOGE(CURRENT_LOG_TAG, "Could not create glue object");
+        }
+        else
+        {
+            esp_netif_attach(eth_netif, glue); // attach Ethernet driver to TCP/IP stack
+            esp_eth_start(eth_handle); // start Ethernet driver state machine
+        }
+    }
+    
+    ESP_LOGI(CURRENT_LOG_TAG, "ethernet started");
 }
 
 void WirelessTask::disableWifi_()
@@ -734,6 +849,12 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     // Avoid accidentally trying to re-initialize Wi-Fi.
     if (!wifiRunning_)
     {
+        // Start event loop.
+        ESP_ERROR_CHECK(esp_event_loop_create_default());
+        
+        // Ethernet should always be started in case we're plugged into the network.
+        enableEthernet_();
+        
         if (overrideWifiSettings_)
         {
             // Setup is *just* different enough that we have to have a separate function for it

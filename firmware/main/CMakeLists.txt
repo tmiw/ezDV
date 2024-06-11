@@ -77,6 +77,7 @@ if(${ESP_PLATFORM})
                                 wear_levelling
                                 esp_http_server
                                 esp_netif
+                                esp_eth
                                 esp_timer
                                 esp_wifi
                                 esp_websocket_client
