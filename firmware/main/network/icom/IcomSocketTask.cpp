@@ -34,7 +34,7 @@ IcomSocketTask::IcomSocketTask(SocketType socketType)
     : DVTask(
         GetTaskName_(socketType), 
         (socketType == AUDIO_SOCKET) ? 16 : 10, 
-        4096, 
+        3500, 
         (socketType == AUDIO_SOCKET) ? 1 : tskNO_AFFINITY, 
         (socketType == AUDIO_SOCKET) ? 512 : 256, pdMS_TO_TICKS(20))
     , ezdv::audio::AudioInput(1, 1)
