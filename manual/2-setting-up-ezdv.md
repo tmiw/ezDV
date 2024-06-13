@@ -117,7 +117,7 @@ interference to other operators.*
 ### Wi-Fi configuration
 
 *Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features
-(such as reporting to [FreeDV Reporter](https://qso.freedv.org/)).*
+(such as reporting to [FreeDV Reporter](https://qso.freedv.org/) and [PSK Reporter](https://pskreporter.info)).*
 
 Click or tap on the "Wi-Fi" tab and check the "Enable Wi-Fi" checkbox. You'll see something similar to the following:
 
@@ -157,8 +157,8 @@ Click or tap Save to save the radio configuration.
 It is highly recommended to configure your callsign and grid square. This has several benefits:
 
 1. If ezDV is lost or stolen, someone can access its Web page and use callsign databases like [QRZ](https://www.qrz.com) to find a way to get it back to you.
-2. Other users will be able to decode your callsign and report spots on [FreeDV Reporter](https://qso.freedv.org).
-3. If ezDV has Internet access, it will also be able to decode callsigns from received signals and report them itself to FreeDV Reporter.
+2. Other users will be able to decode your callsign and report spots on [FreeDV Reporter](https://qso.freedv.org) and [PSK Reporter](https://pskreporter.info).
+3. If ezDV has Internet access, it will also be able to decode callsigns from received signals and report them itself to FreeDV Reporter and PSK Reporter.
 
 To do this, click or tap on the "Reporting" tab and enter your callsign and grid square where prompted:
 

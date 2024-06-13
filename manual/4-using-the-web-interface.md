@@ -26,7 +26,7 @@ Regardless of how you access ezDV's web interface, you should see a page similar
 From here, you can choose one of several tabs:
 
 * General: Contains miscallenous ezDV configuration options.
-* Reporting: Configures and operates the [FreeDV Reporter](https://qso.freedv.org/) reporting feature.
+* Reporting: Configures and operates the reporting feature, which controls reporting to [FreeDV Reporter](https://qso.freedv.org/) and [PSK Reporter](https://pskreporter.info).
 * Voice Keyer: Configures ezDV's voice keyer feature.
 * Wi-Fi: Configures how ezDV connects to Wi-Fi.
 * Radio: Configures how ezDV connects to your network-enabled radio.
@@ -80,43 +80,44 @@ The following can be set here to enable the voice keyer feature:
 
 Pushing Save will immediately update the voice keyer configuration and enable its use if desired.
 
-## Reporting to FreeDV Reporter
+## Reporting to FreeDV Reporter/PSK Reporter
 
-ezDV has the ability to report its current state to the [FreeDV Reporter](https://qso.freedv.org/) spotting service. 
-Operation of this feature can be done through the Reporting tab:
+ezDV has the ability to report its current state to the [FreeDV Reporter](https://qso.freedv.org/) 
+and [PSK Reporter](https://pskreporter.info) spotting services. Operation of this feature can be 
+done through the Reporting tab:
 
 ![Example of a reporting configuration on ezDV](images/4-reporting-tab.png)
 
-When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter if it has access
-to an internet connection and is able to connect to a supported radio over Wi-Fi. You can also force a connection to
-FreeDV Reporter for radios without Wi-Fi support by checking the "Force reporting without radio connection" checkbox
-and manually entering the current frequency.
+When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter and PSK Reporter
+if it has access to an internet connection and is able to connect to a supported radio over Wi-Fi. You can also force
+a connection to both servies for radios without Wi-Fi support by checking the "Force reporting without radio connection" 
+checkbox and manually entering the current frequency.
 
 Once connected to FreeDV Reporter, a new row will appear corresponding to your connection:
 
 ![Example of an entry on FreeDV Reporter](images/4-freedv-reporter.png)
 
 If ezDV is able to decode a callsign from a received signal, it will transmit the received callsign and SNR to FreeDV
-Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight your row in 
-a blue background for several seconds to alert others that you've receiving a signal. When ezDV is transmitting, FreeDV
-Reporter will also highlight your row with a red background to indicate to others that you're transmitting.
+Reporter and PSK Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight 
+your row in a blue background for several seconds to alert others that you've receiving a signal. When ezDV is transmitting, 
+FreeDV Reporter will also highlight your row with a red background to indicate to others that you're transmitting.
 
 With radios that support connections over Wi-Fi, ezDV will also follow frequency changes on the radio and report them
 to FreeDV Reporter. FreeDV Reporter will then indicate your current frequency, allowing others to change to your frequency
 and potentially make a contact with you. Manual frequency updates (for those radios attached to ezDV with a wired connection)
 will also be sent to FreeDV Reporter as they're made.
 
-The following can be updated in the Reporting tab to operate FreeDV Reporter reporting:
+The following can be updated in the Reporting tab to operate reporting:
 
 | Setting | Description |
 |---------|-------------|
-| Your callsign | The callsign to report to FreeDV Reporter. This callsign is also transmitted as part of your FreeDV signal so that others can report receipt of your signal. |
-| Grid square/locator | The 4-6 digit grid square to report to FreeDV Reporter. You can use a service such as [this](https://www.levinecentral.com/ham/grid_square.php) to calculate your grid square if not known. *Note: Clearing this field disables FreeDV Reporter reporting.* |
+| Your callsign | The callsign to report to FreeDV Reporter and PSK Reporter. This callsign is also transmitted as part of your FreeDV signal so that others can report receipt of your signal. |
+| Grid square/locator | The 4-6 digit grid square to report to FreeDV Reporter/PSK Reporter. You can use a service such as [this](https://www.levinecentral.com/ham/grid_square.php) to calculate your grid square if not known. *Note: Clearing this field disables reporting.* |
 | Message | A short message to display on the FreeDV Reporter website next to your callsign. This is transmitted solely on the internet, not over RF. |
-| Force reporting without radio connection | When checked, ezDV will connect to FreeDV Reporter even without a valid radio configuration. |
-| Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter as your current frequency.|
+| Force reporting without radio connection | When checked, ezDV will connect to FreeDV Reporter/PSK Reporter even without a valid radio configuration. |
+| Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter/PSK Reporter as your current frequency.|
 
-Pushing Save will immediately connect or disconnect to FreeDV Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
+Pushing Save will immediately connect or disconnect to FreeDV Reporter/PSK Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
 
 ## Configuring Wi-Fi
 
