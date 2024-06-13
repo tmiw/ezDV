@@ -65,7 +65,7 @@ namespace network
 {
 
 PskReporterTask::PskReporterTask()
-    : ezdv::task::DVTask("PskReporterTask", 1, 4096, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("PskReporterTask", 1, 3072, tskNO_AFFINITY, 32)
     , udpSendTimer_(this, this, &PskReporterTask::sendPskReporterRecords_, MS_TO_US(PSK_REPORTER_SEND_INTERVAL_MS), "PskReporterReconn")
     , reportingEnabled_(false)
     , callsign_("")
