@@ -54,7 +54,7 @@
                         <button id="wifiTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#wifiTabForm" aria-current="page-wifi">Wi-Fi</button>
                     </li>
                     <li class="nav-item">
-                        <button id="radioTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm" aria-current="page-radio" disabled>Radio</button>
+                        <button id="radioTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm" aria-current="page-radio">Radio</button>
                     </li>
                     <li class="nav-item">
                         <button id="updateTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#updateTabForm" aria-current="page-update">Firmware Update</button>
