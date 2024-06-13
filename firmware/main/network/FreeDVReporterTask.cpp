@@ -213,7 +213,7 @@ void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio:
         esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
         cJSON_free(tmp);
-        cJSON_Delete(messagePayload);        
+        cJSON_Delete(message);        
     }
 }
 
