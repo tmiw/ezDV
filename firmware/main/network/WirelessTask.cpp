@@ -463,9 +463,6 @@ void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode
 
         ESP_ERROR_CHECK(esp_wifi_start());
         ESP_ERROR_CHECK(esp_wifi_connect());
-
-        esp_sntp_init();
-        esp_sntp_setservername(0, "pool.ntp.org");
     }
 }
 
@@ -931,6 +928,10 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
             ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
             ESP_ERROR_CHECK(esp_wifi_start());
         }
+        
+        // Start SNTP
+        esp_sntp_init();
+        esp_sntp_setservername(0, "pool.ntp.org");
     }
 }
 
