@@ -521,6 +521,7 @@ void WirelessTask::enableEthernet_()
     if (eth_handle == nullptr)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "could not install driver");
+        esp_eth_driver_uninstall(eth_handle);
         return;
     }
         
@@ -530,6 +531,7 @@ void WirelessTask::enableEthernet_()
     if (eth_netif == nullptr)
     {
         ESP_LOGW(CURRENT_LOG_TAG, "Could not initialize Ethernet interface");
+        esp_eth_driver_uninstall(eth_handle);
     }
     else
     {
@@ -556,6 +558,7 @@ void WirelessTask::enableEthernet_()
         if (!glue)
         {
             ESP_LOGE(CURRENT_LOG_TAG, "Could not create glue object");
+            esp_eth_driver_uninstall(eth_handle);
         }
         else
         {        
