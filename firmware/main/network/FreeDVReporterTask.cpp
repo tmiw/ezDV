@@ -38,7 +38,7 @@ namespace network
 {
 
 FreeDVReporterTask::FreeDVReporterTask()
-    : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("FreeDVReporterTask", 1, 3072, tskNO_AFFINITY, 32)
     , reconnectTimer_(this, this, &FreeDVReporterTask::startSocketIoConnection_, MS_TO_US(10000), "FDVReporterReconn")
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
@@ -213,7 +213,7 @@ void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio:
         esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
         cJSON_free(tmp);
-        cJSON_Delete(messagePayload);        
+        cJSON_Delete(outMessage);        
     }
 }
 
@@ -507,7 +507,7 @@ void FreeDVReporterTask::sendReportingMessageUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::sendFrequencyUpdate_()
@@ -537,7 +537,7 @@ void FreeDVReporterTask::sendFrequencyUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::sendTransmitStateUpdate_()
@@ -571,7 +571,7 @@ void FreeDVReporterTask::sendTransmitStateUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::WebsocketEventHandler_(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
