@@ -587,6 +587,8 @@ void WirelessTask::disableWifi_()
 
     esp_wifi_disconnect();
     esp_wifi_stop();
+    
+    // Disable Ethernet as well - TBD
 }
 
 void WirelessTask::enableHttp_()
@@ -901,6 +903,33 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
         else if (message->enabled)
         {
             enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password, message->hostname);
+        }
+        else
+        {
+            // Start Wi-Fi without any connection. This ensures that scanning still works.
+            esp_netif_t* netif = esp_netif_create_default_wifi_sta();
+            wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+            ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+        
+            wifi_config_t wifi_config;
+            memset(&wifi_config, 0, sizeof(wifi_config_t));
+
+            wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+            wifi_config.sta.bssid_set = false;
+            memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
+            wifi_config.sta.channel = 0;
+            wifi_config.sta.listen_interval = 0;
+            wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+
+            // Enable fast roaming (typically for mesh networks or enterprise setups)
+            wifi_config.sta.btm_enabled = 1;
+            wifi_config.sta.rm_enabled = 1;
+            wifi_config.sta.mbo_enabled = 1;
+            wifi_config.sta.ft_enabled = 1;
+        
+            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+            ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+            ESP_ERROR_CHECK(esp_wifi_start());
         }
     }
 }
