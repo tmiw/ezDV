@@ -262,36 +262,41 @@ void WirelessInterface::IPEventHandler_(void *event_handler_arg, esp_event_base_
         case IP_EVENT_AP_STAIPASSIGNED:
         {
             ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
-            char buf[32];
-            sprintf(buf, IPSTR, IP2STR(&ipData->ip));
-            
-            ESP_LOGI(CURRENT_LOG_TAG, "Assigned IP %s to client", buf);
-            
-            if (obj->onApAssignedIp_)
+            if (ipData->esp_netif == obj->interfaceHandle_)
             {
-                obj->onApAssignedIp_(*obj, buf);
+                char buf[32];
+                sprintf(buf, IPSTR, IP2STR(&ipData->ip));
+            
+                ESP_LOGI(CURRENT_LOG_TAG, "Assigned IP %s to client", buf);
+            
+                if (obj->onApAssignedIp_)
+                {
+                    obj->onApAssignedIp_(*obj, buf);
+                }
             }
             break;
         }
         case IP_EVENT_STA_GOT_IP:
         {
             ip_event_got_ip_t* ipData = (ip_event_got_ip_t*)event_data;
-            char buf[32];
-            sprintf(buf, IPSTR, IP2STR(&ipData->ip_info.ip));
-
-            ESP_LOGI(CURRENT_LOG_TAG, "Got IP address %s from DHCP server", buf);
-            
-            obj->status_ = INTERFACE_UP;
-            if (obj->onNetworkUpFn_)
+            if (ipData->esp_netif == obj->interfaceHandle_)
             {
-                obj->onNetworkUpFn_(*obj);
-            }
-            
-            if (obj->onIpAddressAssignedFn_)
-            {
-                obj->onIpAddressAssignedFn_(*obj, buf);
-            }
+                char buf[32];
+                sprintf(buf, IPSTR, IP2STR(&ipData->ip_info.ip));
 
+                ESP_LOGI(CURRENT_LOG_TAG, "Got IP address %s from DHCP server", buf);
+            
+                obj->status_ = INTERFACE_UP;
+                if (obj->onNetworkUpFn_)
+                {
+                    obj->onNetworkUpFn_(*obj);
+                }
+            
+                if (obj->onIpAddressAssignedFn_)
+                {
+                    obj->onIpAddressAssignedFn_(*obj, buf);
+                }
+            }
             break;
         }
     }
