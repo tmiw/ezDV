@@ -25,12 +25,13 @@
 
 #define CURRENT_LOG_TAG "EthernetInterface"
 #define ETHERNET_SPI_HOST (SPI2_HOST)
-#define ETHERNET_CLOCK_SPEED_HZ (SPI_MASTER_FREQ_16M)
+#define ETHERNET_CLOCK_SPEED_HZ (SPI_MASTER_FREQ_40M)
 #define GPIO_ETHERNET_SPI_SCLK (42)
 #define GPIO_ETHERNET_SPI_MISO (41)
 #define GPIO_ETHERNET_SPI_MOSI (40)
 #define GPIO_ETHERNET_SPI_CS (39)
-#define GPIO_ETHERNET_INTERRUPT (38)
+#define GPIO_ETHERNET_INTERRUPT (-1) /* polling only */
+#define ETHERNET_POLLING_PERIOD_MS (5)
 
 namespace ezdv
 {
@@ -96,7 +97,7 @@ void EthernetInterface::bringUp()
     /* W5500 ethernet driver is based on spi driver */
     eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(ETHERNET_SPI_HOST, &spi_devcfg);
     w5500_config.int_gpio_num = GPIO_ETHERNET_INTERRUPT;
-    //w5500_config.poll_period_ms = 5;
+    w5500_config.poll_period_ms = ETHERNET_POLLING_PERIOD_MS;
     esp_eth_mac_t *mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
     esp_eth_phy_t *phy = esp_eth_phy_new_w5500(&phy_config);
     
