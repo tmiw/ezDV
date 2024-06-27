@@ -586,6 +586,12 @@ int NetworkTask::numInterfacesRunning_()
         if (iface->status() == interfaces::INetworkInterface::INTERFACE_UP)
         {
             count++;
+            
+            if (count == 1)
+            {
+                // First network interface found should be the default.
+                iface->setAsDefaultInterface();
+            }
         }
     }
     
