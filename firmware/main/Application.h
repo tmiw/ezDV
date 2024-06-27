@@ -30,7 +30,7 @@
 #include "driver/LedArray.h"
 #include "driver/MAX17048.h"
 #include "driver/TLV320.h"
-#include "network/WirelessTask.h"
+#include "network/NetworkTask.h"
 #include "storage/SettingsTask.h"
 #include "storage/SoftwareUpdateTask.h"
 #include "ui/UserInterfaceTask.h"
@@ -70,7 +70,7 @@ private:
     driver::LedArray ledArray_;
     driver::MAX17048 max17048_;
     driver::TLV320* tlv320Device_;
-    network::WirelessTask* wirelessTask_;
+    network::NetworkTask* networkTask_;
     storage::SettingsTask* settingsTask_;
     storage::SoftwareUpdateTask* softwareUpdateTask_;
     ui::UserInterfaceTask* uiTask_;

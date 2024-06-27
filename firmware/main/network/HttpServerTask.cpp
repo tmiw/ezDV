@@ -954,23 +954,23 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
     
     bool settingsValid = true;
     
+    auto hostnameJSON = cJSON_GetObjectItem(message->request, "hostname");
+    if (hostnameJSON != nullptr)
+    {
+        hostname = cJSON_GetStringValue(hostnameJSON);
+        settingsValid &= strlen(hostname) > 0;
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
     auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
     if (enabledJSON != nullptr)
     {
         enabled = cJSON_IsTrue(enabledJSON);
         if (enabled)
         {
-            auto hostnameJSON = cJSON_GetObjectItem(message->request, "hostname");
-            if (hostnameJSON != nullptr)
-            {
-                hostname = cJSON_GetStringValue(hostnameJSON);
-                settingsValid &= strlen(hostname) > 0;
-            }
-            else
-            {
-                settingsValid = false;
-            }
-
             auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
             if (modeJSON != nullptr)
             {

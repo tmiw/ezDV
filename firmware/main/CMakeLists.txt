@@ -43,12 +43,15 @@ set(SOURCES
     "network/icom/LoginState.cpp"
     "network/icom/StateMachine.cpp"
     "network/icom/TrackedPacketState.cpp"
+    "network/interfaces/EthernetInterface.cpp"
+    "network/interfaces/INetworkInterface.cpp"
+    "network/interfaces/WirelessInterface.cpp"
     "network/FreeDVReporterTask.cpp"
     "network/HttpServerTask.cpp"
     "network/NetworkMessage.cpp"
+    "network/NetworkTask.cpp"
     "network/PskReporterTask.cpp"
     "network/ReportingMessage.cpp"
-    "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
     "storage/SoftwareUpdateMessage.cpp"
@@ -78,6 +81,7 @@ if(${ESP_PLATFORM})
                                 wear_levelling
                                 esp_http_server
                                 esp_netif
+                                esp_eth
                                 esp_timer
                                 esp_wifi
                                 esp_websocket_client

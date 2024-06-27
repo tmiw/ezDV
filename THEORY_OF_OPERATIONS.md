@@ -37,9 +37,12 @@ The ezDV firmware is split into several tasks to perform various actions. These 
         * FlexVitaTask - handles audio I/O (analog and digital) to/from a configured Flex radio
     * Icom support (`firmware/network/icom`)
         * IcomSocketTask - handles UDP connection to one of the Icom remote ports (control, audio, CAT control)
+    * Network interfaces (`firmware/network/interfaces`)
+        * WirelessInterface - handles bringup/teardown of the built-in Wi-Fi on the ESP32.
+        * EthernetInterface - handles bringup/teardown of the W5500 Ethernet module (if attached).
     * FreeDVReporterTask - handles reporting to [FreeDV Reporter](https://qso.freedv.org/)
     * HttpServerTask - handles serving of ezDV's built-in web interface
-    * WirelessTask - handles bringup and teardown of the configured Wi-Fi connection
+    * NetworkTask - handles bringup and teardown of the configured network interfaces (Wi-Fi, Ethernet)
 * Storage (`firmware/storage`) -- handles configuration and firmware storage
     * SettingsTask - handles storage of configuration settings
     * SoftwareUpdateTask - handles updating of the ezDV firmware from the web interface
