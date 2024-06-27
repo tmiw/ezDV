@@ -133,8 +133,16 @@ void EthernetInterface::bringUp()
                                                             this,
                                                             NULL));
         
-        // Set MAC address
-        ESP_ERROR_CHECK(esp_eth_ioctl(ethDeviceHandle_, ETH_CMD_S_MAC_ADDR, local_mac_1));
+        // Set MAC address if one isn't already assigned
+        uint8_t tmpMac[6];
+        uint8_t zeroMac[6];
+        memset(zeroMac, 0, sizeof(zeroMac));
+        
+        getMacAddress(tmpMac);
+        if (memcmp(tmpMac, zeroMac, sizeof(zeroMac)) == 0)
+        {
+            ESP_ERROR_CHECK(esp_eth_ioctl(ethDeviceHandle_, ETH_CMD_S_MAC_ADDR, local_mac_1));
+        }
         
         auto glue = esp_eth_new_netif_glue(ethDeviceHandle_);
         if (!glue)
