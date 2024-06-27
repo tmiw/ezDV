@@ -55,11 +55,11 @@ using namespace ezdv::task;
 class HttpServerTask;
 
 /// @brief Handles wireless setup in the application.
-class WirelessTask : public DVTask
+class NetworkTask : public DVTask
 {
 public:
-    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
-    virtual ~WirelessTask();
+    NetworkTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
+    virtual ~NetworkTask();
     
     void setWiFiOverride(bool wifiOverride);
     
@@ -68,7 +68,7 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
-    enum WirelessTaskRequestId 
+    enum NetworkTaskRequestId 
     {
         AP_ASSIGNED_IP = 1,
         STA_ASSIGNED_IP = 2,

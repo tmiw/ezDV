@@ -63,7 +63,7 @@ App::App()
     , freedvTask_(nullptr)
     , max17048_(&i2cDevice_)
     , tlv320Device_(nullptr)
-    , wirelessTask_(nullptr)
+    , networkTask_(nullptr)
     , settingsTask_(nullptr)
     , softwareUpdateTask_(nullptr)
     , uiTask_(nullptr)
@@ -401,11 +401,11 @@ void App::onTaskStart_()
             start(uiTask_, pdMS_TO_TICKS(1000));
         
             // Start Wi-Fi
-            wirelessTask_ = new network::WirelessTask(freedvTask_, tlv320Device_, audioMixer_, voiceKeyerTask_);
-            assert(wirelessTask_ != nullptr);
+            networkTask_ = new network::NetworkTask(freedvTask_, tlv320Device_, audioMixer_, voiceKeyerTask_);
+            assert(networkTask_ != nullptr);
             
-            wirelessTask_->setWiFiOverride(wifiOverrideEnabled_);
-            start(wirelessTask_, pdMS_TO_TICKS(5000));
+            networkTask_->setWiFiOverride(wifiOverrideEnabled_);
+            start(networkTask_, pdMS_TO_TICKS(5000));
 
             // Start storage handling
             settingsTask_ = new storage::SettingsTask();
@@ -459,9 +459,9 @@ void App::onTaskSleep_()
         if (!rfComplianceEnabled_)
         {
             // Sleep Wi-Fi
-            if (wirelessTask_ != nullptr)
+            if (networkTask_ != nullptr)
             {
-                sleep(wirelessTask_, pdMS_TO_TICKS(5000));
+                sleep(networkTask_, pdMS_TO_TICKS(5000));
             }
             
             // Sleep UI

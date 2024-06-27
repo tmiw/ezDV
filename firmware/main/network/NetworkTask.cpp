@@ -36,7 +36,7 @@
 #include "esp_eth.h"
 #include "esp_eth_driver.h"
 
-#include "WirelessTask.h"
+#include "NetworkTask.h"
 #include "HttpServerTask.h"
 #include "NetworkMessage.h"
 
@@ -48,7 +48,7 @@
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 #define SCRATCH_BUFSIZE 256
-#define CURRENT_LOG_TAG "WirelessTask"
+#define CURRENT_LOG_TAG "NetworkTask"
 
 #define ETHERNET_SPI_HOST (SPI2_HOST)
 #define ETHERNET_CLOCK_SPEED_HZ (SPI_MASTER_FREQ_16M)
@@ -69,10 +69,10 @@ namespace ezdv
 namespace network
 {
     
-WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
-    : ezdv::task::DVTask("WirelessTask", 5, 4096, tskNO_AFFINITY, 128)
-    , wifiScanTimer_(this, this, &WirelessTask::triggerWifiScan_, 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
-    , icomRestartTimer_(this, this, &WirelessTask::restartIcomConnection_, 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
+NetworkTask::NetworkTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
+    : ezdv::task::DVTask("NetworkTask", 5, 4096, tskNO_AFFINITY, 128)
+    , wifiScanTimer_(this, this, &NetworkTask::triggerWifiScan_, 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
+    , icomRestartTimer_(this, this, &NetworkTask::restartIcomConnection_, 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
     , icomAudioTask_(nullptr)
     , icomCIVTask_(nullptr)
@@ -88,38 +88,38 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , radioRunning_(false)
     , wifiInterface_(nullptr)
 {
-    registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
-    registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
+    registerMessageHandler(this, &NetworkTask::onRadioStateChange_);
+    registerMessageHandler(this, &NetworkTask::onWifiSettingsMessage_);
 
-    registerMessageHandler(this, &WirelessTask::onWifiScanStartMessage_);
-    registerMessageHandler(this, &WirelessTask::onWifiScanStopMessage_);
+    registerMessageHandler(this, &NetworkTask::onWifiScanStartMessage_);
+    registerMessageHandler(this, &NetworkTask::onWifiScanStopMessage_);
 
     // Handlers for internal messages (intended to make events that happen
     // on ESP-IDF tasks happen on this one instead).
-    registerMessageHandler(this, &WirelessTask::onApAssignedIpMessage_);
-    registerMessageHandler(this, &WirelessTask::onStaAssignedIpMessage_);
-    registerMessageHandler(this, &WirelessTask::onWifiScanCompletedMessage_);
-    registerMessageHandler(this, &WirelessTask::onApStartedMessage_);
-    registerMessageHandler(this, &WirelessTask::onNetworkDownMessage_);
-    registerMessageHandler(this, &WirelessTask::onDeviceDisconnectedMessage_);
+    registerMessageHandler(this, &NetworkTask::onApAssignedIpMessage_);
+    registerMessageHandler(this, &NetworkTask::onStaAssignedIpMessage_);
+    registerMessageHandler(this, &NetworkTask::onWifiScanCompletedMessage_);
+    registerMessageHandler(this, &NetworkTask::onApStartedMessage_);
+    registerMessageHandler(this, &NetworkTask::onNetworkDownMessage_);
+    registerMessageHandler(this, &NetworkTask::onDeviceDisconnectedMessage_);
 }
 
-WirelessTask::~WirelessTask()
+NetworkTask::~NetworkTask()
 {
     // empty
 }
 
-void WirelessTask::setWiFiOverride(bool wifiOverride)
+void NetworkTask::setWiFiOverride(bool wifiOverride)
 {
     overrideWifiSettings_ = wifiOverride;
 }
 
-void WirelessTask::onTaskStart_()
+void NetworkTask::onTaskStart_()
 {
     isAwake_ = true;
 }
 
-void WirelessTask::onTaskSleep_()
+void NetworkTask::onTaskSleep_()
 {
     isAwake_ = false;
     
@@ -175,7 +175,7 @@ void WirelessTask::onTaskSleep_()
     disableWifi_();
 }
 
-void WirelessTask::disableWifi_()
+void NetworkTask::disableWifi_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
 
@@ -198,12 +198,12 @@ void WirelessTask::disableWifi_()
     interfaceList_.clear();
 }
 
-void WirelessTask::enableHttp_()
+void NetworkTask::enableHttp_()
 {
     httpServerTask_.start();
 }
 
-void WirelessTask::disableHttp_()
+void NetworkTask::disableHttp_()
 {
     if (wifiRunning_)
     {
@@ -211,7 +211,7 @@ void WirelessTask::disableHttp_()
     }
 }
 
-void WirelessTask::onNetworkUp_()
+void NetworkTask::onNetworkUp_()
 {
     WirelessNetworkStatusMessage message(true);
     publish(&message);
@@ -221,7 +221,7 @@ void WirelessTask::onNetworkUp_()
     enableHttp_();
 }
 
-void WirelessTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddress)
+void NetworkTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddress)
 {
     if (radioRunning_)
     {
@@ -330,7 +330,7 @@ void WirelessTask::onNetworkConnected_(bool client, char* ip, uint8_t* macAddres
     }
 }
 
-void WirelessTask::onNetworkDisconnected_()
+void NetworkTask::onNetworkDisconnected_()
 {
     // Stop Icom reset timer if needed.
     icomRestartTimer_.stop();
@@ -388,7 +388,7 @@ void WirelessTask::onNetworkDisconnected_()
     publish(&message);
 }
 
-void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message)
+void NetworkTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMessage* message)
 {
     if (message->state)
     {
@@ -488,7 +488,7 @@ void WirelessTask::onRadioStateChange_(DVTask* origin, RadioConnectionStatusMess
     }
 }
 
-void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
+void NetworkTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsMessage* message)
 {
     // Avoid accidentally trying to re-initialize Wi-Fi.
     if (!wifiRunning_)
@@ -578,7 +578,7 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
     }
 }
 
-int WirelessTask::numInterfacesRunning_()
+int NetworkTask::numInterfacesRunning_()
 {
     int count = 0;
     for (auto& iface : interfaceList_)
@@ -592,7 +592,7 @@ int WirelessTask::numInterfacesRunning_()
     return count;
 }
 
-void WirelessTask::restartIcomConnection_(DVTimer*)
+void NetworkTask::restartIcomConnection_(DVTimer*)
 {
     storage::RequestRadioSettingsMessage request;
     publish(&request);
@@ -615,12 +615,12 @@ void WirelessTask::restartIcomConnection_(DVTimer*)
     }
 }
 
-void WirelessTask::triggerWifiScan_(DVTimer*)
+void NetworkTask::triggerWifiScan_(DVTimer*)
 {
     wifiInterface_->beginScan();
 }
 
-void WirelessTask::onWifiScanComplete_()
+void NetworkTask::onWifiScanComplete_()
 {
     // Get the number of Wi-Fi networks found. We'll need to use
     // this to allocate the correct amount of RAM to store the Wi-Fi APs found.
@@ -657,7 +657,7 @@ void WirelessTask::onWifiScanComplete_()
     wifiScanTimer_.start(true);
 }
 
-void WirelessTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message)
+void NetworkTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Starting Wi-Fi scan");
     
@@ -665,35 +665,35 @@ void WirelessTask::onWifiScanStartMessage_(DVTask* origin, StartWifiScanMessage*
     triggerWifiScan_(nullptr);
 }
 
-void WirelessTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message)
+void NetworkTask::onWifiScanStopMessage_(DVTask* origin, StopWifiScanMessage* message)
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Stopping Wi-Fi scan");
     
     wifiScanTimer_.stop();
 }
 
-void WirelessTask::onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message)
+void NetworkTask::onApAssignedIpMessage_(DVTask* origin, ApAssignedIpMessage* message)
 {
     onNetworkConnected_(false, message->ipString, message->macAddress);
 }
 
-void WirelessTask::onStaAssignedIpMessage_(DVTask* origin, StaAssignedIpMessage* message)
+void NetworkTask::onStaAssignedIpMessage_(DVTask* origin, StaAssignedIpMessage* message)
 {
     onNetworkUp_();
     onNetworkConnected_(true, message->ipString, nullptr);
 }
 
-void WirelessTask::onWifiScanCompletedMessage_(DVTask* origin, WifiScanCompletedMessage* message)
+void NetworkTask::onWifiScanCompletedMessage_(DVTask* origin, WifiScanCompletedMessage* message)
 {
     onWifiScanComplete_();
 }
 
-void WirelessTask::onApStartedMessage_(DVTask* origin, ApStartedMessage* message)
+void NetworkTask::onApStartedMessage_(DVTask* origin, ApStartedMessage* message)
 {
     onNetworkUp_();
 }
 
-void WirelessTask::onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message)
+void NetworkTask::onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message)
 {
     onNetworkDisconnected_();
 
@@ -708,7 +708,7 @@ void WirelessTask::onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* mes
     }
 }
 
-void WirelessTask::onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message)
+void NetworkTask::onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message)
 {
     // Prevent attempted reconnection of radio if that's the device
     // that disconnected.
