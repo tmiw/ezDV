@@ -40,9 +40,10 @@
 #include "HttpServerTask.h"
 #include "NetworkMessage.h"
 
-#define DEFAULT_AP_NAME_PREFIX "ezDV "
+#include "interfaces/EthernetInterface.h"
+#include "interfaces/WirelessInterface.h"
+
 #define DEFAULT_AP_CHANNEL (1)
-#define MAX_AP_CONNECTIONS (5)
 
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
@@ -67,129 +68,7 @@ namespace ezdv
 
 namespace network
 {
-
-void WirelessTask::EthernetEventHandler_(void *arg, esp_event_base_t event_base,
-                              int32_t event_id, void *event_data)
-{
-    uint8_t mac_addr[6] = {0};
-    /* we can get the ethernet driver handle from event data */
-    esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
-
-    switch (event_id) {
-    case ETHERNET_EVENT_CONNECTED:
-        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Up");
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
-                    mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-        break;
-    case ETHERNET_EVENT_DISCONNECTED:
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");
-        break;
-    case ETHERNET_EVENT_START:
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");        
-        break;
-    case ETHERNET_EVENT_STOP:
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Stopped");
-        break;
-    default:
-        break;
-    }
-}
     
-void WirelessTask::IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    ESP_LOGI(CURRENT_LOG_TAG, "IP event: %ld", event_id);
-    
-    WirelessTask* obj = (WirelessTask*)event_handler_arg;
-    
-    if (obj->isAwake())
-    {
-        switch(event_id)
-        {
-            case IP_EVENT_AP_STAIPASSIGNED:
-            {
-                ip_event_ap_staipassigned_t* ipData = (ip_event_ap_staipassigned_t*)event_data;
-                char buf[32];
-                sprintf(buf, IPSTR, IP2STR(&ipData->ip));
-                
-                ESP_LOGI(CURRENT_LOG_TAG, "Assigned IP %s to client", buf);
-                ApAssignedIpMessage message(buf, ipData->mac);
-                obj->post(&message);
-
-                break;
-            }
-            case IP_EVENT_STA_GOT_IP:
-            case IP_EVENT_ETH_GOT_IP:
-            {
-                ip_event_got_ip_t* ipData = (ip_event_got_ip_t*)event_data;
-                char buf[32];
-                sprintf(buf, "IP " IPSTR, IP2STR(&ipData->ip_info.ip));
-            
-                StaAssignedIpMessage message(buf);
-                obj->post(&message);
-
-                break;
-            }
-        }
-    }
-}
-
-void WirelessTask::WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    WirelessTask* obj = (WirelessTask*)event_handler_arg;
-    
-    ESP_LOGI(CURRENT_LOG_TAG, "Wi-Fi event: %ld", event_id);
-    
-    if (obj->isAwake())
-    {
-        switch (event_id)
-        {
-            case WIFI_EVENT_SCAN_DONE:
-            {
-                WifiScanCompletedMessage message;
-                obj->post(&message);
-                break;
-            }
-            case WIFI_EVENT_AP_START:
-            {
-                ApStartedMessage message;
-                obj->post(&message);
-                break;
-            }
-            case WIFI_EVENT_AP_STOP:
-            case WIFI_EVENT_STA_DISCONNECTED:
-            {
-                bool networkIsDown = true;
-
-                if (event_id == WIFI_EVENT_STA_DISCONNECTED)
-                {
-                    wifi_event_sta_disconnected_t *disconn = (wifi_event_sta_disconnected_t*)event_data;
-                    if (disconn->reason == WIFI_REASON_ROAMING) 
-                    {
-                        ESP_LOGW(CURRENT_LOG_TAG, "Network disconnected due to roaming");
-                        networkIsDown = false;
-                    }
-                }
-
-                if (networkIsDown)
-                {
-                    NetworkDownMessage message;
-                    obj->post(&message);
-                }
-
-                break;
-            }
-            case WIFI_EVENT_AP_STADISCONNECTED:
-            {
-                wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*)event_data;
-                DeviceDisconnectedMessage message(event->mac);
-                obj->post(&message);
-                break;
-            }
-        }
-    }
-}
-
 WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
     : ezdv::task::DVTask("WirelessTask", 5, 4096, tskNO_AFFINITY, 128)
     , wifiScanTimer_(this, this, &WirelessTask::triggerWifiScan_, 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
@@ -207,6 +86,7 @@ WirelessTask::WirelessTask(audio::AudioInput* freedvHandler, audio::AudioInput* 
     , overrideWifiSettings_(false)
     , wifiRunning_(false)
     , radioRunning_(false)
+    , wifiInterface_(nullptr)
 {
     registerMessageHandler(this, &WirelessTask::onRadioStateChange_);
     registerMessageHandler(this, &WirelessTask::onWifiSettingsMessage_);
@@ -295,279 +175,6 @@ void WirelessTask::onTaskSleep_()
     disableWifi_();
 }
 
-void WirelessTask::enableDefaultWifi_()
-{
-    esp_netif_create_default_wifi_ap();
-    
-    // Register event handler so we can notify the user on network
-    // status changes.
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &WiFiEventHandler_,
-                                                        this,
-                                                        &wifiEventHandle_));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &IPEventHandler_,
-                                                        this,
-                                                        &ipEventHandle_));
-                                                        
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    wifi_config_t wifi_config;
-    memset(&wifi_config, 0, sizeof(wifi_config_t));
-
-    wifi_config.ap.ssid_len = 0; // Will auto-determine length on start.
-    wifi_config.ap.channel = DEFAULT_AP_CHANNEL;
-    wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    wifi_config.ap.max_connection = MAX_AP_CONNECTIONS;
-    wifi_config.ap.pmf_cfg.required = false;
-    
-    // Append last two bytes of MAC address to default SSID.
-    uint8_t mac[6];
-    ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_AP, mac));
-    sprintf((char*)wifi_config.ap.ssid, "%s%02x%02x", DEFAULT_AP_NAME_PREFIX, mac[4], mac[5]);
-    
-    sprintf((char*)wifi_config.ap.password, "%s", "");
-    
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-void WirelessTask::enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname)
-{    
-    esp_netif_t* netif = nullptr;
-    if (mode == storage::WifiMode::ACCESS_POINT)
-    {
-        netif = esp_netif_create_default_wifi_ap();
-    }
-    else if (mode == storage::WifiMode::CLIENT)
-    {
-        netif = esp_netif_create_default_wifi_sta();
-    }
-    else
-    {
-        assert(0);
-    }
-
-    // Set hostname as configured by the user
-    if (hostname != nullptr && strlen(hostname) > 0)
-    {
-        ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV hostname to %s", hostname);
-        ESP_ERROR_CHECK(esp_netif_set_hostname(netif, hostname));
-    }
-
-    ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV SSID to %s", ssid);
-
-    // Register event handler so we can notify the user on network
-    // status changes.
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &WiFiEventHandler_,
-                                                        this,
-                                                        NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &IPEventHandler_,
-                                                        this,
-                                                        NULL));
-                                                        
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    
-    // Disable power save.
-    //esp_wifi_set_ps(WIFI_PS_NONE);
-
-    if (mode == storage::WifiMode::ACCESS_POINT)
-    {
-        wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
-        
-        switch(security)
-        {
-            case storage::WifiSecurityMode::NONE:
-                auth_mode = WIFI_AUTH_OPEN;
-                break;
-            case storage::WifiSecurityMode::WEP:
-                auth_mode = WIFI_AUTH_WEP;
-                break;
-            case storage::WifiSecurityMode::WPA:
-                auth_mode = WIFI_AUTH_WPA_PSK;
-                break;
-            case storage::WifiSecurityMode::WPA2:
-                auth_mode = WIFI_AUTH_WPA2_PSK;
-                break;
-            case storage::WifiSecurityMode::WPA_AND_WPA2:
-                auth_mode = WIFI_AUTH_WPA_WPA2_PSK;
-                break;
-#if 0
-            case storage::WifiSecurityMode::WPA3:
-                auth_mode = WIFI_AUTH_WPA3_PSK;
-                break;
-            case storage::WifiSecurityMode::WPA2_AND_WPA3:
-                auth_mode = WIFI_AUTH_WPA2_WPA3_PSK;
-                break;
-#endif // 0
-            default:
-                assert(0);
-                break;
-        }
-        
-        wifi_config_t wifi_config;
-        memset(&wifi_config, 0, sizeof(wifi_config_t));
-
-        wifi_config.ap.ssid_len = 0; // Will auto-determine length on start.
-        wifi_config.ap.channel = (uint8_t)channel;
-        wifi_config.ap.authmode = auth_mode;
-        wifi_config.ap.max_connection = MAX_AP_CONNECTIONS;
-        wifi_config.ap.pmf_cfg.required = false;
-        
-        sprintf((char*)wifi_config.ap.ssid, "%s", ssid);
-        sprintf((char*)wifi_config.ap.password, "%s", password);
-        
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-
-        // Force to HT20 mode to better handle congested airspace
-        ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20));
-
-        ESP_ERROR_CHECK(esp_wifi_start());
-    }
-    else
-    {
-        wifi_config_t wifi_config;
-        memset(&wifi_config, 0, sizeof(wifi_config_t));
-
-        wifi_config.sta.scan_method = WIFI_FAST_SCAN;
-        wifi_config.sta.bssid_set = false;
-        memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
-        wifi_config.sta.channel = 0;
-        wifi_config.sta.listen_interval = 0;
-        wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-
-        // Enable fast roaming (typically for mesh networks or enterprise setups)
-        wifi_config.sta.btm_enabled = 1;
-        wifi_config.sta.rm_enabled = 1;
-        wifi_config.sta.mbo_enabled = 1;
-        wifi_config.sta.ft_enabled = 1;
-        
-        sprintf((char*)wifi_config.sta.ssid, "%s", ssid);
-        sprintf((char*)wifi_config.sta.password, "%s", password);
-        
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-
-        // Force to HT20 mode to better handle congested airspace
-        ESP_ERROR_CHECK(esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20));
-
-        ESP_ERROR_CHECK(esp_wifi_start());
-        ESP_ERROR_CHECK(esp_wifi_connect());
-    }
-}
-
-void WirelessTask::enableEthernet_()
-{
-    // Generate MAC address
-    uint8_t base_mac_addr[ETH_ADDR_LEN];
-    ESP_ERROR_CHECK(esp_efuse_mac_get_default(base_mac_addr));
-    uint8_t local_mac_1[ETH_ADDR_LEN];
-    esp_derive_local_mac(local_mac_1, base_mac_addr);
-    
-    eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();      // apply default common MAC configuration
-    eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();      // apply default PHY configuration
-    phy_config.phy_addr = 1;                                     // alter the PHY address according to your board design
-    phy_config.reset_gpio_num = -1;                              // alter the GPIO used for PHY reset
-
-    // SPI bus configuration
-    spi_bus_config_t buscfg;
-    buscfg.mosi_io_num = GPIO_ETHERNET_SPI_MOSI;
-    buscfg.miso_io_num = GPIO_ETHERNET_SPI_MISO;
-    buscfg.sclk_io_num = GPIO_ETHERNET_SPI_SCLK;
-    buscfg.quadwp_io_num = -1;
-    buscfg.quadhd_io_num = -1;
-    buscfg.data4_io_num = -1;
-    buscfg.data5_io_num = -1;
-    buscfg.data6_io_num = -1;
-    buscfg.data7_io_num = -1;
-    buscfg.max_transfer_sz = 0; // use default
-    buscfg.flags = SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_GPIO_PINS;
-    buscfg.isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO;
-    buscfg.intr_flags = 0;
-    ESP_ERROR_CHECK(spi_bus_initialize(ETHERNET_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
-    
-    // Configure SPI device
-    spi_device_interface_config_t spi_devcfg;
-    memset(&spi_devcfg, 0, sizeof(spi_device_interface_config_t));
-    spi_devcfg.mode = 0;
-    spi_devcfg.clock_speed_hz = ETHERNET_CLOCK_SPEED_HZ;
-    spi_devcfg.spics_io_num = GPIO_ETHERNET_SPI_CS;
-    spi_devcfg.queue_size = 20;
-    spi_devcfg.command_bits = 0;
-    spi_devcfg.address_bits = 0;
-    spi_devcfg.clock_source = SPI_CLK_SRC_DEFAULT;
-    
-    /* W5500 ethernet driver is based on spi driver */
-    eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(ETHERNET_SPI_HOST, &spi_devcfg);
-    w5500_config.int_gpio_num = GPIO_ETHERNET_INTERRUPT;
-    //w5500_config.poll_period_ms = 5;
-    esp_eth_mac_t *mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
-    esp_eth_phy_t *phy = esp_eth_phy_new_w5500(&phy_config);
-    
-    esp_eth_config_t config = ETH_DEFAULT_CONFIG(mac, phy); // apply default driver configuration
-    esp_eth_handle_t eth_handle = nullptr; // after the driver is installed, we will get the handle of the driver
-    esp_eth_driver_install(&config, &eth_handle); // install driver
-    
-    if (eth_handle == nullptr)
-    {
-        ESP_LOGW(CURRENT_LOG_TAG, "could not install driver");
-        esp_eth_driver_uninstall(eth_handle);
-        return;
-    }
-        
-    // Create network interface for Ethernet
-    esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH(); // apply default network interface configuration for Ethernet
-    esp_netif_t *eth_netif = esp_netif_new(&cfg); // create network interface for Ethernet driver
-    if (eth_netif == nullptr)
-    {
-        ESP_LOGW(CURRENT_LOG_TAG, "Could not initialize Ethernet interface");
-        esp_eth_driver_uninstall(eth_handle);
-    }
-    else
-    {
-        ESP_ERROR_CHECK(esp_event_handler_instance_register(ETH_EVENT, 
-                                                            ESP_EVENT_ANY_ID, 
-                                                            &EthernetEventHandler_, 
-                                                            this,
-                                                            NULL));
-        ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                            ESP_EVENT_ANY_ID,
-                                                            &WiFiEventHandler_,
-                                                            this,
-                                                            NULL));
-        ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                            ESP_EVENT_ANY_ID,
-                                                            &IPEventHandler_,
-                                                            this,
-                                                            NULL));
-        
-        // Set MAC address
-        ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, local_mac_1));
-        
-        auto glue = esp_eth_new_netif_glue(eth_handle);
-        if (!glue)
-        {
-            ESP_LOGE(CURRENT_LOG_TAG, "Could not create glue object");
-            esp_eth_driver_uninstall(eth_handle);
-        }
-        else
-        {        
-            esp_netif_attach(eth_netif, glue); // attach Ethernet driver to TCP/IP stack
-            esp_eth_start(eth_handle); // start Ethernet driver state machine
-        }
-    }
-}
-
 void WirelessTask::disableWifi_()
 {
     ESP_LOGI(CURRENT_LOG_TAG, "Shutting down Wi-Fi");
@@ -581,14 +188,14 @@ void WirelessTask::disableWifi_()
     esp_event_handler_instance_unregister(WIFI_EVENT,
                                             ESP_EVENT_ANY_ID,
                                             &wifiEventHandle_);
-    esp_event_handler_instance_unregister(IP_EVENT,
-                                            ESP_EVENT_ANY_ID,
-                                            &ipEventHandle_);
 
-    esp_wifi_disconnect();
-    esp_wifi_stop();
-    
-    // Disable Ethernet as well - TBD
+    // Stop interfaces
+    for (auto& iface : interfaceList_)
+    {
+        iface->tearDown();
+        delete iface;
+    }
+    interfaceList_.clear();
 }
 
 void WirelessTask::enableHttp_()
@@ -890,52 +497,99 @@ void WirelessTask::onWifiSettingsMessage_(DVTask* origin, storage::WifiSettingsM
         ESP_ERROR_CHECK(esp_netif_init());
         ESP_ERROR_CHECK(esp_event_loop_create_default());
         
-        // Ethernet should always be started in case we're plugged into the network.
-        enableEthernet_();
+        interfaces::INetworkInterface::OnNetworkUpDownHandlerType apUpHandler = [&](interfaces::INetworkInterface&)
+        {
+            if (numInterfacesRunning_() == 1)
+            {
+                ApStartedMessage message;
+                post(&message);
+            }
+        };
         
+        interfaces::INetworkInterface::OnNetworkIpAssignedType staUpHandler = [&](interfaces::INetworkInterface&, std::string ip)
+        {
+            if (numInterfacesRunning_() == 1)
+            {
+                StaAssignedIpMessage message(ip.c_str());
+                post(&message);
+            }
+        };
+        
+        interfaces::INetworkInterface::OnNetworkUpDownHandlerType downHandler = [&](interfaces::INetworkInterface&)
+        {
+            if (numInterfacesRunning_() == 0)
+            {
+                NetworkDownMessage message;
+                post(&message);
+            }
+        };
+        
+        // Ethernet should always be started in case we're plugged into the network.
+        auto ethInterface = new interfaces::EthernetInterface();
+        assert(ethInterface != nullptr);
+        ethInterface->setOnIpAddressAssigned(staUpHandler);
+        ethInterface->setOnNetworkDown(downHandler);
+        interfaceList_.push_back(ethInterface);
+
+        // Create interface for built-in WiFi
+        wifiInterface_ = new interfaces::WirelessInterface();
+        assert(wifiInterface_ != nullptr);
+        interfaceList_.push_back(wifiInterface_);
+        
+        bool isAccessPoint = false;
         if (overrideWifiSettings_)
         {
-            // Setup is *just* different enough that we have to have a separate function for it
-            // (we can't get the MAC address w/o bringing up Wi-Fi first, and that's not possible
-            // with enableWifi_()).
-            enableDefaultWifi_();
+            // An empty access point name results in automatically using "ezDV xxxx" instead.            
+            wifiInterface_->configure(storage::ACCESS_POINT, storage::NONE, DEFAULT_AP_CHANNEL, "", "");
+            isAccessPoint = true;
         }
         else if (message->enabled)
         {
-            enableWifi_(message->mode, message->security, message->channel, message->ssid, message->password, message->hostname);
+            wifiInterface_->configure(message->mode, message->security, message->channel, message->ssid, message->password);            
+            isAccessPoint = message->mode == storage::ACCESS_POINT;
+        }
+        
+        // Set WiFi event handlers
+        if (isAccessPoint)
+        {
+            wifiInterface_->setOnNetworkUp(apUpHandler);
         }
         else
         {
-            // Start Wi-Fi without any connection. This ensures that scanning still works.
-            esp_netif_t* netif = esp_netif_create_default_wifi_sta();
-            wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-            ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+            wifiInterface_->setOnIpAddressAssigned(staUpHandler);
+        }
+        wifiInterface_->setOnNetworkDown(downHandler);
         
-            wifi_config_t wifi_config;
-            memset(&wifi_config, 0, sizeof(wifi_config_t));
-
-            wifi_config.sta.scan_method = WIFI_FAST_SCAN;
-            wifi_config.sta.bssid_set = false;
-            memset(wifi_config.sta.bssid, 0, sizeof(wifi_config.sta.bssid));
-            wifi_config.sta.channel = 0;
-            wifi_config.sta.listen_interval = 0;
-            wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-
-            // Enable fast roaming (typically for mesh networks or enterprise setups)
-            wifi_config.sta.btm_enabled = 1;
-            wifi_config.sta.rm_enabled = 1;
-            wifi_config.sta.mbo_enabled = 1;
-            wifi_config.sta.ft_enabled = 1;
+        wifiInterface_->setOnWirelessScanComplete([&](interfaces::INetworkInterface&) {
+            WifiScanCompletedMessage message;
+            post(&message);
+        });
         
-            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-            ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-            ESP_ERROR_CHECK(esp_wifi_start());
+        // Start interfaces
+        for (auto& iface : interfaceList_)
+        {
+            iface->bringUp();
+            iface->setHostname(message->hostname);
         }
         
         // Start SNTP
         esp_sntp_init();
         esp_sntp_setservername(0, "pool.ntp.org");
     }
+}
+
+int WirelessTask::numInterfacesRunning_()
+{
+    int count = 0;
+    for (auto& iface : interfaceList_)
+    {
+        if (iface->status() == interfaces::INetworkInterface::INTERFACE_UP)
+        {
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 void WirelessTask::restartIcomConnection_(DVTimer*)
@@ -963,9 +617,7 @@ void WirelessTask::restartIcomConnection_(DVTimer*)
 
 void WirelessTask::triggerWifiScan_(DVTimer*)
 {
-    // Start Wi-Fi scan using default config. A WIFI_EVENT_SCAN_DONE event
-    // will be fired by ESP-IDF once the scan is done.
-    ESP_ERROR_CHECK(esp_wifi_scan_start(nullptr, false));
+    wifiInterface_->beginScan();
 }
 
 void WirelessTask::onWifiScanComplete_()

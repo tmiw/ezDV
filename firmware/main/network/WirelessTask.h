@@ -36,6 +36,9 @@
 
 #include "HttpServerTask.h"
 
+#include "interfaces/INetworkInterface.h"
+#include "interfaces/WirelessInterface.h"
+
 extern "C"
 {
     DV_EVENT_DECLARE_BASE(WIRELESS_TASK_MESSAGE);
@@ -176,10 +179,8 @@ private:
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
     uint8_t radioMac_[6];
-    
-    void enableEthernet_();
-    void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname);
-    void enableDefaultWifi_();
+    std::vector<interfaces::INetworkInterface*> interfaceList_;
+    interfaces::WirelessInterface* wifiInterface_;
     
     void disableWifi_();
     void enableHttp_();
@@ -204,10 +205,8 @@ private:
     void onApStartedMessage_(DVTask* origin, ApStartedMessage* message);
     void onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message);
     void onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message);
-
-    static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-    static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-    static void EthernetEventHandler_(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    
+    int numInterfacesRunning_();
 };
 
 }
