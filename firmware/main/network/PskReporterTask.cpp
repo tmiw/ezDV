@@ -109,6 +109,8 @@ void PskReporterTask::onTaskStart_()
 
 void PskReporterTask::onTaskSleep_()
 {
+    reportingRefCount_ = 0;
+    
     if (reportingEnabled_)
     {
         stopConnection_();
