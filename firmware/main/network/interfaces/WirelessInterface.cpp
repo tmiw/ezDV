@@ -346,8 +346,8 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
 
             if (networkIsDown && obj->onNetworkDownFn_)
             {
-                obj->onNetworkDownFn_(*obj);
                 obj->status_ = INTERFACE_DOWN;
+                obj->onNetworkDownFn_(*obj);
             }
 
             break;
