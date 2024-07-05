@@ -70,7 +70,7 @@ namespace network
 {
     
 NetworkTask::NetworkTask(audio::AudioInput* freedvHandler, audio::AudioInput* tlv320Handler, audio::AudioInput* audioMixer, audio::VoiceKeyerTask* vkTask)
-    : ezdv::task::DVTask("NetworkTask", 5, 4096, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("NetworkTask", 5, 4096, tskNO_AFFINITY, 64)
     , wifiScanTimer_(this, this, &NetworkTask::triggerWifiScan_, 5000000, "WifiScanTimer") // 5 seconds between Wi-Fi scans
     , icomRestartTimer_(this, this, &NetworkTask::restartIcomConnection_, 10000000, "IcomRestartTimer") // 10 seconds, then restart Icom control task.
     , icomControlTask_(nullptr)
