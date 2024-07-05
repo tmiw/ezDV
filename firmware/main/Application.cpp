@@ -24,6 +24,10 @@
 #include "esp_sleep.h"
 #include "esp_log.h"
 
+#if CONFIG_EZDV_PRINT_HEAP_USAGE
+#include "esp_heap_task_info.h"
+#endif // CONFIG_EZDV_PRINT_HEAP_USAGE
+
 #if CONFIG_EZDV_ENABLE_TICK_OUTPUT
 #define MAIN_APP_TASK_TICK_INTERVAL (pdMS_TO_TICKS(CONFIG_EZDV_TICK_OUTPUT_INTERVAL))
 #else
@@ -635,6 +639,47 @@ exit_fn:    //Common return path
 }
 #endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
+#if CONFIG_EZDV_PRINT_HEAP_USAGE
+#define MAX_TASK_NUM 20                         // Max number of per tasks info that it can store
+#define MAX_BLOCK_NUM 20                        // Max number of per block info that it can store
+
+static void esp_dump_per_task_heap_info(void)
+{
+    size_t s_prepopulated_num = 0;
+    heap_task_totals_t s_totals_arr[MAX_TASK_NUM];
+    heap_task_block_t s_block_arr[MAX_BLOCK_NUM];
+    
+    heap_task_info_params_t heap_info;
+    memset(&heap_info, 0, sizeof(heap_info));
+    
+    memset(&s_totals_arr, 0, sizeof(s_totals_arr));
+    memset(&s_block_arr, 0, sizeof(s_block_arr));
+    
+    heap_info.caps[0] = MALLOC_CAP_INTERNAL;
+    heap_info.mask[0] = MALLOC_CAP_INTERNAL;
+    heap_info.caps[1] = MALLOC_CAP_SPIRAM; 
+    heap_info.mask[1] = MALLOC_CAP_SPIRAM;
+    heap_info.tasks = NULL;                     // Passing NULL captures heap info for all tasks
+    heap_info.num_tasks = 0;
+    heap_info.totals = s_totals_arr;            // Gets task wise allocation details
+    heap_info.num_totals = &s_prepopulated_num;
+    heap_info.max_totals = MAX_TASK_NUM;        // Maximum length of "s_totals_arr"
+    heap_info.blocks = s_block_arr;             // Gets block wise allocation details. For each block, gets owner task, address and size
+    heap_info.max_blocks = MAX_BLOCK_NUM;       // Maximum length of "s_block_arr"
+
+    heap_caps_get_per_task_info(&heap_info);
+
+    for (int i = 0 ; i < *heap_info.num_totals; i++) {
+        printf("Task %s -> ", heap_info.totals[i].task ? pcTaskGetName(heap_info.totals[i].task) : "Pre-Scheduler allocs");
+        printf("CAP_INTERNAL: %d CAP_SPIRAM: %d\n",
+                heap_info.totals[i].size[0],    // Heap size with CAP_INTERNAL capabilities
+                heap_info.totals[i].size[1]);   // Heap size with CAP_SPIRAM capabilities
+    }
+
+    printf("\n\n");
+}
+#endif // CONFIG_EZDV_PRINT_HEAP_USAGE
+
 void App::onTaskTick_()
 {
 #if CONFIG_EZDV_ENABLE_TICK_OUTPUT
@@ -651,6 +696,8 @@ void App::onTaskTick_()
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (internal): %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (SPIRAM): %d", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
+    
+    //esp_dump_per_task_heap_info();
 #endif // CONFIG_EZDV_PRINT_HEAP_USAGE
 
 #if CONFIG_EZDV_OUTPUT_TASK_LIST
