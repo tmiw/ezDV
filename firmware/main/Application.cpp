@@ -58,8 +58,24 @@ extern "C"
     bool rebootDevice = false;
 }
 
+void* operator new  ( std::size_t count )
+{
+    return heap_caps_malloc(count, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+}
+
+void operator delete  ( void* ptr ) noexcept
+{
+    return heap_caps_free(ptr);
+}
+
+void operator delete(void* ptr, std::size_t)
+{
+    return heap_caps_free(ptr);
+}
+
 namespace ezdv
 {
+    
 App::App()
     : ezdv::task::DVTask("MainApp", 1, 4096, tskNO_AFFINITY, 10, MAIN_APP_TASK_TICK_INTERVAL)
     , audioMixer_(nullptr)
