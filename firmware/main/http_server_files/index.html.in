@@ -398,7 +398,7 @@
                         <div class="form-check">
                         <input type="checkbox" id="radioEnable" class="form-check-input" />
                         <label class="form-check-label" for="radioEnable">
-                            Use Wi-Fi Network for Radio RX/TX
+                            Use Network for Radio RX/TX
                         </label>
                         </div>
                     </div>
