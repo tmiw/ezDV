@@ -202,6 +202,8 @@ void WirelessInterface::bringUp()
                                                         &ipEventHandle_));
     
     ESP_ERROR_CHECK(esp_wifi_start());
+    status_ = INTERFACE_DEV_UP;
+    
     ESP_ERROR_CHECK(esp_wifi_get_mode(&mode));
     
     if (mode == WIFI_MODE_STA && connectToAp)
@@ -222,6 +224,8 @@ void WirelessInterface::tearDown()
 
     esp_wifi_disconnect();
     esp_wifi_stop();
+    
+    status_ = INTERFACE_DOWN;
 }
 
 void WirelessInterface::getMacAddress(uint8_t* mac)
@@ -286,7 +290,7 @@ void WirelessInterface::IPEventHandler_(void *event_handler_arg, esp_event_base_
 
                 ESP_LOGI(CURRENT_LOG_TAG, "Got IP address %s from DHCP server", buf);
             
-                obj->status_ = INTERFACE_UP;
+                obj->status_ = INTERFACE_IP_UP;
                 if (obj->onNetworkUpFn_)
                 {
                     obj->onNetworkUpFn_(*obj);
@@ -322,7 +326,7 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
         {
             // In AP mode, we're using a static IP (129.168.4.1)
             // and thus can assume we're running.
-            obj->status_ = INTERFACE_UP;
+            obj->status_ = INTERFACE_IP_UP;
             if (obj->onNetworkUpFn_)
             {
                 obj->onNetworkUpFn_(*obj);
@@ -343,13 +347,21 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
                     networkIsDown = false;
                 }
             }
-
+            
             if (networkIsDown && obj->onNetworkDownFn_)
             {
-                obj->status_ = INTERFACE_DOWN;
+                obj->status_ = INTERFACE_DEV_UP;
                 obj->onNetworkDownFn_(*obj);
             }
-
+            
+            // Reattempt connection to access point if we couldn't find
+            // it the first time around.
+            if (obj->status_ != INTERFACE_DOWN)
+            {
+                esp_wifi_disconnect();
+                ESP_ERROR_CHECK(esp_wifi_connect());
+            }
+            
             break;
         }
         case WIFI_EVENT_AP_STADISCONNECTED:

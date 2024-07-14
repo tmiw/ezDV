@@ -158,6 +158,8 @@ void EthernetInterface::bringUp()
         {        
             esp_netif_attach(interfaceHandle_, glue); // attach Ethernet driver to TCP/IP stack
             esp_eth_start(ethDeviceHandle_); // start Ethernet driver state machine
+            
+            status_ = INTERFACE_DEV_UP;
         }
     }
 }
@@ -177,6 +179,8 @@ void EthernetInterface::tearDown()
 
     interfaceHandle_ = nullptr;
     ethDeviceHandle_ = nullptr;
+    
+    status_ = INTERFACE_DOWN;
 }
 
 void EthernetInterface::getMacAddress(uint8_t* mac)
@@ -202,7 +206,7 @@ void EthernetInterface::IPEventHandler_(void *event_handler_arg, esp_event_base_
             
                 ESP_LOGI(CURRENT_LOG_TAG, "Got IP address %s from DHCP server", buf);
         
-                obj->status_ = INTERFACE_UP;
+                obj->status_ = INTERFACE_IP_UP;
                 if (obj->onNetworkUpFn_)
                 {
                     obj->onNetworkUpFn_(*obj);
@@ -236,7 +240,7 @@ void EthernetInterface::EthernetEventHandler_(void *arg, esp_event_base_t event_
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");
-        obj->status_ = INTERFACE_DOWN;
+        obj->status_ = INTERFACE_DEV_UP;
         
         if (obj->onNetworkDownFn_)
         {

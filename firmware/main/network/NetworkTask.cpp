@@ -583,7 +583,7 @@ int NetworkTask::numInterfacesRunning_()
     int count = 0;
     for (auto& iface : interfaceList_)
     {
-        if (iface->status() == interfaces::INetworkInterface::INTERFACE_UP)
+        if (iface->status() == interfaces::INetworkInterface::INTERFACE_IP_UP)
         {
             count++;
             
@@ -702,15 +702,11 @@ void NetworkTask::onApStartedMessage_(DVTask* origin, ApStartedMessage* message)
 void NetworkTask::onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message)
 {
     onNetworkDisconnected_();
-
+    
     if (isAwake_)
     {
-        // Reattempt connection to access point if we couldn't find
-        // it the first time around.
         wifiRunning_ = false;
         radioRunning_ = false;
-        esp_wifi_disconnect();
-        ESP_ERROR_CHECK(esp_wifi_connect());
     }
 }
 

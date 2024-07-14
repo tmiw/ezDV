@@ -38,7 +38,8 @@ public:
     enum InterfaceStatus
     {
         INTERFACE_DOWN,
-        INTERFACE_UP,
+        INTERFACE_DEV_UP,
+        INTERFACE_IP_UP,
     };
     
     virtual ~INetworkInterface() = default;
