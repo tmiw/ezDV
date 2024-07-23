@@ -193,6 +193,16 @@ void NetworkTask::disableWifi_()
     for (auto& iface : interfaceList_)
     {
         iface->tearDown();
+        
+        // XXX: Poll until interface fully shuts down. This is due to
+        // some network-related tasks executing outside of this task,
+        // so if the pointer goes away before we're actually done,
+        // we could have a bad time.
+        while (iface->status() != interfaces::INetworkInterface::INTERFACE_DOWN)
+        {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        
         delete iface;
     }
     interfaceList_.clear();

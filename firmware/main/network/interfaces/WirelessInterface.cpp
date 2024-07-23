@@ -215,6 +215,8 @@ void WirelessInterface::bringUp()
 
 void WirelessInterface::tearDown()
 {
+    status_ = INTERFACE_SHUTTING_DOWN;
+    
     esp_event_handler_instance_unregister(WIFI_EVENT,
                                          ESP_EVENT_ANY_ID,
                                          &wifiEventHandle_);
@@ -223,9 +225,6 @@ void WirelessInterface::tearDown()
                                           &ipEventHandle_);
 
     esp_wifi_disconnect();
-    esp_wifi_stop();
-    
-    status_ = INTERFACE_DOWN;
 }
 
 void WirelessInterface::getMacAddress(uint8_t* mac)
@@ -350,13 +349,21 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
             
             if (networkIsDown && obj->onNetworkDownFn_)
             {
-                obj->status_ = INTERFACE_DEV_UP;
+                if (obj->status_ != INTERFACE_SHUTTING_DOWN)
+                {
+                    obj->status_ = INTERFACE_DEV_UP;
+                }
                 obj->onNetworkDownFn_(*obj);
             }
             
             // Reattempt connection to access point if we couldn't find
             // it the first time around.
-            if (obj->status_ != INTERFACE_DOWN)
+            if (obj->status_ == INTERFACE_SHUTTING_DOWN)
+            {
+                obj->status_ = INTERFACE_DOWN;
+                esp_wifi_stop();
+            }
+            else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
             {
                 esp_wifi_disconnect();
                 ESP_ERROR_CHECK(esp_wifi_connect());

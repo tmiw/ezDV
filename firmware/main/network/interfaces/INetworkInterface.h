@@ -40,6 +40,7 @@ public:
         INTERFACE_DOWN,
         INTERFACE_DEV_UP,
         INTERFACE_IP_UP,
+        INTERFACE_SHUTTING_DOWN,
     };
     
     virtual ~INetworkInterface() = default;
