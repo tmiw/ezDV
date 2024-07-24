@@ -166,21 +166,9 @@ void EthernetInterface::bringUp()
 
 void EthernetInterface::tearDown()
 {
+    status_ = INTERFACE_SHUTTING_DOWN;
+    
     esp_eth_stop(ethDeviceHandle_);
-    esp_netif_destroy(interfaceHandle_);
-    esp_eth_driver_uninstall(ethDeviceHandle_);
-    
-    esp_event_handler_instance_unregister(ETH_EVENT,
-                                         ESP_EVENT_ANY_ID,
-                                         &ethEventHandle_);
-    esp_event_handler_instance_unregister(IP_EVENT,
-                                          ESP_EVENT_ANY_ID,
-                                          &ipEventHandle_);
-
-    interfaceHandle_ = nullptr;
-    ethDeviceHandle_ = nullptr;
-    
-    status_ = INTERFACE_DOWN;
 }
 
 void EthernetInterface::getMacAddress(uint8_t* mac)
@@ -248,17 +236,25 @@ void EthernetInterface::EthernetEventHandler_(void *arg, esp_event_base_t event_
         }
         break;
     case ETHERNET_EVENT_START:
-        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");        
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Started");
         break;
     case ETHERNET_EVENT_STOP:
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Stopped");
-        
+    
+        esp_event_handler_instance_unregister(ETH_EVENT,
+                                             ESP_EVENT_ANY_ID,
+                                             &obj->ethEventHandle_);
+        esp_event_handler_instance_unregister(IP_EVENT,
+                                              ESP_EVENT_ANY_ID,
+                                              &obj->ipEventHandle_);
+
+        esp_netif_destroy(obj->interfaceHandle_);
+        esp_eth_driver_uninstall(obj->ethDeviceHandle_);
+
+        obj->interfaceHandle_ = nullptr;
+        obj->ethDeviceHandle_ = nullptr;
+    
         obj->status_ = INTERFACE_DOWN;
-        
-        if (obj->onNetworkDownFn_)
-        {
-            obj->onNetworkDownFn_(*obj);
-        }
         break;
     default:
         break;

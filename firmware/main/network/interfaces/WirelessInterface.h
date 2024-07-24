@@ -72,6 +72,7 @@ private:
     
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t ipEventHandle_;
+    bool hasStaConfig_;
     
     static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
     static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);

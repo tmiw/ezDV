@@ -34,6 +34,7 @@ namespace interfaces
 {
 
 WirelessInterface::WirelessInterface()
+    : hasStaConfig_(false)
 {
     // empty
 }
@@ -148,6 +149,8 @@ void WirelessInterface::configure(storage::WifiMode mode, storage::WifiSecurityM
         
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+        
+        hasStaConfig_ = true;
     }
     
     // Force to HT20 mode to better handle congested airspace
@@ -223,8 +226,21 @@ void WirelessInterface::tearDown()
     esp_event_handler_instance_unregister(IP_EVENT,
                                           ESP_EVENT_ANY_ID,
                                           &ipEventHandle_);
-
-    esp_wifi_disconnect();
+                                          
+    if (hasStaConfig_)
+    {
+        // Disconnect from AP
+        ESP_LOGI(CURRENT_LOG_TAG, "Final disconnect from Wi-Fi");
+        ESP_ERROR_CHECK(esp_wifi_disconnect());
+    }
+    else
+    {
+        // Immediate shutdown Wi-Fi.
+        ESP_LOGI(CURRENT_LOG_TAG, "Directly stopping Wi-Fi service");
+        
+        status_ = INTERFACE_DOWN;
+        ESP_ERROR_CHECK(esp_wifi_stop());
+    }
 }
 
 void WirelessInterface::getMacAddress(uint8_t* mac)
