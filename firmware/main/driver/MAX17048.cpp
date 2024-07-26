@@ -59,9 +59,8 @@ namespace ezdv
 namespace driver
 {
 
-MAX17048::MAX17048(I2CDevice* i2cDevice)
+MAX17048::MAX17048(I2CMaster* i2cMaster)
     : DVTask("MAX17048", 10, 2870, tskNO_AFFINITY, 32, pdMS_TO_TICKS(60000))
-    , i2cDevice_(i2cDevice)
     , batAlertGpio_(this, std::bind(&MAX17048::onInterrupt_, this, _2))
     , usbPower_(this, std::bind(&MAX17048::onTaskTick_, this), false, false)
     , enabled_(false)
@@ -73,6 +72,14 @@ MAX17048::MAX17048(I2CDevice* i2cDevice)
 {
     registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
     registerMessageHandler(this, &MAX17048::onRequestBatteryStateMessage_);
+    
+    i2cDevice_ = i2cMaster->getDevice(I2C_ADDRESS);
+    assert(i2cDevice_ != nullptr);
+}
+
+MAX17048::~MAX17048()
+{
+    delete i2cDevice_;
 }
 
 void MAX17048::onTaskStart_()
@@ -280,13 +287,13 @@ bool MAX17048::writeInt16Reg_(uint8_t reg, uint16_t val)
         (uint8_t)(val & 0x00FF)
     };
     
-    return i2cDevice_->writeBytes(I2C_ADDRESS, reg, data, sizeof(uint16_t));
+    return i2cDevice_->writeBytes(reg, data, sizeof(uint16_t));
 }
 
 bool MAX17048::readInt16Reg_(uint8_t reg, uint16_t* val)
 {
     uint8_t data[] = {0, 0};
-    auto rv = i2cDevice_->readBytes(I2C_ADDRESS, reg, data, sizeof(uint16_t));
+    auto rv = i2cDevice_->readBytes(reg, data, sizeof(uint16_t));
     if (rv)
     {
         *val = (data[0] << 8) | data[1];

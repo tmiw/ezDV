@@ -61,7 +61,7 @@ App::App()
     , audioMixer_(nullptr)
     , beeperTask_(nullptr)
     , freedvTask_(nullptr)
-    , max17048_(&i2cDevice_)
+    , max17048_(&i2cMaster_)
     , tlv320Device_(nullptr)
     , wirelessTask_(nullptr)
     , settingsTask_(nullptr)
@@ -334,7 +334,7 @@ void App::onTaskStart_()
     }
     else
     {
-        tlv320Device_ = new driver::TLV320(&i2cDevice_);
+        tlv320Device_ = new driver::TLV320(&i2cMaster_);
         assert(tlv320Device_ != nullptr);
         
         start(tlv320Device_, pdMS_TO_TICKS(10000));

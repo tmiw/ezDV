@@ -13,7 +13,7 @@ set(SOURCES
     "driver/ButtonArray.cpp"
     "driver/ButtonMessage.cpp"
     "driver/InputGPIO.cpp"
-    "driver/I2CDevice.cpp"
+    "driver/I2CMaster.cpp"
     "driver/LedArray.cpp"
     "driver/LedMessage.cpp"
     "driver/MAX17048.cpp"
