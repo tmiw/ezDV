@@ -27,7 +27,7 @@
 
 #include "BatteryMessage.h"
 #include "task/DVTask.h"
-#include "I2CDevice.h"
+#include "I2CMaster.h"
 #include "InputGPIO.h"
 
 // Interrupt GPIO for battery alerts
@@ -45,8 +45,8 @@ namespace driver
 class MAX17048 : public DVTask
 {
 public:
-    MAX17048(I2CDevice* i2cDevice);
-    virtual ~MAX17048() = default;
+    MAX17048(I2CMaster* i2cMaster);
+    virtual ~MAX17048();
 
     bool isLowSOC() const { return isLowSoc_; }
     void suppressForcedSleep(bool val) { suppressForcedSleep_ = val; }
@@ -58,7 +58,7 @@ protected:
     virtual void onTaskTick_() override;
     
 private:
-    I2CDevice* i2cDevice_;
+    I2CMaster::I2CDevice* i2cDevice_;
     InputGPIO<BAT_ALERT_GPIO> batAlertGpio_;
     InputGPIO<GPIO_USB_POWER_DETECT> usbPower_;
     bool enabled_;
