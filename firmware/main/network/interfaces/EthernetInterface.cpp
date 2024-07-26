@@ -165,10 +165,16 @@ void EthernetInterface::bringUp()
 }
 
 void EthernetInterface::tearDown()
-{
-    status_ = INTERFACE_SHUTTING_DOWN;
-    
-    esp_eth_stop(ethDeviceHandle_);
+{    
+    if (ethDeviceHandle_ != nullptr)
+    {
+        status_ = INTERFACE_SHUTTING_DOWN;
+        esp_eth_stop(ethDeviceHandle_);
+    }
+    else
+    {
+        status_ = INTERFACE_DOWN;
+    }
 }
 
 void EthernetInterface::getMacAddress(uint8_t* mac)
