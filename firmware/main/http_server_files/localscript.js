@@ -523,6 +523,19 @@ function wsConnect()
             $("#startVoiceKeyer").removeClass("btn-danger");
           }
       }
+      else if (json.type == "freedvStatus")
+      {
+          if (json.sync)
+          {
+              $("#syncState").text("Yes");
+          }
+          else
+          {
+              $("#syncState").text("No");
+          }
+          
+          $("#freqOffset").text(json.freqOffset);
+      }
   };
 
   ws.onclose = function(e) 
