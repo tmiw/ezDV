@@ -23,7 +23,6 @@
 
 #include "TLV320.h"
 #include "TLV320Message.h"
-#include "I2CDevice.h"
 
 // TLV320 reset pin GPIO
 #define TLV320_RESET_GPIO GPIO_NUM_13
@@ -52,10 +51,9 @@ namespace driver
 
 using namespace std::placeholders;
 
-TLV320::TLV320(I2CDevice* i2cDevice)
+TLV320::TLV320(I2CMaster* i2cMaster)
     : DVTask("TLV320Driver", 15, 4096, tskNO_AFFINITY, 10, pdMS_TO_TICKS(10))
     , audio::AudioInput(2, 2)
-    , i2cDevice_(i2cDevice)
     , currentPage_(-1) // This will cause the page to be set to 0 on first I2C write.
     , i2sTxDevice_(nullptr)
     , i2sRxDevice_(nullptr)
@@ -67,6 +65,14 @@ TLV320::TLV320(I2CDevice* i2cDevice)
     registerMessageHandler<storage::RightChannelVolumeMessage>(this, &TLV320::onRightChannelVolume_);
 
     initializeResetGPIO_();
+    
+    i2cDevice_ = i2cMaster->getDevice(TLV320_I2C_ADDRESS);
+    assert(i2cDevice_ != nullptr);
+}
+
+TLV320::~TLV320()
+{
+    delete i2cDevice_;
 }
 
 void TLV320::onTaskStart_()
@@ -194,7 +200,7 @@ void TLV320::onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMe
 void TLV320::setPage_(uint8_t page)
 {
     uint8_t buf[] = { page };
-    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, 0, buf, sizeof(buf));
+    i2cDevice_->writeBytes(0, buf, sizeof(buf));
     currentPage_ = page;
 }
 
@@ -206,7 +212,7 @@ void TLV320::setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val)
     }
     
     uint8_t buf[] = { val };
-    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, reg, buf, sizeof(buf));
+    i2cDevice_->writeBytes(reg, buf, sizeof(buf));
 }
 
 void TLV320::setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size)
@@ -216,7 +222,7 @@ void TLV320::setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t*
         setPage_(page);
     }
 
-    i2cDevice_->writeBytes(TLV320_I2C_ADDRESS, reg, val, size);
+    i2cDevice_->writeBytes(reg, val, size);
 }
 
 uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg, bool* readResult)
@@ -227,7 +233,7 @@ uint8_t TLV320::getConfigurationOption_(uint8_t page, uint8_t reg, bool* readRes
     }
     
     uint8_t result[] = { 0 };
-    auto rv = i2cDevice_->readBytes(TLV320_I2C_ADDRESS, reg, result, sizeof(result));
+    auto rv = i2cDevice_->readBytes(reg, result, sizeof(result));
     if (!rv)
     {
         ESP_LOGE(CURRENT_LOG_TAG, "Could not read bytes from I2C!");
