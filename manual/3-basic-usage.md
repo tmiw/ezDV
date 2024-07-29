@@ -29,12 +29,12 @@ will be "700D", which corresponds to FreeDV 700D mode.) Holding this button agai
 in ezDV turning off (with "73" also being piped through the headset in Morse Code, corresponding to the 
 well-known ham radio term for "goodbye").
 
-If Wi-Fi is enabled on ezDV, you will additionally hear the letter "N" emitted in Morse Code
+If networking is enabled on ezDV, you will additionally hear the letter "N" emitted in Morse Code
 once the network interface comes up. If ezDV is configured to connect to an existing wireless
-network, you will hear the last octet of the IP address immediately afterward. For example,
+network or via Ethernet, you will hear the last octet of the IP address immediately afterward. For example,
 if your router assigns the IP address "192.168.1.100" to ezDV, you will hear "N100" in the headset.
 
-*Note: if your wireless network is configured with a "netmask" other than "255.255.255.0", you may need to
+*Note: if your network is configured with a "netmask" other than "255.255.255.0", you may need to
 load your router's configuration to obtain the rest of ezDV's IP address. Otherwise, you can typically replace
 the last octet of your computer's IP address with the number after the "N" when accessing ezDV with
 a web browser.*

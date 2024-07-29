@@ -65,7 +65,7 @@ private:
     void setPage_(uint8_t page);
     void setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val);
     void setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size);
-    uint8_t getConfigurationOption_(uint8_t page, uint8_t reg);
+    uint8_t getConfigurationOption_(uint8_t page, uint8_t reg, bool* readResult = nullptr);
 
     void setVolumeCommon_(uint8_t reg, int8_t vol);
 

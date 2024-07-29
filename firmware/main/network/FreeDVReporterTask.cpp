@@ -88,6 +88,8 @@ void FreeDVReporterTask::onTaskStart_()
 
 void FreeDVReporterTask::onTaskSleep_()
 {
+    reportingRefCount_ = 0;
+    
     if (reportingEnabled_)
     {
         stopSocketIoConnection_();

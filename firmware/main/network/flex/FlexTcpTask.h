@@ -60,6 +60,7 @@ private:
     DVTimer reconnectTimer_;
     DVTimer connectionCheckTimer_;
     DVTimer commandHandlingTimer_;
+    DVTimer pingTimer_;
     int socket_;
     int sequenceNumber_;
     std::string ip_;
@@ -103,6 +104,9 @@ private:
     
     // Spot handling
     void onFreeDVReceivedCallsignMessage_(DVTask* origin, audio::FreeDVReceivedCallsignMessage* message);
+    
+    // Ping handling
+    void pingRadio_(DVTimer*);
 };
 
 }

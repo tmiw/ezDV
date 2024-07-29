@@ -43,9 +43,9 @@ Once attached, ezDV will appear as follows:
 
 ## Radio wiring
 
-### Radios without Wi-Fi support
+### Radios without network support
 
-Radios without Wi-Fi support will need an interface cable. One end of this cable should 
+Radios without network support will need an interface cable. One end of this cable should 
 be a male 3.5mm four conductor (TRRS) with the following pinout:
 
 * Tip: TX audio from ezDV to your radio
@@ -60,11 +60,11 @@ downward at the front of the device.
 More information on example wiring configurations for various radios can be found in the [Example Wiring Configurations](#appendix-example-wiring-configurations)
 section.
 
-### Radios with Wi-Fi support
+### Radios with network support
 
 If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio
-over Wi-Fi. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 6000/8000 series radios 
-and the Icom IC-705.
+over Wi-Fi or Ethernet. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 
+000/8000 series radios and the Icom IC-705.
 
 #### Flex 6000/8000 series radios
 
@@ -114,14 +114,16 @@ begins to decrease.
 *Note: it's recommended to have your radio attached to a dummy load while adjusting your transmit audio levels to prevent
 interference to other operators.*
 
-### Wi-Fi configuration
+### Network configuration
 
-*Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features
+*Note: this is optional unless you are using a radio with network support or wish to use other Internet connected features
 (such as reporting to [FreeDV Reporter](https://qso.freedv.org/) and [PSK Reporter](https://pskreporter.info)).*
 
-Click or tap on the "Wi-Fi" tab and check the "Enable Wi-Fi" checkbox. You'll see something similar to the following:
+Click or tap on the "Network" tab and check the "Enable Wi-Fi" checkbox. You'll see something similar to the following:
 
-![ezDV showing the Wi-Fi tab](images/2-setup-webpage-wifi.png)
+![ezDV showing the Network tab](images/2-setup-webpage-wifi.png)
+
+*Note: experimental support exists for Ethernet on ezDV. See "Setting Up Ethernet Support" for more information.*
 
 To connect ezDV to the network that your radio is on, select "Client" for "Wireless Mode". Select your Wi-Fi network from
 the list that appears (which may take a few seconds while ezDV scans for your network) and enter its password (if required).
@@ -132,7 +134,7 @@ this name instead of trying to find its IP address. Click or tap Save to save yo
 
 *Note: this is optional unless you are using a radio with Wi-Fi support.*
 
-Click on the "Radio" tab and check the "Use Wi-Fi Network for Radio RX/TX" checkbox. Select your radio model in the "Radio Type"
+Click on the "Radio" tab and check the "Use Network for Radio RX/TX" checkbox. Select your radio model in the "Radio Type"
 drop-down list, which will bring up different fields depending on the radio being configured.
 
 #### Flex 6000/8000 series
