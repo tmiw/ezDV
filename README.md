@@ -14,7 +14,7 @@ general use and operation.
 
 ## Building the firmware
 
-Install [ESP-IDF v5.2.1](https://docs.espressif.com/projects/esp-idf/en/v5.2.1/esp32s3/get-started/index.html) and then run the following:
+Install [ESP-IDF v5.3](https://docs.espressif.com/projects/esp-idf/en/v5.3/esp32s3/get-started/index.html) and then run the following:
 
 ```
 . /path/to/esp-idf/export.sh
