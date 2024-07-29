@@ -6,7 +6,7 @@
     <meta name="generator" content="pandoc" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="author" content="Mooneer Salem" />
-    <meta name="dcterms.date" content="2024-06-13" />
+    <meta name="dcterms.date" content="2024-07-29" />
     <meta name="keywords" content="ezDV, FreeDV, digital voice, amateur radio, ham radio" />
     <title>User’s Guide – ezDV</title>
 
@@ -80,8 +80,8 @@
             <li><a href="#initial-assembly"><span class="toc-section-number">2.1</span> Initial assembly</a></li>
             <li><a href="#radio-wiring"><span class="toc-section-number">2.2</span> Radio wiring</a>
             <ul>
-            <li><a href="#radios-without-wi-fi-support"><span class="toc-section-number">2.2.1</span> Radios without Wi-Fi support</a></li>
-            <li><a href="#radios-with-wi-fi-support"><span class="toc-section-number">2.2.2</span> Radios with Wi-Fi support</a>
+            <li><a href="#radios-without-network-support"><span class="toc-section-number">2.2.1</span> Radios without network support</a></li>
+            <li><a href="#radios-with-network-support"><span class="toc-section-number">2.2.2</span> Radios with network support</a>
             <ul>
             <li><a href="#flex-60008000-series-radios"><span class="toc-section-number">2.2.2.1</span> Flex 6000/8000 series radios</a></li>
             <li><a href="#icom-ic-705"><span class="toc-section-number">2.2.2.2</span> Icom IC-705</a></li>
@@ -94,7 +94,7 @@
             <li><a href="#flex-60008000-series"><span class="toc-section-number">2.3.1.1</span> Flex 6000/8000 series</a></li>
             <li><a href="#other-radios"><span class="toc-section-number">2.3.1.2</span> Other radios</a></li>
             </ul></li>
-            <li><a href="#wi-fi-configuration"><span class="toc-section-number">2.3.2</span> Wi-Fi configuration</a></li>
+            <li><a href="#network-configuration"><span class="toc-section-number">2.3.2</span> Network configuration</a></li>
             <li><a href="#radio-connection"><span class="toc-section-number">2.3.3</span> Radio connection</a>
             <ul>
             <li><a href="#flex-60008000-series-1"><span class="toc-section-number">2.3.3.1</span> Flex 6000/8000 series</a></li>
@@ -153,6 +153,7 @@
             <ul>
             <li><a href="#elecraft-kx3"><span class="toc-section-number">7.1</span> Elecraft KX3</a></li>
             </ul></li>
+            <li><a href="#appendix-setting-up-ethernet-support"><span class="toc-section-number">8</span> Appendix: Setting Up Ethernet Support</a></li>
             </ul>
         </div>
     </nav>
@@ -213,8 +214,8 @@
 <img src="images/2-setup-headset-location.jpg" alt="" /><figcaption>ezDV with headset attached</figcaption>
 </figure>
 <h2 data-number="2.2" id="radio-wiring"><span class="header-section-number">2.2</span> Radio wiring</h2>
-<h3 data-number="2.2.1" id="radios-without-wi-fi-support"><span class="header-section-number">2.2.1</span> Radios without Wi-Fi support</h3>
-<p>Radios without Wi-Fi support will need an interface cable. One end of this cable should be a male 3.5mm four conductor (TRRS) with the following pinout:</p>
+<h3 data-number="2.2.1" id="radios-without-network-support"><span class="header-section-number">2.2.1</span> Radios without network support</h3>
+<p>Radios without network support will need an interface cable. One end of this cable should be a male 3.5mm four conductor (TRRS) with the following pinout:</p>
 <ul>
 <li>Tip: TX audio from ezDV to your radio</li>
 <li>Ring 1: PTT to radio (this is connected to GND when you push the PTT button)</li>
@@ -223,8 +224,8 @@
 </ul>
 <p>There is also silkscreen labeling on the back of the board corresponding to the location of the radio jack that indicates the pinout. This jack is on the left hand side of ezDV when looking downward at the front of the device.</p>
 <p>More information on example wiring configurations for various radios can be found in the <a href="#appendix-example-wiring-configurations">Example Wiring Configurations</a> section.</p>
-<h3 data-number="2.2.2" id="radios-with-wi-fi-support"><span class="header-section-number">2.2.2</span> Radios with Wi-Fi support</h3>
-<p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi. Currently this is supported only for the <a href="https://www.flexradio.com/">FlexRadio</a> 6000/8000 series radios and the Icom IC-705.</p>
+<h3 data-number="2.2.2" id="radios-with-network-support"><span class="header-section-number">2.2.2</span> Radios with network support</h3>
+<p>If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio over Wi-Fi or Ethernet. Currently this is supported only for the <a href="https://www.flexradio.com/">FlexRadio</a> 000/8000 series radios and the Icom IC-705.</p>
 <h4 data-number="2.2.2.1" id="flex-60008000-series-radios"><span class="header-section-number">2.2.2.1</span> Flex 6000/8000 series radios</h4>
 <p>Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. <em>not</em> using SmartLink). Once this is confirmed, skip to <a href="#initial-configuration">Initial Configuration</a>.</p>
 <h4 data-number="2.2.2.2" id="icom-ic-705"><span class="header-section-number">2.2.2.2</span> Icom IC-705</h4>
@@ -249,16 +250,17 @@
 </figure>
 <p>For most radios, ezDV’s transmit level should be such that little to no ALC is indicated on the radio display. The specific ALC level required depends on the radio, so your radio’s user manual is the best source for determining this. Alternatively, you can increase the TX audio level until your power output stops increasing, then decrease it again until your power output begins to decrease.</p>
 <p><em>Note: it’s recommended to have your radio attached to a dummy load while adjusting your transmit audio levels to prevent interference to other operators.</em></p>
-<h3 data-number="2.3.2" id="wi-fi-configuration"><span class="header-section-number">2.3.2</span> Wi-Fi configuration</h3>
-<p><em>Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features (such as reporting to <a href="https://qso.freedv.org/">FreeDV Reporter</a> and <a href="https://pskreporter.info">PSK Reporter</a>).</em></p>
-<p>Click or tap on the “Wi-Fi” tab and check the “Enable Wi-Fi” checkbox. You’ll see something similar to the following:</p>
+<h3 data-number="2.3.2" id="network-configuration"><span class="header-section-number">2.3.2</span> Network configuration</h3>
+<p><em>Note: this is optional unless you are using a radio with network support or wish to use other Internet connected features (such as reporting to <a href="https://qso.freedv.org/">FreeDV Reporter</a> and <a href="https://pskreporter.info">PSK Reporter</a>).</em></p>
+<p>Click or tap on the “Network” tab and check the “Enable Wi-Fi” checkbox. You’ll see something similar to the following:</p>
 <figure>
-<img src="images/2-setup-webpage-wifi.png" alt="" /><figcaption>ezDV showing the Wi-Fi tab</figcaption>
+<img src="images/2-setup-webpage-wifi.png" alt="" /><figcaption>ezDV showing the Network tab</figcaption>
 </figure>
+<p><em>Note: experimental support exists for Ethernet on ezDV. See “Setting Up Ethernet Support” for more information.</em></p>
 <p>To connect ezDV to the network that your radio is on, select “Client” for “Wireless Mode”. Select your Wi-Fi network from the list that appears (which may take a few seconds while ezDV scans for your network) and enter its password (if required). If desired, you can also change ezDV’s name by modifying the “Hostname” field; this may allow you to access ezDV later by entering this name instead of trying to find its IP address. Click or tap Save to save your Wi-Fi settings.</p>
 <h3 data-number="2.3.3" id="radio-connection"><span class="header-section-number">2.3.3</span> Radio connection</h3>
 <p><em>Note: this is optional unless you are using a radio with Wi-Fi support.</em></p>
-<p>Click on the “Radio” tab and check the “Use Wi-Fi Network for Radio RX/TX” checkbox. Select your radio model in the “Radio Type” drop-down list, which will bring up different fields depending on the radio being configured.</p>
+<p>Click on the “Radio” tab and check the “Use Network for Radio RX/TX” checkbox. Select your radio model in the “Radio Type” drop-down list, which will bring up different fields depending on the radio being configured.</p>
 <h4 data-number="2.3.3.1" id="flex-60008000-series-1"><span class="header-section-number">2.3.3.1</span> Flex 6000/8000 series</h4>
 <p>Select the name of your radio from the “Radio” drop-down list as shown below. Your radio’s IP address should automatically be filled in the “IP Address” field:</p>
 <figure>
@@ -316,8 +318,8 @@
 </figure>
 <h2 data-number="3.2" id="powering-ezdv-on-and-off"><span class="header-section-number">3.2</span> Powering ezDV on and off</h2>
 <p>To turn on ezDV, press and hold the Mode button for more than 1 second. All four LEDs on the right hand side of the board should light briefly and then extinguish. You will also hear the last used mode in Morse Code on your wired headset or through SmartSDR if using a Flex radio. (On first start, this will be “700D”, which corresponds to FreeDV 700D mode.) Holding this button again for more than 1 second will result in ezDV turning off (with “73” also being piped through the headset in Morse Code, corresponding to the well-known ham radio term for “goodbye”).</p>
-<p>If Wi-Fi is enabled on ezDV, you will additionally hear the letter “N” emitted in Morse Code once the network interface comes up. If ezDV is configured to connect to an existing wireless network, you will hear the last octet of the IP address immediately afterward. For example, if your router assigns the IP address “192.168.1.100” to ezDV, you will hear “N100” in the headset.</p>
-<p><em>Note: if your wireless network is configured with a “netmask” other than “255.255.255.0”, you may need to load your router’s configuration to obtain the rest of ezDV’s IP address. Otherwise, you can typically replace the last octet of your computer’s IP address with the number after the “N” when accessing ezDV with a web browser.</em></p>
+<p>If networking is enabled on ezDV, you will additionally hear the letter “N” emitted in Morse Code once the network interface comes up. If ezDV is configured to connect to an existing wireless network or via Ethernet, you will hear the last octet of the IP address immediately afterward. For example, if your router assigns the IP address “192.168.1.100” to ezDV, you will hear “N100” in the headset.</p>
+<p><em>Note: if your network is configured with a “netmask” other than “255.255.255.0”, you may need to load your router’s configuration to obtain the rest of ezDV’s IP address. Otherwise, you can typically replace the last octet of your computer’s IP address with the number after the “N” when accessing ezDV with a web browser.</em></p>
 <h2 data-number="3.3" id="freedv-operation"><span class="header-section-number">3.3</span> FreeDV operation</h2>
 <p>Pushing the Mode button briefly while in receive will cycle through the following modes:</p>
 <ul>
@@ -420,10 +422,10 @@
 </table>
 <p>* Must be held for at least one second.</p>
 <h1 data-number="4" id="using-the-web-interface"><span class="header-section-number">4</span> Using the web interface</h1>
-<p>ezDV provides a web interface to allow users to adjust its configuration and operate some of its features. When Wi-Fi is enabled on ezDV, this interface is accessible through a regular web browser (such as Google Chrome or Microsoft Edge).</p>
+<p>ezDV provides a web interface to allow users to adjust its configuration and operate some of its features. When networking is enabled on ezDV, this interface is accessible through a regular web browser (such as Google Chrome or Microsoft Edge).</p>
 <h2 data-number="4.1" id="accessing-the-web-interface"><span class="header-section-number">4.1</span> Accessing the web interface</h2>
 <p>By default, Wi-Fi on ezDV is disabled for security reasons. To enable it (or recover from a bad configuration), hold down the Mode and Volume Down buttons until ezDV turns on. This will cause ezDV to create an access point named “ezDV” followed by the last two octets of its MAC address. From there, you can connect your PC or mobile device to that network and open http://192.168.4.1/ in your web browser.</p>
-<p>If ezDV is configured to connect to an existing Wi-Fi network, you can open a web browser on a PC or mobile device connected to the same network as ezDV and enter ezDV’s IP address into the browser’s location box. This IP address can typically be found in your router’s listing of connected devices; ezDV will also beep the letter “N” followed by the last octet of the IP address when it connects to the network (for example, “N100” for “192.168.1.100”).</p>
+<p>If ezDV is configured to connect to an existing Wi-Fi network (or Ethernet), you can open a web browser on a PC or mobile device connected to the same network as ezDV and enter ezDV’s IP address into the browser’s location box. This IP address can typically be found in your router’s listing of connected devices; ezDV will also beep the letter “N” followed by the last octet of the IP address when it connects to the network (for example, “N100” for “192.168.1.100”).</p>
 <p>Alternatively, depending on your router, you can also use the configured hostname in your browser instead. By default, ezDV’s hostname is “ezdv”, which means that you can enter http://ezdv/ instead of its IP address.</p>
 <p>Regardless of how you access ezDV’s web interface, you should see a page similar to the below:</p>
 <figure>
@@ -434,7 +436,7 @@
 <li>General: Contains miscallenous ezDV configuration options.</li>
 <li>Reporting: Configures and operates the reporting feature, which controls reporting to <a href="https://qso.freedv.org/">FreeDV Reporter</a> and <a href="https://pskreporter.info">PSK Reporter</a>.</li>
 <li>Voice Keyer: Configures ezDV’s voice keyer feature.</li>
-<li>Wi-Fi: Configures how ezDV connects to Wi-Fi.</li>
+<li>Network: Configures how ezDV connects to Wi-Fi.</li>
 <li>Radio: Configures how ezDV connects to your network-enabled radio.</li>
 <li>Firmware Update: Allows the user to perform a firmware update on ezDV.</li>
 </ul>
@@ -500,13 +502,13 @@
 <figure>
 <img src="images/4-reporting-tab.png" alt="" /><figcaption>Example of a reporting configuration on ezDV</figcaption>
 </figure>
-<p>When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter and PSK Reporter if it has access to an internet connection and is able to connect to a supported radio over Wi-Fi. You can also force a connection to both servies for radios without Wi-Fi support by checking the “Force reporting without radio connection” checkbox and manually entering the current frequency.</p>
+<p>When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter and PSK Reporter if it has access to an internet connection and is able to connect to a supported radio. You can also force a connection to both servies for radios without network support by checking the “Force reporting without radio connection” checkbox and manually entering the current frequency.</p>
 <p>Once connected to FreeDV Reporter, a new row will appear corresponding to your connection:</p>
 <figure>
 <img src="images/4-freedv-reporter.png" alt="" /><figcaption>Example of an entry on FreeDV Reporter</figcaption>
 </figure>
 <p>If ezDV is able to decode a callsign from a received signal, it will transmit the received callsign and SNR to FreeDV Reporter and PSK Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight your row in a blue background for several seconds to alert others that you’ve receiving a signal. When ezDV is transmitting, FreeDV Reporter will also highlight your row with a red background to indicate to others that you’re transmitting.</p>
-<p>With radios that support connections over Wi-Fi, ezDV will also follow frequency changes on the radio and report them to FreeDV Reporter. FreeDV Reporter will then indicate your current frequency, allowing others to change to your frequency and potentially make a contact with you. Manual frequency updates (for those radios attached to ezDV with a wired connection) will also be sent to FreeDV Reporter as they’re made.</p>
+<p>With radios that support connections over the network, ezDV will also follow frequency changes on the radio and report them to FreeDV Reporter. FreeDV Reporter will then indicate your current frequency, allowing others to change to your frequency and potentially make a contact with you. Manual frequency updates (for those radios attached to ezDV with a wired connection) will also be sent to FreeDV Reporter as they’re made.</p>
 <p>The following can be updated in the Reporting tab to operate reporting:</p>
 <table>
 <colgroup>
@@ -544,9 +546,9 @@
 </table>
 <p>Pushing Save will immediately connect or disconnect to FreeDV Reporter/PSK Reporter (as desired/required) as well as transmit updates to the current frequency or short message.</p>
 <h2 data-number="4.6" id="configuring-wi-fi"><span class="header-section-number">4.6</span> Configuring Wi-Fi</h2>
-<p>The Wi-Fi tab allows configuration of ezDV’s Wi-Fi connection:</p>
+<p>The Network tab allows configuration of ezDV’s Wi-Fi connection:</p>
 <figure>
-<img src="images/2-setup-webpage-wifi.png" alt="" /><figcaption>ezDV showing the Wi-Fi tab</figcaption>
+<img src="images/2-setup-webpage-wifi.png" alt="" /><figcaption>ezDV showing the Network tab</figcaption>
 </figure>
 <p>The following can be configured in this screen:</p>
 <table>
@@ -627,7 +629,7 @@
 </tr>
 <tr class="odd">
 <td>Use Wi-Fi Network for Radio RX/TX</td>
-<td>When checked, allows ezDV to connect to a supported radio over Wi-Fi instead of using a wired headset.</td>
+<td>When checked, allows ezDV to connect to a supported radio over the network instead of using a wired headset.</td>
 </tr>
 <tr class="even">
 <td>Radio Type</td>
@@ -915,6 +917,22 @@ idf.py -p /dev/ttyxxx0 build erase-flash flash</code></pre>
 <figure>
 <img src="images/2-setup-radio-kx3.jpg" alt="" /><figcaption>ezDV plugged into an Elecraft KX3</figcaption>
 </figure>
+<h1 data-number="8" id="appendix-setting-up-ethernet-support"><span class="header-section-number">8</span> Appendix: Setting Up Ethernet Support</h1>
+<p>Experimental support exists for Ethernet on ezDV. In order to enable Ethernet support, some hardware modifications are required to be able to attach it to a <a href="https://www.amazon.com/dp/B08KXM8TKJ?psc=1&amp;ref=ppx_yo2ov_dt_b_product_details">W5500 Ethernet module</a>:</p>
+<ol type="1">
+<li>Remove the main ezDV board from its enclosure and disconnect the battery from the bottom.</li>
+<li>Solder wires from the positions indicated below on the ESP32 module (near top of board) to their corresponding locations on the W5500 module:</li>
+</ol>
+<figure>
+<img src="images/C-solder-wire-locations.jpg" alt="" /><figcaption>Soldering locations for wires going to W5500 module</figcaption>
+</figure>
+<ol start="3" type="1">
+<li><p>Solder power and ground wires from ezDV to the W5500. These can be taken from either J7 (square pin is 3.3V, bottom pin is GND) or from J4/“I2C Breakout” (lower right pin is 3.3V, square pin is GND). Note that J4 is only powered when ezDV is on, while J7 is always powered.</p></li>
+<li><p>Reattach the battery and place ezDV back in its enclosure. You may need to cut out a hole in the enclosure using side cutters or similar to allow the previously-soldered wires to be routed out of the enclosure.</p></li>
+<li><p>Attach an Ethernet cable to the W5500 module and to your router or switch.</p></li>
+<li><p>Turn on ezDV. If Wi-Fi is already configured, it is recommended to disbale it to prevent network connections from inadvertently going over the wrong interface. Once this is done, restart ezDV.</p></li>
+<li><p>After a few minutes, look for it on the router’s list of attached devices after a few minutes. Note its IP for future use. It should now be communicating over Ethernet instead of Wi-Fi.</p></li>
+</ol>
                 </main>
 
                 <nav class="nav-wrapper" aria-label="Page navigation">
