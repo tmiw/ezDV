@@ -19,6 +19,7 @@
 #define HTTP_SERVER_TASK_H
 
 #include <vector>
+#include <deque>
 
 #include "esp_event.h"
 #include "esp_http_server.h"
@@ -140,6 +141,10 @@ private:
     WebSocketList activeWebSockets_;
     bool isRunning_;
     
+    std::deque<int> freqOffsets_;
+    int currFreqOffset_;
+    int freqOffsetCount_;
+    
     void onHttpWebsocketConnectedMessage_(DVTask* origin, HttpWebsocketConnectedMessage* message);
     void onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWebsocketDisconnectedMessage* message);
     
@@ -169,6 +174,9 @@ private:
     void onStartWifiScanMessage_(DVTask* origin, HttpServerTask::StartWifiScanMessage* message);
     void onStopWifiScanMessage_(DVTask* origin, HttpServerTask::StopWifiScanMessage* message);
     void onWifiNetworkListMessage_(DVTask* origin, WifiNetworkListMessage* message);
+    
+    // FreeDV sync state reporting
+    void onFreeDVSyncStateMessage_(DVTask* origin, audio::FreeDVSyncStateMessage* message);
 
     // Helper to asynchronously serve static files.
     void onHttpServeStaticFileMessage_(DVTask* origin, HttpServeStaticFileMessage* message);

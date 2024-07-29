@@ -51,13 +51,15 @@ enum FreeDVMessageTypes
 class FreeDVSyncStateMessage : public DVTaskMessageBase<SYNC_STATE, FreeDVSyncStateMessage>
 {
 public:
-    FreeDVSyncStateMessage(bool syncStateProvided = false)
+    FreeDVSyncStateMessage(bool syncStateProvided = false, int freqOffsetProvided = 0)
         : DVTaskMessageBase<SYNC_STATE, FreeDVSyncStateMessage>(FREEDV_MESSAGE)
         , syncState(syncStateProvided)
+        , freqOffset(freqOffsetProvided)
         {}
     virtual ~FreeDVSyncStateMessage() = default;
 
     bool syncState;
+    int freqOffset;
 };
 
 enum FreeDVMode

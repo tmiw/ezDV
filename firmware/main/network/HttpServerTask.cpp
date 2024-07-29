@@ -53,6 +53,7 @@ extern "C"
 #define JSON_WIFI_SAVED_TYPE "wifiSaved"
 #define JSON_RADIO_STATUS_TYPE "radioInfo"
 #define JSON_RADIO_SAVED_TYPE "radioSaved"
+#define JSON_FREEDV_STATUS_TYPE "freedvStatus"
 
 #define JSON_VOICE_KEYER_STATUS_TYPE "voiceKeyerInfo"
 #define JSON_VOICE_KEYER_SAVED_TYPE "voiceKeyerSaved"
@@ -86,6 +87,8 @@ HttpServerTask::HttpServerTask()
     : ezdv::task::DVTask("HttpServerTask", 4, 4096, tskNO_AFFINITY, 256)
     , firmwareUploadInProgress_(false)
     , isRunning_(false)
+    , currFreqOffset_(0)
+    , freqOffsetCount_(0)
 {
     registerMessageHandler(this, &HttpServerTask::onBatteryStateMessage_);
     
@@ -121,6 +124,8 @@ HttpServerTask::HttpServerTask()
     registerMessageHandler(this, &HttpServerTask::onWifiNetworkListMessage_);
 
     registerMessageHandler(this, &HttpServerTask::onHttpServeStaticFileMessage_);
+    
+    registerMessageHandler(this, &HttpServerTask::onFreeDVSyncStateMessage_);
 }
 
 HttpServerTask::~HttpServerTask()
@@ -885,6 +890,49 @@ void HttpServerTask::onHttpWebsocketDisconnectedMessage_(DVTask* origin, HttpWeb
     {
         StopWifiScanMessage request;
         publish(&request);
+    }
+}
+
+void HttpServerTask::onFreeDVSyncStateMessage_(DVTask* origin, audio::FreeDVSyncStateMessage* message)
+{
+    const int NUM_OFFSETS_TO_AVERAGE = 25;
+    
+    // Calculate average offset (enough samples so we report ~4x/sec, ensuring we don't
+    // overwhelm any web clients.
+    freqOffsets_.push_back(message->freqOffset);
+    if (freqOffsets_.size() > NUM_OFFSETS_TO_AVERAGE)
+    {
+        freqOffsets_.pop_front();
+    }
+    
+    int sum = 0;
+    for (auto& val : freqOffsets_)
+    {
+        sum += val;
+    }
+    currFreqOffset_ = sum / freqOffsets_.size();
+    
+    freqOffsetCount_++;
+    if (freqOffsetCount_ >= NUM_OFFSETS_TO_AVERAGE)
+    {
+        freqOffsetCount_ = 0;
+        
+        // Report running average of the offset and sync state to web interace
+        cJSON *root = cJSON_CreateObject();
+        if (root != nullptr)
+        {
+            cJSON_AddStringToObject(root, "type", JSON_FREEDV_STATUS_TYPE);
+            cJSON_AddNumberToObject(root, "freqOffset", currFreqOffset_);
+            cJSON_AddBoolToObject(root, "sync", message->syncState);
+        
+            // Note: below is responsible for cleanup.
+            sendJSONMessage_(root, activeWebSockets_);
+        }
+        else
+        {
+            // HTTP isn't 100% critical but we really should see what's leaking memory.
+            ESP_LOGE(CURRENT_LOG_TAG, "Could not create JSON object for codec status!");
+        }
     }
 }
 
