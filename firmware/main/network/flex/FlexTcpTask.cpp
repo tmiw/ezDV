@@ -44,6 +44,7 @@ FlexTcpTask::FlexTcpTask()
     , reconnectTimer_(this, this, &FlexTcpTask::connect_, MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
     , connectionCheckTimer_(this, this, &FlexTcpTask::checkConnection_, MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
     , commandHandlingTimer_(this, this, &FlexTcpTask::commandResponseTimeout_, MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
+    , pingTimer_(this, this, &FlexTcpTask::pingRadio_, MS_TO_US(10000), "FlexTcpPingTimer") /* pings radio every 10 seconds to verify connectivity */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
@@ -158,6 +159,7 @@ void FlexTcpTask::socketFinalCleanup_(bool reconnect)
 
         commandHandlingTimer_.stop();
         connectionCheckTimer_.stop();
+        pingTimer_.stop();
         isConnecting_ = false;
     }
     
@@ -258,6 +260,9 @@ void FlexTcpTask::checkConnection_(DVTimer*)
             // SmartSDR connection.
             audio::RequestGetFreeDVModeMessage requestGetFreeDVMode;
             publish(&requestGetFreeDVMode);
+            
+            // Start ping timer
+            pingTimer_.start();
         }
     }
 
@@ -276,6 +281,8 @@ socket_error:
 
 void FlexTcpTask::disconnect_()
 {
+    pingTimer_.stop();
+    
     if (socket_ > 0)
     {
         cleanupWaveform_();
@@ -686,6 +693,15 @@ void FlexTcpTask::setFilter_(int low, int high)
         ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
         sendRadioCommand_(ss.str());
     }
+}
+
+void FlexTcpTask::pingRadio_(DVTimer*)
+{
+    // Sends ping command to radio every ten seconds. We don't care about the
+    // response, just that the TCP/IP subsystem doesn't error out while trying
+    // to send the request. If the radio did go away (e.g. sudden power cut),
+    // the send logic will take care of triggering reconnection.
+    sendRadioCommand_("ping");
 }
     
 }

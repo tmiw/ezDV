@@ -51,10 +51,10 @@
                         <button id="voiceKeyerTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#voiceKeyerTabForm" aria-current="page-voice-keyer">Voice Keyer</button>
                     </li>
                     <li class="nav-item">
-                        <button id="wifiTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#wifiTabForm" aria-current="page-wifi">Wi-Fi</button>
+                        <button id="wifiTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#wifiTabForm" aria-current="page-wifi">Network</button>
                     </li>
                     <li class="nav-item">
-                        <button id="radioTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm" aria-current="page-radio" disabled>Radio</button>
+                        <button id="radioTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#radioTabForm" aria-current="page-radio">Radio</button>
                     </li>
                     <li class="nav-item">
                         <button id="updateTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#updateTabForm" aria-current="page-update">Firmware Update</button>
@@ -257,15 +257,21 @@
                 <div class="row mb-3" id="wifiSuccessAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-success" role="alert">
-                        Your Wi-Fi configuration has been saved. Please restart ezDV for the changes to take effect.
+                        Your network configuration has been saved. Please restart ezDV for the changes to take effect.
                         </div>
                     </div>
                 </div>
                 <div class="row mb-3" id="wifiFailAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-danger" role="alert">
-                        Could not save Wi-Fi configuration. Please verify your settings below and try again.
+                        Could not save network configuration. Please verify your settings below and try again.
                         </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="wifiHostname" class="col-xs-4 col-md-2 col-form-label">Hostname</label>
+                    <div class="col-xs-8 col-md-4">
+                    <input id="wifiHostname" type="text" value="ezdv" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -277,12 +283,6 @@
                             </label>
                         <div><em>(Note: you can always return here even if disabled by holding down Volume Down while turning on ezDV.)</em></div>
                         </div>
-                    </div>
-                </div>
-                <div class="row mb-3 wifi-enable-row">
-                    <label for="wifiHostname" class="col-xs-4 col-md-2 col-form-label">Hostname</label>
-                    <div class="col-xs-8 col-md-4">
-                    <input id="wifiHostname" type="text" value="ezdv" class="form-control" />
                     </div>
                 </div>
                 <div class="row mb-3 wifi-enable-row">
@@ -366,7 +366,7 @@
                 <div class="row mb-3" id="radioSuccessAlertRow">
                     <div class="col-xs-12 col-md-6">
                         <div class="alert alert-success" role="alert">
-                        Your radio configuration has been saved. For Wi-Fi related changes, please restart ezDV for the changes to take effect.
+                        Your radio configuration has been saved. For network related changes, please restart ezDV for the changes to take effect.
                         </div>
                     </div>
                 </div>
@@ -398,7 +398,7 @@
                         <div class="form-check">
                         <input type="checkbox" id="radioEnable" class="form-check-input" />
                         <label class="form-check-label" for="radioEnable">
-                            Use Wi-Fi Network for Radio RX/TX
+                            Use Network for Radio RX/TX
                         </label>
                         </div>
                     </div>
