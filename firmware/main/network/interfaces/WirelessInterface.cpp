@@ -219,28 +219,10 @@ void WirelessInterface::bringUp()
 void WirelessInterface::tearDown()
 {
     status_ = INTERFACE_SHUTTING_DOWN;
-    
-    esp_event_handler_instance_unregister(WIFI_EVENT,
-                                         ESP_EVENT_ANY_ID,
-                                         &wifiEventHandle_);
-    esp_event_handler_instance_unregister(IP_EVENT,
-                                          ESP_EVENT_ANY_ID,
-                                          &ipEventHandle_);
                                           
-    if (hasStaConfig_)
-    {
-        // Disconnect from AP
-        ESP_LOGI(CURRENT_LOG_TAG, "Final disconnect from Wi-Fi");
-        ESP_ERROR_CHECK(esp_wifi_disconnect());
-    }
-    else
-    {
-        // Immediate shutdown Wi-Fi.
-        ESP_LOGI(CURRENT_LOG_TAG, "Directly stopping Wi-Fi service");
-        
-        status_ = INTERFACE_DOWN;
-        ESP_ERROR_CHECK(esp_wifi_stop());
-    }
+    // Immediately shutdown Wi-Fi.
+    ESP_LOGI(CURRENT_LOG_TAG, "Stopping Wi-Fi service");
+    ESP_ERROR_CHECK(esp_wifi_stop());
 }
 
 void WirelessInterface::getMacAddress(uint8_t* mac)
@@ -349,6 +331,19 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
             break;
         }
         case WIFI_EVENT_AP_STOP:
+        case WIFI_EVENT_STA_STOP:
+        {
+            esp_event_handler_instance_unregister(WIFI_EVENT,
+                                                 ESP_EVENT_ANY_ID,
+                                                 &obj->wifiEventHandle_);
+            esp_event_handler_instance_unregister(IP_EVENT,
+                                                  ESP_EVENT_ANY_ID,
+                                                  &obj->ipEventHandle_);
+                                                  
+
+            obj->status_ = INTERFACE_DOWN;
+            break;
+        }
         case WIFI_EVENT_STA_DISCONNECTED:
         {
             bool networkIsDown = true;
@@ -374,12 +369,8 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
             
             // Reattempt connection to access point if we couldn't find
             // it the first time around.
-            if (obj->status_ == INTERFACE_SHUTTING_DOWN)
-            {
-                obj->status_ = INTERFACE_DOWN;
-                esp_wifi_stop();
-            }
-            else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
+            if (obj->status_ != INTERFACE_SHUTTING_DOWN && 
+                event_id == WIFI_EVENT_STA_DISCONNECTED)
             {
                 esp_wifi_disconnect();
                 ESP_ERROR_CHECK(esp_wifi_connect());

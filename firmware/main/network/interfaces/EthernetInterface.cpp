@@ -168,11 +168,13 @@ void EthernetInterface::tearDown()
 {    
     if (ethDeviceHandle_ != nullptr)
     {
+        ESP_LOGI(CURRENT_LOG_TAG, "Requesting stop of Ethernet driver");
         status_ = INTERFACE_SHUTTING_DOWN;
         esp_eth_stop(ethDeviceHandle_);
     }
     else
     {
+        ESP_LOGI(CURRENT_LOG_TAG, "Ethernet driver already shut down");
         status_ = INTERFACE_DOWN;
     }
 }
