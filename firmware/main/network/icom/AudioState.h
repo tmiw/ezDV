@@ -52,7 +52,7 @@ private:
     DVTimer audioWatchdogTimer_;
     uint16_t audioSequenceNumber_;
     bool completingTransmit_;
-    float audioMultiplier_[160];
+    short audioMultiplier_[160]; // Q5.11 fixed point
 
     void onAudioOutTimer_(DVTimer*);
     void onAudioWatchdog_(DVTimer*);

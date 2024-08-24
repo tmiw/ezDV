@@ -13,7 +13,7 @@ set(SOURCES
     "driver/ButtonArray.cpp"
     "driver/ButtonMessage.cpp"
     "driver/InputGPIO.cpp"
-    "driver/I2CDevice.cpp"
+    "driver/I2CMaster.cpp"
     "driver/LedArray.cpp"
     "driver/LedMessage.cpp"
     "driver/MAX17048.cpp"
@@ -43,11 +43,15 @@ set(SOURCES
     "network/icom/LoginState.cpp"
     "network/icom/StateMachine.cpp"
     "network/icom/TrackedPacketState.cpp"
+    "network/interfaces/EthernetInterface.cpp"
+    "network/interfaces/INetworkInterface.cpp"
+    "network/interfaces/WirelessInterface.cpp"
     "network/FreeDVReporterTask.cpp"
     "network/HttpServerTask.cpp"
     "network/NetworkMessage.cpp"
+    "network/NetworkTask.cpp"
+    "network/PskReporterTask.cpp"
     "network/ReportingMessage.cpp"
-    "network/WirelessTask.cpp"
     "storage/SettingsMessage.cpp"
     "storage/SettingsTask.cpp"
     "storage/SoftwareUpdateMessage.cpp"
@@ -77,6 +81,7 @@ if(${ESP_PLATFORM})
                                 wear_levelling
                                 esp_http_server
                                 esp_netif
+                                esp_eth
                                 esp_timer
                                 esp_wifi
                                 esp_websocket_client

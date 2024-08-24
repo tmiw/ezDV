@@ -83,11 +83,20 @@ void IcomStateMachine::setTheirIdentifier(uint32_t id)
 
 void IcomStateMachine::sendUntracked(IcomPacket& packet)
 {
+    auto task = getTask();
+
+    if (!task->canPostMessage())
+    {
+        // something's gone very wrong, just skip sending the packet
+        // until our queue clears up.
+        return;
+    }
+
     auto allocPacket = new IcomPacket(std::move(packet));
     assert(allocPacket != nullptr);
 
     SendPacketMessage message(allocPacket);
-    getTask()->post(&message);
+    task->post(&message);
 }
 
 void IcomStateMachine::start(std::string ip, uint16_t port, std::string username, std::string password, int localPort)
@@ -168,10 +177,14 @@ void IcomStateMachine::openSocket_()
     }
     assert(rv != -1);
     
+    // Initialize Wi-Fi prioritization
     const int precedenceVI = 6;
     const int precedenceOffset = 7;
     int priority = (precedenceVI << precedenceOffset);
     setsockopt(socket_, IPPROTO_IP, IP_TOS, &priority, sizeof(priority));
+
+    // Use non-blocking sockets
+    fcntl(socket_, F_SETFL, O_NONBLOCK);
 }
 
 void IcomStateMachine::onTransitionComplete_()
@@ -199,32 +212,18 @@ void IcomStateMachine::readPendingPackets_(DVTimer*)
     {
         return;
     }
-    
-    fd_set readSet;
-    struct timeval tv = {0, 0};
-    
-    FD_ZERO(&readSet);
-    FD_SET(socket_, &readSet);
-    
+       
     // Process if there are pending datagrams in the buffer
-    if (select(socket_ + 1, &readSet, nullptr, nullptr, &tv) > 0)
+    char buffer[MAX_PACKET_SIZE];
+    auto rv = recv(socket_, buffer, MAX_PACKET_SIZE, 0);
+    if (rv > 0)
     {
-        char buffer[MAX_PACKET_SIZE];
-        
-        auto rv = recv(socket_, buffer, MAX_PACKET_SIZE, 0);
-        if (rv > 0)
-        {
-            auto packet = new IcomPacket(buffer, rv);
-            assert(packet != nullptr);
+        auto packet = new IcomPacket(buffer, rv);
+        assert(packet != nullptr);
 
-            // Queue up packet for future processing.
-            ReceivePacketMessage message(packet);
-            getTask()->post(&message);
-        }
-        
-        // Reinitialize the read set for the next pass.
-        FD_ZERO(&readSet);
-        FD_SET(socket_, &readSet);
+        // Queue up packet for future processing.
+        ReceivePacketMessage message(packet);
+        getTask()->post(&message);
     }
 }
 

@@ -21,7 +21,7 @@ jobs:
       - name: Install ESP-IDF
         shell: bash
         run: |
-          git clone -b v5.2.1 --recursive https://github.com/espressif/esp-idf.git
+          git clone -b v5.3 --recursive https://github.com/espressif/esp-idf.git
           cd esp-idf
           ./install.sh all
 

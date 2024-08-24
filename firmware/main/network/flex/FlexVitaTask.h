@@ -45,7 +45,7 @@ namespace flex
 
 using namespace ezdv::task;
 
-/// @brief Handles the VITA UDP socket for Flex 6000 series radios.
+/// @brief Handles the VITA UDP socket for Flex 6000/8000 series radios.
 class FlexVitaTask : public DVTask, public audio::AudioInput
 {
 public:

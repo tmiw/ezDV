@@ -26,11 +26,11 @@
 #include "audio/VoiceKeyerTask.h"
 #include "driver/ButtonArray.h"
 #include "driver/ButtonMessage.h"
-#include "driver/I2CDevice.h"
+#include "driver/I2CMaster.h"
 #include "driver/LedArray.h"
 #include "driver/MAX17048.h"
 #include "driver/TLV320.h"
-#include "network/WirelessTask.h"
+#include "network/NetworkTask.h"
 #include "storage/SettingsTask.h"
 #include "storage/SoftwareUpdateTask.h"
 #include "ui/UserInterfaceTask.h"
@@ -66,11 +66,11 @@ private:
     audio::BeeperTask* beeperTask_;
     audio::FreeDVTask* freedvTask_;
     driver::ButtonArray buttonArray_;
-    driver::I2CDevice i2cDevice_;
+    driver::I2CMaster i2cMaster_;
     driver::LedArray ledArray_;
     driver::MAX17048 max17048_;
     driver::TLV320* tlv320Device_;
-    network::WirelessTask* wirelessTask_;
+    network::NetworkTask* networkTask_;
     storage::SettingsTask* settingsTask_;
     storage::SoftwareUpdateTask* softwareUpdateTask_;
     ui::UserInterfaceTask* uiTask_;

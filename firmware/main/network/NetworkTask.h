@@ -26,6 +26,7 @@
 #include "flex/FlexTcpTask.h"
 #include "flex/FlexVitaTask.h"
 #include "FreeDVReporterTask.h"
+#include "PskReporterTask.h"
 
 #include "audio/AudioInput.h"
 #include "audio/VoiceKeyerTask.h"
@@ -34,6 +35,9 @@
 #include "storage/SettingsMessage.h"
 
 #include "HttpServerTask.h"
+
+#include "interfaces/INetworkInterface.h"
+#include "interfaces/WirelessInterface.h"
 
 extern "C"
 {
@@ -51,11 +55,11 @@ using namespace ezdv::task;
 class HttpServerTask;
 
 /// @brief Handles wireless setup in the application.
-class WirelessTask : public DVTask
+class NetworkTask : public DVTask
 {
 public:
-    WirelessTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
-    virtual ~WirelessTask();
+    NetworkTask(ezdv::audio::AudioInput* freedvHandler, ezdv::audio::AudioInput* tlv320Handler, ezdv::audio::AudioInput* audioMixerHandler, audio::VoiceKeyerTask* vkTask);
+    virtual ~NetworkTask();
     
     void setWiFiOverride(bool wifiOverride);
     
@@ -64,7 +68,7 @@ protected:
     virtual void onTaskSleep_() override;
     
 private:
-    enum WirelessTaskRequestId 
+    enum NetworkTaskRequestId 
     {
         AP_ASSIGNED_IP = 1,
         STA_ASSIGNED_IP = 2,
@@ -159,6 +163,7 @@ private:
     flex::FlexTcpTask* flexTcpTask_;
     flex::FlexVitaTask* flexVitaTask_;
     FreeDVReporterTask freeDVReporterTask_;
+    PskReporterTask pskReporterTask_;
     
     // for rerouting audio after connection
     ezdv::audio::AudioInput* freedvHandler_;
@@ -174,10 +179,8 @@ private:
     esp_event_handler_instance_t wifiEventHandle_;
     esp_event_handler_instance_t  ipEventHandle_;
     uint8_t radioMac_[6];
-    esp_netif_t* netif_;
-        
-    void enableWifi_(storage::WifiMode mode, storage::WifiSecurityMode security, int channel, char* ssid, char* password, char* hostname);
-    void enableDefaultWifi_();
+    std::vector<interfaces::INetworkInterface*> interfaceList_;
+    interfaces::WirelessInterface* wifiInterface_;
     
     void disableWifi_();
     void enableHttp_();
@@ -202,9 +205,8 @@ private:
     void onApStartedMessage_(DVTask* origin, ApStartedMessage* message);
     void onNetworkDownMessage_(DVTask* origin, NetworkDownMessage* message);
     void onDeviceDisconnectedMessage_(DVTask* origin, DeviceDisconnectedMessage* message);
-
-    static void WiFiEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-    static void IPEventHandler_(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+    
+    int numInterfacesRunning_();
 };
 
 }

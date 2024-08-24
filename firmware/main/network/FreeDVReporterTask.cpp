@@ -38,7 +38,7 @@ namespace network
 {
 
 FreeDVReporterTask::FreeDVReporterTask()
-    : ezdv::task::DVTask("FreeDVReporterTask", 1, 4096, tskNO_AFFINITY, 128)
+    : ezdv::task::DVTask("FreeDVReporterTask", 1, 3072, tskNO_AFFINITY, 32)
     , reconnectTimer_(this, this, &FreeDVReporterTask::startSocketIoConnection_, MS_TO_US(10000), "FDVReporterReconn")
     , reportingClientHandle_(nullptr)
     , jsonAuthObj_(nullptr)
@@ -88,6 +88,8 @@ void FreeDVReporterTask::onTaskStart_()
 
 void FreeDVReporterTask::onTaskSleep_()
 {
+    reportingRefCount_ = 0;
+    
     if (reportingEnabled_)
     {
         stopSocketIoConnection_();
@@ -213,7 +215,7 @@ void FreeDVReporterTask::onFreeDVCallsignReceivedMessage_(DVTask* origin, audio:
         esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
         cJSON_free(tmp);
-        cJSON_Delete(messagePayload);        
+        cJSON_Delete(outMessage);        
     }
 }
 
@@ -435,11 +437,16 @@ void FreeDVReporterTask::stopSocketIoConnection_()
             esp_websocket_client_send_text(reportingClientHandle_, engineIoDisconnectMessage, strlen(engineIoDisconnectMessage), portMAX_DELAY);
             esp_websocket_client_stop(reportingClientHandle_);
         }
-        
+
         // XXX - there's a bug in esp_websocket_client that causes it to take a while to
         // destroy its task after stopping the client. While not ideal, the below code
         // to check for this process and close it at least prevents it from accessing
         // invalid memory if it were to stay running after destroying the handle.
+        //
+        // Note: as of esp_websocket_client v1.2.3 this might have been fixed, but this
+        // shouldn't hurt to keep in here for a bit. Its timeout is apparently 1000ms, so
+        // if it's still not dead a bit longer after that, we're probably still good to kill
+        // the task.
         auto websocketHandle = xTaskGetHandle("websocket_task");
         if (websocketHandle != nullptr)
         {
@@ -452,9 +459,9 @@ void FreeDVReporterTask::stopSocketIoConnection_()
             auto currentState = eTaskGetState(websocketHandle);
             auto timeElapsed = esp_timer_get_time() - timeBegin;
             if (currentState == eDeleted || currentState == eInvalid ||
-                timeElapsed >= MS_TO_US(1000))
+                timeElapsed >= MS_TO_US(1250))
             {
-                forceKillTask = timeElapsed >= MS_TO_US(1000);
+                forceKillTask = timeElapsed >= MS_TO_US(1250);
                 break;
             }
 
@@ -502,7 +509,7 @@ void FreeDVReporterTask::sendReportingMessageUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::sendFrequencyUpdate_()
@@ -532,7 +539,7 @@ void FreeDVReporterTask::sendFrequencyUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::sendTransmitStateUpdate_()
@@ -566,7 +573,7 @@ void FreeDVReporterTask::sendTransmitStateUpdate_()
     esp_websocket_client_send_text(reportingClientHandle_, messageToSend.c_str(), messageToSend.length(), portMAX_DELAY);
 
     cJSON_free(tmp);
-    cJSON_Delete(messagePayload);
+    cJSON_Delete(message);
 }
 
 void FreeDVReporterTask::WebsocketEventHandler_(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)

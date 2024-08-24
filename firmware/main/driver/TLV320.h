@@ -21,6 +21,7 @@
 #include "driver/i2s_std.h"
 
 #include "InputGPIO.h"
+#include "I2CMaster.h"
 #include "audio/AudioInput.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
@@ -36,15 +37,13 @@ namespace ezdv
 namespace driver
 {
 
-class I2CDevice;
-
 using namespace ezdv::task;
 
 class TLV320 : public DVTask, public audio::AudioInput
 {
 public:
-    TLV320(I2CDevice* i2cDevice);
-    virtual ~TLV320() = default;
+    TLV320(I2CMaster* i2cMaster);
+    virtual ~TLV320();
 
 protected:
     virtual void onTaskStart_() override;
@@ -53,7 +52,7 @@ protected:
     virtual void onTaskTick_() override;
 
 private:
-    I2CDevice* i2cDevice_;
+    I2CMaster::I2CDevice* i2cDevice_;
     int currentPage_;
     i2s_chan_handle_t i2sTxDevice_;
     i2s_chan_handle_t i2sRxDevice_;
@@ -66,7 +65,7 @@ private:
     void setPage_(uint8_t page);
     void setConfigurationOption_(uint8_t page, uint8_t reg, uint8_t val);
     void setConfigurationOptionMultiple_(uint8_t page, uint8_t reg, uint8_t* val, uint8_t size);
-    uint8_t getConfigurationOption_(uint8_t page, uint8_t reg);
+    uint8_t getConfigurationOption_(uint8_t page, uint8_t reg, bool* readResult = nullptr);
 
     void setVolumeCommon_(uint8_t reg, int8_t vol);
 

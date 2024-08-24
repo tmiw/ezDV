@@ -40,10 +40,11 @@ namespace flex
 {
 
 FlexTcpTask::FlexTcpTask()
-    : DVTask("FlexTcpTask", 10, 4096, tskNO_AFFINITY, 128, pdMS_TO_TICKS(10))
+    : DVTask("FlexTcpTask", 10, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(10))
     , reconnectTimer_(this, this, &FlexTcpTask::connect_, MS_TO_US(10000), "FlexTcpReconnectTimer") /* reconnect every 10 seconds */
     , connectionCheckTimer_(this, this, &FlexTcpTask::checkConnection_, MS_TO_US(100), "FlexTcpConnTimer") /* checks for connection every 100ms */
     , commandHandlingTimer_(this, this, &FlexTcpTask::commandResponseTimeout_, MS_TO_US(500), "FlexTcpCmdTimeout") /* time out waiting for command response after 0.5 second */
+    , pingTimer_(this, this, &FlexTcpTask::pingRadio_, MS_TO_US(10000), "FlexTcpPingTimer") /* pings radio every 10 seconds to verify connectivity */
     , socket_(-1)
     , sequenceNumber_(0)
     , activeSlice_(-1)
@@ -158,6 +159,7 @@ void FlexTcpTask::socketFinalCleanup_(bool reconnect)
 
         commandHandlingTimer_.stop();
         connectionCheckTimer_.stop();
+        pingTimer_.stop();
         isConnecting_ = false;
     }
     
@@ -258,6 +260,9 @@ void FlexTcpTask::checkConnection_(DVTimer*)
             // SmartSDR connection.
             audio::RequestGetFreeDVModeMessage requestGetFreeDVMode;
             publish(&requestGetFreeDVMode);
+            
+            // Start ping timer
+            pingTimer_.start();
         }
     }
 
@@ -276,6 +281,8 @@ socket_error:
 
 void FlexTcpTask::disconnect_()
 {
+    pingTimer_.stop();
+    
     if (socket_ > 0)
     {
         cleanupWaveform_();
@@ -287,7 +294,7 @@ void FlexTcpTask::initializeWaveform_()
     // Send needed commands to initialize the waveform. This is from the reference
     // waveform implementation.
     createWaveform_("FreeDV-USB", "FDVU", "DIGU");
-    createWaveform_("FreeDV-LSB", "FDVL", "LSB");
+    createWaveform_("FreeDV-LSB", "FDVL", "DIGL");
     
     // subscribe to slice updates, needed to detect when we enter FDVU/FDVL mode
     sendRadioCommand_("sub slice all");
@@ -570,16 +577,16 @@ void FlexTcpTask::processCommand_(std::string& command)
 
                         // User wants to use the waveform.
                         activeSlice_ = sliceId;
-                        isLSB_ = mode->second == "FDVL";
-
-                        // Set the filter corresponding to the current mode.
-                        setFilter_(currentWidth_.first, currentWidth_.second);
 
                         // Ensure that we connect to any reporting services as appropriate
                         uint64_t freqHz = atof(sliceFrequencies_[activeSlice_].c_str()) * 1000000;
                         ReportFrequencyChangeMessage freqChangeMessage(freqHz);
                         publish(&freqChangeMessage);
                     }
+                    
+                    // Set the filter corresponding to the current mode.
+                    isLSB_ = mode->second == "FDVL";
+                    setFilter_(currentWidth_.first, currentWidth_.second);
                 }
                 else if (sliceId == activeSlice_)
                 {
@@ -686,6 +693,15 @@ void FlexTcpTask::setFilter_(int low, int high)
         ss << "filt " << activeSlice_ << " " << low_cut << " " << high_cut;
         sendRadioCommand_(ss.str());
     }
+}
+
+void FlexTcpTask::pingRadio_(DVTimer*)
+{
+    // Sends ping command to radio every ten seconds. We don't care about the
+    // response, just that the TCP/IP subsystem doesn't error out while trying
+    // to send the request. If the radio did go away (e.g. sudden power cut),
+    // the send logic will take care of triggering reconnection.
+    sendRadioCommand_("ping");
 }
     
 }

@@ -1,7 +1,7 @@
 # Using the web interface
 
 ezDV provides a web interface to allow users to adjust its configuration and operate some of its features.
-When Wi-Fi is enabled on ezDV, this interface is accessible through a regular web browser (such as Google Chrome
+When networking is enabled on ezDV, this interface is accessible through a regular web browser (such as Google Chrome
 or Microsoft Edge).
 
 ## Accessing the web interface
@@ -11,10 +11,10 @@ hold down the Mode and Volume Down buttons until ezDV turns on. This will cause 
 named "ezDV" followed by the last two octets of its MAC address. From there, you can connect your PC or mobile
 device to that network and open http://192.168.4.1/ in your web browser.
 
-If ezDV is configured to connect to an existing Wi-Fi network, you can open a web browser on a PC or mobile device
-connected to the same network as ezDV and enter ezDV's IP address into the browser's location box. This IP address
-can typically be found in your router's listing of connected devices; ezDV will also beep the letter "N" followed
-by the last octet of the IP address when it connects to the network (for example, "N100" for "192.168.1.100").  
+If ezDV is configured to connect to an existing Wi-Fi network (or Ethernet), you can open a web browser on a PC
+or mobile device connected to the same network as ezDV and enter ezDV's IP address into the browser's location box. 
+This IP address can typically be found in your router's listing of connected devices; ezDV will also beep the letter 
+"N" followed by the last octet of the IP address when it connects to the network (for example, "N100" for "192.168.1.100").  
 
 Alternatively, depending on your router, you can also use the configured hostname in your browser instead.
 By default, ezDV's hostname is "ezdv", which means that you can enter http://ezdv/ instead of its IP address.
@@ -26,9 +26,9 @@ Regardless of how you access ezDV's web interface, you should see a page similar
 From here, you can choose one of several tabs:
 
 * General: Contains miscallenous ezDV configuration options.
-* Reporting: Configures and operates the [FreeDV Reporter](https://qso.freedv.org/) reporting feature.
+* Reporting: Configures and operates the reporting feature, which controls reporting to [FreeDV Reporter](https://qso.freedv.org/) and [PSK Reporter](https://pskreporter.info).
 * Voice Keyer: Configures ezDV's voice keyer feature.
-* Wi-Fi: Configures how ezDV connects to Wi-Fi.
+* Network: Configures how ezDV connects to Wi-Fi.
 * Radio: Configures how ezDV connects to your network-enabled radio.
 * Firmware Update: Allows the user to perform a firmware update on ezDV.
 
@@ -80,49 +80,50 @@ The following can be set here to enable the voice keyer feature:
 
 Pushing Save will immediately update the voice keyer configuration and enable its use if desired.
 
-## Reporting to FreeDV Reporter
+## Reporting to FreeDV Reporter/PSK Reporter
 
-ezDV has the ability to report its current state to the [FreeDV Reporter](https://qso.freedv.org/) spotting service. 
-Operation of this feature can be done through the Reporting tab:
+ezDV has the ability to report its current state to the [FreeDV Reporter](https://qso.freedv.org/) 
+and [PSK Reporter](https://pskreporter.info) spotting services. Operation of this feature can be 
+done through the Reporting tab:
 
 ![Example of a reporting configuration on ezDV](images/4-reporting-tab.png)
 
-When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter if it has access
-to an internet connection and is able to connect to a supported radio over Wi-Fi. You can also force a connection to
-FreeDV Reporter for radios without Wi-Fi support by checking the "Force reporting without radio connection" checkbox
-and manually entering the current frequency.
+When configured with a callsign and grid square, ezDV will automatically connect to FreeDV Reporter and PSK Reporter
+if it has access to an internet connection and is able to connect to a supported radio. You can also force a connection 
+to both servies for radios without network support by checking the "Force reporting without radio connection" 
+checkbox and manually entering the current frequency.
 
 Once connected to FreeDV Reporter, a new row will appear corresponding to your connection:
 
 ![Example of an entry on FreeDV Reporter](images/4-freedv-reporter.png)
 
 If ezDV is able to decode a callsign from a received signal, it will transmit the received callsign and SNR to FreeDV
-Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight your row in 
-a blue background for several seconds to alert others that you've receiving a signal. When ezDV is transmitting, FreeDV
-Reporter will also highlight your row with a red background to indicate to others that you're transmitting.
+Reporter and PSK Reporter. Your row will then update to indicate the received callsign, SNR and mode as well as highlight 
+your row in a blue background for several seconds to alert others that you've receiving a signal. When ezDV is transmitting, 
+FreeDV Reporter will also highlight your row with a red background to indicate to others that you're transmitting.
 
-With radios that support connections over Wi-Fi, ezDV will also follow frequency changes on the radio and report them
+With radios that support connections over the network, ezDV will also follow frequency changes on the radio and report them
 to FreeDV Reporter. FreeDV Reporter will then indicate your current frequency, allowing others to change to your frequency
 and potentially make a contact with you. Manual frequency updates (for those radios attached to ezDV with a wired connection)
 will also be sent to FreeDV Reporter as they're made.
 
-The following can be updated in the Reporting tab to operate FreeDV Reporter reporting:
+The following can be updated in the Reporting tab to operate reporting:
 
 | Setting | Description |
 |---------|-------------|
-| Your callsign | The callsign to report to FreeDV Reporter. This callsign is also transmitted as part of your FreeDV signal so that others can report receipt of your signal. |
-| Grid square/locator | The 4-6 digit grid square to report to FreeDV Reporter. You can use a service such as [this](https://www.levinecentral.com/ham/grid_square.php) to calculate your grid square if not known. *Note: Clearing this field disables FreeDV Reporter reporting.* |
+| Your callsign | The callsign to report to FreeDV Reporter and PSK Reporter. This callsign is also transmitted as part of your FreeDV signal so that others can report receipt of your signal. |
+| Grid square/locator | The 4-6 digit grid square to report to FreeDV Reporter/PSK Reporter. You can use a service such as [this](https://www.levinecentral.com/ham/grid_square.php) to calculate your grid square if not known. *Note: Clearing this field disables reporting.* |
 | Message | A short message to display on the FreeDV Reporter website next to your callsign. This is transmitted solely on the internet, not over RF. |
-| Force reporting without radio connection | When checked, ezDV will connect to FreeDV Reporter even without a valid radio configuration. |
-| Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter as your current frequency.|
+| Force reporting without radio connection | When checked, ezDV will connect to FreeDV Reporter/PSK Reporter even without a valid radio configuration. |
+| Current frequency (MHz) | When "Force reporting without radio connection" is checked, ezDV will transmit this frequency to FreeDV Reporter/PSK Reporter as your current frequency.|
 
-Pushing Save will immediately connect or disconnect to FreeDV Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
+Pushing Save will immediately connect or disconnect to FreeDV Reporter/PSK Reporter (as desired/required) as well as transmit updates to the current frequency or short message.
 
 ## Configuring Wi-Fi
 
-The Wi-Fi tab allows configuration of ezDV's Wi-Fi connection:
+The Network tab allows configuration of ezDV's Wi-Fi connection:
 
-![ezDV showing the Wi-Fi tab](images/2-setup-webpage-wifi.png)
+![ezDV showing the Network tab](images/2-setup-webpage-wifi.png)
 
 The following can be configured in this screen:
 
@@ -142,7 +143,7 @@ Pushing Save here will save these settings to ezDV's internal flash but require 
 ## Configuring radio connection and headset
 
 The Radio tab allows configuration of ezDV's connection to a network-enabled radio as well as headset-related functions. 
-Currently ezDV supports connections to the Icom IC-705 and Flex 6000 series radios, as shown below:
+Currently ezDV supports connections to the Icom IC-705 and Flex 6000/8000 series radios, as shown below:
 
 ![ezDV showing a FlexRadio configuration](images/2-setup-webpage-radio-flex.png)
 
@@ -154,8 +155,8 @@ The following can be configured in this screen:
 |---------|-------------|
 | Enable PTT using headset button | Enables the usage of the "call" button on your wired headset for toggling PTT. (See [Basic usage](#basic-usage)" for more information.) |
 | Time Out Timer (seconds) | Configures ezDV's "time out timer", which automatically puts the radio back into receive if the radio is stuck in transmit mode for too long. |
-| Use Wi-Fi Network for Radio RX/TX | When checked, allows ezDV to connect to a supported radio over Wi-Fi instead of using a wired headset. |
-| Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
+| Use Wi-Fi Network for Radio RX/TX | When checked, allows ezDV to connect to a supported radio over the network instead of using a wired headset. |
+| Radio Type | The type of radio that ezDV should connect to. This can be either "Flex 6000/8000 series" or "Icom (e.g. IC-705)". Relevant settings for each radio type will appear in this tab as appropriate. |
 | Radio | Displays the list of Flex radios that ezDV is able to see on the network. You can also choose "(other)" and manually enter its IP address. |
 | IP Address | For Flex radios, this is typically auto-filled when selecting a radio from the Radio list. Otherwise, this is the IP address of the radio which to connect to. |
 | Port | For the IC-705, this is the control port number of the built-in server running on the radio. Defaults to "50001" and should not normally need to be changed. |
@@ -167,8 +168,8 @@ Pushing Save here will save these settings to ezDV's internal flash but require 
 ## Updating firmware
 
 From time to time, new ezDV firmware may be released that contains feature enhancements and/or bug fixes. These updates are typically posted
-on the [project's releases page](https://github.com/tmiw/ezDV/releases) and are announced in various other locations (such as the FreeDV mailing lists). 
-ezDV can be upgraded or downgraded by using the "Firmware Update" tab:
+on the [project's releases page](https://github.com/tmiw/ezDV/releases) and are announced in various other locations (such as the FreeDV 
+mailing lists). ezDV can be upgraded or downgraded by using the "Firmware Update" tab:
 
 ![ezDV showing the "Firmware Update" tab](images/4-firmware-update.png)
 
@@ -182,13 +183,13 @@ Once complete, the new firmware is stored on ezDV's internal memory but will not
 
 ## Rebooting ezDV
 
-You can reboot ezDV from the web interface instead of powering it on and off using the physical controls. This is typically done after saving radio or Wi-Fi settings
-or after uploading new firmware. To do this, go to the General tab and press the Reboot button:
+You can reboot ezDV from the web interface instead of powering it on and off using the physical controls. This is typically done after saving 
+radio or Wi-Fi settings or after uploading new firmware. To do this, go to the General tab and press the Reboot button:
 
 ![ezDV showing the Reboot button](images/4-reboot-button.png)
 
-ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it will automatically
-refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.
+ezDV may take up to a minute to turn itself off and then turn itself on again. Once the web browser is able to communicate with ezDV again, it 
+will automatically refresh the Web interface so that any changes to it due to any firmware updates can be made visible immediately.
 
 *Note: changes to Wi-Fi settings may cause ezDV to no longer be accessible on the IP address that was originally used. See [Accessing the web interface](#accessing-the-web-interface) for 
 information on finding its new address if required.*

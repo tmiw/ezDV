@@ -29,12 +29,12 @@ will be "700D", which corresponds to FreeDV 700D mode.) Holding this button agai
 in ezDV turning off (with "73" also being piped through the headset in Morse Code, corresponding to the 
 well-known ham radio term for "goodbye").
 
-If Wi-Fi is enabled on ezDV, you will additionally hear the letter "N" emitted in Morse Code
+If networking is enabled on ezDV, you will additionally hear the letter "N" emitted in Morse Code
 once the network interface comes up. If ezDV is configured to connect to an existing wireless
-network, you will hear the last octet of the IP address immediately afterward. For example,
+network or via Ethernet, you will hear the last octet of the IP address immediately afterward. For example,
 if your router assigns the IP address "192.168.1.100" to ezDV, you will hear "N100" in the headset.
 
-*Note: if your wireless network is configured with a "netmask" other than "255.255.255.0", you may need to
+*Note: if your network is configured with a "netmask" other than "255.255.255.0", you may need to
 load your router's configuration to obtain the rest of ezDV's IP address. Otherwise, you can typically replace
 the last octet of your computer's IP address with the number after the "N" when accessing ezDV with
 a web browser.*
@@ -58,7 +58,7 @@ pushing and releasing the call button will toggle between transmit and receive.
 
 ## Radio setup and usage
 
-### Flex 6000 series
+### Flex 6000/8000 series
 
 To use ezDV, simply start the SmartSDR software on your PC or iPad and select either FDVU mode (for upper sideband) 
 or FDVL (for lower sideband). Decoded audio as well as Morse code beeps will be output to your speaker. Use the MOX
@@ -86,7 +86,7 @@ times configured (with it pausing a configured number of seconds). By default, e
 the voice keyer file up to ten times, pausing for five seconds in between each transmission.
 
 While the voice keyer is active, pressing any button on ezDV will stop the voice keyer and place it back into
-regular operation. If using a Flex 6000 series radio, you can also stop the voice keyer by pushing the MOX button
+regular operation. If using a Flex 6000/8000 series radio, you can also stop the voice keyer by pushing the MOX button
 in SmartSDR
 
 Configuration of the voice keyer functionality (as well as stopping and starting of the voice keyer) can also be 

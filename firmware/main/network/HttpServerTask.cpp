@@ -318,36 +318,7 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
 
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
-
-    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
-    assert(scratchBuf != nullptr);
-
-    char *chunk = scratchBuf;
-    size_t chunksize = 0;
     
-    while ((chunksize = read(fd, chunk, SCRATCH_BUFSIZE)) > 0)
-    {
-        if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) 
-        {
-            httpd_resp_send_chunk(req, NULL, 0);
-            heap_caps_free(scratchBuf);
-            close(fd);
-
-            ESP_LOGW(CURRENT_LOG_TAG, "Sending %s failed!", filename);
-            return ESP_FAIL;
-        }
-    }
-    heap_caps_free(scratchBuf);
-
-    close(fd);
-    httpd_resp_send_chunk(req, NULL, 0);
-
-    ESP_LOGI(CURRENT_LOG_TAG, "Sending %s complete", filename);
-    return ESP_OK;
-
-#if 0
-    // Async requests are disabled due to ESP-IDF bug with additional HTTP headers.
-    // See https://github.com/espressif/esp-idf/issues/13430.
     httpd_req_t* asyncReq;
     esp_err_t err = httpd_req_async_handler_begin(req, &asyncReq);
     if (err == ESP_OK)
@@ -359,7 +330,6 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
     }
 
     return err;
-#endif // 0
 }
 
 esp_err_t HttpServerTask::ServeWebsocketPage_(httpd_req_t *req)
@@ -552,7 +522,7 @@ void HttpServerTask::onTaskStart_()
 
         // Allow HTTP server to auto-purge old connections.
         config.lru_purge_enable = true;
-        config.max_open_sockets = 12;
+        config.max_open_sockets = 11;
 
         /* Use the URI wildcard matching function in order to
         * allow the same handler to respond to multiple different
@@ -954,23 +924,23 @@ void HttpServerTask::onUpdateWifiMessage_(DVTask* origin, UpdateWifiMessage* mes
     
     bool settingsValid = true;
     
+    auto hostnameJSON = cJSON_GetObjectItem(message->request, "hostname");
+    if (hostnameJSON != nullptr)
+    {
+        hostname = cJSON_GetStringValue(hostnameJSON);
+        settingsValid &= strlen(hostname) > 0;
+    }
+    else
+    {
+        settingsValid = false;
+    }
+    
     auto enabledJSON = cJSON_GetObjectItem(message->request, "enabled");
     if (enabledJSON != nullptr)
     {
         enabled = cJSON_IsTrue(enabledJSON);
         if (enabled)
         {
-            auto hostnameJSON = cJSON_GetObjectItem(message->request, "hostname");
-            if (hostnameJSON != nullptr)
-            {
-                hostname = cJSON_GetStringValue(hostnameJSON);
-                settingsValid &= strlen(hostname) > 0;
-            }
-            else
-            {
-                settingsValid = false;
-            }
-
             auto modeJSON = cJSON_GetObjectItem(message->request, "mode");
             if (modeJSON != nullptr)
             {

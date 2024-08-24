@@ -43,9 +43,9 @@ Once attached, ezDV will appear as follows:
 
 ## Radio wiring
 
-### Radios without Wi-Fi support
+### Radios without network support
 
-Radios without Wi-Fi support will need an interface cable. One end of this cable should 
+Radios without network support will need an interface cable. One end of this cable should 
 be a male 3.5mm four conductor (TRRS) with the following pinout:
 
 * Tip: TX audio from ezDV to your radio
@@ -60,13 +60,13 @@ downward at the front of the device.
 More information on example wiring configurations for various radios can be found in the [Example Wiring Configurations](#appendix-example-wiring-configurations)
 section.
 
-### Radios with Wi-Fi support
+### Radios with network support
 
 If you have a radio that is capable of remote network access, you can configure ezDV to connect to the radio
-over Wi-Fi. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 6000 series radios 
-and the Icom IC-705.
+over Wi-Fi or Ethernet. Currently this is supported only for the [FlexRadio](https://www.flexradio.com/) 
+000/8000 series radios and the Icom IC-705.
 
-#### Flex 6000 series radios
+#### Flex 6000/8000 series radios
 
 Ensure that you can access your radio using the SmartSDR software from a PC on the same network (i.e. *not* using SmartLink).
 Once this is confirmed, skip to [Initial Configuration](#initial-configuration).
@@ -91,9 +91,9 @@ Once joined, open your Web browser and navigate to http://192.168.4.1/. You shou
 
 ### Transmit audio levels
 
-#### Flex 6000 series
+#### Flex 6000/8000 series
 
-ezDV uses a hardcoded transmit level when connected to the Flex 6000 series of radios, so adjusting the transmit level on 
+ezDV uses a hardcoded transmit level when connected to the Flex 6000/8000 series of radios, so adjusting the transmit level on 
 ezDV has no effect.
 
 #### Other radios
@@ -114,14 +114,16 @@ begins to decrease.
 *Note: it's recommended to have your radio attached to a dummy load while adjusting your transmit audio levels to prevent
 interference to other operators.*
 
-### Wi-Fi configuration
+### Network configuration
 
-*Note: this is optional unless you are using a radio with Wi-Fi support or wish to use other Internet connected features
-(such as reporting to [FreeDV Reporter](https://qso.freedv.org/)).*
+*Note: this is optional unless you are using a radio with network support or wish to use other Internet connected features
+(such as reporting to [FreeDV Reporter](https://qso.freedv.org/) and [PSK Reporter](https://pskreporter.info)).*
 
-Click or tap on the "Wi-Fi" tab and check the "Enable Wi-Fi" checkbox. You'll see something similar to the following:
+Click or tap on the "Network" tab and check the "Enable Wi-Fi" checkbox. You'll see something similar to the following:
 
-![ezDV showing the Wi-Fi tab](images/2-setup-webpage-wifi.png)
+![ezDV showing the Network tab](images/2-setup-webpage-wifi.png)
+
+*Note: experimental support exists for Ethernet on ezDV. See "Setting Up Ethernet Support" for more information.*
 
 To connect ezDV to the network that your radio is on, select "Client" for "Wireless Mode". Select your Wi-Fi network from
 the list that appears (which may take a few seconds while ezDV scans for your network) and enter its password (if required).
@@ -132,10 +134,10 @@ this name instead of trying to find its IP address. Click or tap Save to save yo
 
 *Note: this is optional unless you are using a radio with Wi-Fi support.*
 
-Click on the "Radio" tab and check the "Use Wi-Fi Network for Radio RX/TX" checkbox. Select your radio model in the "Radio Type"
+Click on the "Radio" tab and check the "Use Network for Radio RX/TX" checkbox. Select your radio model in the "Radio Type"
 drop-down list, which will bring up different fields depending on the radio being configured.
 
-#### Flex 6000 series
+#### Flex 6000/8000 series
 
 Select the name of your radio from the "Radio" drop-down list as shown below. Your radio's IP address should automatically
 be filled in the "IP Address" field:
@@ -157,8 +159,8 @@ Click or tap Save to save the radio configuration.
 It is highly recommended to configure your callsign and grid square. This has several benefits:
 
 1. If ezDV is lost or stolen, someone can access its Web page and use callsign databases like [QRZ](https://www.qrz.com) to find a way to get it back to you.
-2. Other users will be able to decode your callsign and report spots on [FreeDV Reporter](https://qso.freedv.org).
-3. If ezDV has Internet access, it will also be able to decode callsigns from received signals and report them itself to FreeDV Reporter.
+2. Other users will be able to decode your callsign and report spots on [FreeDV Reporter](https://qso.freedv.org) and [PSK Reporter](https://pskreporter.info).
+3. If ezDV has Internet access, it will also be able to decode callsigns from received signals and report them itself to FreeDV Reporter and PSK Reporter.
 
 To do this, click or tap on the "Reporting" tab and enter your callsign and grid square where prompted:
 
@@ -180,7 +182,7 @@ as shown below:
 
 ![Icom IC-705 properly connected to ezDV (WLAN indicator at the top of the screen)](images/2-setup-radio-ic705-connected.jpg)
 
-For Flex 6000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) mode if ezDV is properly connected
+For Flex 6000/8000 series radios, opening the SmartSDR software will show a "FDVU" (for upper sideband) and "FDVL" (for lower sideband) mode if ezDV is properly connected
 to the radio:
 
 ![Flex 6300 properly connected to ezDV (existence of FDVU/FDVL modes)](images/2-setup-radio-flex-connected.png)
