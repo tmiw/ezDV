@@ -19,6 +19,8 @@
 
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "lwip/dhcp6.h"
+#include "esp_netif_net_stack.h"
 
 #define CURRENT_LOG_TAG "WirelessInterface"
 #define MAX_AP_CONNECTIONS (5)
@@ -408,6 +410,8 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
             {
                 esp_netif_create_ip6_linklocal(obj->interfaceHandle_);
             }
+            dhcp6_enable_stateless((netif*)esp_netif_get_netif_impl(obj->interfaceHandle_));
+            
             break;
         }
     }

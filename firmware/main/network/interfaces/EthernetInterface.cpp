@@ -22,6 +22,8 @@
 #include "esp_mac.h"
 #include "esp_log.h"
 #include "esp_event.h"
+#include "lwip/dhcp6.h"
+#include "esp_netif_net_stack.h"
 
 #define CURRENT_LOG_TAG "EthernetInterface"
 #define ETHERNET_SPI_HOST (SPI2_HOST)
@@ -251,6 +253,8 @@ void EthernetInterface::EthernetEventHandler_(void *arg, esp_event_base_t event_
         {
             esp_netif_create_ip6_linklocal(obj->interfaceHandle_);
         }
+        dhcp6_enable_stateless((netif*)esp_netif_get_netif_impl(obj->interfaceHandle_));
+        
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");
