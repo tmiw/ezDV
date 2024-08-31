@@ -6,7 +6,7 @@
     <meta name="generator" content="pandoc" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="author" content="Mooneer Salem" />
-    <meta name="dcterms.date" content="2024-07-29" />
+    <meta name="dcterms.date" content="2024-08-31" />
     <meta name="keywords" content="ezDV, FreeDV, digital voice, amateur radio, ham radio" />
     <title>User’s Guide – ezDV</title>
 
@@ -927,7 +927,7 @@ idf.py -p /dev/ttyxxx0 build erase-flash flash</code></pre>
 <img src="images/C-solder-wire-locations.jpg" alt="" /><figcaption>Soldering locations for wires going to W5500 module</figcaption>
 </figure>
 <ol start="3" type="1">
-<li><p>Solder power and ground wires from ezDV to the W5500. These can be taken from either J7 (square pin is 3.3V, bottom pin is GND) or from J4/“I2C Breakout” (lower right pin is 3.3V, square pin is GND). Note that J4 is only powered when ezDV is on, while J7 is always powered.</p></li>
+<li><p>Solder power and ground wires from ezDV to the W5500. These can be taken from J7 (square pin is 3.3V, bottom pin is GND). Note that J7 is always powered.</p></li>
 <li><p>Reattach the battery and place ezDV back in its enclosure. You may need to cut out a hole in the enclosure using side cutters or similar to allow the previously-soldered wires to be routed out of the enclosure.</p></li>
 <li><p>Attach an Ethernet cable to the W5500 module and to your router or switch.</p></li>
 <li><p>Turn on ezDV. If Wi-Fi is already configured, it is recommended to disbale it to prevent network connections from inadvertently going over the wrong interface. Once this is done, restart ezDV.</p></li>
