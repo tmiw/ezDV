@@ -8,7 +8,7 @@ to be able to attach it to a [W5500 Ethernet module](https://www.amazon.com/dp/B
 
 ![Soldering locations for wires going to W5500 module](images/C-solder-wire-locations.jpg)
 
-3. Solder power and ground wires from ezDV to the W5500. These can be taken from either J7 (square pin is 3.3V, bottom pin is GND) or from J4/"I2C Breakout" (lower right pin is 3.3V, square pin is GND). Note that J4 is only powered when ezDV is on, while J7 is always powered.
+3. Solder power and ground wires from ezDV to the W5500. These can be taken from J7 (square pin is 3.3V, bottom pin is GND). Note that J7 is always powered.
 
 4. Reattach the battery and place ezDV back in its enclosure. You may need to cut out a hole in the enclosure using side cutters or similar to allow the previously-soldered wires to be routed out of the enclosure.
 
