@@ -94,6 +94,7 @@ void FreeDVTask::onTaskTick_()
     if (!isActive_) return;
 
     bool syncLed = false;
+    int freqOffset = 0;
 
     //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
 
@@ -201,11 +202,14 @@ void FreeDVTask::onTaskTick_()
             }
         
             syncLed = freedv_get_sync(dv_) > 0;
+            
+            freedv_get_modem_extended_stats(dv_, stats_);
+            freqOffset = stats_->foff;
         }
     }
 
     // Broadcast current sync state
-    FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed);
+    FreeDVSyncStateMessage* message = new FreeDVSyncStateMessage(syncLed, freqOffset);
     publish(message);
     delete message;
 }

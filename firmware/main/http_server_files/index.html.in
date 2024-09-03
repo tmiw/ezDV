@@ -59,6 +59,9 @@
                     <li class="nav-item">
                         <button id="updateTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#updateTabForm" aria-current="page-update">Firmware Update</button>
                     </li>
+                    <li class="nav-item">
+                        <button id="statusTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#statusTabForm" aria-current="page-status">System Status</button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -251,6 +254,17 @@
                     <button type="reset" class="btn btn-danger" id="updateReset">Reset</button>
                     </div>
                     <div class="col-8">&nbsp;</div>
+                </div>
+            </form>
+            <form class="tab-pane fade show" id="statusTabForm">
+                <div class="table-responsive">
+                  <table class="table">
+                    <tbody>
+                      <tr><th colspan="2">FreeDV Signal</th></tr>
+                      <tr><td>Synced</td><td id="syncState">No</td></tr>
+                      <tr><td>Frequency offset</td><td id="freqOffset">0</td></tr>
+                    </tbody>
+                  </table>
                 </div>
             </form>
             <form class="tab-pane fade" id="wifiTabForm">
