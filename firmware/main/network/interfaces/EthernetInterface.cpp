@@ -22,6 +22,8 @@
 #include "esp_mac.h"
 #include "esp_log.h"
 #include "esp_event.h"
+#include "lwip/dhcp6.h"
+#include "esp_netif_net_stack.h"
 
 #define CURRENT_LOG_TAG "EthernetInterface"
 #define ETHERNET_SPI_HOST (SPI2_HOST)
@@ -215,6 +217,17 @@ void EthernetInterface::IPEventHandler_(void *event_handler_arg, esp_event_base_
             }
             break;
         }
+        case IP_EVENT_GOT_IP6:
+        {
+            // Print out IPv6 address FYI but don't bring up the network
+            // as the radios we interface with are v4-only.
+            ip_event_got_ip6_t* ipData = (ip_event_got_ip6_t*)event_data;
+            char buf[64];
+            sprintf(buf, "IP " IPV6STR, IPV62STR(ipData->ip6_info.ip));
+
+            ESP_LOGI(CURRENT_LOG_TAG, "Got IPv6 address %s", buf);
+            break;
+        }
     }
 }
 
@@ -233,6 +246,15 @@ void EthernetInterface::EthernetEventHandler_(void *arg, esp_event_base_t event_
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Up");
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
                     mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+                    
+        esp_ip6_addr_t addr;
+
+        if (esp_netif_get_ip6_linklocal(obj->interfaceHandle_, &addr) != ESP_OK)
+        {
+            esp_netif_create_ip6_linklocal(obj->interfaceHandle_);
+        }
+        dhcp6_enable_stateless((netif*)esp_netif_get_netif_impl(obj->interfaceHandle_));
+        
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(CURRENT_LOG_TAG, "Ethernet Link Down");

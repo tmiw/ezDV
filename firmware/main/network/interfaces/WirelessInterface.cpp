@@ -19,6 +19,8 @@
 
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "lwip/dhcp6.h"
+#include "esp_netif_net_stack.h"
 
 #define CURRENT_LOG_TAG "WirelessInterface"
 #define MAX_AP_CONNECTIONS (5)
@@ -300,6 +302,17 @@ void WirelessInterface::IPEventHandler_(void *event_handler_arg, esp_event_base_
             }
             break;
         }
+        case IP_EVENT_GOT_IP6:
+        {
+            // Print out IPv6 address FYI but don't bring up the network
+            // as the radios we interface with are v4-only.
+            ip_event_got_ip6_t* ipData = (ip_event_got_ip6_t*)event_data;
+            char buf[64];
+            sprintf(buf, "IP " IPV6STR, IPV62STR(ipData->ip6_info.ip));
+
+            ESP_LOGI(CURRENT_LOG_TAG, "Got IPv6 address %s", buf);
+            break;
+        }
     }
 }
 
@@ -386,6 +399,19 @@ void WirelessInterface::WiFiEventHandler_(void *event_handler_arg, esp_event_bas
             {
                 obj->onWirelessApDeviceDisconnected_(*obj, event->mac);
             }
+            break;
+        }
+        case WIFI_EVENT_STA_CONNECTED:
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "Connected to Wi-Fi");
+            esp_ip6_addr_t addr;
+
+            if (esp_netif_get_ip6_linklocal(obj->interfaceHandle_, &addr) != ESP_OK)
+            {
+                esp_netif_create_ip6_linklocal(obj->interfaceHandle_);
+            }
+            dhcp6_enable_stateless((netif*)esp_netif_get_netif_impl(obj->interfaceHandle_));
+            
             break;
         }
     }
