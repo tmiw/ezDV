@@ -318,7 +318,28 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
 
     ESP_LOGI(CURRENT_LOG_TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
     set_content_type_from_file(req, filename);
-    
+
+    // Send the first chunk (and with it the headers) here: the headers set
+    // above live in an array the HTTP server shares between requests and
+    // clears for the next one, which can arrive before the async handler
+    // gets to run.
+    char* scratchBuf = (char*)heap_caps_malloc(SCRATCH_BUFSIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    assert(scratchBuf != nullptr);
+    ssize_t chunksize = read(fd, scratchBuf, SCRATCH_BUFSIZE);
+    esp_err_t sendErr = httpd_resp_send_chunk(req, scratchBuf, chunksize > 0 ? chunksize : 0);
+    heap_caps_free(scratchBuf);
+    if (chunksize <= 0 || sendErr != ESP_OK)
+    {
+        close(fd);
+        if (sendErr == ESP_OK)
+        {
+            // Empty file: that was the last chunk.
+            return ESP_OK;
+        }
+        ESP_LOGE(CURRENT_LOG_TAG, "Sending %s failed!", filename);
+        return ESP_FAIL;
+    }
+
     httpd_req_t* asyncReq;
     esp_err_t err = httpd_req_async_handler_begin(req, &asyncReq);
     if (err == ESP_OK)
@@ -327,6 +348,10 @@ esp_err_t HttpServerTask::ServeStaticPage_(httpd_req_t *req)
         auto thisObj = (HttpServerTask*)req->user_ctx;
         HttpServerTask::HttpServeStaticFileMessage message(fd, asyncReq);
         thisObj->post(&message);
+    }
+    else
+    {
+        close(fd);
     }
 
     return err;
@@ -1473,7 +1498,7 @@ void HttpServerTask::onSetModeMessage_(DVTask* origin, SetModeMessage* message)
     if (modeJSON != nullptr)
     {
         mode = (int)cJSON_GetNumberValue(modeJSON);
-        settingsValid &= mode >= 0 && mode <= 3;
+        settingsValid &= mode >= 0 && mode < audio::MAX_FREEDV_MODES;
     }
     else
     {

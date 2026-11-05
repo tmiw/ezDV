@@ -42,7 +42,7 @@ ButtonArray::ButtonArray()
     , volUpButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_UP, _2))
     , volDownButton_(this, std::bind(&ButtonArray::handleButton_, this, ButtonLabel::VOL_DOWN, _2))
 {
-    // empty
+    useStackInPsram_();
 }
 
 ButtonArray::~ButtonArray()

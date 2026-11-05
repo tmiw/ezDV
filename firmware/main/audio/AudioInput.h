@@ -22,8 +22,12 @@
 
 #include "codec2_fifo.h"
 
-// 0.5s @ 8000 Hz
-#define DEFAULT_NUM_SAMPLES_FOR_FIFO 4000
+// User (headset) audio is 16 kHz and the radio's 8 kHz.
+#define USER_SAMPLE_RATE 16000
+#define RADIO_SAMPLE_RATE 8000
+
+// 0.5s @ 16000 Hz
+#define DEFAULT_NUM_SAMPLES_FOR_FIFO 8000
 
 namespace ezdv
 {

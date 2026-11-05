@@ -26,6 +26,7 @@
 
 #if CONFIG_EZDV_PRINT_HEAP_USAGE
 #include "esp_heap_task_info.h"
+#include "esp_memory_utils.h"
 #endif // CONFIG_EZDV_PRINT_HEAP_USAGE
 
 #if CONFIG_EZDV_ENABLE_TICK_OUTPUT
@@ -655,7 +656,7 @@ exit_fn:    //Common return path
 }
 #endif // CONFIG_EZDV_OUTPUT_TASK_LIST
 
-#if CONFIG_EZDV_PRINT_HEAP_USAGE
+#if CONFIG_EZDV_PRINT_HEAP_USAGE && CONFIG_HEAP_TASK_TRACKING
 #define MAX_TASK_NUM 20                         // Max number of per tasks info that it can store
 #define MAX_BLOCK_NUM 20                        // Max number of per block info that it can store
 
@@ -714,6 +715,22 @@ void App::onTaskTick_()
     ESP_LOGI(CURRENT_LOG_TAG, "heap free (DMA): %d", heap_caps_get_free_size(MALLOC_CAP_DMA));
     
     //esp_dump_per_task_heap_info();
+
+    // Once, after start-up: where each task's stack is and how much of it
+    // was never used.
+    static int ticks = 0;
+    if (++ticks == 4)
+    {
+        EXT_RAM_BSS_ATTR static TaskStatus_t tasks[48];
+        int n = uxTaskGetSystemState(tasks, 48, nullptr);
+        for (int i = 0; i < n; i++)
+        {
+            ESP_LOGI(CURRENT_LOG_TAG, "task %-16s prio %2d stack in %s, %5d bytes never used",
+                     tasks[i].pcTaskName, (int)tasks[i].uxCurrentPriority,
+                     esp_ptr_internal(tasks[i].pxStackBase) ? "internal" : "PSRAM",
+                     (int)tasks[i].usStackHighWaterMark);
+        }
+    }
 #endif // CONFIG_EZDV_PRINT_HEAP_USAGE
 
 #if CONFIG_EZDV_OUTPUT_TASK_LIST
@@ -730,7 +747,7 @@ void App::onTaskTick_()
     // Trigger PTT
     if (!hasChangedModes)
     {
-        ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::FREEDV_700D);
+        ezdv::audio::SetFreeDVModeMessage modeSetMessage(ezdv::audio::SetFreeDVModeMessage::RADE_V2);
         app->getFreeDVTask().post(&modeSetMessage);
         hasChangedModes = true;
     }

@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 
 #include "audio/AudioInput.h"
+#include "audio/Resampler.h"
 #include "audio/FreeDVMessage.h"
 #include "audio/VoiceKeyerMessage.h"
 #include "network/NetworkMessage.h"
@@ -88,6 +89,19 @@ private:
     // to the radio.
     vita_packet* packetArray_;
     int packetIndex_;
+
+    // SmartSDR's audio is 24 kHz; the user's audio is 16 kHz (the radio's,
+    // 8 kHz, goes through the buffers above).
+    audio::Resampler userUp_;
+    audio::Resampler userDown_;
+    enum
+    {
+        USER_VITA_SAMPLES = 84,     // 5.25ms/block @ 16000 Hz
+        USER_RESAMPLE_CHUNK = 120,  // 24 kHz samples at a time, from a received packet
+        VITA_SAMPLES_AT_24K = 126,  // 5.25ms/block @ 24000 Hz
+    };
+    short userBuf_[USER_VITA_SAMPLES];        // (here rather than on the stack)
+    short userBuf24k_[VITA_SAMPLES_AT_24K];
     
     void openSocket_();
     void disconnect_();

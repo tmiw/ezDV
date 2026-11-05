@@ -44,6 +44,8 @@ FuelGaugeTask::FuelGaugeTask()
     , sentRequest_(false)
     , socChangeRate_(0)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &FuelGaugeTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &FuelGaugeTask::onBatteryStateMessage_);
 }

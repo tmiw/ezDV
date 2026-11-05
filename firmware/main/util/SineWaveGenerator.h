@@ -28,7 +28,8 @@ namespace util
 class SineWaveGenerator
 {
 public:
-    SineWaveGenerator(int frequency, int amplitude);
+    // One second of the sine wave at sampleRate.
+    SineWaveGenerator(int frequency, int amplitude, int sampleRate);
     ~SineWaveGenerator();
     
     short getSample(int index);

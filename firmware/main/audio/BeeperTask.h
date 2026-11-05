@@ -27,6 +27,9 @@
 #include "task/DVTimer.h"
 #include "util/SineWaveGenerator.h"
 
+// Beeper constants. This is based on 1 dit per 60/(50 * wpm) = 60/(50*15) = 0.08s
+#define CW_TIME_UNIT_MS 80
+
 namespace ezdv
 {
 
@@ -53,6 +56,7 @@ private:
     int sineCounter_;
     bool deferShutdown_;
     std::vector<bool> beeperList_;
+    short bufToQueue_[CW_TIME_UNIT_MS * USER_SAMPLE_RATE / 1000]; // one CW time unit (here rather than on the stack)
 
     void onSetBeeperText_(DVTask* origin, SetBeeperTextMessage* message);
     void onClearBeeperText_(DVTask* origin, ClearBeeperTextMessage* message);

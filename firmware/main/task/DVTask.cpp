@@ -20,6 +20,7 @@
 #include <inttypes.h>
 
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "DVTask.h"
 
 #define CURRENT_LOG_TAG ("DVTask")
@@ -35,7 +36,11 @@ SemaphoreHandle_t DVTask::SubscriberTasksByMessageTypeSemaphore_;
 
 void DVTask::Initialize()
 {
-    SubscriberTasksByMessageTypeSemaphore_ = xSemaphoreCreateBinary();
+    // A mutex rather than a binary semaphore, for priority inheritance:
+    // otherwise a low priority task holding it can be kept from giving it
+    // back by busy higher priority ones (as RADE V2's are), and a task
+    // wanting it times out.
+    SubscriberTasksByMessageTypeSemaphore_ = xSemaphoreCreateMutex();
     assert(SubscriberTasksByMessageTypeSemaphore_ != nullptr);
 }
 
@@ -48,6 +53,10 @@ DVTask::DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStac
     , pinnedCoreId_(pinnedCoreId)
     , taskQueue_(nullptr)
     , taskTick_(taskTick)
+    , stackInPsram_(false)
+    , stack_(nullptr)
+    , tcb_(nullptr)
+    , suspendedTask_(nullptr)
 {
     // Register task start/wake/sleep handlers.
     registerMessageHandler(this, &DVTask::onTaskStart_);
@@ -58,6 +67,10 @@ DVTask::DVTask(const char* taskName, UBaseType_t taskPriority, uint32_t taskStac
 DVTask::~DVTask()
 {
     assert(taskObject_ == nullptr);
+
+    deleteSuspendedTask_();
+    heap_caps_free(stack_);
+    heap_caps_free(tcb_);
 
     while (eventRegistrationMap_.size() > 0)
     {
@@ -162,9 +175,42 @@ void DVTask::startTask_()
     taskQueue_ = xQueueCreate(taskQueueSize_, sizeof(MessageEntry*));
     assert(taskQueue_ != nullptr);
 
+    if (stackInPsram_)
+    {
+        deleteSuspendedTask_();
+        if (stack_ == nullptr)
+        {
+            stack_ = (StackType_t*)heap_caps_malloc(taskStackSize_, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+            tcb_ = (StaticTask_t*)heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            assert(stack_ != nullptr && tcb_ != nullptr);
+        }
+
+        taskObject_ = 
+            xTaskCreateStaticPinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_, taskStackSize_, this, taskPriority_, stack_, tcb_, pinnedCoreId_);
+        assert(taskObject_ != nullptr);
+        return;
+    }
+
     auto returnValue = 
         xTaskCreatePinnedToCore((TaskFunction_t)&ThreadEntry_, taskName_, taskStackSize_, this, taskPriority_, &taskObject_, pinnedCoreId_);
     assert(returnValue == pdPASS);
+}
+
+// A task with its stack in PSRAM suspends itself instead of deleting itself
+// when it goes to sleep, as FreeRTOS would still be using the stack and
+// control block after the task deleted itself. Delete it from here instead,
+// so the stack can be reused or freed.
+void DVTask::deleteSuspendedTask_()
+{
+    if (suspendedTask_ != nullptr)
+    {
+        while (eTaskGetState(suspendedTask_) != eSuspended)
+        {
+            vTaskDelay(1);
+        }
+        vTaskDelete(suspendedTask_);
+        suspendedTask_ = nullptr;
+    }
 }
 
 void DVTask::onTaskTick_()
@@ -300,6 +346,10 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
         singleMessagingLoop_(0);
     }
 
+    if (stackInPsram_)
+    {
+        suspendedTask_ = taskObject_;
+    }
     taskObject_ = nullptr;
 
     vQueueDelete(taskQueue_);
@@ -309,6 +359,10 @@ void DVTask::onTaskSleep_(DVTask* origin, TaskSleepMessage* message)
     publish(&result);
 
     // Remove ourselves from FreeRTOS.
+    if (stackInPsram_)
+    {
+        vTaskSuspend(nullptr);
+    }
     vTaskDelete(nullptr);
 }
 

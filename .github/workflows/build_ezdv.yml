@@ -45,6 +45,7 @@ jobs:
           cp ../bootloader/bootloader.bin .
           cp ../ota_data_initial.bin .
           cp ../partition_table/partition-table.bin .
+          cp ../../models/q8_models.bin .
           tar cvzf ezdv-$GITHUB_REF_NAME-full.tar.gz *.bin
 
       - name: Upload release assets

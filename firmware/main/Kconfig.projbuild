@@ -54,6 +54,26 @@ config EZDV_OUTPUT_TASK_LIST
         NOTE: FreeRTOS tracing options will need to be double-checked after disabling this
         option as they are forced on even after disabling.
 
+config EZDV_RADE_TEST_SIGNAL
+    bool "Receive a built-in RADE V2 recording"
+    default n
+    help
+        In RADE V2 mode, decodes a 20 second recording (looped) built into
+        the firmware instead of the audio from the radio, to try the
+        receiver without a radio.
+
+config EZDV_RADE_TX_SELF_TEST
+    bool "Transmit a built-in mic recording into memory, then receive it"
+    default n
+    depends on EZDV_RADE_TEST_SIGNAL
+    help
+        In RADE V2 mode, 30 seconds after start, runs the transmitter on a
+        21 second mic recording built into the firmware, as fast as real
+        time, keeping the modem signal in memory (the radio is never keyed
+        and gets nothing). Then receives that signal instead of the built-in
+        RADE V2 recording. Checks transmit and the switches between
+        receiving and transmitting without a radio.
+
 config EZDV_DUMP_TIMERS
     bool "Print timers"
     default n

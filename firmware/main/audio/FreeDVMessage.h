@@ -63,9 +63,7 @@ public:
 enum FreeDVMode
 {
     ANALOG,
-    FREEDV_700D,
-    FREEDV_700E,
-    FREEDV_1600,
+    RADE_V2,
 
     MAX_FREEDV_MODES
 };

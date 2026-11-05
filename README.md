@@ -53,6 +53,7 @@ On Windows, you can use the ESP Flash Tool to flash ezDV. This does not require 
 | ota\_data\_initial.bin | 0xF000 |
 | ezdv.bin | 0x20000 |
 | http_0.bin | 0x7F8000 |
+| q8_models.bin | 0xAE6000 |
 
 Additionally, check each of the checkboxes to the left of the file name. It should look something like this, with each of the rows having a green background:
 
@@ -73,7 +74,7 @@ Additionally, check each of the checkboxes to the left of the file name. It shou
 You can also use [esptool](https://github.com/espressif/esptool). For example:
 
 ```
-esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin
+esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin 0xae6000 q8_models.bin
 ```
 
 ### Recovering from a bad flash

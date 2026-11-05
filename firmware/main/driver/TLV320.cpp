@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <cstring>
 
 #include "esp_log.h"
@@ -40,8 +41,12 @@
 // Tag to prepend to log entries coming from this file.
 #define CURRENT_LOG_TAG ("TLV320Driver")
 
-// Timer constants below are for 8000 Hz sample rate
-#define I2S_NUM_SAMPLES_PER_INTERVAL (160)
+// The codec's sample rate: the headset (user) channel's. The radio channel
+// is resampled to and from RADIO_SAMPLE_RATE (see AudioInput.h).
+#define SAMPLE_RATE USER_SAMPLE_RATE
+#define RADIO_RESAMPLER_CUTOFF_HZ (3700)
+#define RADIO_RESAMPLER_TAPS (64)
+
 
 namespace ezdv
 {
@@ -59,6 +64,8 @@ TLV320::TLV320(I2CMaster* i2cMaster)
     , i2sRxDevice_(nullptr)
     , int1Gpio_(this, std::bind(&TLV320::onInterrupt1Fire_, this, _2), false, true, false)
     , int2Gpio_(this, std::bind(&TLV320::onInterrupt2Fire_, this, _2), false, true, false)
+    , radioIn_(SAMPLE_RATE, RADIO_SAMPLE_RATE, RADIO_RESAMPLER_CUTOFF_HZ, RADIO_RESAMPLER_TAPS)
+    , radioOut_(RADIO_SAMPLE_RATE, SAMPLE_RATE, RADIO_RESAMPLER_CUTOFF_HZ, RADIO_RESAMPLER_TAPS)
 {
     // Register message handlers
     registerMessageHandler<storage::LeftChannelVolumeMessage>(this, &TLV320::onLeftChannelVolume_);
@@ -147,37 +154,65 @@ void TLV320::onTaskTick_()
 {
     if (i2sRxDevice_ == nullptr || i2sTxDevice_ == nullptr) return;
 
-    short tempData[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
-    memset(tempData, 0, sizeof(tempData));
+    short* tempData = tempData_;
+    memset(tempData_, 0, sizeof(tempData_));
     
     // Perform read from I2S. 
-    size_t bytesRead = sizeof(tempData);
-    ESP_ERROR_CHECK(i2s_channel_read(i2sRxDevice_, tempData, sizeof(tempData), &bytesRead, portMAX_DELAY));
+    size_t bytesRead = sizeof(tempData_);
+    ESP_ERROR_CHECK(i2s_channel_read(i2sRxDevice_, tempData, sizeof(tempData_), &bytesRead, portMAX_DELAY));
 
-    // Output channel bytes to configured output FIFOs.
+    // Output channel bytes to configured output FIFOs: the user's as is,
+    // the radio's at 8 kHz.
     struct FIFO* leftChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
     struct FIFO* rightChannelFifo = getAudioOutput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
-    for (int index = 0; index < bytesRead / 2 / sizeof(short); index++)
+    int numRead = bytesRead / 2 / sizeof(short);
+    short* channelData = channelData_;
+    short* radioData = radioData_;
+    for (int index = 0; index < numRead; index++)
     {
-        if (leftChannelFifo != nullptr) codec2_fifo_write(leftChannelFifo, &tempData[2*index], 1);
-        if (rightChannelFifo != nullptr) codec2_fifo_write(rightChannelFifo, &tempData[2*index + 1], 1);
+        channelData[index] = tempData[2*index];
     }
+    if (leftChannelFifo != nullptr) codec2_fifo_write(leftChannelFifo, channelData, numRead);
+    for (int index = 0; index < numRead; index++)
+    {
+        channelData[index] = tempData[2*index + 1];
+    }
+    int numRadio = radioIn_.process(channelData, numRead, radioData);
+    if (rightChannelFifo != nullptr) codec2_fifo_write(rightChannelFifo, radioData, numRadio);
 
     leftChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::LEFT_CHANNEL);
     rightChannelFifo = getAudioInput(audio::AudioInput::ChannelLabel::RIGHT_CHANNEL);
     if ((leftChannelFifo && codec2_fifo_used(leftChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL) || 
-        (rightChannelFifo && codec2_fifo_used(rightChannelFifo) >= I2S_NUM_SAMPLES_PER_INTERVAL))
+        (rightChannelFifo && codec2_fifo_used(rightChannelFifo) >= RADIO_SAMPLES_PER_INTERVAL))
     {
-        memset(tempData, 0, sizeof(tempData));
+        memset(tempData_, 0, sizeof(tempData_));
         
+        // Whatever there is of each, padded with silence.
+        memset(channelData_, 0, sizeof(channelData_));
+        if (leftChannelFifo)
+        {
+            int n = std::min(codec2_fifo_used(leftChannelFifo), (int)I2S_NUM_SAMPLES_PER_INTERVAL);
+            codec2_fifo_read(leftChannelFifo, channelData, n);
+        }
         for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
         {
-            if (leftChannelFifo) codec2_fifo_read(leftChannelFifo, &tempData[2*index], 1);
-            if (rightChannelFifo) codec2_fifo_read(rightChannelFifo, &tempData[2*index + 1], 1);
+            tempData[2*index] = channelData[index];
+        }
+
+        memset(radioData_, 0, sizeof(radioData_));
+        if (rightChannelFifo)
+        {
+            int n = std::min(codec2_fifo_used(rightChannelFifo), (int)RADIO_SAMPLES_PER_INTERVAL);
+            codec2_fifo_read(rightChannelFifo, radioData, n);
+        }
+        radioOut_.process(radioData, RADIO_SAMPLES_PER_INTERVAL, channelData);
+        for (auto index = 0; index < I2S_NUM_SAMPLES_PER_INTERVAL; index++)
+        {
+            tempData[2*index + 1] = channelData[index];
         }
         
         size_t bytesWritten = 0;
-        ESP_ERROR_CHECK(i2s_channel_write(i2sTxDevice_, tempData, sizeof(tempData), &bytesWritten, portMAX_DELAY));
+        ESP_ERROR_CHECK(i2s_channel_write(i2sTxDevice_, tempData, sizeof(tempData_), &bytesWritten, portMAX_DELAY));
     }
 }
 
@@ -261,15 +296,15 @@ void TLV320::initializeI2S_()
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &i2sTxDevice_, &i2sRxDevice_));
 
     // Set up configuration for the I2S device:
-    //     8 KHz sample rate
+    //     16 KHz sample rate
     //     Philips format (1 bit shifted, 16 bit/channel stereo)
     //     GPIOs as listed
     i2s_std_config_t i2sConfiguration = {
         .clk_cfg = {
-            .sample_rate_hz = 8000,
+            .sample_rate_hz = SAMPLE_RATE,
             .clk_src = I2S_CLK_SRC_DEFAULT,
             .ext_clk_freq_hz = 0, // ignored by ESP-IDF
-            .mclk_multiple = I2S_MCLK_MULTIPLE_256,
+            .mclk_multiple = I2S_MCLK_MULTIPLE_256, // MCLK = 4.096 MHz, for the codec's PLL
         },
         .slot_cfg = I2S_STD_PHILIP_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
@@ -285,9 +320,6 @@ void TLV320::initializeI2S_()
             },
         },
     };
-    
-    // Set clock multiplier to 512 to support increased DAC oversampling ratio
-    i2sConfiguration.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_512;
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sTxDevice_, &i2sConfiguration));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2sRxDevice_, &i2sConfiguration));
@@ -318,24 +350,24 @@ void TLV320::tlv320HardReset_()
 
 void TLV320::tlv320ConfigureClocks_()
 {
-    // Clock calculations for 8K sample rate per guide at 
+    // Clock calculations for 16K sample rate per guide at 
     // https://www.ti.com/lit/an/slaa404c/slaa404c.pdf
             
     // AOSR = 128
-    // DOSR = 768
-    // ADC_FS = 8K
-    // DAC_FS = 8K
-    // ADC_MOD_CLK = AOSR * ADC_FS = 128 * 8000 = 1.024 MHz <= 6.758 MHz
-    // DAC_MOD_CLK = DOSR * DAC_FS = 768 * 8000 = 6.144 MHz <= 6.758 MHz
+    // DOSR = 384
+    // ADC_FS = 16K
+    // DAC_FS = 16K
+    // ADC_MOD_CLK = AOSR * ADC_FS = 128 * 16000 = 2.048 MHz <= 6.758 MHz
+    // DAC_MOD_CLK = DOSR * DAC_FS = 384 * 16000 = 6.144 MHz <= 6.758 MHz
     
     // ADC Processing Block = PRB_R1
     // DAC Processing Block = PRB_P1
-    // MADC = 48
+    // MADC = 24
     // MDAC = 8
-    // ADC_CLK = MADC * ADC_MOD_CLK = 48 * 1.024 MHz = 49.152 MHz
+    // ADC_CLK = MADC * ADC_MOD_CLK = 24 * 2.048 MHz = 49.152 MHz
     // DAC_CLK = MDAC * DAC_MOD_CLK = 8 * 6.144 MHz = 49.152 MHz
-    // (MADC * AOSR) / 32 = 6144 / 32 = 192 >= RC(R1) = 6
-    // (MDAC * DOSR) / 32 = 6144 / 32 = 192 >= RC(P1) = 8
+    // (MADC * AOSR) / 32 = 3072 / 32 = 96 >= RC(R1) = 6
+    // (MDAC * DOSR) / 32 = 3072 / 32 = 96 >= RC(P1) = 8
     // ADC_CLK <= 55.296 MHz
     // DAC_CLK <= 55.296 MHz
     
@@ -369,20 +401,20 @@ void TLV320::tlv320ConfigureClocks_()
         
     // Set NDAC = 2, MDAC = 8. Power on divider.
     // (Page 0, registers 11 and 12)
-    // Program DOSR to 768 (Page 0, registers 13-14)
+    // Program DOSR to 384 (Page 0, registers 13-14)
     uint8_t dacOpts[] = {
         (1 << 7) | 2,
         (1 << 7) | 8,
-        0b11,
-        0
+        384 >> 8,
+        384 & 0xFF
     };
     setConfigurationOptionMultiple_(0, 11, dacOpts, 4);
         
-    // Set NADC = 2, MADC = 48. (Page 0, registers 18 and 19)
+    // Set NADC = 2, MADC = 24. (Page 0, registers 18 and 19)
     // Program AOSR to 128 (Page 0, register 20).
     uint8_t adcOpts[] = {
         2,
-        (1 << 7) | 48,
+        (1 << 7) | 24,
         128
     };
     setConfigurationOptionMultiple_(0, 18, adcOpts, 2);
@@ -443,15 +475,15 @@ void TLV320::tlv320ConfigureProcessingBlocks_()
     };
     setConfigurationOptionMultiple_(0, 60, prb, 2);
     
-    // Set ADC filter coefficients for HPF, center frequency 130 Hz.
-    // All five biquads on both channels are set to this filter to reduce
-    // background hiss in the recorded audio.
+    // Set ADC filter coefficients for HPF, center frequency 130 Hz
+    // (Butterworth, at 16 kHz). All five biquads on both channels are set
+    // to this filter to reduce background hiss in the recorded audio.
     uint8_t adcFilter[] = {
-        0x77, 0x15, 0x39, 0x00,
-        0x88, 0xEA, 0xC7, 0x00,
-        0x77, 0x15, 0x39, 0x00,
-        0x76, 0xC5, 0xA2, 0x00,
-        0x91, 0x36, 0x60, 0x00
+        0x7B, 0x76, 0x54, 0x00,
+        0x84, 0x89, 0xAC, 0x00,
+        0x7B, 0x76, 0x54, 0x00,
+        0x7B, 0x61, 0x92, 0x00,
+        0x88, 0xE9, 0xD2, 0x00
     };
     setConfigurationOptionMultiple_(8, 36, adcFilter, sizeof(adcFilter));
     setConfigurationOptionMultiple_(9, 44, adcFilter, sizeof(adcFilter));
@@ -551,17 +583,20 @@ void TLV320::tlv320ConfigureAGC_()
         // 40dB maximum gain
         0x50, //0b100100,
         
+        // Attack and decay times and debounce are in samples: each scale
+        // factor is one step (twice) more than at 8 kHz, for the same times.
+
         // Attack time = 20ms (25 * 32 clocks, scale 2)
-        0x08,
+        0x09,
         
         // Decay time = 500ms (19 * 512 clocks, scale 2)
-        0x32,
+        0x33,
         
         // Noise debounce = 0ms
         0x00,
         
         // Signal debounce = 2ms
-        0x06,
+        0x07,
     };
     
     // Set AGC configuration for both channels (page 0, register 86 for left, register 94 for right)

@@ -19,6 +19,7 @@
 
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 
 #define CURRENT_LOG_TAG "WirelessInterface"
 #define MAX_AP_CONNECTIONS (5)
@@ -62,7 +63,9 @@ void WirelessInterface::configure(storage::WifiMode mode, storage::WifiSecurityM
     ESP_LOGI(CURRENT_LOG_TAG, "Setting ezDV SSID to %s", ssid);
                                                         
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    size_t internalBefore = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    ESP_LOGI(CURRENT_LOG_TAG, "esp_wifi_init used %d bytes of internal RAM", (int)(internalBefore - heap_caps_get_free_size(MALLOC_CAP_INTERNAL)));
     
     // Disable power save.
     //esp_wifi_set_ps(WIFI_PS_NONE);

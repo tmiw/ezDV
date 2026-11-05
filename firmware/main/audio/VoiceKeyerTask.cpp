@@ -26,11 +26,12 @@
 // This number was set to match the flash page size (4KB).
 #define SAMPLES_TO_READ_PER_CYCLE (4096)
 
-// Maximum number of samples in the FIFO.
-#define MAX_SAMPLES_IN_FIFO (SAMPLES_TO_READ_PER_CYCLE << 1)
+// Maximum number of samples in the FIFO (at 16 kHz: what's read from an
+// 8 kHz recording takes twice as many).
+#define MAX_SAMPLES_IN_FIFO (SAMPLES_TO_READ_PER_CYCLE << 2)
 
-// Number of samples to forward onto FDV task.
-#define SAMPLES_TO_SEND_PER_CYCLE (160)
+// Number of samples to forward onto FDV task (20 ms).
+#define SAMPLES_TO_SEND_PER_CYCLE (USER_SAMPLE_RATE / 50)
 
 // Interval which to send samples to FDV task.
 #define TIMER_TICK_INTERVAL (MS_TO_US(20))
@@ -67,6 +68,7 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
     , micDeviceTask_(micDeviceTask)
     , fdvTask_(fdvTask)
     , wlHandle_(-1)
+    , upsampler_(RADIO_SAMPLE_RATE, USER_SAMPLE_RATE, 3700, 64)
 {
     registerMessageHandler(this, &VoiceKeyerTask::onStartVoiceKeyerMessage_);
     registerMessageHandler(this, &VoiceKeyerTask::onStopVoiceKeyerMessage_);
@@ -82,11 +84,15 @@ VoiceKeyerTask::VoiceKeyerTask(AudioInput* micDeviceTask, AudioInput* fdvTask)
 
     fileReadScratchBuf_ = (short*)heap_caps_calloc(SAMPLES_TO_READ_PER_CYCLE, sizeof(short), MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT);
     assert(fileReadScratchBuf_ != nullptr);
+
+    upsampledBuf_ = (short*)heap_caps_calloc(upsampler_.maxOutput(SAMPLES_TO_READ_PER_CYCLE), sizeof(short), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    assert(upsampledBuf_ != nullptr);
 }
 
 VoiceKeyerTask::~VoiceKeyerTask()
 {
     heap_caps_free(fileReadScratchBuf_);
+    heap_caps_free(upsampledBuf_);
     codec2_fifo_destroy(fileReadFifo_);
 }
 
@@ -134,11 +140,12 @@ void VoiceKeyerTask::onTaskSleep_()
 
 void VoiceKeyerTask::readSamplesIntoFifo_(DVTimer*)
 {
-    if (wavReader_ == nullptr || codec2_fifo_free(fileReadFifo_) < SAMPLES_TO_READ_PER_CYCLE)
+    if (wavReader_ == nullptr || codec2_fifo_free(fileReadFifo_) < upsampler_.maxOutput(SAMPLES_TO_READ_PER_CYCLE))
     {
         return;
     }
 
+    bool is8k = wavReader_->sample_rate() == RADIO_SAMPLE_RATE;
     auto numRead = wavReader_->read(fileReadScratchBuf_, SAMPLES_TO_READ_PER_CYCLE);
     if (numRead < SAMPLES_TO_READ_PER_CYCLE)
     {
@@ -151,7 +158,16 @@ void VoiceKeyerTask::readSamplesIntoFifo_(DVTimer*)
         fileReadTimer_.stop();
     }
 
-    codec2_fifo_write(fileReadFifo_, fileReadScratchBuf_, numRead);
+    if (is8k)
+    {
+        // Ours is 16 kHz.
+        int numUpsampled = upsampler_.process(fileReadScratchBuf_, numRead, upsampledBuf_);
+        codec2_fifo_write(fileReadFifo_, upsampledBuf_, numUpsampled);
+    }
+    else
+    {
+        codec2_fifo_write(fileReadFifo_, fileReadScratchBuf_, numRead);
+    }
 }
 
 void VoiceKeyerTask::onTaskTick_()
@@ -252,7 +268,7 @@ void VoiceKeyerTask::startKeyer_()
         // Fully populate the FIFO before starting TX.
         // Note: each call can read up to half of the FIFO worth of 
         // samples at a time.
-        while (voiceKeyerFile_ != nullptr && codec2_fifo_free(fileReadFifo_) >= SAMPLES_TO_READ_PER_CYCLE)
+        while (voiceKeyerFile_ != nullptr && codec2_fifo_free(fileReadFifo_) >= upsampler_.maxOutput(SAMPLES_TO_READ_PER_CYCLE))
         {
             readSamplesIntoFifo_(nullptr);
         }
@@ -405,7 +421,7 @@ void VoiceKeyerTask::onFileUploadDataMessage_(DVTask* origin, network::FileUploa
                 publish(&response);
                 success = false;
             }
-            else if (wavReader_->sample_rate() != 8000)
+            else if (wavReader_->sample_rate() != RADIO_SAMPLE_RATE && wavReader_->sample_rate() != USER_SAMPLE_RATE)
             {
                 FileUploadCompleteMessage response(false, FileUploadCompleteMessage::INCORRECT_SAMPLE_RATE);
                 publish(&response);

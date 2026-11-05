@@ -75,6 +75,8 @@ PskReporterTask::PskReporterTask()
     , reportingRefCount_(0)
     , currentSequenceNumber_(0)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &PskReporterTask::onReportingSettingsMessage_);
     registerMessageHandler(this, &PskReporterTask::onEnableReportingMessage_);
     registerMessageHandler(this, &PskReporterTask::onDisableReportingMessage_);

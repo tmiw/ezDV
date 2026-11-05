@@ -16,6 +16,7 @@
  */
 
 #include <cmath>
+#include <cstring>
 #include <unistd.h>
 
 #include "FlexVitaTask.h"
@@ -34,6 +35,8 @@
 #define MAX_VITA_SAMPLES (42) /* 5.25ms/block @ 8000 Hz */
 #define MAX_VITA_SAMPLES_TO_RESAMPLE (MAX_VITA_SAMPLES * FDMDV_OS_24) /* Must be less than the max size of the VITA packet (180 two channel samples) */
 #define VITA_SAMPLES_TO_SEND MAX_VITA_SAMPLES_TO_RESAMPLE
+#define USER_RESAMPLER_CUTOFF_HZ (7300)
+#define USER_RESAMPLER_TAPS (192)
 #define MIN_VITA_PACKETS_TO_SEND (4)
 #define MAX_VITA_PACKETS_TO_SEND (10)
 #define US_OF_AUDIO_PER_VITA_PACKET (5250)
@@ -70,6 +73,8 @@ FlexVitaTask::FlexVitaTask()
     , lastVitaGenerationTime_(0)
     , minPacketsRequired_(0)
     , timeBeyondExpectedUs_(0)
+    , userUp_(USER_SAMPLE_RATE, 24000, USER_RESAMPLER_CUTOFF_HZ, USER_RESAMPLER_TAPS)
+    , userDown_(24000, USER_SAMPLE_RATE, USER_RESAMPLER_CUTOFF_HZ, USER_RESAMPLER_TAPS)
 {
     registerMessageHandler(this, &FlexVitaTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexVitaTask::onReceiveVitaMessage_);
@@ -185,8 +190,15 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
     }
 
     //ESP_LOGI(CURRENT_LOG_TAG, "Packets to be sent this time: %d", minPacketsRequired_);
+    // The user's audio is 16 kHz and the radio's 8 kHz: either way, a
+    // packet's worth (MAX_VITA_SAMPLES_TO_RESAMPLE at 24 kHz) at a time.
+    bool isUser = channel == audio::AudioInput::USER_CHANNEL;
+    static_assert(USER_VITA_SAMPLES == MAX_VITA_SAMPLES * USER_SAMPLE_RATE / RADIO_SAMPLE_RATE);
+    static_assert(VITA_SAMPLES_AT_24K == MAX_VITA_SAMPLES_TO_RESAMPLE);
+    short* readBuf = isUser ? userBuf_ : &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K];
+    int samplesToRead = isUser ? USER_VITA_SAMPLES : MAX_VITA_SAMPLES;
     int ctr = MAX_VITA_PACKETS_TO_SEND;
-    while(minPacketsRequired_ > 0 && ctr > 0 && codec2_fifo_read(fifo, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES) == 0)
+    while(minPacketsRequired_ > 0 && ctr > 0 && codec2_fifo_read(fifo, readBuf, samplesToRead) == 0)
     {
         minPacketsRequired_--;
         ctr--;
@@ -199,7 +211,19 @@ void FlexVitaTask::generateVitaPackets_(audio::AudioInput::ChannelLabel channel,
         }
         
         // Upsample to 24K floats.
-        fdmdv_8_to_24_with_scaling(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES, tx_scale_factor);
+        if (isUser)
+        {
+            int numOut = userUp_.process(userBuf_, USER_VITA_SAMPLES, userBuf24k_);
+            assert(numOut == MAX_VITA_SAMPLES_TO_RESAMPLE);
+            for (int i = 0; i < numOut; i++)
+            {
+                upsamplerOutBuf_[i] = userBuf24k_[i] * FDMDV_SHORT_TO_FLOAT * tx_scale_factor;
+            }
+        }
+        else
+        {
+            fdmdv_8_to_24_with_scaling(upsamplerOutBuf_, &upsamplerInBuf_[FDMDV_OS_TAPS_24_8K], MAX_VITA_SAMPLES, tx_scale_factor);
+        }
 
         uint32_t* dataPtr = (uint32_t*)&upsamplerOutBuf_[0];
         uint32_t masks[] = 
@@ -500,13 +524,30 @@ void FlexVitaTask::onReceiveVitaMessage_(DVTask* origin, ReceiveVitaMessage* mes
                 channel = audio::AudioInput::USER_CHANNEL;
             }
             
-            // Downconvert to 8K sample rate.
+            // Downconvert to 8K sample rate (16K for the user's audio).
             unsigned int num_samples = payload_length >> 2; // / sizeof(uint32_t);
             unsigned int half_num_samples = num_samples >> 1;
 
             int i = 0;
             auto fifo = getAudioOutput(channel);
-            while (fifo != nullptr && i < half_num_samples)
+            while (channel == audio::AudioInput::USER_CHANNEL && fifo != nullptr && i < half_num_samples)
+            {
+                short* in24k = userBuf24k_;
+                short* out16k = userBuf_;
+                static_assert(USER_RESAMPLE_CHUNK <= VITA_SAMPLES_AT_24K && USER_RESAMPLE_CHUNK * 2 / 3 <= USER_VITA_SAMPLES);
+                int n = 0;
+                while (n < USER_RESAMPLE_CHUNK && i < half_num_samples)
+                {
+                    uint32_t temp = ntohl(packet->if_samples[i << 1]);
+                    float sample;
+                    memcpy(&sample, &temp, sizeof(sample));
+                    in24k[n++] = fminf(1.0f, fmaxf(-1.0f, sample)) * FDMDV_FLOAT_TO_SHORT;
+                    i++;
+                }
+                int numOut = userDown_.process(in24k, n, out16k);
+                codec2_fifo_write(fifo, out16k, numOut);
+            }
+            while (channel == audio::AudioInput::RADIO_CHANNEL && fifo != nullptr && i < half_num_samples)
             {
                 uint32_t temp = ntohl(packet->if_samples[i << 1]);
                 downsamplerInBuf_[FDMDV_OS_TAPS_24K + (inputCtr_++)] = *(float*)&temp * FDMDV_FLOAT_TO_SHORT;

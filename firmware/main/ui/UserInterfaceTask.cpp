@@ -38,9 +38,7 @@ namespace ui
 
 static std::map<audio::FreeDVMode, std::string> ModeList_ = {
     { audio::ANALOG, "  ANA" },
-    { audio::FREEDV_700D, "  700D" },
-    { audio::FREEDV_700E, "  700E" },
-    { audio::FREEDV_1600, "  1600" },
+    { audio::RADE_V2, "  RADE" },
 };
 
 UserInterfaceTask::UserInterfaceTask()
@@ -62,6 +60,8 @@ UserInterfaceTask::UserInterfaceTask()
     , sleepPending_(false)
     , allowHeadsetPtt_(false)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &UserInterfaceTask::onButtonShortPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonLongPressedMessage_);
     registerMessageHandler(this, &UserInterfaceTask::onButtonReleasedMessage_);
