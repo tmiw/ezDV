@@ -96,11 +96,35 @@ Additionally, check each of the checkboxes to the left of the file name. It shou
 
 ### Using esptool
 
-You can also use [esptool](https://github.com/espressif/esptool). For example:
+You can also use [esptool](https://github.com/espressif/esptool). From the folder you decompressed the "-full.tar.gz" file into, run:
 
 ```
-esptool esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition_table/partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin 0xae6000 q8_models.bin
+esptool.py --chip esp32s3 -p /dev/cu.usbmodem14101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size detect 0x0 bootloader.bin 0x20000 ezdv.bin 0x8000 partition-table.bin 0xf000 ota_data_initial.bin 0x7f8000 http_0.bin 0xae6000 q8_models.bin
 ```
+
+### Flashing test firmware
+
+Firmware that hasn't been released yet (for example, from a pull request that needs testing) is built automatically
+for every change made to ezDV's source code. To download it:
+
+1. Sign in to GitHub. (Downloads of test firmware are only available to signed-in users.)
+2. Go to the [project's Actions page](https://github.com/tmiw/ezDV/actions/workflows/build_ezdv.yml) and select the
+   most recent run for the branch you've been asked to test. For a pull request, you can also select the "Build ezDV"
+   check at the bottom of the pull request's page and then "Summary".
+3. Scroll down to "Artifacts" and download the file named after that branch and commit (for example,
+   "ezdv-rade-v2-d8d0042"). This is a ZIP file containing two files ending in "-full.tar.gz" and "-ota.tar.gz".
+4. Decompress the "-full.tar.gz" file into a new folder. On Windows, you can do this using 7-Zip or by running
+   `tar xzf filename-full.tar.gz` from a Command Prompt.
+5. Flash the resulting .bin files using the ESP Flash Tool or esptool as described above.
+
+*Note: Firmware with RADE V2 support adds a "models" area to ezDV's internal memory that holds RADE V2's neural
+network. The first time you install it, you must flash all of the files in the "-full.tar.gz" file over USB
+as described above. Afterwards, newer test firmware can be installed using the "-ota.tar.gz" file and the web
+interface as long as RADE V2's neural network hasn't changed since you last flashed over USB. If in doubt,
+flash the "-full.tar.gz" file over USB. Test firmware is not guaranteed to work, so make sure you
+can flash ezDV over USB before trying it.*
+
+*To go back to a released version of the firmware, flash that version's "-full.tar.gz" file over USB.*
 
 ## Common problems
 
