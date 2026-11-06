@@ -313,7 +313,8 @@ $if(highlighting-macros)$
 $highlighting-macros$
 $endif$
 $if(tables)$
-\usepackage{longtable,booktabs}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for \real{} in table column widths (pandoc 3)
 $if(beamer)$
 \usepackage{caption}
 % Make caption package work with longtable
