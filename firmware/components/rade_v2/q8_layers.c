@@ -250,7 +250,7 @@ int q8_models_bind(const void *blob, size_t len)
     if (len < q8_models_size || ((uintptr_t)blob & 15) || memcmp(p, Q8_MODELS_MAGIC, 8) != 0) return -1;
     memcpy(&size, p + 8, 4);
     memcpy(&sum, p + 12, 4);
-    if (size != q8_models_size || sum != 373035598u) return -1;
+    if (size != q8_models_size || sum != 3749872323u) return -1;
     for (i = Q8_MODELS_HEADER_BYTES; i < q8_models_size; i++) h = (h ^ p[i]) * 16777619u;
     if (h != sum) return -1;
 
