@@ -19,8 +19,7 @@
 
 #include "BeeperTask.h"
 
-// Beeper constants. This is based on 1 dit per 60/(50 * wpm) = 60/(50*15) = 0.08s
-#define CW_TIME_UNIT_MS 80
+// Beeper constants (CW_TIME_UNIT_MS is in BeeperTask.h).
 #define DIT_SIZE 1
 #define DAH_SIZE 3
 #define SPACE_BETWEEN_DITS 1
@@ -84,10 +83,12 @@ BeeperTask::BeeperTask()
     : DVTask("BeeperTask", 10, 4096, tskNO_AFFINITY, 16, pdMS_TO_TICKS(10))
     , AudioInput(1, 1) // we don't need the input FIFO, just the output one
     , beeperTimer_(this, this, &BeeperTask::onTimerTick_, BEEPER_TIMER_TICK_US, "BeeperTimer")
-    , sineGenerator_(CW_SIDETONE_FREQ_HZ, 10000)
+    , sineGenerator_(CW_SIDETONE_FREQ_HZ, 10000, USER_SAMPLE_RATE)
     , sineCounter_(0)
     , deferShutdown_(false)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &BeeperTask::onSetBeeperText_);
     registerMessageHandler(this, &BeeperTask::onClearBeeperText_);
 }
@@ -144,19 +145,18 @@ void BeeperTask::onClearBeeperText_(DVTask* origin, ClearBeeperTextMessage* mess
 
 void BeeperTask::onTimerTick_(DVTimer*)
 {
-    // TBD -- assuming 8KHz sample rate
     struct FIFO* outputFifo = getAudioOutput(AudioInput::LEFT_CHANNEL);
 
     if (beeperList_.size() > 0)
     {
-        short bufToQueue[CW_TIME_UNIT_MS * 8000 / 1000];
+        short* bufToQueue = bufToQueue_;
         bool emitSine = beeperList_[0];
         beeperList_.erase(beeperList_.begin());
 
         //ESP_LOGI("UserInterface", "Beep: %d", emitSine);
         if (emitSine)
         {
-            for (int index = 0; index < sizeof(bufToQueue) / sizeof(short); index++)
+            for (int index = 0; index < sizeof(bufToQueue_) / sizeof(short); index++)
             {
                 bufToQueue[index] = sineGenerator_.getSample(sineCounter_++);
             }
@@ -164,10 +164,10 @@ void BeeperTask::onTimerTick_(DVTimer*)
         else
         {
             sineCounter_ = 0;
-            memset(bufToQueue, 0, sizeof(bufToQueue));
+            memset(bufToQueue, 0, sizeof(bufToQueue_));
         }
 
-        codec2_fifo_write(outputFifo, bufToQueue, sizeof(bufToQueue) / sizeof(short));
+        codec2_fifo_write(outputFifo, bufToQueue, sizeof(bufToQueue_) / sizeof(short));
     }
     else
     {

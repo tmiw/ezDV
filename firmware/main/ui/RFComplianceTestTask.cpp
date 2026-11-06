@@ -24,14 +24,16 @@
 #define CURRENT_LOG_TAG ("RfComplianceTestTask")
 
 // TBD -- check that these calculations happen at compile time and not runtime.
-#define SAMPLE_RATE 8000
-#define SAMPLE_RATE_RECIP ((float)1.0/(float)SAMPLE_RATE)
+// Left is the user channel, right the radio's (see AudioInput.h).
+#define LEFT_SAMPLE_RATE USER_SAMPLE_RATE
+#define RIGHT_SAMPLE_RATE RADIO_SAMPLE_RATE
 #define LEFT_FREQ_HZ ((float)1275.0)
 #define LEFT_FREQ_HZ_RECIP ((float)1.0/LEFT_FREQ_HZ)
 #define RIGHT_FREQ_HZ ((float)1725.0)
 #define RIGHT_FREQ_HZ_RECIP ((float)1.0/RIGHT_FREQ_HZ)
 
-#define SAMPLES_PER_TICK ((float)0.02*(float)SAMPLE_RATE)
+#define LEFT_SAMPLES_PER_TICK ((float)0.02*(float)LEFT_SAMPLE_RATE)
+#define RIGHT_SAMPLES_PER_TICK ((float)0.02*(float)RIGHT_SAMPLE_RATE)
 
 // Max amplitude of the test sine waves is 32767. This has been experimentally determined to 
 // produce ~0 dB for the sine wave frequency (without clipping) in an Audacity spectrum plot 
@@ -60,8 +62,8 @@ namespace ui
 RfComplianceTestTask::RfComplianceTestTask(ezdv::driver::LedArray* ledArrayTask, ezdv::driver::TLV320* tlv320Task)
     : DVTask("RfComplianceTestTask", 10, 4096, tskNO_AFFINITY, 32, pdMS_TO_TICKS(20))
     , AudioInput(1, 2)
-    , leftChannelSineWave_(LEFT_FREQ_HZ, SINE_WAVE_AMPLITUDE)
-    , rightChannelSineWave_(RIGHT_FREQ_HZ, SINE_WAVE_AMPLITUDE)
+    , leftChannelSineWave_(LEFT_FREQ_HZ, SINE_WAVE_AMPLITUDE, LEFT_SAMPLE_RATE)
+    , rightChannelSineWave_(RIGHT_FREQ_HZ, SINE_WAVE_AMPLITUDE, RIGHT_SAMPLE_RATE)
     , isActive_(false)
     , ledArrayTask_(ledArrayTask)
     , tlv320Task_(tlv320Task)
@@ -234,9 +236,9 @@ void RfComplianceTestTask::sineWave_()
     
     if (currentMode_ == 0 || currentMode_ == 1)
     {
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        for (int index = 0; index < LEFT_SAMPLES_PER_TICK; index++)
         {
-            if (leftChannelCtr_ >= SAMPLE_RATE)
+            if (leftChannelCtr_ >= LEFT_SAMPLE_RATE)
             {
                 leftChannelCtr_ = 0;
             }
@@ -251,9 +253,9 @@ void RfComplianceTestTask::sineWave_()
     
     if (currentMode_ == 0 || currentMode_ == 2)
     {
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        for (int index = 0; index < RIGHT_SAMPLES_PER_TICK; index++)
         {
-            if (rightChannelCtr_ >= SAMPLE_RATE)
+            if (rightChannelCtr_ >= RIGHT_SAMPLE_RATE)
             {
                 rightChannelCtr_ = 0;
             }
@@ -274,9 +276,9 @@ void RfComplianceTestTask::squareWave_()
     
     if (currentMode_ == 3 || currentMode_ == 4)
     {
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        for (int index = 0; index < LEFT_SAMPLES_PER_TICK; index++)
         {
-            int numSamplesPerPeriod = (int)(SAMPLE_RATE * LEFT_FREQ_HZ_RECIP);
+            int numSamplesPerPeriod = (int)(LEFT_SAMPLE_RATE * LEFT_FREQ_HZ_RECIP);
             if (leftChannelCtr_ >= numSamplesPerPeriod)
             {
                 leftChannelCtr_ = 0;
@@ -293,9 +295,9 @@ void RfComplianceTestTask::squareWave_()
     
     if (currentMode_ == 3 || currentMode_ == 5)
     {
-        for (int index = 0; index < SAMPLES_PER_TICK; index++)
+        for (int index = 0; index < RIGHT_SAMPLES_PER_TICK; index++)
         {
-            int numSamplesPerPeriod = (int)(SAMPLE_RATE * RIGHT_FREQ_HZ_RECIP);
+            int numSamplesPerPeriod = (int)(RIGHT_SAMPLE_RATE * RIGHT_FREQ_HZ_RECIP);
             if (rightChannelCtr_ >= numSamplesPerPeriod)
             {
                 rightChannelCtr_ = 0;

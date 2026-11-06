@@ -52,6 +52,8 @@ FlexTcpTask::FlexTcpTask()
     , isTransmitting_(false)
     , isConnecting_(false)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &FlexTcpTask::onFlexConnectRadioMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestRxMessage_);
     registerMessageHandler(this, &FlexTcpTask::onRequestTxMessage_);
@@ -60,9 +62,7 @@ FlexTcpTask::FlexTcpTask()
     
     // Initialize filter widths. These are sent to SmartSDR on mode changes.
     filterWidths_.push_back(FilterPair_(150, 2850)); // ANA
-    filterWidths_.push_back(FilterPair_(750, 2250)); // 700D - 1K width + a bit extra
-    filterWidths_.push_back(FilterPair_(500, 2500)); // 700E - 1.5K width + a bit extra
-    filterWidths_.push_back(FilterPair_(687, 2313)); // 1600 - 1.125K width + a bit extra
+    filterWidths_.push_back(FilterPair_(150, 2850)); // RADE V2: as for analog
     
     // Default to ANA unless we get something better.
     currentWidth_ = filterWidths_[0];

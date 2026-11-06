@@ -127,6 +127,11 @@ protected:
 
     /// @brief Task to unconditionally execute each time through the loop. Optional.
     virtual void onTaskTick_();
+
+    /// @brief Puts the task's stack in PSRAM instead of internal RAM. Only for tasks
+    ///        that never touch flash (which needs an internal stack). Call from the
+    ///        constructor.
+    void useStackInPsram_() { stackInPsram_ = true; }
     
     /// @brief Commands the task to perform startup actions.
     /// @param taskToStart The task to start.
@@ -254,12 +259,18 @@ private:
     
     TickType_t taskTick_;
 
+    bool stackInPsram_;
+    StackType_t* stack_;
+    StaticTask_t* tcb_;
+    TaskHandle_t suspendedTask_;
+
     MessageEntry* createMessageEntry_(DVTask* origin, DVTaskMessage* message);
 
     void threadEntry_();
     void postHelper_(MessageEntry* entry);
     
     void startTask_();
+    void deleteSuspendedTask_();
 
     template<typename ControlMessageType>
     void waitForOurs_(DVTask* taskToWaitFor, TickType_t ticksToWait);

@@ -9,9 +9,10 @@ if(${ESP_PLATFORM})
     
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-# Include ESP-DSP as a component
+# Include ESP-DSP as a component, and RADE V2 and Opus's DNN code (components/).
 set(EXTRA_COMPONENT_DIRS
-         externals/esp-dsp)
+         externals/esp-dsp
+         components)
 
 project(ezdv)
 add_subdirectory(externals)    

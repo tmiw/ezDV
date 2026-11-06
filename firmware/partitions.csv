@@ -13,3 +13,7 @@ http_1,   data, spiffs,  ,        1000K,
 
 # R/W partition to store voice keyer .wav file (1MB, TBD)
 vk,       data, fat,     ,        1000K,
+
+# RADE V2's model weights (models/q8_models.bin, from tools/rade_models), read
+# into PSRAM when RADE V2 starts. Not in the app: they'd fill it.
+models,   data,  0x40,    ,        4000K,

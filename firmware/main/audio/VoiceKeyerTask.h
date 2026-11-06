@@ -25,6 +25,7 @@
 #include "AudioInput.h"
 #include "VoiceKeyerMessage.h"
 #include "WAVFileReader.h"
+#include "Resampler.h"
 #include "audio/FreeDVMessage.h"
 #include "network/NetworkMessage.h"
 #include "storage/SettingsMessage.h"
@@ -79,6 +80,10 @@ private:
     AudioInput* fdvTask_;
 
     wl_handle_t wlHandle_;
+
+    // 8 kHz recordings, at 16 kHz.
+    Resampler upsampler_;
+    short* upsampledBuf_;
 
     void startKeyer_();
     void stopKeyer_();

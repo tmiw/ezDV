@@ -70,6 +70,8 @@ MAX17048::MAX17048(I2CMaster* i2cMaster)
     , isStarting_(true)
     , suppressForcedSleep_(false)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &MAX17048::onLowBatteryShutdownMessage_);
     registerMessageHandler(this, &MAX17048::onRequestBatteryStateMessage_);
     

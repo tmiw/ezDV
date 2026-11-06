@@ -20,24 +20,21 @@
 #include <cmath>
 #include "esp_heap_caps.h"
 
-#define SAMPLE_RATE (8000)
-#define SAMPLE_RATE_RECIP 0.000125 /* 8000 Hz */
-
 namespace ezdv
 {
 
 namespace util
 {
 
-SineWaveGenerator::SineWaveGenerator(int frequency, int amplitude)
+SineWaveGenerator::SineWaveGenerator(int frequency, int amplitude, int sampleRate)
 {
-    samples_ = (short*)heap_caps_malloc(SAMPLE_RATE*sizeof(short), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    samples_ = (short*)heap_caps_malloc(sampleRate*sizeof(short), MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
     assert(samples_ != nullptr);
     
     // Pre-generate samples to avoid delays during execution.
-    for (int index = 0; index < SAMPLE_RATE; index++)
+    for (int index = 0; index < sampleRate; index++)
     {
-        samples_[index] = amplitude * sin(2 * M_PI * frequency * index * SAMPLE_RATE_RECIP);
+        samples_[index] = amplitude * sin(2 * M_PI * frequency * index / sampleRate);
     }
 }
 

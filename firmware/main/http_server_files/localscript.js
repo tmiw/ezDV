@@ -214,7 +214,7 @@ var setVKErrorMessage = function(errorType, errno)
             $("#vkErrorText").html("System error: " + errno.toString());
            break;
         case 2:
-            $("#vkErrorText").html("Incorrect sample rate: ezDV only supports .wav files recorded at 8 KHz");
+            $("#vkErrorText").html("Incorrect sample rate: ezDV only supports .wav files recorded at 8 or 16 KHz");
             break;
         case 3:
             $("#vkErrorText").html("Incorrect number of channels: ezDV only supports .wav files recorded as mono, not stereo");
@@ -488,18 +488,8 @@ function wsConnect()
           }
           else if (json.currentMode == 1)
           {
-              $("#mode700D").addClass("btn-primary");
-              $("#mode700D").removeClass("btn-secondary");
-          }
-          else if (json.currentMode == 2)
-          {
-              $("#mode700E").addClass("btn-primary");
-              $("#mode700E").removeClass("btn-secondary");
-          }
-          else if (json.currentMode == 3)
-          {
-              $("#mode1600").addClass("btn-primary");
-              $("#mode1600").removeClass("btn-secondary");
+              $("#modeRADEV2").addClass("btn-primary");
+              $("#modeRADEV2").removeClass("btn-secondary");
           }
       }
       else if (json.type == "voiceKeyerRunning")
@@ -726,16 +716,8 @@ $("#modeAnalog").click(function() {
     setFreeDVMode(0);
 });
 
-$("#mode700D").click(function() {
+$("#modeRADEV2").click(function() {
     setFreeDVMode(1);
-});
-
-$("#mode700E").click(function() {
-    setFreeDVMode(2);
-});
-
-$("#mode1600").click(function() {
-    setFreeDVMode(3);
 });
 
 $("#startVoiceKeyer").click(function() {

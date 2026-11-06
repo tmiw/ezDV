@@ -35,17 +35,35 @@ jobs:
       - name: Create release assets
         shell: bash
         run: |
+          # Tags keep their name; other builds get the branch and commit, with
+          # any "/" in the branch name replaced so it's usable as a file name.
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            PACKAGE_NAME="$GITHUB_REF_NAME"
+          else
+            PACKAGE_NAME="${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}"
+          fi
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
           cd firmware/build
           mkdir release
           cd release
           cp ../ezdv.bin .
           cp ../http_0.bin http.bin
-          tar cvzf ezdv-$GITHUB_REF_NAME-ota.tar.gz *.bin
+          tar cvzf ezdv-$PACKAGE_NAME-ota.tar.gz *.bin
           mv http.bin http_0.bin
           cp ../bootloader/bootloader.bin .
           cp ../ota_data_initial.bin .
           cp ../partition_table/partition-table.bin .
-          tar cvzf ezdv-$GITHUB_REF_NAME-full.tar.gz *.bin
+          cp ../../models/q8_models.bin .
+          tar cvzf ezdv-$PACKAGE_NAME-full.tar.gz *.bin
+
+      - name: Upload flash packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezdv-${{ env.PACKAGE_NAME }}
+          path: |
+            ./firmware/build/release/ezdv-${{ env.PACKAGE_NAME }}-ota.tar.gz
+            ./firmware/build/release/ezdv-${{ env.PACKAGE_NAME }}-full.tar.gz
+          if-no-files-found: error
 
       - name: Upload release assets
         if: startsWith(github.ref, 'refs/tags/')
@@ -54,5 +72,5 @@ jobs:
           draft: true
           prerelease: true
           files: |
-            ./firmware/build/release/ezdv-${{ github.ref_name }}-ota.tar.gz
-            ./firmware/build/release/ezdv-${{ github.ref_name }}-full.tar.gz
+            ./firmware/build/release/ezdv-${{ env.PACKAGE_NAME }}-ota.tar.gz
+            ./firmware/build/release/ezdv-${{ env.PACKAGE_NAME }}-full.tar.gz

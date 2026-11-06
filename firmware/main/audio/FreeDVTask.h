@@ -19,13 +19,13 @@
 #define FREEDV_TASK_H
 
 #include "AudioInput.h"
+#include "Resampler.h"
 #include "FreeDVMessage.h"
-#include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
 
-#include "freedv_api.h"
-#include "reliable_text.h"
+#include "RadeReceiver.h"
+#include "RadeTransmitter.h"
 
 namespace ezdv
 {
@@ -35,6 +35,10 @@ namespace audio
 
 using namespace ezdv::task;
 
+/**
+ * Analog pass-through (resampled), or RADE V2: a RadeReceiver, swapped for a
+ * RadeTransmitter while transmitting.
+ */
 class FreeDVTask : public DVTask, public AudioInput
 {
 public:
@@ -48,23 +52,37 @@ protected:
     virtual void onTaskTick_() override;
     
 private:
-    struct freedv* dv_;
-    reliable_text_t rText_;
+    const void* models_; // RADE V2's weights, in PSRAM while it's in use
+    RadeReceiver* radeRx_;
+    RadeTransmitter* radeTx_;
     int currentMode_;
 
     bool isTransmitting_;
     bool isEndingTransmit_;
     bool isActive_;
-    int samplesBeforeEnd_;
 
-    MODEM_STATS* stats_;
+    // For analog: the radio's audio is 8 kHz, the user's 16 kHz.
+    Resampler analogUp_;
+    Resampler analogDown_;
+
+    void startRade_();
+    void stopRade_();
+
+#if CONFIG_EZDV_RADE_TX_SELF_TEST
+    enum { SELF_TEST_WAITING, SELF_TEST_TRANSMITTING, SELF_TEST_DONE } selfTest_;
+    int64_t selfTestStart_;
+    size_t selfTestMicPos_;
+    short* selfTestModem_;       // in PSRAM
+    size_t selfTestModemLen_;
+    struct FIFO* selfTestMic_;
+    struct FIFO* selfTestOut_;
+
+    bool selfTestTick_();
+#endif // CONFIG_EZDV_RADE_TX_SELF_TEST
 
     void onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message);
     void onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* message);
-    void onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message);
     void onRequestGetFreeDVMode_(DVTask* origin, RequestGetFreeDVModeMessage* message);
-
-    static void OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state);
 };
 
 }

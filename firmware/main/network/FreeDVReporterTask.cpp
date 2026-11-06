@@ -54,6 +54,8 @@ FreeDVReporterTask::FreeDVReporterTask()
     , pingTimeoutMs_(0)
     , isConnecting_(false)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &FreeDVReporterTask::onReportingSettingsMessage_);
     registerMessageHandler(this, &FreeDVReporterTask::onEnableReportingMessage_);
     registerMessageHandler(this, &FreeDVReporterTask::onDisableReportingMessage_);
@@ -279,9 +281,7 @@ void FreeDVReporterTask::onWebsocketDataMessage_(DVTask* origin, WebsocketDataMe
 
 static const char* FreeDVModeString_[] = {
     "ANALOG",
-    "700D",
-    "700E",
-    "1600"
+    "RADEV2"
 };
 
 const char* FreeDVReporterTask::freeDVModeAsString_()

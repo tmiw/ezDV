@@ -23,6 +23,7 @@
 #include "InputGPIO.h"
 #include "I2CMaster.h"
 #include "audio/AudioInput.h"
+#include "audio/Resampler.h"
 #include "storage/SettingsMessage.h"
 #include "task/DVTask.h"
 #include "task/DVTimer.h"
@@ -58,6 +59,21 @@ private:
     i2s_chan_handle_t i2sRxDevice_;
     InputGPIO<GPIO_TLV320_INT1> int1Gpio_;
     InputGPIO<GPIO_TLV320_INT2> int2Gpio_;
+
+    // The codec runs at 16 kHz, for the headset; the radio's audio is 8 kHz.
+    audio::Resampler radioIn_;
+    audio::Resampler radioOut_;
+
+    // Each tick's audio (here rather than on the stack): 20 ms, twice the
+    // tick, so that the I2S reads keep up.
+    enum
+    {
+        I2S_NUM_SAMPLES_PER_INTERVAL = USER_SAMPLE_RATE / 50,
+        RADIO_SAMPLES_PER_INTERVAL = RADIO_SAMPLE_RATE / 50,
+    };
+    short tempData_[I2S_NUM_SAMPLES_PER_INTERVAL * 2];
+    short channelData_[I2S_NUM_SAMPLES_PER_INTERVAL];
+    short radioData_[RADIO_SAMPLES_PER_INTERVAL + 1];
     
     void onLeftChannelVolume_(DVTask* origin, storage::LeftChannelVolumeMessage* message);
     void onRightChannelVolume_(DVTask* origin, storage::RightChannelVolumeMessage* message);

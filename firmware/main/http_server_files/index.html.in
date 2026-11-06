@@ -76,13 +76,7 @@
                         <button type="button" class="btn btn-primary mode-button" id="modeAnalog">Analog</button>
                     </div>
                     <div class="col-xs-2 col-md-1">
-                        <button type="button" class="btn btn-secondary mode-button" id="mode700D">700D</button>
-                    </div>
-                    <div class="col-xs-2 col-md-1">
-                        <button type="button" class="btn btn-secondary mode-button" id="mode700E">700E</button>
-                    </div>
-                    <div class="col-xs-2 col-md-1">
-                        <button type="button" class="btn btn-secondary mode-button" id="mode1600">1600</button>
+                        <button type="button" class="btn btn-secondary mode-button" id="modeRADEV2">RADE</button>
                     </div>
                 </div>
                 <div class="row mb-3 general-enable-row">

@@ -82,7 +82,7 @@
 #define DEFAULT_LED_DUTY_CYCLE (8192)
 
 #define LAST_MODE_ID ("lastMode")
-#define DEFAULT_LAST_MODE (1) /* Default to 700D */
+#define DEFAULT_LAST_MODE (1) /* Default to RADE V2 */
 
 namespace ezdv
 {
@@ -866,6 +866,14 @@ void SettingsTask::initializeLastMode_()
     else
     {
         ESP_LOGI(CURRENT_LOG_TAG, "lastMode: %d", lastMode_);
+    }
+
+    // 700D, 700E and 1600 are gone: the digital mode is RADE V2 now. (700D's
+    // number became RADE V2's; this catches the rest.)
+    if (lastMode_ < 0 || lastMode_ >= audio::MAX_FREEDV_MODES)
+    {
+        ESP_LOGW(CURRENT_LOG_TAG, "lastMode %d no longer exists, switching to RADE V2", lastMode_);
+        setLastMode_(audio::RADE_V2);
     }
     
     // Request mode change to previous mode

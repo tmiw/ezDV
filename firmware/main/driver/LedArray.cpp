@@ -39,6 +39,8 @@ LedArray::LedArray()
     , pttNpmLed_(GPIO_PTT_NPN, true, true)
     , networkLed_(GPIO_NET_LED, true)
 {
+    useStackInPsram_();
+
     registerMessageHandler(this, &LedArray::onSetLedState_);
     registerMessageHandler(this, &LedArray::onLedBrightnessSettingsMessage_);
 }

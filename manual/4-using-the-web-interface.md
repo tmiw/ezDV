@@ -181,6 +181,10 @@ To update the firmware, perform the following steps:
 
 Once complete, the new firmware is stored on ezDV's internal memory but will not take effect until ezDV is turned off and on again or rebooted.
 
+*Note: The first firmware version with RADE V2 support can't be installed this way if ezDV is running an older version.
+It adds a new area to ezDV's internal memory for RADE V2's neural network, so it must be flashed over USB using the
+"-full.tar.gz" file instead. See [Resetting ezDV](#resetting-ezdv) for instructions.*
+
 ## Rebooting ezDV
 
 You can reboot ezDV from the web interface instead of powering it on and off using the physical controls. This is typically done after saving 

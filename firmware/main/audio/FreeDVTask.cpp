@@ -15,15 +15,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstdio>
 #include <cstring>
 
 #include "FreeDVTask.h"
 
 #include "esp_dsp.h"
+#include "esp_heap_caps.h"
+#include "esp_timer.h"
 #include "codec2_math.h"
-#include "modem_stats.h"
 
-#define FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP 160
+extern "C"
+{
+#include "rade_models.h"
+}
+
+#define USER_SAMPLES_PER_LOOP (USER_SAMPLE_RATE / 100)   /* 10 ms */
+#define RADIO_SAMPLES_PER_LOOP (RADIO_SAMPLE_RATE / 100)
+#define ANALOG_RESAMPLER_CUTOFF_HZ (3700)
+#define ANALOG_RESAMPLER_TAPS (64)
 #define CURRENT_LOG_TAG ("FreeDV")
 
 namespace ezdv
@@ -33,37 +43,35 @@ namespace audio
 {
 
 FreeDVTask::FreeDVTask()
-    : DVTask("FreeDVTask", 15, 47000, 0, 16, pdMS_TO_TICKS(10))
+    : DVTask("FreeDVTask", 15, 30 * 1024, 0, 16, pdMS_TO_TICKS(10)) /* RADE V2 transmit uses about 22 KB */
     , AudioInput(2, 2)
-    , dv_(nullptr)
-    , rText_(nullptr)
+    , models_(nullptr)
+    , radeRx_(nullptr)
+    , radeTx_(nullptr)
     , currentMode_(0)
     , isTransmitting_(false)
     , isEndingTransmit_(false)
     , isActive_(false)
-    , samplesBeforeEnd_(0)
-    , stats_(nullptr)
+    , analogUp_(RADIO_SAMPLE_RATE, USER_SAMPLE_RATE, ANALOG_RESAMPLER_CUTOFF_HZ, ANALOG_RESAMPLER_TAPS)
+    , analogDown_(USER_SAMPLE_RATE, RADIO_SAMPLE_RATE, ANALOG_RESAMPLER_CUTOFF_HZ, ANALOG_RESAMPLER_TAPS)
+#if CONFIG_EZDV_RADE_TX_SELF_TEST
+    , selfTest_(SELF_TEST_WAITING)
+    , selfTestStart_(0)
+    , selfTestMicPos_(0)
+    , selfTestModem_(nullptr)
+    , selfTestModemLen_(0)
+    , selfTestMic_(nullptr)
+    , selfTestOut_(nullptr)
+#endif // CONFIG_EZDV_RADE_TX_SELF_TEST
 {
     registerMessageHandler(this, &FreeDVTask::onSetFreeDVMode_);
     registerMessageHandler(this, &FreeDVTask::onSetPTTState_);
-    registerMessageHandler(this, &FreeDVTask::onReportingSettingsUpdate_);
     registerMessageHandler(this, &FreeDVTask::onRequestGetFreeDVMode_);
 }
 
 FreeDVTask::~FreeDVTask()
 {
-    if (dv_ != nullptr)
-    {
-        if (rText_ != nullptr)
-        {
-            reliable_text_unlink_from_freedv(rText_);
-            reliable_text_destroy(rText_);
-            rText_ = nullptr;
-        }
-
-        freedv_close(dv_);
-        dv_ = nullptr;
-    }
+    stopRade_();
 }
 
 void FreeDVTask::onTaskStart_()
@@ -74,28 +82,151 @@ void FreeDVTask::onTaskStart_()
 void FreeDVTask::onTaskSleep_()
 {
     isActive_ = false;
+    stopRade_();
+}
 
-    if (dv_ != nullptr)
+void FreeDVTask::startRade_()
+{
+    models_ = rade_models_load();
+    if (models_ == nullptr)
     {
-        if (rText_ != nullptr)
-        {
-            reliable_text_unlink_from_freedv(rText_);
-            reliable_text_destroy(rText_);
-            rText_ = nullptr;
-        }
-
-        freedv_close(dv_);
-        dv_ = nullptr;
+        // Nothing to run RADE V2 with: carry on as for analog.
+        ESP_LOGE(CURRENT_LOG_TAG, "could not load RADE V2's weights from the models partition");
+        return;
+    }
+    if (isTransmitting_)
+    {
+        radeTx_ = new RadeTransmitter();
+        assert(radeTx_ != nullptr);
+    }
+    else
+    {
+        radeRx_ = new RadeReceiver();
+        assert(radeRx_ != nullptr);
     }
 }
+
+void FreeDVTask::stopRade_()
+{
+    delete radeRx_;
+    radeRx_ = nullptr;
+    delete radeTx_;
+    radeTx_ = nullptr;
+    if (models_ != nullptr)
+    {
+        rade_models_unload(models_);
+        models_ = nullptr;
+    }
+}
+
+#if CONFIG_EZDV_RADE_TX_SELF_TEST
+extern const uint8_t selfTestMicStart_[] asm("_binary_rade_test_mic_s16_start");
+extern const uint8_t selfTestMicEnd_[] asm("_binary_rade_test_mic_s16_end");
+
+#define SELF_TEST_AFTER_BOOT_US (30 * 1000000LL)
+#define SELF_TEST_FIFO_SAMPLES (3200)
+#define SELF_TEST_MODEM_SAMPLES(micLen) ((micLen) / 2 + RADIO_SAMPLE_RATE) /* 8 kHz, plus a second for the end-of-over */
+
+// The self-test's modem signal over the console, in base64 ("PCM <line>"
+// ... "PCM END"), so that it can be decoded on the desktop.
+static void PrintBase64_(const uint8_t* data, size_t len)
+{
+    static const char tab[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    char line[4 * 192 / 3 + 1];
+    for (size_t off = 0; off < len; off += 192)
+    {
+        size_t n = len - off < 192 ? len - off : 192, o = 0;
+        for (size_t i = 0; i < n; i += 3)
+        {
+            uint32_t v = data[off + i] << 16 | (i + 1 < n ? data[off + i + 1] << 8 : 0) | (i + 2 < n ? data[off + i + 2] : 0);
+            line[o++] = tab[v >> 18 & 63];
+            line[o++] = tab[v >> 12 & 63];
+            line[o++] = i + 1 < n ? tab[v >> 6 & 63] : '=';
+            line[o++] = i + 2 < n ? tab[v & 63] : '=';
+        }
+        line[o] = 0;
+        printf("PCM %s\n", line);
+        if ((off / 192) % 64 == 63) vTaskDelay(1);
+    }
+    printf("PCM END\n");
+}
+
+// See EZDV_RADE_TX_SELF_TEST. Returns true while it has the tick.
+bool FreeDVTask::selfTestTick_()
+{
+    const short* mic = (const short*)selfTestMicStart_;
+    size_t micLen = (selfTestMicEnd_ - selfTestMicStart_) / sizeof(short);
+
+    if (selfTest_ == SELF_TEST_WAITING)
+    {
+        if (radeRx_ == nullptr || isTransmitting_ || esp_timer_get_time() < SELF_TEST_AFTER_BOOT_US)
+        {
+            return false;
+        }
+        ESP_LOGI(CURRENT_LOG_TAG, "self-test: transmitting %.1f s of mic audio into memory", micLen / (float)USER_SAMPLE_RATE);
+        delete radeRx_;
+        radeRx_ = nullptr;
+        radeTx_ = new RadeTransmitter();
+        assert(radeTx_ != nullptr);
+        selfTestModem_ = (short*)heap_caps_malloc(SELF_TEST_MODEM_SAMPLES(micLen) * sizeof(short), MALLOC_CAP_SPIRAM);
+        assert(selfTestModem_ != nullptr);
+        selfTestMic_ = codec2_fifo_create(SELF_TEST_FIFO_SAMPLES);
+        selfTestOut_ = codec2_fifo_create(SELF_TEST_FIFO_SAMPLES);
+        assert(selfTestMic_ != nullptr && selfTestOut_ != nullptr);
+        selfTestStart_ = esp_timer_get_time();
+        selfTest_ = SELF_TEST_TRANSMITTING;
+    }
+    if (selfTest_ != SELF_TEST_TRANSMITTING)
+    {
+        return false;
+    }
+
+    // The mic at real time; the modem signal into memory.
+    size_t due = (esp_timer_get_time() - selfTestStart_) * USER_SAMPLE_RATE / 1000000;
+    while (selfTestMicPos_ < due && selfTestMicPos_ + USER_SAMPLES_PER_LOOP <= micLen && codec2_fifo_free(selfTestMic_) >= USER_SAMPLES_PER_LOOP)
+    {
+        codec2_fifo_write(selfTestMic_, (short*)&mic[selfTestMicPos_], USER_SAMPLES_PER_LOOP);
+        selfTestMicPos_ += USER_SAMPLES_PER_LOOP;
+    }
+    if (selfTestMicPos_ + USER_SAMPLES_PER_LOOP > micLen)
+    {
+        radeTx_->finish();
+    }
+    radeTx_->process(selfTestMic_, selfTestOut_);
+    int n = codec2_fifo_used(selfTestOut_);
+    if (n > 0 && selfTestModemLen_ + n <= SELF_TEST_MODEM_SAMPLES(micLen))
+    {
+        codec2_fifo_read(selfTestOut_, &selfTestModem_[selfTestModemLen_], n);
+        selfTestModemLen_ += n;
+    }
+
+    if (radeTx_->done())
+    {
+        ESP_LOGI(CURRENT_LOG_TAG, "self-test: %.1f s of modem signal in %.1f s; now receiving it", selfTestModemLen_ / (float)RADIO_SAMPLE_RATE,
+                 (esp_timer_get_time() - selfTestStart_) / 1e6);
+        delete radeTx_;
+        radeTx_ = nullptr;
+        codec2_fifo_destroy(selfTestMic_);
+        codec2_fifo_destroy(selfTestOut_);
+        PrintBase64_((const uint8_t*)selfTestModem_, selfTestModemLen_ * sizeof(short));
+        RadeReceiver::SetTestSignal(selfTestModem_, selfTestModemLen_);
+        radeRx_ = new RadeReceiver();
+        assert(radeRx_ != nullptr);
+        selfTest_ = SELF_TEST_DONE;
+    }
+    return true;
+}
+#endif // CONFIG_EZDV_RADE_TX_SELF_TEST
 
 void FreeDVTask::onTaskTick_()
 {
     if (!isActive_) return;
 
-    bool syncLed = false;
+#if CONFIG_EZDV_RADE_TX_SELF_TEST
+    if (selfTestTick_()) return;
+#endif // CONFIG_EZDV_RADE_TX_SELF_TEST
 
-    //ESP_LOGI(CURRENT_LOG_TAG, "timer tick");
+    bool syncLed = false;
 
     struct FIFO* codecInputFifo = nullptr;
     struct FIFO* codecOutputFifo = nullptr;
@@ -112,19 +243,45 @@ void FreeDVTask::onTaskTick_()
         codecOutputFifo = getAudioOutput(audio::AudioInput::ChannelLabel::USER_CHANNEL);
     }
 
-    if (dv_ == nullptr)
+    if (radeTx_ != nullptr)
     {
-        // Analog mode, just pipe through the audio.
-        short inputBuf[FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP];
-        memset(inputBuf, 0, sizeof(inputBuf));
-
-        if (codec2_fifo_free(codecOutputFifo) < FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP) return;
-        
-        while (!(isTransmitting_ && isEndingTransmit_) && 
-               codec2_fifo_used(codecInputFifo) >= FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP)
+        radeTx_->process(codecInputFifo, codecOutputFifo);
+        if (radeTx_->done())
         {
-            codec2_fifo_read(codecInputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
-            codec2_fifo_write(codecOutputFifo, inputBuf, FREEDV_ANALOG_NUM_SAMPLES_PER_LOOP);
+            // The end-of-over is out: back to receiving. Only one of the
+            // two at a time, as both want the spare internal RAM.
+            delete radeTx_;
+            radeTx_ = nullptr;
+            radeRx_ = new RadeReceiver();
+            assert(radeRx_ != nullptr);
+
+            TransmitCompleteMessage message;
+            publish(&message);
+
+            isEndingTransmit_ = false;
+            isTransmitting_ = false;
+        }
+    }
+    else if (radeRx_ != nullptr)
+    {
+        radeRx_->process(codecInputFifo, codecOutputFifo);
+        syncLed = radeRx_->isSynced();
+    }
+    else
+    {
+        // Analog mode, just pipe through the audio (resampled: the radio's
+        // is 8 kHz and the user's 16 kHz).
+        Resampler& resampler = isTransmitting_ ? analogDown_ : analogUp_;
+        int numIn = isTransmitting_ ? USER_SAMPLES_PER_LOOP : RADIO_SAMPLES_PER_LOOP;
+        short inputBuf[USER_SAMPLES_PER_LOOP];
+        short outputBuf[USER_SAMPLES_PER_LOOP];
+
+        while (!(isTransmitting_ && isEndingTransmit_) && 
+               codec2_fifo_free(codecOutputFifo) >= USER_SAMPLES_PER_LOOP &&
+               codec2_fifo_read(codecInputFifo, inputBuf, numIn) == 0)
+        {
+            int numOut = resampler.process(inputBuf, numIn, outputBuf);
+            codec2_fifo_write(codecOutputFifo, outputBuf, numOut);
         }
 
         if (isTransmitting_ && isEndingTransmit_)
@@ -135,72 +292,6 @@ void FreeDVTask::onTaskTick_()
 
             isEndingTransmit_ = false;
             isTransmitting_ = false;
-        }
-    }
-    else
-    {
-        if (isTransmitting_)
-        {
-            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
-            int numModemSamples = freedv_get_n_nom_modem_samples(dv_);
-            short inputBuf[numSpeechSamples];
-            short outputBuf[numModemSamples];
-
-            if (codec2_fifo_free(codecOutputFifo) < numModemSamples) return;
-        
-            while (codec2_fifo_read(codecInputFifo, inputBuf, numSpeechSamples) == 0)
-            {
-                // Limit the amount of time we spend here so we don't end up
-                // stuck transmitting forever.
-                if (isEndingTransmit_)
-                {
-                    samplesBeforeEnd_ -= numSpeechSamples;
-                    if (samplesBeforeEnd_ <= 0)
-                    {
-                        break;
-                    }
-                }
-                //auto timeBegin = esp_timer_get_time();
-
-                freedv_tx(dv_, outputBuf, inputBuf);
-                //auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_tx ran in %d us on %d samples and generated %d samples", (int)(timeEnd - timeBegin), numSpeechSamples, numModemSamples);
-                codec2_fifo_write(codecOutputFifo, outputBuf, numModemSamples);
-            }
-            
-            if (isEndingTransmit_ && samplesBeforeEnd_ < numSpeechSamples)
-            {
-                // We've finished processing everything that's left, end TX now.
-                TransmitCompleteMessage message;
-                publish(&message);
-
-                isEndingTransmit_ = false;
-                isTransmitting_ = false;
-            }
-        }
-        else
-        {
-            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
-            short inputBuf[freedv_get_n_max_modem_samples(dv_)];
-            short outputBuf[numSpeechSamples];
-            int nin = freedv_nin(dv_);
-
-            if (codec2_fifo_free(codecOutputFifo) < numSpeechSamples) return;
-        
-            int rv = codec2_fifo_read(codecInputFifo, inputBuf, nin);
-            if (rv == 0)
-            {
-                //auto timeBegin = esp_timer_get_time();
-
-                int nout = freedv_rx(dv_, outputBuf, inputBuf);
-
-                //auto timeEnd = esp_timer_get_time();
-                //ESP_LOGI(CURRENT_LOG_TAG, "freedv_rx ran in %lld us on %d samples and generated %d samples", timeEnd - timeBegin, nin, nout);
-                codec2_fifo_write(codecOutputFifo, outputBuf, nout);
-                nin = freedv_nin(dv_);
-            }
-        
-            syncLed = freedv_get_sync(dv_) > 0;
         }
     }
 
@@ -215,81 +306,10 @@ void FreeDVTask::onSetFreeDVMode_(DVTask* origin, SetFreeDVModeMessage* message)
     ESP_LOGI(CURRENT_LOG_TAG, "Setting FreeDV mode to %d", (int)message->mode);
     currentMode_ = (int)message->mode;
 
-    if (dv_ != nullptr)
+    stopRade_();
+    if (message->mode == FreeDVMode::RADE_V2)
     {
-        if (rText_ != nullptr)
-        {
-            reliable_text_unlink_from_freedv(rText_);
-            reliable_text_destroy(rText_);
-            rText_ = nullptr;
-        }
-
-        modem_stats_close(stats_);
-        delete stats_;
-
-        freedv_close(dv_);
-        dv_ = nullptr;
-    }
-
-    if (message->mode != FreeDVMode::ANALOG)
-    {
-        int freedvApiMode = 0;
-        switch (message->mode)
-        {
-            case FREEDV_700D:
-                freedvApiMode = FREEDV_MODE_700D;
-                break;
-            case FREEDV_700E:
-                freedvApiMode = FREEDV_MODE_700E;
-                break;
-            case FREEDV_1600:
-                freedvApiMode = FREEDV_MODE_1600;
-                break;
-            default:
-                assert(0);
-        }
-
-        dv_ = freedv_open(freedvApiMode);
-        assert(dv_ != nullptr);
-        
-        switch (freedvApiMode)
-        {
-            case FREEDV_MODE_700D:
-                freedv_set_eq(dv_, 1);
-                freedv_set_clip(dv_, 1);
-                freedv_set_tx_bpf(dv_, 1);
-                freedv_set_squelch_en(dv_, 1);
-                freedv_set_snr_squelch_thresh(dv_, -2.0);  /* squelch at -2.0 dB      */
-                break;
-            case FREEDV_MODE_700E:
-                freedv_set_eq(dv_, 1);
-                freedv_set_clip(dv_, 1);
-                freedv_set_tx_bpf(dv_, 1);
-                freedv_set_squelch_en(dv_, 1);
-                freedv_set_snr_squelch_thresh(dv_, 1);  /* squelch at 1.0 dB      */
-                break;
-            case FREEDV_MODE_1600:
-                freedv_set_clip(dv_, 0);
-                freedv_set_tx_bpf(dv_, 0);
-                freedv_set_squelch_en(dv_, 0);
-                break;
-            default:
-                assert(0);
-                freedv_set_clip(dv_, 0);
-                freedv_set_tx_bpf(dv_, 0);
-                freedv_set_squelch_en(dv_, 1);
-                freedv_set_snr_squelch_thresh(dv_, 0.0);  /* squelch at 0.0 dB      */
-                break;
-        }
-
-        stats_ = new MODEM_STATS();
-        assert(stats_ != nullptr);
-        modem_stats_open(stats_);
-
-        // Note: reliable_text setup is deferred until we know for sure whether
-        // we have a valid callsign saved.
-        storage::RequestReportingSettingsMessage requestReportingSettings;
-        publish(&requestReportingSettings);
+        startRade_();
     }
 }
 
@@ -299,74 +319,40 @@ void FreeDVTask::onSetPTTState_(DVTask* origin, FreeDVSetPTTStateMessage* messag
 
     if (isTransmitting_ && !message->pttState)
     {
-        // Delay ending TX until we've processed what's remaining. This means we'll need
-        // to add a bit of silence at the end of the transmission as well depending on 
-        // the currently active mode.
-        samplesBeforeEnd_ = 2000; // 250ms maximum @ 8000 Hz
+        // Delay ending TX until we've processed what's remaining: for RADE
+        // V2, until the end-of-over has gone out.
         isEndingTransmit_ = true;
-
-        if (dv_ != nullptr)
+        if (radeTx_ != nullptr)
         {
-            auto codecInputFifo = getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL);
-            int numSpeechSamples = freedv_get_n_speech_samples(dv_);
-            short* tmpBuffer = new short[numSpeechSamples];
-            assert(tmpBuffer != nullptr);
-
-            memset(tmpBuffer, 0, sizeof(short) * numSpeechSamples);
-            codec2_fifo_write(codecInputFifo, tmpBuffer, numSpeechSamples);
-            delete[] tmpBuffer;
+            radeTx_->finish();
         }
     }
-    else
+    else if (!isTransmitting_ && message->pttState)
     {
         isEndingTransmit_ = false;
-        isTransmitting_ = message->pttState;
-        if (!isTransmitting_)
+        isTransmitting_ = true;
+        if (radeRx_ != nullptr)
         {
-            TransmitCompleteMessage message;
-            publish(&message);
+            delete radeRx_;
+            radeRx_ = nullptr;
+            radeTx_ = new RadeTransmitter();
+            assert(radeTx_ != nullptr);
+        }
+
+        // Nothing reads the mic while receiving, so it holds up to a FIFO's
+        // worth of audio from before PTT: drop it rather than send it late.
+        struct FIFO* micFifo = getAudioInput(audio::AudioInput::ChannelLabel::USER_CHANNEL);
+        short discard[USER_SAMPLES_PER_LOOP];
+        while (micFifo != nullptr && codec2_fifo_read(micFifo, discard, USER_SAMPLES_PER_LOOP) == 0)
+        {
+            // empty
         }
     }
-}
-
-void FreeDVTask::onReportingSettingsUpdate_(DVTask* origin, storage::ReportingSettingsMessage* message)
-{
-    if (dv_ != nullptr && strlen(message->callsign) > 0)
+    else if (!message->pttState)
     {
-        ESP_LOGI(CURRENT_LOG_TAG, "Registering reliable_text handler");
-
-        if (rText_ != nullptr)
-        {
-            reliable_text_unlink_from_freedv(rText_);
-            reliable_text_destroy(rText_);
-            rText_ = nullptr;
-        }
-
-        // Non-null callsign means we should set up reliable_text.
-        rText_ = reliable_text_create();
-        assert(rText_ != nullptr);
-
-        reliable_text_set_string(rText_, message->callsign, strlen(message->callsign));
-        reliable_text_use_with_freedv(rText_, dv_, OnReliableTextRx_, this);
+        TransmitCompleteMessage message;
+        publish(&message);
     }
-}
-
-void FreeDVTask::OnReliableTextRx_(reliable_text_t rt, const char* txt_ptr, int length, void* state)
-{
-    // Broadcast receipt to other components that may want it (such as FreeDV Reporter).
-    FreeDVTask* thisPtr = (FreeDVTask*)state;
-    
-    // Get stats so we can provide updated SNR.
-    freedv_get_modem_extended_stats(thisPtr->dv_, thisPtr->stats_);
-    
-    float snr = thisPtr->stats_->snr_est;
-    ESP_LOGI(CURRENT_LOG_TAG, "Received TX from %s" /*at %.1f SNR"*/, txt_ptr /*, (float)snr*/);
-
-    FreeDVReceivedCallsignMessage message((char*)txt_ptr, snr);
-    thisPtr->publish(&message);
-
-    FreeDVTask* task = (FreeDVTask*)state;
-    reliable_text_reset(task->rText_);
 }
 
 void FreeDVTask::onRequestGetFreeDVMode_(DVTask* origin, RequestGetFreeDVModeMessage* message)
